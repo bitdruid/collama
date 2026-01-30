@@ -71,7 +71,7 @@ export class StartPage {
                 <div class="container">
                     <div class="header">
                         <img src="${this.logoUri.toString()}" />
-                        <span class="header-title">collama Ollama Chat</span>
+                        <span class="header-title">collama chat</span>
                     </div>
                     <collama-chatcontainer></collama-chatcontainer>
                 </div>

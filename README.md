@@ -30,19 +30,21 @@ Collama is a VS Code extension that uses [Ollama](https://ollama.com) models to 
 
 ## Features
 
-✨ **Code Completion**
+**Code Completion**
 - Inline, multiline, and multiblock (more a "fun" feature) suggestions
-- uses currently opened tabs as context
+- Uses currently opened tabs as context
 
-🔧 **Code Edits**
+**Code Edits**
 - Generate docstrings and documentation
 - Extract functions and refactor code
 - Simplify complex code
 - Fix syntax errors
 - Manual instructions
 
-💬 **Chat Interface**
-- Under construction
+**Chat Interface**
+- Chat with multiple sessions
+- Send selected code or files to chat as context
+- Context is automatically attached to messages with file reference and line numbers
 
 ## Quick Start
 
@@ -95,9 +97,9 @@ Collama is tested primarily with the **Qwen Coder** series and performs best wit
 | codellama     | 7B, 13B      | ⚠️           | Limited  | Limited file context support; FIM is ok  |
 | codeqwen      | —            | ⚠️           | Untested | May work; contributions welcome          |
 
-> 💡 Models are tested primarily with **quantization level q4**. Results may vary with other quantization levels.
+Note: Models are tested primarily with quantization level q4. Results may vary with other quantization levels.
 
-> 🤔 **Note:** ChatML format is not supported - that means only true fim-models will work for autocomplete!
+Note: ChatML format is not supported - that means only true fim-models will work for autocomplete!
 
 ## Usage
 
@@ -108,7 +110,7 @@ Collama is tested primarily with the **Qwen Coder** series and performs best wit
 2. **Auto-Trigger**: Completions trigger automatically after 1.5 seconds of inactivity (configurable via `suggestDelay`)
 3. **Accept**: Press `Tab` to accept suggestion, `Esc` to dismiss
 
-### Code Edits (not that much tested)
+### Code Edits
 
 1. Select code in the editor
 2. Right-click → **collama (on selection)** and choose:
@@ -120,7 +122,10 @@ Collama is tested primarily with the **Qwen Coder** series and performs best wit
 
 ### Chat Interface
 
-This is under construction and will be available in the long run...
+1. Open the Chat view in the sidebar (Collama icon)
+2. Right-click on selected code in editor → **Send to Chat**
+3. Type your message - the context is automatically attached and included with the message
+4. Create multiple chat sessions to organize conversations
 
 ## Contributing
 

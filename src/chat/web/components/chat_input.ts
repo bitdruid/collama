@@ -117,7 +117,6 @@ export class ChatInput extends LitElement {
     }
 
     private _handleSubmit() {
-        logWebview(`triggered in chat_input::_handleSubmit`);
         this.dispatchEvent(
             new CustomEvent("submit", {
                 detail: { value: this.userInput, context: this.context },
@@ -162,7 +161,7 @@ export class ChatInput extends LitElement {
             const label = this.context.hasSelection
                 ? `${this.context.fileName} (${this.context.startLine}-${this.context.endLine})`
                 : this.context.fileName;
-            return html`<span class="context-display" title="Context attached">
+            return html` <span class="context-display" title="Context attached">
                 ${label}
                 <button class="context-close" @click=${this._clearContext} title="Remove context">×</button>
             </span>`;
