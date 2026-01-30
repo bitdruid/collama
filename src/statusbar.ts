@@ -104,12 +104,15 @@ async function showStatusbar() {
     if (selected.label.includes("Inline")) {
         await config.update("suggestMode", "inline", vscode.ConfigurationTarget.Global);
     }
+
     if (selected.label.includes("Multiline")) {
         await config.update("suggestMode", "multiline", vscode.ConfigurationTarget.Global);
     }
+
     if (selected.label.includes("Multiblock")) {
         await config.update("suggestMode", "multiblock", vscode.ConfigurationTarget.Global);
     }
+
     // "type" is not in vscode.QuickPickItem, so check the whole "selected" object
     if ("type" in selected) {
         if (selected.type === "model") {

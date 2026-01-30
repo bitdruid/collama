@@ -50,6 +50,69 @@ function calculateNumPredict(): number {
 }
 
 /**
+ * Generic function to send "chat"-requests to Ollama and stream the response.
+ *
+ * @param model   The name of the model to use.
+ * @param prompt  The message dict to send to the model.
+ * @param options Generation options (tokens, sampling, penalties).
+ * @param stop    User and model stop tokens.
+ * @param think   Whether to enable Ollama's think mode.
+ * @param raw     Whether to request raw output from Ollama.
+ * @returns       The generated text as a string.
+ */
+export async function llmChat(
+    model: string,
+    messages: any[],
+    options: Options,
+    stop: Stop,
+    think: boolean = false,
+    onChunk?: (chunk: string) => void,
+): Promise<string> {
+    logMsg(`Requesting to ${userConfig.apiEndpoint}; Model: ${model}; Think: ${think};`);
+    logMsg(`Options:\n${JSON.stringify(options, null, 2)}`);
+    logMsg(`Stop:\n${JSON.stringify([...stop.userStop, ...stop.modelStop], null, 2)}`);
+    logMsg(`Input:\n${JSON.stringify(messages)}`);
+
+    const ollama = new Ollama({ host: userConfig.apiEndpoint });
+
+    const response = await ollama.chat({
+        model,
+        messages: messages,
+        think,
+        stream: true,
+        options: {
+            ...options,
+            stop: [...stop.userStop, ...stop.modelStop],
+        },
+    });
+
+    let result = "";
+    let resultTokens = 0;
+    let resultDurationNano = 0;
+
+    for await (const part of response) {
+        const chunk = part.message.content ?? "";
+        if (chunk) {
+            result += chunk;
+            onChunk?.(chunk);
+        }
+
+        if (part.done) {
+            resultTokens = part.eval_count ?? 0;
+            resultDurationNano = part.eval_duration ?? 0;
+        }
+    }
+
+    const resultDuration = (resultDurationNano / 1_000_000_000).toFixed(3);
+    const resultTPS = resultDurationNano > 0 ? (resultTokens / (resultDurationNano / 1_000_000_000)).toFixed(1) : "0";
+
+    logMsg(`Receive: tokens [${resultTokens}]; duration seconds [${resultDuration}]; tokens/sec [${resultTPS}]`);
+    logMsg(`Output:\n${result}`);
+
+    return result;
+}
+
+/**
  * Generic function to send "generation"-requests to Ollama and stream the response.
  *
  * @param model   The name of the model to use.
@@ -68,14 +131,7 @@ export async function llmGenerate(
     think: boolean = false,
     raw: boolean = false,
 ): Promise<string> {
-    logMsg(
-        [
-            `Requesting to ${userConfig.apiEndpoint};`,
-            `Model: ${userConfig.apiCompletionModel};`,
-            `Think: ${think};`,
-            `Raw: ${raw}`,
-        ].join(""),
-    );
+    logMsg(`Requesting to ${userConfig.apiEndpoint}; Model: ${model}; Think: ${think}; Raw: ${raw}`);
     logMsg(`Options:\n${JSON.stringify(options, null, 2)}`);
     logMsg(`Stop:\n${JSON.stringify([...stop.userStop, ...stop.modelStop], null, 2)}`);
     logMsg(`Input:\n${prompt}`);
@@ -123,12 +179,12 @@ export async function llmGenerate(
     const fenceMatch = result.match(/```(?:[a-zA-Z0-9_-]+)?\s*\n([\s\S]*?)\n?```/);
     if (fenceMatch) {
         result = fenceMatch[1];
-    } else {
-        // trim the code fences from the result (llm will add them in most cases)
+    } else // trim the code fences from the result (llm will add them in most cases)
+    {
         result = result
             .replace(/^```[a-zA-Z0-9_-]*\s*\n?/, "") // remove opening fence + optional lang + newline
-            .replace(/\n?```$/, ""); // remove closing fence (optionally preceded by newline)
-    }
+            .replace(/\n?```$/, "");
+    } // remove closing fence (optionally preceded by newline)
 
     return result;
 }

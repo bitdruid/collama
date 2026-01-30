@@ -25,6 +25,7 @@ export function registerAutoCompleteProvider(context: vscode.ExtensionContext) {
             if (!userConfig.autoComplete && !manualTrigger) {
                 return;
             }
+
             if (!(await checkupModel())) {
                 return;
             }

@@ -10,7 +10,7 @@ import {
 } from "./context/subscriptions";
 import { logMsg, logStream } from "./logging";
 import { setStatusbar } from "./statusbar";
-import { registerChatProvider } from "./chat/subscriptions";
+import { registerChatProvider, registerSendToChatCommand } from "./chat/subscriptions";
 
 /**
  *
@@ -39,6 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
     registerAutoCompleteProvider(context);
 
     registerChatProvider(context);
+    registerSendToChatCommand(context);
 }
 
 export function deactivate() {

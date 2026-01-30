@@ -28,21 +28,21 @@ export class Sanitizer {
      * This function fixes extra closing brackets at the end of a snippet.
      *
      * How it works:
-     * - Take the normalized snippet, prefix, and suffix lines and join them into full strings.
-     * - Create three counters, one for each type of bracket: {}, (), [].
-     * - Walk through the snippet string:
+     * 1. Take the normalized snippet, prefix, and suffix lines and join them into full strings.
+     * 2. Create three counters, one for each type of bracket: {}, (), [].
+     * 3. Walk through the snippet string:
      *      - Increase the counter when an opening bracket is found.
      *      - Decrease the counter when a closing bracket is found.
-     * - At the end we have two possible situations:
+     * 4. At the end we have two possible situations:
      *      - Negative counter: more brackets were closed than opened.
      *      - Positive counter: more brackets were opened than closed.
      *
-     * Case negative (too many closing brackets):
-     * - Count the closing brackets at the start of the suffix until the first non-bracket character.
-     * - Add these brackets to an array and reverse it.
-     * - Walk through the original snippet from the end, removing brackets that match the array in order.
-     * - If a line becomes empty after removing brackets, remove the line entirely.
-     * - Stop as soon as a non-closing-bracket character is reached.
+     * 5. Case negative (too many closing brackets):
+     *      - Count the closing brackets at the start of the suffix until the first non-bracket character.
+     *      - Add these brackets to an array and reverse it.
+     *      - Walk through the original snippet from the end, removing brackets that match the array in order.
+     *      - If a line becomes empty after removing brackets, remove the line entirely.
+     *      - Stop as soon as a non-closing-bracket character is reached.
      *
      * Case positive (likely correct):
      * - Do nothing because the snippet is missing closing brackets that probably appear in the suffix.
@@ -59,45 +59,57 @@ export class Sanitizer {
      * Logs counters, removed brackets, and removed lines.
      */
     private remove_extraBrackets(): void {
-        if (!this.snippet) return;
+        if (!this.snippet) {
+            return;
+        }
 
         const opening = ["{", "(", "["];
         const closing = ["}", ")", "]"];
         const bracketMap: Record<string, string> = { "}": "{", ")": "(", "]": "[" };
 
-        // Join normalized snippet lines to full string
+        // 1. join normalized to full string, 2. create counters
         const snippetStr = this.normSnippetLines.join("");
         const counters: Record<string, number> = { "{": 0, "(": 0, "[": 0 };
 
-        // Count brackets in snippet
+        // 3. count brackets in snippet
         for (const char of snippetStr) {
-            if (opening.includes(char)) counters[char]++;
-            if (closing.includes(char)) counters[bracketMap[char]]--;
+            if (opening.includes(char)) {
+                counters[char]++;
+            }
+            if (closing.includes(char)) {
+                counters[bracketMap[char]]--;
+            }
         }
 
         logMsg(`SANITIZER - bracket counters in snippet: ${JSON.stringify(counters)}`);
 
-        // Check if any counter is negative (more closing than opening)
+        // 4. check if any counter is negative (more closing than opening)
         const needsFix = Object.values(counters).some((v) => v < 0);
         if (!needsFix) {
             logMsg(`SANITIZER - snippet brackets balanced or positive, no fix needed`);
-            return; // nothing to fix
+            return;
         }
 
-        // --- Prepare suffix closing brackets ---
+        // case negative (more closing than opening)
+        // count closing brackets
         const suffixStr = this.normSuffixLines.join("").trimStart();
         const suffixBrackets: string[] = [];
         for (const char of suffixStr) {
-            if (closing.includes(char)) suffixBrackets.push(char);
-            else break; // stop at first non-closing-bracket char
+            if (closing.includes(char)) {
+                suffixBrackets.push(char);
+            } else {
+                break;
+            } // stop at first non-closing-bracket char
         }
         suffixBrackets.reverse(); // remove in reverse order
 
-        if (!suffixBrackets.length) return;
+        if (!suffixBrackets.length) {
+            return;
+        }
 
         logMsg(`SANITIZER - extra closing brackets detected in snippet, will remove: ${suffixBrackets.join("")}`);
 
-        // --- Fix snippet from the end ---
+        // walk through snippet in reverse, remove brackets from end
         const snippetLines = this.snippet.split(/\r?\n/);
         let suffixIndex = 0;
 
@@ -108,22 +120,22 @@ export class Sanitizer {
             while (j >= 0 && suffixIndex < suffixBrackets.length) {
                 const char = line[j];
                 if (char === suffixBrackets[suffixIndex]) {
-                    // Remove the bracket
+                    // remove the bracket
                     line = line.slice(0, j) + line.slice(j + 1);
                     logMsg(`SANITIZER - removed bracket '${char}' from line ${i + 1}`);
                     suffixIndex++;
                 } else if (closing.includes(char)) {
-                    // Extra closing bracket but not matching suffix? skip
+                    // extra closing bracket but not matching suffix? skip
                     j--;
                     continue;
                 } else {
-                    // Stop at first non-closing-bracket char
+                    // stop at first non-closing-bracket char
                     break;
                 }
                 j--;
             }
 
-            // Remove line if it became empty after bracket removal
+            // remove empty line after bracket removal
             if (line.trim().length === 0) {
                 snippetLines.splice(i, 1);
                 logMsg(`SANITIZER - removed empty line ${i + 1} after bracket removal`);
@@ -131,7 +143,9 @@ export class Sanitizer {
                 snippetLines[i] = line;
             }
 
-            if (suffixIndex >= suffixBrackets.length) break; // all brackets removed
+            if (suffixIndex >= suffixBrackets.length) {
+                break;
+            } // all brackets removed
         }
 
         this.snippet = snippetLines.join("\n");

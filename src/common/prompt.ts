@@ -13,7 +13,6 @@ export const nonThinkingTemplate: PromptTemplate = ({ instruction, snippet, full
         "",
         "STRICT RULES:",
         "- Never output full files",
-        "- Never repeat context",
         "- Never explain",
         "- You MUST output a full code snippet",
         "",
@@ -30,7 +29,7 @@ export const nonThinkingTemplate: PromptTemplate = ({ instruction, snippet, full
         snippet ?? "",
         "",
         "===== OUTPUT FORMAT =====",
-        "Raw code without explanations.",
+        "Raw code without explanations in code fences.",
     ].join("\n");
 
 export const thinkingTemplate: PromptTemplate = ({ instruction, snippet, fullContext }) =>
@@ -41,7 +40,6 @@ export const thinkingTemplate: PromptTemplate = ({ instruction, snippet, fullCon
         "STRICT RULES:",
         "- Never output full files",
         "- Never repeat context",
-        "- Only output changed code",
         "- Output must be minimal",
         "",
         "===== FULL CONTEXT (READ ONLY) =====",
@@ -61,5 +59,5 @@ export const thinkingTemplate: PromptTemplate = ({ instruction, snippet, fullCon
         snippet ?? "",
         "",
         "===== OUTPUT FORMAT =====",
-        "Raw code without explanations.",
+        "Raw code without explanations in code fences.",
     ].join("\n");

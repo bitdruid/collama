@@ -2,43 +2,81 @@ import * as vscode from "vscode";
 
 export class StartPage {
     private webviewView: vscode.WebviewView;
+    private webview: vscode.Webview;
     private logoUri: vscode.Uri;
+    private bundleUri: vscode.Uri;
 
     constructor(context: vscode.ExtensionContext, webviewView: vscode.WebviewView) {
         this.webviewView = webviewView;
-        this.logoUri = this.webviewView.webview.asWebviewUri(
-            vscode.Uri.joinPath(context.extensionUri, "src", "resources", "collama.svg"),
-        );
+
+        this.webview = webviewView.webview;
+
+        this.logoUri = this.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "media", "collama.svg"));
+        this.bundleUri = this.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "dist", "chatpanel.js"));
     }
 
     generate(): string {
         return /*html*/ `
-            <!DOCTYPE html>
-            <html lang="en">
-                <head>
-                    <meta charset="UTF-8" />
-                    <style>
-                        body {
-                            font-family: sans-serif;
-                            padding: 16px;
-                        }
-                        .container {
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container" style="align-content: center">
-                        <img src="${this.logoUri.toString()}" width="256" height="256" />
-                        <h1>Under Construction</h1>
+        <!DOCTYPE html>
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8" />
+                <script>
+                    window.vscode = acquireVsCodeApi();
+                </script>
+                <script type="module" src="${this.bundleUri}"></script>
+                <style>
+                    html, body {
+                        height: 100%;
+                        margin: 0;
+                        padding: 0;
+                    }
+
+                    .container {
+                        display: flex;
+                        flex-direction: column;
+                        height: 100%;
+                        padding: 10px;
+                        box-sizing: border-box;
+                    }
+
+                    .header {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin-bottom: 8px;
+                    }
+
+                    .header img {
+                        width: 32px;
+                        height: 32px;
+                    }
+
+                    .header-title {
+                        font-size: 14px;
+                        font-weight: bold;
+                        color: var(--vscode-foreground);
+                    }
+
+                    collama-chatcontainer {
+                        flex: 1 1 auto;
+                        display: flex;
+                        flex-direction: column;
+                        min-height: 0;
+                    }
+
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <img src="${this.logoUri.toString()}" />
+                        <span class="header-title">collama Ollama Chat</span>
                     </div>
-                    <div class="container" style="align-content: center">
-                        <chatwindow></chatwindow>
-                    </div>
-                </body>
-            </html>
-        `;
+                    <collama-chatcontainer></collama-chatcontainer>
+                </div>
+            </body>
+        </html>
+    `;
     }
 }

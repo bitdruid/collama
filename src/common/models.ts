@@ -65,6 +65,7 @@ export const getModelConfig = (context: Context): { prompt: string; stop: string
     if (!cfg) {
         return false;
     }
+
     return { prompt: cfg.prompt(context.openFiles, context.activePrefix, context.activeSuffix), stop: cfg.stop };
 };
 
@@ -102,6 +103,7 @@ export async function getModelContextLength(model: string): Promise<number> {
                 }
             }
         }
+
         return sysConfig.tokensReceive; // default value
     } catch (error: unknown) {
         return sysConfig.tokensReceive;

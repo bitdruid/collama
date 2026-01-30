@@ -49,6 +49,7 @@ export async function checkupModel(): Promise<boolean> {
     if (now - lastCheckTime < CHECK_INTERVAL_MS) {
         return lastCheckResult;
     }
+
     logMsg("Checking model...");
     lastCheckTime = now;
     if (!(await checkModelSupported())) {
@@ -80,6 +81,7 @@ async function checkModelSupported(): Promise<boolean> {
             return true;
         }
     }
+
     return false;
 }
 

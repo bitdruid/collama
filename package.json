@@ -63,7 +63,7 @@
                 {
                     "id": "collama_chat",
                     "title": "collama",
-                    "icon": "src/resources/collama.svg"
+                    "icon": "media/collama.svg"
                 }
             ]
         },
@@ -73,7 +73,7 @@
                     "id": "collama_chatview",
                     "name": "Chat",
                     "type": "webview",
-                    "icon": "src/resources/collama.svg"
+                    "icon": "media/collama.svg"
                 }
             ]
         },
@@ -96,43 +96,57 @@
             },
             {
                 "command": "collama.editManual",
-                "title": "Edit (manual)"
+                "title": "Edit"
+            },
+            {
+                "command": "collama.sendToChat",
+                "title": "Send to Chat"
             }
         ],
         "submenus": [
             {
-                "id": "collama.submenu",
-                "label": "collama (on selection)"
+                "id": "collama.submenu1",
+                "label": "collama"
             }
         ],
         "menus": {
             "editor/context": [
                 {
-                    "submenu": "collama.submenu",
+                    "submenu": "collama.submenu1",
                     "group": "0_collama",
-                    "when": "editorHasSelection"
+                    "when": "activeEditor"
                 }
             ],
-            "collama.submenu": [
+            "collama.submenu1": [
                 {
                     "command": "collama.writeDocstrings",
+                    "group": "1_actions",
                     "when": "editorHasSelection"
                 },
                 {
                     "command": "collama.extractFunctions",
+                    "group": "1_actions",
                     "when": "editorHasSelection"
                 },
                 {
                     "command": "collama.simplifyCode",
+                    "group": "1_actions",
                     "when": "editorHasSelection"
                 },
                 {
                     "command": "collama.fixSyntax",
+                    "group": "1_actions",
                     "when": "editorHasSelection"
                 },
                 {
                     "command": "collama.editManual",
+                    "group": "2_edit",
                     "when": "editorHasSelection"
+                },
+                {
+                    "command": "collama.sendToChat",
+                    "group": "3_send",
+                    "when": "activeEditor"
                 }
             ]
         }
@@ -152,12 +166,14 @@
         "test": "vscode-test"
     },
     "devDependencies": {
+        "@types/markdown-it": "^14.1.2",
         "@types/mocha": "^10.0.10",
         "@types/node": "22.x",
         "@types/vscode": "^1.107.0",
         "@vscode/test-cli": "^0.0.11",
         "@vscode/test-electron": "^2.5.2",
         "esbuild": "^0.27.1",
+        "esbuild-plugin-inline-import": "^1.1.0",
         "eslint": "^9.39.1",
         "fastest-levenshtein": "^1.0.16",
         "npm-run-all": "^4.1.5",
@@ -167,7 +183,10 @@
     },
     "dependencies": {
         "@microsoft/tiktokenizer": "^1.0.10",
+        "esbuild-plugin-css-modules": "^0.3.0",
+        "highlight.js": "^11.11.1",
         "lit": "^3.3.2",
+        "markdown-it": "^14.1.0",
         "ollama": "^0.6.3"
     }
 }

@@ -14,6 +14,22 @@ export class Context {
     readonly activeSuffix: string;
     readonly openFiles: OpenFilesContext[];
 
+    get selectionStartLine(): number {
+        return this.selectionObject.start.line;
+    }
+
+    get selectionEndLine(): number {
+        return this.selectionObject.end.line;
+    }
+
+    get selectionStartCharacter(): number {
+        return this.selectionObject.start.character;
+    }
+
+    get selectionEndCharacter(): number {
+        return this.selectionObject.end.character;
+    }
+
     get activeFileText(): string {
         return this.activePrefix + this.activeSuffix;
     }
