@@ -181,8 +181,6 @@ export class ChatSessions extends LitElement {
         }
 
         .action-button {
-            width: 20px;
-            height: 20px;
             font-size: 14px;
         }
 
@@ -355,14 +353,14 @@ export class ChatSessions extends LitElement {
                                           @click=${(e: Event) => this._handleRenameSession(e, session)}
                                           title="Rename chat"
                                       >
-                                          ✎
+                                          R
                                       </button>
                                       <button
                                           class="icon-button action-button delete-button"
                                           @click=${(e: Event) => this._handleDeleteSession(e, session.id)}
                                           title="Delete chat"
                                       >
-                                          ×
+                                          X
                                       </button>
                                   </div>
                               </div>
