@@ -241,6 +241,19 @@ class ChatPanel {
                 return;
             }
 
+            if (msg.type === "rename-session") {
+                const { sessionId, newTitle } = msg;
+                const session = this.sessions.find((s) => s.id === sessionId);
+                if (session && newTitle && newTitle.trim() !== "") {
+                    session.title = newTitle.trim();
+                    session.updatedAt = Date.now();
+                    this.saveSessions();
+                    this.sendSessionsUpdate();
+                    logMsg(`Renamed session ${sessionId} to "${newTitle}"`);
+                }
+                return;
+            }
+
             if (msg.type === "chat-request") {
                 const { messages, assistantIndex, sessionId } = msg;
 

@@ -13,6 +13,7 @@ export class ChatSessions extends LitElement {
         sessions: { state: true },
         activeSessionId: { state: true },
         isOpen: { state: true },
+        editingSessionId: { state: true },
     };
 
     static styles = css`
@@ -152,22 +153,45 @@ export class ChatSessions extends LitElement {
             color: var(--vscode-foreground);
         }
 
+        .session-title-input {
+            font-size: 13px;
+            width: 100%;
+            padding: 2px 4px;
+            border: 1px solid var(--vscode-focusBorder);
+            border-radius: 2px;
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            outline: none;
+        }
+
         .session-date {
             font-size: 11px;
             color: var(--vscode-descriptionForeground);
             margin-top: 2px;
         }
 
-        .delete-button {
+        .session-actions {
+            display: flex;
+            gap: 2px;
             opacity: 0;
+        }
+
+        .session-item:hover .session-actions {
+            opacity: 1;
+        }
+
+        .action-button {
             width: 20px;
             height: 20px;
             font-size: 14px;
-            color: var(--vscode-errorForeground);
         }
 
-        .session-item:hover .delete-button {
-            opacity: 1;
+        .rename-button {
+            color: var(--vscode-foreground);
+        }
+
+        .delete-button {
+            color: var(--vscode-errorForeground);
         }
 
         .empty-state {
@@ -181,6 +205,7 @@ export class ChatSessions extends LitElement {
     sessions: ChatSession[] = [];
     activeSessionId: string = "";
     isOpen: boolean = false;
+    editingSessionId: string | null = null;
 
     private _formatDate(timestamp: number): string {
         const date = new Date(timestamp);
@@ -234,6 +259,49 @@ export class ChatSessions extends LitElement {
         );
     }
 
+    private _handleRenameSession(e: Event, session: ChatSession) {
+        e.stopPropagation();
+        this.editingSessionId = session.id;
+        // Focus input
+        this.updateComplete.then(() => {
+            const input = this.shadowRoot?.querySelector(".session-title-input") as HTMLInputElement;
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
+    }
+
+    private _handleRenameKeyDown(e: KeyboardEvent, session: ChatSession) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            this._submitRename(session);
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            this.editingSessionId = null;
+        }
+    }
+
+    private _handleRenameBlur(session: ChatSession) {
+        this._submitRename(session);
+    }
+
+    private _submitRename(session: ChatSession) {
+        const input = this.shadowRoot?.querySelector(".session-title-input") as HTMLInputElement;
+        const newTitle = input?.value?.trim();
+        if (newTitle && newTitle !== session.title) {
+            logWebview(`Rename session ${session.id} to "${newTitle}"`);
+            this.dispatchEvent(
+                new CustomEvent("rename-session", {
+                    detail: { sessionId: session.id, newTitle },
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
+        }
+        this.editingSessionId = null;
+    }
+
     private _toggleOpen() {
         this.isOpen = !this.isOpen;
     }
@@ -265,19 +333,38 @@ export class ChatSessions extends LitElement {
                           (session) => html`
                               <div
                                   class="session-item ${session.id === this.activeSessionId ? "active" : ""}"
-                                  @click=${() => this._handleSelectSession(session.id)}
+                                  @click=${() =>
+                                      this.editingSessionId !== session.id && this._handleSelectSession(session.id)}
                               >
                                   <div class="session-info">
-                                      <div class="session-title">${session.title}</div>
+                                      ${this.editingSessionId === session.id
+                                          ? html`<input
+                                                class="session-title-input"
+                                                type="text"
+                                                .value=${session.title}
+                                                @keydown=${(e: KeyboardEvent) => this._handleRenameKeyDown(e, session)}
+                                                @blur=${() => this._handleRenameBlur(session)}
+                                                @click=${(e: Event) => e.stopPropagation()}
+                                            />`
+                                          : html`<div class="session-title">${session.title}</div>`}
                                       <div class="session-date">${this._formatDate(session.updatedAt)}</div>
                                   </div>
-                                  <button
-                                      class="icon-button delete-button"
-                                      @click=${(e: Event) => this._handleDeleteSession(e, session.id)}
-                                      title="Delete chat"
-                                  >
-                                      ×
-                                  </button>
+                                  <div class="session-actions">
+                                      <button
+                                          class="icon-button action-button rename-button"
+                                          @click=${(e: Event) => this._handleRenameSession(e, session)}
+                                          title="Rename chat"
+                                      >
+                                          ✎
+                                      </button>
+                                      <button
+                                          class="icon-button action-button delete-button"
+                                          @click=${(e: Event) => this._handleDeleteSession(e, session.id)}
+                                          title="Delete chat"
+                                      >
+                                          ×
+                                      </button>
+                                  </div>
                               </div>
                           `,
                       )}

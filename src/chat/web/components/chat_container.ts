@@ -143,6 +143,16 @@ export class ChatContainer extends LitElement {
         });
     }
 
+    private _onRenameSession(e: CustomEvent) {
+        const { sessionId, newTitle } = e.detail;
+        logWebview(`Renaming session ${sessionId} to "${newTitle}"`);
+        window.vscode.postMessage({
+            type: "rename-session",
+            sessionId,
+            newTitle,
+        });
+    }
+
     connectedCallback() {
         super.connectedCallback();
 
@@ -194,6 +204,7 @@ export class ChatContainer extends LitElement {
                 @new-chat=${this._onNewChat}
                 @select-session=${this._onSelectSession}
                 @delete-session=${this._onDeleteSession}
+                @rename-session=${this._onRenameSession}
             ></collama-chatsessions>
             <div class="chat-area">
                 <collama-chatoutput .messages=${this.messages}></collama-chatoutput>
