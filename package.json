@@ -1,0 +1,218 @@
+{
+    "name": "collama",
+    "displayName": "collama",
+    "description": "Use code auto completion provided by a local ollama instance",
+    "repository": "https://github.com/bitdruid/collama",
+    "publisher": "bitdruid",
+    "icon": "media/collama.png",
+    "license": "MIT",
+    "version": "1.2.0",
+    "engines": {
+        "vscode": "^1.107.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "main": "./dist/extension.js",
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "contributes": {
+        "configuration": {
+            "title": "collama",
+            "properties": {
+                "collama.apiEndpointCompletion": {
+                    "type": "string",
+                    "default": "http://127.0.0.1:11434",
+                    "description": "Ollama API endpoint for auto-completion. IP / Domain and don't forget the port if needed."
+                },
+                "collama.apiEndpointInstruct": {
+                    "type": "string",
+                    "default": "http://127.0.0.1:11434",
+                    "description": "Ollama API endpoint for edit/chat. IP / Domain and don't forget the port if needed."
+                },
+                "collama.apiModelCompletion": {
+                    "type": "string",
+                    "default": "qwen2.5-coder:3b-instruct",
+                    "description": "Model for autocomplete."
+                },
+                "collama.apiModelInstruct": {
+                    "type": "string",
+                    "default": "gpt-oss:20b",
+                    "markdownDescription": "Model for edits.\n\nUse an **instruct** or **base** model."
+                },
+                "collama.autoComplete": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Turn auto-suggestions ON."
+                },
+                "collama.suggestMode": {
+                    "type": "string",
+                    "default": "inline",
+                    "enum": [
+                        "inline",
+                        "multiblock",
+                        "multiline"
+                    ],
+                    "markdownDescription": "Suggest code-blocks or code-lines."
+                },
+                "collama.suggestDelay": {
+                    "type": "number",
+                    "default": 1500,
+                    "markdownDescription": "Delay (ms) before requesting inline completion. Prevents Ollama from running every time the completion is triggered. (Spam protection)\n\n**Min:** 1000"
+                }
+            }
+        },
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "collama_chat",
+                    "title": "collama",
+                    "icon": "media/collama.svg"
+                }
+            ]
+        },
+        "views": {
+            "collama_chat": [
+                {
+                    "id": "collama_chatview",
+                    "name": "Chat",
+                    "type": "webview",
+                    "icon": "media/collama.svg"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "collama.writeDocstrings",
+                "title": "Write Docstring"
+            },
+            {
+                "command": "collama.extractFunctions",
+                "title": "Extract Functions"
+            },
+            {
+                "command": "collama.simplifyCode",
+                "title": "Simplify Code"
+            },
+            {
+                "command": "collama.fixSyntax",
+                "title": "Fix Syntax"
+            },
+            {
+                "command": "collama.editManual",
+                "title": "Edit"
+            },
+            {
+                "command": "collama.sendToChat",
+                "title": "Send to Chat"
+            },
+            {
+                "command": "collama.generateCommitMessage",
+                "title": "collama: Generate Commit Message",
+                "icon": "$(sparkle)"
+            },
+            {
+                "command": "collama.setBearerCompletion",
+                "title": "collama: Set Bearer Token (Completion)"
+            },
+            {
+                "command": "collama.setBearerInstruct",
+                "title": "collama: Set Bearer Token (Instruct)"
+            }
+        ],
+        "submenus": [
+            {
+                "id": "collama.submenu1",
+                "label": "collama"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "submenu": "collama.submenu1",
+                    "group": "0_collama",
+                    "when": "activeEditor"
+                }
+            ],
+            "collama.submenu1": [
+                {
+                    "command": "collama.writeDocstrings",
+                    "group": "1_actions",
+                    "when": "editorHasSelection"
+                },
+                {
+                    "command": "collama.extractFunctions",
+                    "group": "1_actions",
+                    "when": "editorHasSelection"
+                },
+                {
+                    "command": "collama.simplifyCode",
+                    "group": "1_actions",
+                    "when": "editorHasSelection"
+                },
+                {
+                    "command": "collama.fixSyntax",
+                    "group": "1_actions",
+                    "when": "editorHasSelection"
+                },
+                {
+                    "command": "collama.editManual",
+                    "group": "2_edit",
+                    "when": "editorHasSelection"
+                },
+                {
+                    "command": "collama.sendToChat",
+                    "group": "3_send",
+                    "when": "activeEditor"
+                }
+            ],
+            "scm/title": [
+                {
+                    "command": "collama.generateCommitMessage",
+                    "group": "navigation",
+                    "when": "scmProvider == git"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "npm run check-types && npm run lint && node esbuild.js",
+        "watch": "npm-run-all -p watch:*",
+        "watch:esbuild": "node esbuild.js --watch",
+        "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+        "package": "npm run check-types && npm run lint && node esbuild.js --production",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "check-types": "tsc --noEmit",
+        "lint": "eslint src",
+        "test": "vscode-test"
+    },
+    "devDependencies": {
+        "@types/markdown-it": "^14.1.2",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "22.x",
+        "@types/vscode": "^1.107.0",
+        "@vscode/test-cli": "^0.0.11",
+        "@vscode/test-electron": "^2.5.2",
+        "esbuild": "^0.27.1",
+        "esbuild-plugin-inline-import": "^1.1.0",
+        "eslint": "^9.39.1",
+        "fastest-levenshtein": "^1.0.16",
+        "npm-run-all": "^4.1.5",
+        "prettier": "^3.8.1",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.48.1"
+    },
+    "dependencies": {
+        "@microsoft/tiktokenizer": "^1.0.10",
+        "highlight.js": "^11.11.1",
+        "lit": "^3.3.2",
+        "markdown-it": "^14.1.0",
+        "node-fetch": "^3.3.2",
+        "ollama": "^0.6.3",
+        "openai": "^6.18.0"
+    }
+}
