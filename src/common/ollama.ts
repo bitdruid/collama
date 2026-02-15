@@ -30,7 +30,6 @@ export async function requestCompletion(context: Context): Promise<string> {
             apiEndpoint: { url: userConfig.apiEndpointCompletion, bearer: await getBearerCompletion() },
             model: userConfig.apiModelCompletion,
             prompt: modelConfig.prompt,
-            think: false,
             options: buildCompletionOptions(),
             stop: buildCompletionStop(modelConfig.stop),
         });
@@ -57,10 +56,10 @@ async function requestContextCommand(promptParams: PromptParams): Promise<string
         prompt = contextCommand_noThink_Template(promptParams);
     }
     const clientFactory = new LlmClientFactory("instruction");
-    const result = await clientFactory.generate({
+    const result = await clientFactory.chat({
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
-        prompt: prompt,
+        messages: [{ role: "user", content: prompt }],
         think: think,
         options: buildInstructionOptions(),
         stop: emptyStop(),

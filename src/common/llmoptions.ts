@@ -71,7 +71,6 @@ export interface LlmGenerateSettings {
     };
     model: string;
     prompt: string;
-    think: boolean;
     options: Options;
     stop: Stop;
 }

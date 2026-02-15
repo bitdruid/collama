@@ -89,10 +89,10 @@ export async function generateCommitMessage(stagedDiff: string): Promise<string>
     logMsg("Generating commit message...");
 
     const clientFactory = new LlmClientFactory("instruction");
-    const result = await clientFactory.generate({
+    const result = await clientFactory.chat({
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
-        prompt: commitMsgCommand_Template({ diff: stagedDiff }),
+        messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
         options: buildCommitOptions(),
         stop: emptyStop(),
         think: false,

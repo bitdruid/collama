@@ -92,7 +92,7 @@ export async function proxyFetch(input: string | URL | Request, init?: RequestIn
  */
 export function requestOllama(url: string, bearer?: string): Ollama {
     const ollama = new Ollama({
-        ...(bearer ? { headers: { Authorization: `Bearer ` } } : {}),
+        ...(bearer ? { headers: { Authorization: `Bearer ${bearer}` } } : {}),
         host: url,
         fetch: proxyFetch as typeof fetch,
     });
