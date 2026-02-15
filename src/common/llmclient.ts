@@ -139,7 +139,7 @@ class OllamaClient implements LlmClient {
                     onChunk?.(chunk);
                 }
             }
-            return result;
+            return cleanupResult(result, 0, options);
         } catch (err) {
             return handleError(err);
         }
@@ -154,19 +154,19 @@ class OllamaClient implements LlmClient {
      */
     async generate(settings: LlmGenerateSettings): Promise<string> {
         try {
-            const { apiEndpoint, model, prompt, think, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, think, options, stop, prompt);
+            const { apiEndpoint, model, prompt, options, stop } = settings;
+            logRequest(apiEndpoint.url, model, false, options, stop, prompt);
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
-            const response = await ollama.chat({
+            const response = await ollama.generate({
                 model: model,
-                messages: [{ role: "user", content: prompt }],
-                think: think,
+                prompt: prompt,
+                raw: true,
                 stream: false,
                 options: { ...options, stop: buildStopTokens(stop) },
             });
 
-            const result = response.message.content ?? "";
+            const result = response.response ?? "";
             const resultTokens = response.eval_count ?? 0;
             logPerformance(resultTokens, response.eval_duration ?? 0, result);
 
@@ -199,6 +199,7 @@ class OpenAiClient implements LlmClient {
                 model: model,
                 messages: messages,
                 //think: think, - not supported by openai
+                //raw: raw, - not supported by openai
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
@@ -212,7 +213,7 @@ class OpenAiClient implements LlmClient {
                     onChunk?.(chunk);
                 }
             }
-            return result;
+            return cleanupResult(result, 0, options);
         } catch (err) {
             return handleError(err);
         }
@@ -227,20 +228,21 @@ class OpenAiClient implements LlmClient {
      */
     async generate(settings: LlmGenerateSettings): Promise<string> {
         try {
-            const { apiEndpoint, model, prompt, think, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, think, options, stop, prompt);
+            const { apiEndpoint, model, prompt, options, stop } = settings;
+            logRequest(apiEndpoint.url, model, false, options, stop, prompt);
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
-            const response = await openai.chat.completions.create({
+            const response = await openai.completions.create({
                 model: model,
-                messages: [{ role: "user", content: prompt }],
+                prompt: prompt,
                 //think: think, - not supported by openai
+                //raw: raw, - not supported by openai
                 stream: false,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
             });
 
-            const result = response.choices[0]?.message?.content ?? "";
+            const result = response.choices[0]?.text ?? "";
             const resultTokens = response.usage?.total_tokens ?? 0;
             const resultDurationNano =
                 (response.created ? Date.now() - new Date(response.created * 1_000).getTime() : 0) *

@@ -3,6 +3,11 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-02-15
+
+### Fixed
+- Auto-Completion did not use "raw" on ollama
+
 ## [1.2.0] - 2026-02-12
 
 ### Added

@@ -6,7 +6,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "engines": {
         "vscode": "^1.107.0"
     },
@@ -33,7 +33,7 @@
                 },
                 "collama.apiModelCompletion": {
                     "type": "string",
-                    "default": "qwen2.5-coder:3b-instruct",
+                    "default": "qwen2.5-coder:3b",
                     "description": "Model for autocomplete."
                 },
                 "collama.apiModelInstruct": {
