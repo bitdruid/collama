@@ -3,6 +3,13 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-02-16
+
+### Changed
+- Metrics output for openai (channel)
+- Warning if the output of an edit-command reached the token-limit
+- Finetuning of request-parameters
+
 ## [1.2.1] - 2026-02-15
 
 ### Fixed

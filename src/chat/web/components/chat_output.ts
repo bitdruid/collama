@@ -336,7 +336,11 @@ export class ChatOutput extends LitElement {
                         <div class="bubble ${msg.role === "user" ? "bubble-user" : ""}">
                             <div class="role-header ${msg.role === "user" ? "role-user" : "role-assistant"}">
                                 <span class="role-label"
-                                    >${isOutOfContext ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>` : ""}${msg.role === "user" ? "User" : "Assistant"}</span
+                                    >${isOutOfContext
+                                        ? html`<span class="warning-icon" title="Not in context"
+                                              >${icons.alertTriangle}</span
+                                          >`
+                                        : ""}${msg.role === "user" ? "User" : "Assistant"}</span
                                 >
                                 ${msg.role === "user"
                                     ? html`
@@ -351,7 +355,9 @@ export class ChatOutput extends LitElement {
                                               <button
                                                   class="delete-button"
                                                   @click=${() => this._handleDelete(index)}
-                                                  title="Delete this message pair (~${this._estimateTokensFreed(index)} tokens freed)"
+                                                  title="Delete this message pair (~${this._estimateTokensFreed(
+                                                      index,
+                                                  )} tokens freed)"
                                               >
                                                   ✕ Delete
                                               </button>

@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
-import { registerGenerateCommitMessageCommand } from "./commit/subscriptions";
 import { registerChatProvider, registerSendToChatCommand } from "./chat/subscriptions";
+import { registerGenerateCommitMessageCommand } from "./commit/subscriptions";
 import { updateVSConfig } from "./config";
 import {
     registerEditManualCommand,
@@ -12,7 +12,7 @@ import {
     registerWriteDocstringsCommand,
 } from "./context/subscriptions";
 import { logMsg } from "./logging";
-import { initSecrets, commandSetBearerCompletion, commandSetBearerInstruct } from "./secrets";
+import { commandSetBearerCompletion, commandSetBearerInstruct, initSecrets } from "./secrets";
 import { setStatusbar } from "./statusbar";
 
 /**

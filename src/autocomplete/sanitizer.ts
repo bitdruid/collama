@@ -1,7 +1,7 @@
 import { distance } from "fastest-levenshtein";
 
-import { Context } from "../common/context";
 import { isFullLineComment } from "../common/comments";
+import { Context } from "../common/context";
 import { logMsg } from "../logging";
 
 export class Sanitizer {
