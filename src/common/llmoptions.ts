@@ -145,8 +145,7 @@ export function buildCompletionStop(modelStop: string[]): Stop {
 
 /**
  * Build completion options for the active completion model.
- * @param {string} model - The model identifier.
- * @returns {Promise<Options>} The completion options.
+ * @returns {Options} The completion options.
  */
 export function buildCompletionOptions(): Options {
     return {
@@ -160,30 +159,28 @@ export function buildCompletionOptions(): Options {
 
 /**
  * Build instruction options for the active instruction model.
- * @param {string} model - The model identifier.
- * @returns {Promise<Options>} The instruction options.
+ * @returns {Options} The instruction options.
  */
 export function buildInstructionOptions(): Options {
     return {
-        num_predict: 4096,
+        num_predict: 8192,
         num_ctx: sysConfig.contextLenInstruct,
         temperature: 0.8,
-        top_p: 0.8,
-        top_k: 20,
+        top_p: 0.95,
+        top_k: 40,
     };
 }
 
 /**
  * Build commit options for commit message generation.
- * @param {string} model - The model identifier.
- * @returns {Promise<Options>} The commit options.
+ * @returns {Options} The commit options.
  */
 export function buildCommitOptions(): Options {
     return {
-        num_predict: 4096,
+        num_predict: 8192,
         num_ctx: sysConfig.contextLenInstruct,
         temperature: 0.3,
-        top_p: 0.9,
+        top_p: 0.95,
         top_k: 40,
     };
 }

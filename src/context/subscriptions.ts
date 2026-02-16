@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import { Context } from "../common/context";
 import {
     requestEditManual,
     requestExtractFunctions,
@@ -7,9 +8,7 @@ import {
     requestSimplifyCode,
     requestWriteDocstrings,
 } from "../common/ollama";
-import { Context } from "../common/context";
 import { withProgressNotification } from "../common/utils";
-import { logMsg } from "../logging";
 import { registerContextCommand } from "./utils";
 
 /**
@@ -97,6 +96,10 @@ export async function handleSelectionWithDiff(callback: (currentContext: Context
                     const edit = new vscode.WorkspaceEdit();
                     edit.replace(currentContext.textEditor.document.uri, currentContext.selectionObject, editedText);
                     await vscode.workspace.applyEdit(edit);
+                    vscode.window.showInformationMessage("Changes applied.");
+                }
+                if (applyChoice === "Cancel") {
+                    vscode.window.showInformationMessage("Changes discarded.");
                 }
                 // only close the active tab if it is still the diff preview
                 const activeEditor = vscode.window.activeTextEditor;
@@ -114,8 +117,8 @@ export async function handleSelectionWithDiff(callback: (currentContext: Context
                 const edit = new vscode.WorkspaceEdit();
                 edit.replace(currentContext.textEditor.document.uri, currentContext.selectionObject, editedText);
                 await vscode.workspace.applyEdit(edit);
+                vscode.window.showInformationMessage("Changes applied.");
             }
-            vscode.window.showInformationMessage("Changes applied.");
         } else {
             vscode.window.showInformationMessage("No changes to apply.");
         }

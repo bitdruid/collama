@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 
+import { LlmClientFactory } from "../common/llmclient";
 import { buildCommitOptions, emptyStop } from "../common/llmoptions";
 import { commitMsgCommand_Template } from "../common/prompt";
 import { withProgressNotification } from "../common/utils";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import { LlmClientFactory } from "../common/llmclient";
 
 // Type definitions for the Git extension API
 interface GitExtension {

@@ -4,8 +4,8 @@ import { LlmClient, Options, Stop } from "./llmoptions";
 import { RequestType, sysConfig } from "../config";
 import { logMsg } from "../logging";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
-import Tokenizer, { requestOllama, requestOpenAI } from "./utils";
 import { checkPredictFitsContextLength } from "./models";
+import Tokenizer, { requestOllama, requestOpenAI } from "./utils";
 
 /**
  * Factory that creates and delegates to the appropriate LLM client implementation
@@ -132,14 +132,20 @@ class OllamaClient implements LlmClient {
             });
 
             let result = "";
+            let resultTokens = 0;
             for await (const part of stream) {
                 const chunk = part.message.content ?? "";
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
+                if (part.done) {
+                    const resultTokens = part.prompt_eval_count ?? 0;
+                    const resultDurationNano = part.eval_duration ?? 0;
+                    logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
+                }
             }
-            return cleanupResult(result, 0, options);
+            return cleanupResult(result, resultTokens, options);
         } catch (err) {
             return handleError(err);
         }
@@ -158,6 +164,7 @@ class OllamaClient implements LlmClient {
             logRequest(apiEndpoint.url, model, false, options, stop, prompt);
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
+
             const response = await ollama.generate({
                 model: model,
                 prompt: prompt,
@@ -168,7 +175,8 @@ class OllamaClient implements LlmClient {
 
             const result = response.response ?? "";
             const resultTokens = response.eval_count ?? 0;
-            logPerformance(resultTokens, response.eval_duration ?? 0, result);
+            const resultDurationNano = response.eval_duration ?? 0;
+            logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
 
             return cleanupResult(result, resultTokens, options);
         } catch (err) {
@@ -195,6 +203,8 @@ class OpenAiClient implements LlmClient {
             logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
+
+            const startTime = process.hrtime.bigint();
             const stream = await openai.chat.completions.create({
                 model: model,
                 messages: messages,
@@ -203,17 +213,26 @@ class OpenAiClient implements LlmClient {
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
+                stream_options: { include_usage: true },
             });
 
             let result = "";
+            let resultTokens = 0;
+
             for await (const part of stream) {
                 const chunk = part.choices[0]?.delta?.content;
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
+                if (part.usage) {
+                    const endTime = process.hrtime.bigint();
+                    const resultTokens = part.usage.completion_tokens ?? 0;
+                    const resultDurationNano = endTime - startTime;
+                    logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
+                }
             }
-            return cleanupResult(result, 0, options);
+            return cleanupResult(result, resultTokens, options);
         } catch (err) {
             return handleError(err);
         }
@@ -232,6 +251,8 @@ class OpenAiClient implements LlmClient {
             logRequest(apiEndpoint.url, model, false, options, stop, prompt);
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
+
+            const startTime = process.hrtime.bigint();
             const response = await openai.completions.create({
                 model: model,
                 prompt: prompt,
@@ -241,13 +262,12 @@ class OpenAiClient implements LlmClient {
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
             });
+            const endTime = process.hrtime.bigint();
 
             const result = response.choices[0]?.text ?? "";
             const resultTokens = response.usage?.total_tokens ?? 0;
-            const resultDurationNano =
-                (response.created ? Date.now() - new Date(response.created * 1_000).getTime() : 0) *
-                1_000_000; /* milliseconds to nanoseconds */
-            logPerformance(resultTokens, resultDurationNano, result);
+            const resultDurationNano = endTime - startTime;
+            logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
 
             return cleanupResult(result, resultTokens, options);
         } catch (err) {
@@ -264,11 +284,16 @@ function logRequest(url: string, model: string, think: boolean, options: Options
     logMsg(`Input:\n${input}`);
 }
 
-function logPerformance(resultTokens: number, resultDurationNano: number, result: string): void {
+function logPerformance(tokenLimit: number, resultTokens: number, resultDurationNano: number, result: string): void {
     const resultDuration = (resultDurationNano / 1_000_000_000).toFixed(3);
     const resultTPS = resultDurationNano > 0 ? (resultTokens / (resultDurationNano / 1_000_000_000)).toFixed(1) : "0";
-    logMsg(`Receive: tokens [${resultTokens}]; duration seconds [${resultDuration}]; tokens/sec [${resultTPS}]`);
     logMsg(`Output:\n${result}`);
+    logMsg(`Receive: tokens [${resultTokens}]; duration seconds [${resultDuration}]; tokens/sec [${resultTPS}]`);
+    if (tokenLimit === resultTokens) {
+        const msg = "WARNING: Output token limit reached - Reduce input?";
+        logMsg(msg);
+        vscode.window.showWarningMessage(msg);
+    }
 }
 
 function handleError(err: unknown): never {

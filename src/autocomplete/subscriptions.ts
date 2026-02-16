@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 
-import { checkupModel } from "./checkup";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
+import { checkupModel } from "./checkup";
 import { Completion } from "./completion";
 
 let debounceTimer: NodeJS.Timeout | undefined;
