@@ -163,7 +163,7 @@ export function buildCompletionOptions(): Options {
  */
 export function buildInstructionOptions(): Options {
     return {
-        num_predict: 8192,
+        num_predict: 16384,
         num_ctx: sysConfig.contextLenInstruct,
         temperature: 0.8,
         top_p: 0.95,
@@ -177,7 +177,7 @@ export function buildInstructionOptions(): Options {
  */
 export function buildCommitOptions(): Options {
     return {
-        num_predict: 8192,
+        num_predict: 16384,
         num_ctx: sysConfig.contextLenInstruct,
         temperature: 0.3,
         top_p: 0.95,
