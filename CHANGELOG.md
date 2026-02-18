@@ -3,6 +3,14 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-02-16
+
+### Added
+- Edit-Message button into chat
+
+### Changed
+- vscode engine to 1.109.0
+
 ## [1.2.2] - 2026-02-16
 
 ### Changed

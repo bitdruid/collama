@@ -2,9 +2,10 @@ import { LitElement, css, html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import MarkdownIt from "markdown-it";
 
-import { estimateTokenCount, highlightAllCodeBlocks, hljsStyles, icons } from "../../utils";
-import "./chat_accordion";
-import { ChatContext, ChatMessage } from "./chat_container";
+import { estimateTokenCount, highlightAllCodeBlocks, hljsStyles, icons } from "../../../utils";
+import "../chat_accordion";
+import "./edit";
+import { ChatContext, ChatMessage } from "../chat_container";
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.
@@ -33,6 +34,7 @@ export class ChatOutput extends LitElement {
     static properties = {
         messages: { state: true },
         contextStartIndex: { type: Number },
+        editingIndex: { state: true },
     };
 
     static styles = [
@@ -128,6 +130,25 @@ export class ChatOutput extends LitElement {
                 background: rgba(255, 80, 80, 0.5);
             }
 
+            .edit-button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2px 6px;
+                border: none;
+                border-radius: 4px;
+                background: transparent;
+                color: #fff;
+                font-size: 11px;
+                cursor: pointer;
+                opacity: 1;
+                transition: background 0.15s;
+            }
+
+            .edit-button:hover {
+                background: rgba(255, 255, 255, 0.4);
+            }
+
             .role-user {
                 background-color: #2277a8;
             }
@@ -215,6 +236,7 @@ export class ChatOutput extends LitElement {
 
     messages: ChatMessage[] = [];
     contextStartIndex: number = 0;
+    editingIndex: number | null = null;
     private loadingTimeouts = new Map<ChatMessage, number>();
     private highlightedBlocks = new WeakSet<Element>();
     private renderedMarkdownCache = new Map<string, string>();
@@ -296,6 +318,25 @@ export class ChatOutput extends LitElement {
         );
     }
 
+    private _handleEdit(index: number) {
+        this.editingIndex = index;
+    }
+
+    private _handleEditCancel() {
+        this.editingIndex = null;
+    }
+
+    private _handleEditSend(e: CustomEvent) {
+        this.editingIndex = null;
+        this.dispatchEvent(
+            new CustomEvent("edit-message", {
+                detail: e.detail,
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    }
+
     private _getMessageWithoutContext(msg: ChatMessage): string {
         // If message has contexts, extract just the user's text (after all code blocks)
         if (msg.contexts && msg.contexts.length > 0) {
@@ -346,6 +387,13 @@ export class ChatOutput extends LitElement {
                                     ? html`
                                           <div class="message-actions">
                                               <button
+                                                  class="edit-button"
+                                                  @click=${() => this._handleEdit(index)}
+                                                  title="Edit and resend"
+                                              >
+                                                  ✎ Edit
+                                              </button>
+                                              <button
                                                   class="resend-button"
                                                   @click=${() => this._handleResend(index)}
                                                   title="Resend from here"
@@ -366,9 +414,18 @@ export class ChatOutput extends LitElement {
                                     : ""}
                             </div>
                             ${msg.contexts && msg.contexts.length > 0 ? this._renderContexts(msg.contexts) : ""}
-                            ${msg.loading
-                                ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
-                                : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
+                            ${this.editingIndex === index
+                                ? html`
+                                      <collama-chatedit
+                                          .content=${displayContent}
+                                          .messageIndex=${index}
+                                          @edit-send=${(e: CustomEvent) => this._handleEditSend(e)}
+                                          @edit-cancel=${() => this._handleEditCancel()}
+                                      ></collama-chatedit>
+                                  `
+                                : msg.loading
+                                  ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
+                                  : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
                         </div>
                     </div>
                 `;
