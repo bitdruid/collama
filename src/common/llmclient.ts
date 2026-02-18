@@ -119,13 +119,14 @@ class OllamaClient implements LlmClient {
      */
     async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
         try {
-            const { apiEndpoint, model, messages, think, options, stop } = settings;
+            const { apiEndpoint, model, messages, tools, think, options, stop } = settings;
             logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
             const stream = await ollama.chat({
                 model: model,
                 messages: messages,
+                tools: tools,
                 think: think,
                 stream: true,
                 options: { ...options, stop: buildStopTokens(stop) },
@@ -199,7 +200,7 @@ class OpenAiClient implements LlmClient {
      */
     async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
         try {
-            const { apiEndpoint, model, messages, think, options, stop } = settings;
+            const { apiEndpoint, model, messages, tools, think, options, stop } = settings;
             logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
@@ -208,6 +209,7 @@ class OpenAiClient implements LlmClient {
             const stream = await openai.chat.completions.create({
                 model: model,
                 messages: messages,
+                tools: tools,
                 //think: think, - not supported by openai
                 //raw: raw, - not supported by openai
                 stream: true,

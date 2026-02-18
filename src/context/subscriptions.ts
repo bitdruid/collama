@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { Context } from "../common/context";
+import { Context } from "../common/context_editor";
 import {
     requestEditManual,
     requestExtractFunctions,

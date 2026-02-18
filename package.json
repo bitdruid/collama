@@ -209,11 +209,12 @@
     "dependencies": {
         "@microsoft/tiktokenizer": "^1.0.10",
         "highlight.js": "^11.11.1",
+        "ignore": "^7.0.5",
         "lit": "^3.3.2",
         "markdown-it": "^14.1.1",
+        "micromatch": "^4.0.8",
         "node-fetch": "^3.3.2",
         "ollama": "^0.6.3",
-        "openai": "^6.22.0",
-        "zod": "^4.3.6"
+        "openai": "^6.22.0"
     }
 }

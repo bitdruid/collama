@@ -49,6 +49,7 @@ export interface LlmChatSettings {
     };
     model: string;
     messages: any[];
+    tools: any[];
     think: boolean;
     options: Options;
     stop: Stop;
