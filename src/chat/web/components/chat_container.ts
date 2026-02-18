@@ -2,7 +2,7 @@ import { LitElement, css, html } from "lit";
 
 import { estimateTokenCount } from "../../utils";
 import "./chat_input";
-import "./chat_output";
+import "./chat_output/output";
 import "./chat_sessions";
 import { ChatSession } from "./chat_sessions";
 
@@ -214,6 +214,48 @@ export class ChatContainer extends LitElement {
         });
     }
 
+    private _onEditMessage(e: CustomEvent) {
+        const { messageIndex, newContent } = e.detail;
+        const userMessage = this.messages[messageIndex];
+        if (!userMessage || userMessage.role !== "user") {
+            return;
+        }
+
+        // Rebuild content: re-embed contexts if present, then the new user text
+        let updatedContent = newContent;
+        if (userMessage.contexts && userMessage.contexts.length > 0) {
+            const contextBlocks = userMessage.contexts
+                .map((ctx) => {
+                    const contextLabel = ctx.hasSelection
+                        ? `${ctx.fileName} (${ctx.startLine}-${ctx.endLine})`
+                        : ctx.fileName;
+                    return `${contextLabel}\n\`\`\`\n${ctx.content}\n\`\`\``;
+                })
+                .join("\n\n");
+            updatedContent = `${contextBlocks}\n\n${newContent}`;
+        }
+
+        // Truncate and resend with edited content
+        const truncatedMessages = this.messages.slice(0, messageIndex);
+        const editedMessage: ChatMessage = {
+            role: "user",
+            content: updatedContent,
+            contexts: userMessage.contexts,
+        };
+        const assistantIndex = truncatedMessages.length + 1;
+
+        this.messages = [...truncatedMessages, editedMessage, { role: "assistant", content: "", loading: true }];
+
+        logWebview(`Editing and resending message ${messageIndex}`);
+
+        window.vscode.postMessage({
+            type: "chat-request",
+            messages: this.messages,
+            assistantIndex,
+            sessionId: this.activeSessionId,
+        });
+    }
+
     private _onDeleteMessage(e: CustomEvent) {
         const messageIndex = e.detail.messageIndex;
         const userMessage = this.messages[messageIndex];
@@ -377,6 +419,7 @@ export class ChatContainer extends LitElement {
                     .messages=${this.messages}
                     .contextStartIndex=${this.contextStartIndex}
                     @resend-message=${this._onResendMessage}
+                    @edit-message=${this._onEditMessage}
                     @delete-message=${this._onDeleteMessage}
                 ></collama-chatoutput>
                 <collama-chatinput
