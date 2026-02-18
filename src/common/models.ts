@@ -2,7 +2,7 @@ import { Ollama } from "ollama";
 
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
-import { Context, OpenFilesContext } from "./context";
+import { Context, OpenFilesContext } from "./context_editor";
 
 /**
  * Configuration for a supported model, including its name patterns,

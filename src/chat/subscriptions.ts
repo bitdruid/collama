@@ -1,24 +1,19 @@
 import * as vscode from "vscode";
 
-import { Context } from "../common/context";
-import { LlmClientFactory } from "../common/llmclient";
-import { buildInstructionOptions, emptyStop } from "../common/llmoptions";
-import { checkPredictFitsContextLength, getModelThinking } from "../common/models";
+import { Agent } from "../agent/agent";
+import { ChatHistory } from "../common/context_chat";
+import { Context } from "../common/context_editor";
+import { buildInstructionOptions } from "../common/llmoptions";
+import { checkPredictFitsContextLength } from "../common/models";
 import Tokenizer from "../common/utils";
-import { sysConfig, userConfig } from "../config";
+import { sysConfig } from "../config";
 import { logMsg } from "../logging";
-import { getBearerInstruct } from "../secrets";
 import { mapSessionsToSummaries } from "./utils";
 import { StartPage } from "./web/components/chat_start";
 
 let panel: ChatPanel | null = null;
 const CHAT_SESSIONS_KEY = "collama.chatSessions";
 const ACTIVE_SESSION_KEY = "collama.activeSessionId";
-
-export interface ChatHistory {
-    role: "system" | "user" | "assistant";
-    content: string;
-}
 
 export interface ChatSession {
     id: string;
@@ -385,29 +380,19 @@ class ChatPanel {
                     );
                 }
 
-                const clientFactory = new LlmClientFactory("instruction");
-                await clientFactory.chat(
-                    {
-                        apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
-                        model: userConfig.apiModelInstruct,
-                        messages: trimmedMessages,
-                        options,
-                        stop: emptyStop(),
-                        think: await getModelThinking(userConfig.apiModelInstruct),
-                    },
-                    (chunk) => {
-                        if (session) {
-                            session.messages[assistantIndex].content += chunk;
-                            session.updatedAt = Date.now();
-                            this.saveSessions();
-                        }
-                        webview.postMessage({
-                            type: "chunk",
-                            index: assistantIndex,
-                            chunk,
-                        });
-                    },
-                );
+                const agent = new Agent();
+                await agent.work(trimmedMessages, async (chunk) => {
+                    if (session) {
+                        session.messages[assistantIndex].content += chunk;
+                        session.updatedAt = Date.now();
+                        this.saveSessions();
+                    }
+                    webview.postMessage({
+                        type: "chunk",
+                        index: assistantIndex,
+                        chunk,
+                    });
+                });
 
                 // Update sessions list after response completes
                 this.sendSessionsUpdate();

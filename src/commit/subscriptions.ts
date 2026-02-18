@@ -93,6 +93,7 @@ export async function generateCommitMessage(stagedDiff: string): Promise<string>
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
         messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
+        tools: [],
         options: buildCommitOptions(),
         stop: emptyStop(),
         think: false,
