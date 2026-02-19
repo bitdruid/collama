@@ -1,11 +1,10 @@
-import * as vscode from "vscode";
 import { ChatHistory } from "../common/context_chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildInstructionOptions, emptyStop } from "../common/llmoptions";
 import { getModelThinking } from "../common/models";
 import { userConfig } from "../config";
 import { getBearerInstruct } from "../secrets";
-import { getRepoTree } from "./tools";
+import { getToolDefinitions } from "./tools";
 
 export class Agent {
     // private context: Context | null = null;
@@ -26,7 +25,7 @@ export class Agent {
                 apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
                 model: userConfig.apiModelInstruct,
                 messages: messages,
-                tools: [getRepoTree],
+                tools: getToolDefinitions(),
                 options: buildInstructionOptions(),
                 stop: emptyStop(),
                 think: await getModelThinking(userConfig.apiModelInstruct),
@@ -34,14 +33,4 @@ export class Agent {
             (chunk) => onChunk(chunk),
         );
     }
-}
-
-function getWorkspaceRoot(): string | null {
-    const folders = vscode.workspace.workspaceFolders;
-
-    if (!folders || folders.length === 0) {
-        return null;
-    }
-
-    return folders[0].uri.fsPath;
 }
