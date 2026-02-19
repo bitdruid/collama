@@ -14,15 +14,15 @@ import { sysConfig, userConfig } from "../config";
  * The `LlmChatSettings` and `LlmGenerateSettings` types are defined in
  * `llmoptions.ts`.  They already contain everything the provider needs
  * (endpoint, model, options, stop tokens, etc.).
- */
+ **/
 export interface LlmClient {
     /**
      * Sends a chat request to the underlying LLM.
      *
      * @param settings - Full chat request configuration.
-     * @returns The assistant’s reply as a string.
+     * @returns The assistant’s reply and any tool calls it made.
      */
-    chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string>;
+    chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult>;
     /**
      * Sends a generation request to the underlying LLM.
      *
@@ -30,6 +30,20 @@ export interface LlmClient {
      * @returns The raw generated text.
      */
     generate(settings: LlmGenerateSettings): Promise<string>;
+}
+
+export interface ChatResult {
+    content: string;
+    toolCalls: ToolCall[];
+}
+
+export interface ToolCall {
+    id: string;
+    type: "function";
+    function: {
+        name: string;
+        arguments: string;
+    };
 }
 
 /**
@@ -49,7 +63,7 @@ export interface LlmChatSettings {
     };
     model: string;
     messages: any[];
-    tools: any[];
+    tools?: any[]; // only set by the agent; omit for all other callers
     think: boolean;
     options: Options;
     stop: Stop;

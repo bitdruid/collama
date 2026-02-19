@@ -93,17 +93,16 @@ export async function generateCommitMessage(stagedDiff: string): Promise<string>
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
         messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
-        tools: [],
         options: buildCommitOptions(),
         stop: emptyStop(),
         think: false,
     });
 
-    if (!result) {
+    if (!result.content) {
         logMsg("Warning: LLM returned empty commit message");
         return "chore: update files";
     }
 
-    logMsg(`Generated commit message: ${result.substring(0, 50)}...`);
-    return result;
+    logMsg(`Generated commit message: ${result.content.substring(0, 50)}...`);
+    return result.content;
 }

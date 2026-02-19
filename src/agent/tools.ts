@@ -1,5 +1,4 @@
 import fs from "fs";
-import Ignore from "ignore";
 import path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
@@ -61,28 +60,53 @@ export const getRepoTree_def = {
     type: "function" as const,
     function: {
         name: "getRepoTree",
-        description: "Get the folder structure of the current workspace.",
-        parameters: {},
+        description:
+            "List the contents of a directory in the workspace. No path lists the workspace root. Use depth > 1 to recurse.",
+        parameters: {
+            type: "object",
+            properties: {
+                path: {
+                    type: "string",
+                    description: "Relative path to list (e.g. 'src/components'). Omit for the workspace root.",
+                },
+                depth: {
+                    type: "number",
+                    description: "How many levels deep to recurse. Defaults to 1 (immediate children only).",
+                },
+            },
+        },
     },
 };
-async function getRepoTree_exec(): Promise<string> {
-    logMsg(`Agent - tool use getRepoTree`);
-    const ignore = Ignore();
+
+function listDir(dir: string, depth: number): string[] {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const result: string[] = [];
+    for (const entry of entries) {
+        result.push(entry.isDirectory() ? `${entry.name}/` : entry.name);
+        if (entry.isDirectory() && depth > 1) {
+            listDir(path.join(dir, entry.name), depth - 1).forEach((child) => result.push(`${entry.name}/${child}`));
+        }
+    }
+    return result;
+}
+
+async function getRepoTree_exec(args: { path?: string; depth?: number }): Promise<string> {
+    logMsg(
+        `Agent - tool use getRepoTree${args.path ? ` path=${args.path}` : ""}${args.depth ? ` depth=${args.depth}` : ""}`,
+    );
     const root = getWorkspaceRoot();
 
     if (!root) {
         return JSON.stringify({ files: [], root: null });
     }
 
-    const ignorePath = path.join(root, ".gitignore");
-    if (fs.existsSync(ignorePath)) {
-        ignore.add(fs.readFileSync(ignorePath, "utf-8"));
+    const target = args.path ? path.join(root, args.path) : root;
+    if (!fs.existsSync(target)) {
+        throw new Error(`Path not found: ${args.path}`);
     }
 
-    const allFiles = fs.readdirSync(root);
-    const filteredFiles = allFiles.filter((f) => !ignore.ignores(f));
-
-    return JSON.stringify({ files: filteredFiles, root });
+    const files = listDir(target, args.depth ?? 1);
+    return JSON.stringify({ files, path: args.path ?? "/", depth: args.depth ?? 1 });
 }
 
 export const readFile_def = {
