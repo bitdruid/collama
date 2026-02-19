@@ -60,13 +60,12 @@ async function requestContextCommand(promptParams: PromptParams): Promise<string
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
         messages: [{ role: "user", content: prompt }],
-        tools: [],
         think: think,
         options: buildInstructionOptions(),
         stop: emptyStop(),
     });
 
-    return result;
+    return result.content;
 }
 
 /**

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { LlmClient, Options, Stop } from "./llmoptions";
+import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
 import { RequestType, sysConfig } from "../config";
 import { logMsg } from "../logging";
@@ -33,7 +33,7 @@ export class LlmClientFactory implements LlmClient {
         }
     }
 
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         if (!this.factoryClient) {
             throw new Error("LLM client not initialized");
         }
@@ -117,9 +117,9 @@ class OllamaClient implements LlmClient {
      * @param onChunk - Optional callback invoked for each chunk of the streamed response.
      * @returns The accumulated full response string.
      */
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, tools, think, options, stop } = settings;
+            const { apiEndpoint, model, messages, tools = [], think, options, stop } = settings;
             logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
@@ -134,19 +134,30 @@ class OllamaClient implements LlmClient {
 
             let result = "";
             let resultTokens = 0;
+            const toolCalls: ToolCall[] = [];
             for await (const part of stream) {
                 const chunk = part.message.content ?? "";
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
+
+                if (part.message.tool_calls) {
+                    for (const tc of part.message.tool_calls) {
+                        toolCalls.push({
+                            id: `call_${toolCalls.length}`,
+                            type: "function",
+                            function: { name: tc.function.name, arguments: JSON.stringify(tc.function.arguments) },
+                        });
+                    }
+                }
                 if (part.done) {
-                    const resultTokens = part.prompt_eval_count ?? 0;
+                    resultTokens = part.prompt_eval_count ?? 0;
                     const resultDurationNano = part.eval_duration ?? 0;
                     logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
                 }
             }
-            return cleanupResult(result, resultTokens, options);
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
         } catch (err) {
             return handleError(err);
         }
@@ -198,9 +209,9 @@ class OpenAiClient implements LlmClient {
      * @param onChunk - Optional callback invoked for each chunk of the streamed response.
      * @returns The accumulated full response string.
      */
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, tools, think, options, stop } = settings;
+            const { apiEndpoint, model, messages, tools = [], think, options, stop } = settings;
             logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
@@ -221,20 +232,47 @@ class OpenAiClient implements LlmClient {
             let result = "";
             let resultTokens = 0;
 
+            const deltaToolCall: Record<number, { id: string; name: string; argumentsStr: string }> = {};
+
             for await (const part of stream) {
-                const chunk = part.choices[0]?.delta?.content;
+                const delta = part.choices[0]?.delta;
+                const chunk = delta?.content;
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
+                // tool call id + name + arguments arrive in separate deltas
+                if (delta?.tool_calls) {
+                    for (const tc of delta.tool_calls) {
+                        if (!deltaToolCall[tc.index]) {
+                            deltaToolCall[tc.index] = { id: "", name: "", argumentsStr: "" };
+                        }
+                        if (tc.id) {
+                            deltaToolCall[tc.index].id = tc.id;
+                        }
+                        if (tc.function?.name) {
+                            deltaToolCall[tc.index].name += tc.function.name;
+                        }
+                        if (tc.function?.arguments) {
+                            deltaToolCall[tc.index].argumentsStr += tc.function.arguments;
+                        }
+                    }
+                }
                 if (part.usage) {
                     const endTime = process.hrtime.bigint();
-                    const resultTokens = part.usage.completion_tokens ?? 0;
+                    resultTokens = part.usage.completion_tokens ?? 0;
                     const resultDurationNano = endTime - startTime;
                     logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
                 }
             }
-            return cleanupResult(result, resultTokens, options);
+
+            const toolCalls: ToolCall[] = Object.values(deltaToolCall).map((tc) => ({
+                id: tc.id,
+                type: "function",
+                function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
+            }));
+
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
         } catch (err) {
             return handleError(err);
         }
