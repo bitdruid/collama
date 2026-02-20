@@ -46,13 +46,11 @@ export class Agent {
                 break;
             }
 
-            // Append the assistant message (with its tool_calls) to history.
+            // assistant message (with tool_calls) to history.
             history.push({
                 role: "assistant",
                 content: result.content,
-                tool_calls: result.toolCalls.map((tc) => ({
-                    function: { name: tc.function.name, arguments: JSON.parse(tc.function.arguments) },
-                })),
+                tool_calls: result.toolCalls,
             });
 
             // execute tool, append result to history, stream tool-use into chat
@@ -63,10 +61,16 @@ export class Agent {
 
                 // tool info is streamed as a codeblock into the chat
                 const hasArgs = Object.keys(args).length > 0;
-                const argsBlock = hasArgs ? `\n\`\`\`json\n${JSON.stringify(args, null, 2)}\n\`\`\`` : "";
-                onChunk(`\n**Tool use:** \`${toolCall.function.name}\`${argsBlock}\n\n`);
+                const argsBlock = hasArgs
+                    ? `\n\`\`\`Tool: ${toolCall.function.name}\n${JSON.stringify(args, null, 2)}\n\`\`\``
+                    : "";
+                onChunk(`\n${argsBlock}\n\n`);
 
-                history.push({ role: "tool", content: toolResultStr });
+                history.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: toolResultStr,
+                });
             }
 
             // blank line after tools
