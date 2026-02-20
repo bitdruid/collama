@@ -5,26 +5,29 @@ import { RequestType, sysConfig } from "../config";
 import { logMsg } from "../logging";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
-import Tokenizer, { requestOpenAI } from "./utils";
+import Tokenizer, { requestOllama, requestOpenAI } from "./utils";
 
 /**
  * Factory that creates and delegates to the appropriate LLM client implementation
- * based on the configured backend. All backends use the OpenAI-compatible protocol
- * (Ollama is accessed via its /v1 endpoint).
+ * based on the configured backend. Supports Ollama and OpenAI-compatible endpoints.
  *
  * @implements {LlmClient}
  */
 export class LlmClientFactory implements LlmClient {
-    private factoryClient?: OpenAiClient;
+    private factoryClient?: OllamaClient | OpenAiClient;
 
     constructor(requestType: RequestType) {
         if (requestType === "completion") {
-            if (sysConfig.backendCompletion === "ollama" || sysConfig.backendCompletion === "openai") {
+            if (sysConfig.backendCompletion === "ollama") {
+                this.factoryClient = new OllamaClient();
+            } else if (sysConfig.backendCompletion === "openai") {
                 this.factoryClient = new OpenAiClient();
             }
         }
         if (requestType === "instruction") {
-            if (sysConfig.backendInstruct === "ollama" || sysConfig.backendInstruct === "openai") {
+            if (sysConfig.backendInstruct === "ollama") {
+                this.factoryClient = new OllamaClient();
+            } else if (sysConfig.backendInstruct === "openai") {
                 this.factoryClient = new OpenAiClient();
             }
         }
@@ -103,6 +106,107 @@ function optionsToOpenAI(options: Options): Record<string, any> {
 }
 
 /**
+ * Client implementation for interacting with the Ollama API.
+ * Handles chat completions and prompt generation using the `requestOllama` utility.
+ */
+class OllamaClient implements LlmClient {
+    /**
+     * Streams a chat completion response from Ollama.
+     *
+     * @param settings - Configuration for the chat request (endpoint, model, messages, options).
+     * @param onChunk - Optional callback invoked for each chunk of the streamed response.
+     * @returns The accumulated full response string.
+     */
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+        try {
+            const { apiEndpoint, model, messages, tools = [], options, stop } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
+
+            const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
+            const stream = await ollama.chat({
+                model: model,
+                messages: messages,
+                tools: tools,
+                stream: true,
+                options: { ...options, stop: buildStopTokens(stop) },
+            });
+
+            let result = "";
+            let thinking = "";
+            let resultTokens = 0;
+            const toolCalls: ToolCall[] = [];
+
+            for await (const part of stream) {
+                // thinking content separately
+                if (part.message.thinking) {
+                    thinking += part.message.thinking;
+                    continue;
+                }
+
+                // main content arrives in separate deltas
+                const chunk = part.message.content ?? "";
+                if (chunk) {
+                    result += chunk;
+                    onChunk?.(chunk);
+                }
+
+                // tool calls arrive in separate deltas
+                if (part.message.tool_calls) {
+                    for (const tc of part.message.tool_calls) {
+                        toolCalls.push({
+                            id: `call_${toolCalls.length}`,
+                            type: "function",
+                            function: { name: tc.function.name, arguments: JSON.stringify(tc.function.arguments) },
+                        });
+                    }
+                }
+                if (part.done) {
+                    resultTokens = part.prompt_eval_count ?? 0;
+                    const resultDurationNano = part.eval_duration ?? 0;
+                    logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
+                }
+            }
+            return { content: cleanupResult(result, resultTokens, options), thinking, toolCalls };
+        } catch (err) {
+            return handleError(err);
+        }
+    }
+
+    /**
+     * Generates a completion for a single prompt using the Ollama API.
+     * Performs cleanup on the result (e.g., removing code fences).
+     *
+     * @param settings - Configuration for the generation request (endpoint, model, prompt, options).
+     * @returns The cleaned generated string.
+     */
+    async generate(settings: LlmGenerateSettings): Promise<string> {
+        try {
+            const { apiEndpoint, model, prompt, options, stop } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, prompt);
+
+            const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
+
+            const response = await ollama.generate({
+                model: model,
+                prompt: prompt,
+                raw: true,
+                stream: false,
+                options: { ...options, stop: buildStopTokens(stop) },
+            });
+
+            const result = response.response ?? "";
+            const resultTokens = response.eval_count ?? 0;
+            const resultDurationNano = response.eval_duration ?? 0;
+            logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
+
+            return cleanupResult(result, resultTokens, options);
+        } catch (err) {
+            return handleError(err);
+        }
+    }
+}
+
+/**
  * Client implementation for interacting with OpenAI-compatible APIs.
  * Handles chat completions and prompt generation using the `requestOpenAI` utility.
  */
@@ -133,7 +237,6 @@ class OpenAiClient implements LlmClient {
             });
 
             let result = "";
-            let thinking = "";
             let resultTokens = 0;
 
             const deltaToolCall: Record<number, { id: string; name: string; argumentsStr: string }> = {};
@@ -141,14 +244,10 @@ class OpenAiClient implements LlmClient {
             for await (const part of stream) {
                 const delta = part.choices[0]?.delta;
                 const chunk = delta?.content;
-                const reasoning: string | undefined = (delta as any)?.reasoning;
 
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
-                }
-                if (reasoning) {
-                    thinking += reasoning;
                 }
                 // tool call id + name + arguments arrive in separate deltas
                 if (delta?.tool_calls) {
@@ -189,7 +288,7 @@ class OpenAiClient implements LlmClient {
                 function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
             }));
 
-            return { content: cleanupResult(result, resultTokens, options), thinking, toolCalls };
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
         } catch (err) {
             return handleError(err);
         }
@@ -213,6 +312,7 @@ class OpenAiClient implements LlmClient {
             const response = await openai.completions.create({
                 model: model,
                 prompt: prompt,
+                //raw: raw, - not supported by openai
                 stream: false,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),

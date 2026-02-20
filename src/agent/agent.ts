@@ -1,6 +1,6 @@
 import { ChatHistory } from "../common/context_chat";
 import { LlmClientFactory } from "../common/llmclient";
-import { buildInstructionOptions, emptyStop } from "../common/llmoptions";
+import { buildAgentOptions, buildInstructionOptions, emptyStop } from "../common/llmoptions";
 import { userConfig } from "../config";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions } from "./tools";
@@ -28,7 +28,7 @@ export class Agent {
             apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
             model: userConfig.apiModelInstruct,
             tools: getToolDefinitions(),
-            options: buildInstructionOptions(),
+            options: buildAgentOptions(),
             stop: emptyStop(),
         };
 
@@ -63,7 +63,6 @@ export class Agent {
             for (const toolCall of result.toolCalls) {
                 const args = JSON.parse(toolCall.function.arguments);
                 const toolResult = await executeTool(toolCall.function.name, args);
-                const toolResultStr = JSON.stringify(toolResult);
 
                 // tool info is streamed as a codeblock into the chat
                 const hasArgs = Object.keys(args).length > 0;
@@ -75,7 +74,7 @@ export class Agent {
                 history.push({
                     role: "tool",
                     tool_call_id: toolCall.id,
-                    content: toolResultStr,
+                    content: toolResult,
                 });
             }
 
