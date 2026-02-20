@@ -43,9 +43,15 @@ export function getToolDefinitions() {
 export async function executeTool(name: string, args: unknown) {
     const tool = toolRegistry[name];
     if (!tool) {
-        throw new Error(`Unknown tool: ${name}`);
+        return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
-    return await tool.execute(args);
+    try {
+        return await tool.execute(args);
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        logMsg(`Agent - tool error ${name}: ${msg}`);
+        return JSON.stringify({ error: msg });
+    }
 }
 
 function getWorkspaceRoot(): string | null {
@@ -102,7 +108,7 @@ async function getRepoTree_exec(args: { path?: string; depth?: number }): Promis
 
     const target = args.path ? path.join(root, args.path) : root;
     if (!fs.existsSync(target)) {
-        throw new Error(`Path not found: ${args.path}`);
+        return JSON.stringify({ error: `Path not found: ${args.path}` });
     }
 
     const files = listDir(target, args.depth ?? 1);
@@ -133,7 +139,7 @@ async function readFile_exec(args: { filePath: string; startLine?: number; endLi
 
     const fullPath = path.join(root, args.filePath);
     if (!fs.existsSync(fullPath)) {
-        throw new Error(`File not found: ${args.filePath}`);
+        return JSON.stringify({ error: `File not found: ${args.filePath}` });
     }
 
     let content = fs.readFileSync(fullPath, "utf-8");

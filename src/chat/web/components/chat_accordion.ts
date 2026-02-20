@@ -2,7 +2,7 @@ import { LitElement, css, html } from "lit";
 
 import { highlightCodeBlock, hljsStyles, icons } from "../../utils";
 
-export type AccordionType = "thinking" | "summary" | "code";
+export type AccordionType = "think" | "summary" | "code" | "tool";
 
 export class ChatAccordion extends LitElement {
     static get properties() {
@@ -130,6 +130,10 @@ export class ChatAccordion extends LitElement {
                 border-left: 3px solid #2277a8;
             }
 
+            .accordion.type-tool .accordion-header {
+                border-left: 3px solid #d87979;
+            }
+
             .accordion.type-code .accordion-header {
                 border-left: none;
             }
@@ -222,12 +226,14 @@ export class ChatAccordion extends LitElement {
 
     private _renderIcon() {
         switch (this.type) {
-            case "thinking":
+            case "think":
                 return icons.thinking;
             case "summary":
                 return icons.summary;
             case "code":
                 return icons.code;
+            case "tool":
+                return icons.tool;
             default:
                 return null;
         }
