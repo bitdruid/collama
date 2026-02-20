@@ -122,12 +122,12 @@ export class ChatAccordion extends LitElement {
             }
 
             /* Type-specific styling */
-            .accordion.type-thinking .accordion-header {
-                border-left: 3px solid #e9a849;
+            .accordion.type-think .accordion-header {
+                border-left: 3px solid #2277a8;
             }
 
             .accordion.type-summary .accordion-header {
-                border-left: 3px solid #2277a8;
+                border-left: 3px solid #e9a849;
             }
 
             .accordion.type-tool .accordion-header {

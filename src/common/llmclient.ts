@@ -133,15 +133,25 @@ class OllamaClient implements LlmClient {
             });
 
             let result = "";
+            let thinking = "";
             let resultTokens = 0;
             const toolCalls: ToolCall[] = [];
+
             for await (const part of stream) {
+                // thinking content separately
+                if (part.message.thinking) {
+                    thinking += part.message.thinking;
+                    continue;
+                }
+
+                // main content arrives in separate deltas
                 const chunk = part.message.content ?? "";
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
 
+                // tool calls arrive in separate deltas
                 if (part.message.tool_calls) {
                     for (const tc of part.message.tool_calls) {
                         toolCalls.push({
@@ -157,7 +167,7 @@ class OllamaClient implements LlmClient {
                     logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
                 }
             }
-            return { content: cleanupResult(result, resultTokens, options), toolCalls };
+            return { content: cleanupResult(result, resultTokens, options), thinking, toolCalls };
         } catch (err) {
             return handleError(err);
         }
@@ -221,8 +231,6 @@ class OpenAiClient implements LlmClient {
                 model: model,
                 messages: messages,
                 tools: tools,
-                //think: think, - not supported by openai
-                //raw: raw, - not supported by openai
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
@@ -237,7 +245,7 @@ class OpenAiClient implements LlmClient {
             for await (const part of stream) {
                 const delta = part.choices[0]?.delta;
                 const chunk = delta?.content;
-                logMsg(JSON.stringify(delta));
+
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
@@ -248,7 +256,7 @@ class OpenAiClient implements LlmClient {
                         if (!deltaToolCall[tc.index]) {
                             deltaToolCall[tc.index] = { id: "", name: "", argumentsStr: "" };
                         }
-                        // Some providers emit a final summary delta with id/name
+                        // some provider: final summary delta with id/name
                         // set to null and the complete arguments — replace, don't append.
                         if (tc.id === null) {
                             if (tc.function?.arguments) {
