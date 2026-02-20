@@ -46,6 +46,11 @@ export class Agent {
                 break;
             }
 
+            // stream assistant message content first
+            if (result.content) {
+                onChunk(result.content);
+            }
+
             // assistant message (with tool_calls) to history.
             history.push({
                 role: "assistant",

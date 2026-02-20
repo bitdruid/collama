@@ -237,6 +237,7 @@ class OpenAiClient implements LlmClient {
             for await (const part of stream) {
                 const delta = part.choices[0]?.delta;
                 const chunk = delta?.content;
+                logMsg(JSON.stringify(delta));
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
@@ -246,6 +247,14 @@ class OpenAiClient implements LlmClient {
                     for (const tc of delta.tool_calls) {
                         if (!deltaToolCall[tc.index]) {
                             deltaToolCall[tc.index] = { id: "", name: "", argumentsStr: "" };
+                        }
+                        // Some providers emit a final summary delta with id/name
+                        // set to null and the complete arguments — replace, don't append.
+                        if (tc.id === null) {
+                            if (tc.function?.arguments) {
+                                deltaToolCall[tc.index].argumentsStr = tc.function.arguments;
+                            }
+                            continue;
                         }
                         if (tc.id) {
                             deltaToolCall[tc.index].id = tc.id;
