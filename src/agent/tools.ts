@@ -1,4 +1,5 @@
 import fs from "fs";
+import fg from "fast-glob";
 import ignore from "ignore";
 import path from "path";
 import * as vscode from "vscode";
@@ -44,7 +45,7 @@ export function getToolDefinitions() {
 export async function executeTool(name: string, args: unknown) {
     const tool = toolRegistry[name];
     if (!tool) {
-        return JSON.stringify({ error: `Unknown tool: ${name}` });
+        return JSON.stringify({ error: `Unknown tool: ${name}`, available: getToolDefinitions() });
     }
     try {
         return await tool.execute(args);
@@ -64,106 +65,49 @@ function getWorkspaceRoot(): string | null {
 }
 
 /**
+ * Returns true if the given resolvedPath is strictly within root (no traversal).
+ */
+function isWithinRoot(root: string, resolvedPath: string): boolean {
+    const normalizedRoot = path.resolve(root);
+    const normalizedPath = path.resolve(resolvedPath);
+    return normalizedPath === normalizedRoot || normalizedPath.startsWith(normalizedRoot + path.sep);
+}
+
+/**
+ * Returns true if the pattern contains path traversal segments (`..`).
+ */
+function hasPathTraversal(pattern: string): boolean {
+    return pattern.split(/[/\\]/).includes("..");
+}
+
+/**
  * Creates and configures an ignore filter for workspace operations.
- * This filter excludes common directories and files that should not be processed by tools.
+ * Reads .gitignore from the workspace root so ignore rules are fully respected.
  *
- * @param additionalPatterns - Optional additional patterns to ignore (e.g., ["node_modules"])
+ * @param root - The workspace root path (required to load .gitignore)
+ * @param additionalPatterns - Optional additional patterns to ignore
  * @returns A configured ignore instance ready for use
  */
-export function buildIgnoreFilter(additionalPatterns?: string[]): ignore.Ignore {
+export function buildIgnoreFilter(root: string, additionalPatterns?: string[]): ignore.Ignore {
     const ig = ignore();
-    const defaultPatterns = [".git", ".gitignore", "node_modules", ".DS_Store"];
-    ig.add(defaultPatterns);
+    ig.add([".git", "node_modules", ".DS_Store"]);
+
+    // Load .gitignore from the workspace root
+    const gitignorePath = path.join(root, ".gitignore");
+    if (fs.existsSync(gitignorePath)) {
+        try {
+            ig.add(fs.readFileSync(gitignorePath, "utf-8"));
+        } catch {
+            // ignore read errors
+        }
+    }
+
     if (additionalPatterns && additionalPatterns.length > 0) {
         ig.add(additionalPatterns);
     }
     return ig;
 }
 
-export const lsPath_def = {
-    type: "function" as const,
-    function: {
-        name: "lsPath",
-        description:
-            "List the contents of a directory in the workspace. No path lists the workspace root. Use depth > 1 to recurse.",
-        parameters: {
-            type: "object",
-            properties: {
-                path: {
-                    type: "string",
-                    description: "Relative path to list (e.g. 'src/components'). Omit for the workspace root.",
-                },
-                depth: {
-                    type: "number",
-                    description: "How many levels deep to recurse. Defaults to 1 (immediate children only).",
-                },
-            },
-        },
-    },
-};
-
-/**
- * Recursively lists directory contents while respecting ignore patterns.
- *
- * @param dir - The absolute path to the directory to scan.
- * @param depth - The current recursion depth. If 1, lists only immediate children.
- * @param ig - The ignore instance used to filter out unwanted files/directories.
- * @param basePath - The relative path from the workspace root, used for ignore pattern matching.
- * @returns An array of strings representing file and directory names relative to the input `dir`.
- */
-function listDir(dir: string, depth: number, ig: ignore.Ignore, basePath: string = ""): string[] {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    const result: string[] = [];
-
-    for (const entry of entries) {
-        const relativePath = basePath ? `${basePath}/${entry.name}` : entry.name;
-
-        // Check if this entry should be ignored
-        if (ig.ignores(relativePath)) {
-            continue;
-        }
-
-        result.push(entry.isDirectory() ? `${entry.name}/` : entry.name);
-
-        if (entry.isDirectory() && depth > 1) {
-            listDir(path.join(dir, entry.name), depth - 1, ig, relativePath).forEach((child) =>
-                result.push(`${entry.name}/${child}`),
-            );
-        }
-    }
-    return result;
-}
-
-/**
- * Executes the logic for the lsPath tool.
- * Resolves the target path within the workspace, applies ignore filters, and retrieves the directory structure.
- *
- * @param args - The arguments provided to the tool.
- * @param args.path - Optional relative path within the workspace. Defaults to root.
- * @param args.depth - Optional depth of recursion. Defaults to 1.
- * @returns A JSON string containing the list of files, the requested path, and the depth used.
- */
-async function lsPath_exec(args: { path?: string; depth?: number }): Promise<string> {
-    logMsg(
-        `Agent - tool use lsPath${args.path ? ` path=${args.path}` : ""}${args.depth ? ` depth=${args.depth}` : ""}`,
-    );
-    const root = getWorkspaceRoot();
-
-    if (!root) {
-        return JSON.stringify({ files: [], root: null });
-    }
-
-    const target = args.path ? path.join(root, args.path) : root;
-    if (!fs.existsSync(target)) {
-        return JSON.stringify({ error: `Path not found: ${args.path}` });
-    }
-
-    const ig = buildIgnoreFilter();
-    const basePath = args.path || "";
-
-    const files = listDir(target, args.depth ?? 1, ig, basePath);
-    return JSON.stringify({ files, path: args.path ?? "/", depth: args.depth ?? 1 });
-}
 export const readFile_def = {
     type: "function" as const,
     function: {
@@ -198,7 +142,10 @@ async function readFile_exec(args: { filePath: string; startLine?: number; endLi
         throw new Error("No workspace root");
     }
 
-    const fullPath = path.join(root, args.filePath);
+    const fullPath = path.resolve(root, args.filePath);
+    if (!isWithinRoot(root, fullPath)) {
+        return JSON.stringify({ error: "Path must not escape the workspace root" });
+    }
     if (!fs.existsSync(fullPath)) {
         return JSON.stringify({ error: `File not found: ${args.filePath}` });
     }
@@ -215,17 +162,121 @@ async function readFile_exec(args: { filePath: string; startLine?: number; endLi
     return JSON.stringify({ content, filePath: args.filePath });
 }
 
+export const listFiles_def = {
+    type: "function" as const,
+    function: {
+        name: "listFiles",
+        description: "Find files in the workspace matching a glob pattern (e.g. '**/*.ts', 'src/**/*.json').",
+        parameters: {
+            type: "object",
+            properties: {
+                pattern: {
+                    type: "string",
+                    description: "Glob pattern to match files against.",
+                },
+            },
+            required: ["pattern"],
+        },
+    },
+};
+
+async function listFiles_exec(args: { pattern: string }): Promise<string> {
+    logMsg(`Agent - tool use listFiles pattern=${args.pattern}`);
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root" });
+    }
+    if (hasPathTraversal(args.pattern)) {
+        return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
+    }
+    const ig = buildIgnoreFilter(root);
+    const files = (await fg(args.pattern, { cwd: root, dot: false, onlyFiles: false }))
+        .filter((f) => !ig.ignores(f))
+        .filter((f) => isWithinRoot(root, path.join(root, f)));
+    return JSON.stringify({ files, pattern: args.pattern });
+}
+
+export const searchFiles_def = {
+    type: "function" as const,
+    function: {
+        name: "searchFiles",
+        description:
+            "Search file contents in the workspace for a regex pattern. Returns matching lines with their line numbers and file paths.",
+        parameters: {
+            type: "object",
+            properties: {
+                pattern: {
+                    type: "string",
+                    description: "Regex pattern to search for.",
+                },
+                glob: {
+                    type: "string",
+                    description:
+                        "Optional glob pattern to restrict which files are searched (e.g. '**/*.ts'). Defaults to all files.",
+                },
+            },
+            required: ["pattern"],
+        },
+    },
+};
+
+async function searchFiles_exec(args: { pattern: string; glob?: string }): Promise<string> {
+    logMsg(`Agent - tool use searchFiles pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root" });
+    }
+
+    let regex: RegExp;
+    try {
+        regex = new RegExp(args.pattern);
+    } catch {
+        return JSON.stringify({ error: `Invalid regex: ${args.pattern}` });
+    }
+
+    if (args.glob !== undefined && hasPathTraversal(args.glob)) {
+        return JSON.stringify({ error: "Glob must not contain path traversal (..)" });
+    }
+    const ig = buildIgnoreFilter(root);
+    const files = (await fg(args.glob ?? "**/*", { cwd: root, dot: false }))
+        .filter((f) => !ig.ignores(f))
+        .filter((f) => isWithinRoot(root, path.join(root, f)));
+
+    const matches: { file: string; line: number; text: string }[] = [];
+    for (const file of files) {
+        const fullPath = path.join(root, file);
+        let content: string;
+        try {
+            content = fs.readFileSync(fullPath, "utf-8");
+        } catch {
+            continue; // skip binary or unreadable files
+        }
+        const lines = content.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+            if (regex.test(lines[i])) {
+                matches.push({ file, line: i + 1, text: lines[i].trim() });
+            }
+        }
+    }
+
+    return JSON.stringify({ matches, pattern: args.pattern });
+}
+
 /**
  * Registry of available tools.
  * Maps tool names to their definitions (for schema generation) and execute functions.
  */
 export const toolRegistry: Record<string, Tool<any, any>> = {
-    lsPath: {
-        definition: lsPath_def,
-        execute: lsPath_exec,
-    },
     readFile: {
         definition: readFile_def,
         execute: readFile_exec,
+    },
+    listFiles: {
+        definition: listFiles_def,
+        execute: listFiles_exec,
+    },
+    searchFiles: {
+        definition: searchFiles_def,
+        execute: searchFiles_exec,
     },
 };
