@@ -141,31 +141,6 @@ export const getCompletionModelConfig = (context: Context): { prompt: string; st
 };
 
 /**
- * Determines whether the specified model supports the "thinking" capability.
- *
- * @param model - The name of the model to query.
- * @returns `true` if the model advertises the `thinking` capability,
- *          otherwise `false`.  Errors are swallowed and return `false`.
- */
-export async function getModelThinking(model: string): Promise<boolean> {
-    try {
-        const ollama = new Ollama({ host: userConfig.apiEndpointCompletion });
-        const info = await ollama.show({ model });
-
-        if (Array.isArray(info.capabilities) && info.capabilities.includes("thinking")) {
-            logMsg(`Thinking capability detected`);
-            return true;
-        } else {
-            logMsg(`Thinking not available`);
-            return false;
-        }
-    } catch (error: unknown) {
-        logMsg(`Error checking thinking capability for : ${(error as Error).message}`);
-        return false;
-    }
-}
-
-/**
  * Validates whether a requested prediction fits within the model's context window.
  *
  * This function calculates the available tokens by subtracting the current context

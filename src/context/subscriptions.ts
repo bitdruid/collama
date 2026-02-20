@@ -7,7 +7,7 @@ import {
     requestFixSyntax,
     requestSimplifyCode,
     requestWriteDocstrings,
-} from "../common/ollama";
+} from "../common/requests";
 import { withProgressNotification } from "../common/utils";
 import { registerContextCommand } from "./utils";
 

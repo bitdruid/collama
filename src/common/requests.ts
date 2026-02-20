@@ -6,8 +6,8 @@ import { getBearerCompletion, getBearerInstruct } from "../secrets";
 import { Context } from "./context_editor";
 import { LlmClientFactory } from "./llmclient";
 import { buildCompletionOptions, buildCompletionStop, buildInstructionOptions, emptyStop } from "./llmoptions";
-import { getCompletionModelConfig, getModelThinking } from "./models";
-import { contextCommand_noThink_Template, contextCommand_Think_Template, PromptParams } from "./prompt";
+import { getCompletionModelConfig } from "./models";
+import { contextCommand_Think_Template, PromptParams } from "./prompt";
 
 /**
  * Generates a completion from the editor context.
@@ -48,19 +48,11 @@ export async function requestCompletion(context: Context): Promise<string> {
  * @throws {Error} If the LLM request fails.
  */
 async function requestContextCommand(promptParams: PromptParams): Promise<string> {
-    let prompt: string;
-    const think = await getModelThinking(userConfig.apiModelInstruct);
-    if (think) {
-        prompt = contextCommand_Think_Template(promptParams);
-    } else {
-        prompt = contextCommand_noThink_Template(promptParams);
-    }
     const clientFactory = new LlmClientFactory("instruction");
     const result = await clientFactory.chat({
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
-        messages: [{ role: "user", content: prompt }],
-        think: think,
+        messages: [{ role: "user", content: contextCommand_Think_Template(promptParams) }],
         options: buildInstructionOptions(),
         stop: emptyStop(),
     });

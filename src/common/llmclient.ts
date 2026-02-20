@@ -116,8 +116,8 @@ class OpenAiClient implements LlmClient {
      */
     async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, tools = [], think, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
+            const { apiEndpoint, model, messages, tools = [], options, stop } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
 
@@ -205,7 +205,7 @@ class OpenAiClient implements LlmClient {
     async generate(settings: LlmGenerateSettings): Promise<string> {
         try {
             const { apiEndpoint, model, prompt, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, false, options, stop, prompt);
+            logRequest(apiEndpoint.url, model, options, stop, prompt);
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
 
@@ -232,8 +232,8 @@ class OpenAiClient implements LlmClient {
 }
 // Shared logging
 
-function logRequest(url: string, model: string, think: boolean, options: Options, stop: Stop, input: string): void {
-    logMsg(`Requesting to ${url}; Model: ${model}; Think: ${think};`);
+function logRequest(url: string, model: string, options: Options, stop: Stop, input: string): void {
+    logMsg(`Requesting to ${url}; Model: ${model};`);
     logMsg(`Options:\n${JSON.stringify(options, null, 2)}`);
     logMsg(`Stop:\n${JSON.stringify([...stop.userStop, ...stop.modelStop], null, 2)}`);
     logMsg(`Input:\n${input}`);
