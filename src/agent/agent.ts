@@ -6,8 +6,6 @@ import { userConfig } from "../config";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions } from "./tools";
 
-const MAX_TOOL_ITERATIONS = 5;
-
 export class Agent {
     private client: LlmClientFactory | undefined;
 
@@ -39,8 +37,13 @@ export class Agent {
         // current chat history extended with each tool message
         const history: ChatHistory[] = [...messages];
 
-        for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
+        while (true) {
             const result = await this.client.chat({ ...settings, messages: history }, (chunk) => onChunk(chunk));
+
+            // stream thinking first if present
+            if (result.thinking) {
+                onChunk(`\n\`\`\`Think: Reasoning\n${result.thinking}\n\`\`\`\n\n`);
+            }
 
             if (result.toolCalls.length === 0) {
                 break;

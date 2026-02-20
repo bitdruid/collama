@@ -1,4 +1,5 @@
 import fs from "fs";
+import ignore from "ignore";
 import path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
@@ -62,10 +63,27 @@ function getWorkspaceRoot(): string | null {
     return folders[0].uri.fsPath;
 }
 
-export const getRepoTree_def = {
+/**
+ * Creates and configures an ignore filter for workspace operations.
+ * This filter excludes common directories and files that should not be processed by tools.
+ *
+ * @param additionalPatterns - Optional additional patterns to ignore (e.g., ["node_modules"])
+ * @returns A configured ignore instance ready for use
+ */
+export function buildIgnoreFilter(additionalPatterns?: string[]): ignore.Ignore {
+    const ig = ignore();
+    const defaultPatterns = [".git", ".gitignore", "node_modules", ".DS_Store"];
+    ig.add(defaultPatterns);
+    if (additionalPatterns && additionalPatterns.length > 0) {
+        ig.add(additionalPatterns);
+    }
+    return ig;
+}
+
+export const lsPath_def = {
     type: "function" as const,
     function: {
-        name: "getRepoTree",
+        name: "lsPath",
         description:
             "List the contents of a directory in the workspace. No path lists the workspace root. Use depth > 1 to recurse.",
         parameters: {
@@ -84,21 +102,50 @@ export const getRepoTree_def = {
     },
 };
 
-function listDir(dir: string, depth: number): string[] {
+/**
+ * Recursively lists directory contents while respecting ignore patterns.
+ *
+ * @param dir - The absolute path to the directory to scan.
+ * @param depth - The current recursion depth. If 1, lists only immediate children.
+ * @param ig - The ignore instance used to filter out unwanted files/directories.
+ * @param basePath - The relative path from the workspace root, used for ignore pattern matching.
+ * @returns An array of strings representing file and directory names relative to the input `dir`.
+ */
+function listDir(dir: string, depth: number, ig: ignore.Ignore, basePath: string = ""): string[] {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     const result: string[] = [];
+
     for (const entry of entries) {
+        const relativePath = basePath ? `${basePath}/${entry.name}` : entry.name;
+
+        // Check if this entry should be ignored
+        if (ig.ignores(relativePath)) {
+            continue;
+        }
+
         result.push(entry.isDirectory() ? `${entry.name}/` : entry.name);
+
         if (entry.isDirectory() && depth > 1) {
-            listDir(path.join(dir, entry.name), depth - 1).forEach((child) => result.push(`${entry.name}/${child}`));
+            listDir(path.join(dir, entry.name), depth - 1, ig, relativePath).forEach((child) =>
+                result.push(`${entry.name}/${child}`),
+            );
         }
     }
     return result;
 }
 
-async function getRepoTree_exec(args: { path?: string; depth?: number }): Promise<string> {
+/**
+ * Executes the logic for the lsPath tool.
+ * Resolves the target path within the workspace, applies ignore filters, and retrieves the directory structure.
+ *
+ * @param args - The arguments provided to the tool.
+ * @param args.path - Optional relative path within the workspace. Defaults to root.
+ * @param args.depth - Optional depth of recursion. Defaults to 1.
+ * @returns A JSON string containing the list of files, the requested path, and the depth used.
+ */
+async function lsPath_exec(args: { path?: string; depth?: number }): Promise<string> {
     logMsg(
-        `Agent - tool use getRepoTree${args.path ? ` path=${args.path}` : ""}${args.depth ? ` depth=${args.depth}` : ""}`,
+        `Agent - tool use lsPath${args.path ? ` path=${args.path}` : ""}${args.depth ? ` depth=${args.depth}` : ""}`,
     );
     const root = getWorkspaceRoot();
 
@@ -111,10 +158,12 @@ async function getRepoTree_exec(args: { path?: string; depth?: number }): Promis
         return JSON.stringify({ error: `Path not found: ${args.path}` });
     }
 
-    const files = listDir(target, args.depth ?? 1);
+    const ig = buildIgnoreFilter();
+    const basePath = args.path || "";
+
+    const files = listDir(target, args.depth ?? 1, ig, basePath);
     return JSON.stringify({ files, path: args.path ?? "/", depth: args.depth ?? 1 });
 }
-
 export const readFile_def = {
     type: "function" as const,
     function: {
@@ -131,6 +180,18 @@ export const readFile_def = {
         },
     },
 };
+
+/**
+ * Executes the readFile operation.
+ * Reads the content of a file from the workspace. Supports reading specific line ranges
+ * via startLine and endLine arguments (1-based indexing).
+ *
+ * @param args - The arguments for the operation.
+ * @param args.filePath - The relative path to the file within the workspace.
+ * @param args.startLine - Optional. The starting line number (1-based). Defaults to 1.
+ * @param args.endLine - Optional. The ending line number (1-based). Defaults to the end of the file.
+ * @returns A JSON string containing the file content and path, or an error object if the operation fails.
+ */
 async function readFile_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
     const root = getWorkspaceRoot();
     if (!root) {
@@ -154,10 +215,14 @@ async function readFile_exec(args: { filePath: string; startLine?: number; endLi
     return JSON.stringify({ content, filePath: args.filePath });
 }
 
+/**
+ * Registry of available tools.
+ * Maps tool names to their definitions (for schema generation) and execute functions.
+ */
 export const toolRegistry: Record<string, Tool<any, any>> = {
-    getRepoTree: {
-        definition: getRepoTree_def,
-        execute: getRepoTree_exec,
+    lsPath: {
+        definition: lsPath_def,
+        execute: lsPath_exec,
     },
     readFile: {
         definition: readFile_def,
