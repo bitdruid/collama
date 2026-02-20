@@ -1,8 +1,20 @@
-export interface ChatHistory {
-    role: "system" | "user" | "assistant" | "tool";
-    content: string;
-    tool_calls?: Array<{ function: { name: string; arguments: Record<string, any> } }>;
-}
+import { ToolCall } from "./llmoptions";
+
+export type ChatHistory =
+    | {
+          role: "system" | "user";
+          content: string;
+      }
+    | {
+          role: "assistant";
+          content: string;
+          tool_calls?: ToolCall[];
+      }
+    | {
+          role: "tool";
+          content: string;
+          tool_call_id: string;
+      };
 
 export class ChatContext {
     private messages: ChatHistory[];
