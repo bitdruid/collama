@@ -53,7 +53,6 @@ export interface ToolCall {
  * @property {string} apiEndpoint - The base URL of the LLM API.
  * @property {string} model - Identifier of the LLM model to use.
  * @property {any[]} messages - The conversation history exchanged with the model.
- * @property {boolean} think - If true, the model will internally think before responding.
  * @property {Options} options - Generation options forwarded to the LLM.
  * @property {Stop} stop - Stop token configuration for the request.
  */
@@ -65,7 +64,6 @@ export interface LlmChatSettings {
     model: string;
     messages: any[];
     tools?: any[]; // only set by the agent; omit for all other callers
-    think: boolean;
     options: Options;
     stop: Stop;
 }
@@ -76,7 +74,6 @@ export interface LlmChatSettings {
  * @property {string} apiEndpoint - The base URL of the LLM API.
  * @property {string} model - Identifier of the LLM model to use.
  * @property {string} prompt - The text prompt from which the model should generate.
- * @property {boolean} think - If true, the model will internally think before generating.
  * @property {Options} options - Generation options forwarded to the LLM.
  * @property {Stop} stop - Stop token configuration for the request.
  */

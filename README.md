@@ -63,7 +63,7 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 
 ### Prerequisites
 
-- **VS Code** 1.107.0 or higher
+- **VS Code** 1.109.0 or higher
 - **Ollama** running locally (or accessible on your network), or any OpenAI-compatible API
 - A supported code model (see [Models](#models))
 
@@ -78,15 +78,15 @@ Alternatively, you can use [vLLM](https://docs.vllm.ai/) (tested). Point the end
 
 Configure Collama via VS Code Settings (Preferences → Settings, search "collama"):
 
-| Setting                         | Type    | Default                         | Description                                              |
-| ------------------------------- | ------- | ------------------------------- | -------------------------------------------------------- |
-| `collama.apiEndpointCompletion` | string  | `http://http://127.0.0.1:11434` | Endpoint for code auto-completion                        |
-| `collama.apiEndpointInstruct`   | string  | `http://http://127.0.0.1:11434` | Endpoint for code edits/chat                             |
-| `collama.apiCompletionModel`    | string  | `qwen2.5-coder:3b`              | Model for code completions                               |
-| `collama.apiInstructionModel`   | string  | `qwen2.5-coder:3b-instruct`     | Model for code edits (use instruct/base variant)         |
-| `collama.autoComplete`          | boolean | `true`                          | Enable auto-suggestions                                  |
-| `collama.suggestMode`           | string  | `inline`                        | Suggestion style: `inline`, `multiline`, or `multiblock` |
-| `collama.suggestDelay`          | number  | `1500`                          | Delay (ms) before requesting completion                  |
+| Setting                         | Type    | Default                     | Description                                              |
+| ------------------------------- | ------- | --------------------------- | -------------------------------------------------------- |
+| `collama.apiEndpointCompletion` | string  | `http://127.0.0.1:11434`    | Endpoint for code auto-completion                        |
+| `collama.apiEndpointInstruct`   | string  | `http://127.0.0.1:11434`    | Endpoint for code edits/chat                             |
+| `collama.apiCompletionModel`    | string  | `qwen2.5-coder:3b`          | Model for code completions                               |
+| `collama.apiInstructionModel`   | string  | `qwen2.5-coder:3b-instruct` | Model for code edits (use instruct/base variant)         |
+| `collama.autoComplete`          | boolean | `true`                      | Enable auto-suggestions                                  |
+| `collama.suggestMode`           | string  | `inline`                    | Suggestion style: `inline`, `multiline`, or `multiblock` |
+| `collama.suggestDelay`          | number  | `1500`                      | Delay (ms) before requesting completion                  |
 
 ### Bearer Tokens (Optional)
 
@@ -105,7 +105,7 @@ If your API endpoints require authentication (e.g. vLLM with `--api-key`, or a r
 
 ### Recommended Models
 
-Collama is tested primarily with the **Qwen Coder** series and performs best with specialized code models:
+Collama is tested primarily with the **Qwen Coder** for Completion and ***gpt-oss** for Instruction.
 
 #### For Code Completion (FIM - Fill In Middle)
 - **any qwen coder > 3b** recommended
@@ -115,7 +115,9 @@ Collama is tested primarily with the **Qwen Coder** series and performs best wit
 - **any instruct model and thinking** recommended
 - **gpt-oss:20b** (stable quality)
 
-### Model Compatibility Table
+Do not use a FIM model for instructions. It will produce very poor quality answers.
+
+### Model Completion Compatibility Table
 
 | Model         | Tested Sizes | FIM Support | Status   | Notes                                    |
 | ------------- | ------------ | ----------- | -------- | ---------------------------------------- |

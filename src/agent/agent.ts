@@ -1,7 +1,6 @@
 import { ChatHistory } from "../common/context_chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildInstructionOptions, emptyStop } from "../common/llmoptions";
-import { getModelThinking } from "../common/models";
 import { userConfig } from "../config";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions } from "./tools";
@@ -31,7 +30,6 @@ export class Agent {
             tools: getToolDefinitions(),
             options: buildInstructionOptions(),
             stop: emptyStop(),
-            think: await getModelThinking(userConfig.apiModelInstruct),
         };
 
         // current chat history extended with each tool message
@@ -41,9 +39,9 @@ export class Agent {
             const result = await this.client.chat({ ...settings, messages: history }, (chunk) => onChunk(chunk));
 
             // stream thinking first if present
-            if (result.thinking) {
-                onChunk(`\n\`\`\`Think: Reasoning\n${result.thinking}\n\`\`\`\n\n`);
-            }
+            // if (result.thinking) {
+            //     onChunk(`\n\`\`\`Think: Reasoning\n${result.thinking}\n\`\`\`\n\n`);
+            // }
 
             if (result.toolCalls.length === 0) {
                 break;

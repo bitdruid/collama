@@ -95,7 +95,6 @@ export async function generateCommitMessage(stagedDiff: string): Promise<string>
         messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
         options: buildCommitOptions(),
         stop: emptyStop(),
-        think: false,
     });
 
     if (!result.content) {
