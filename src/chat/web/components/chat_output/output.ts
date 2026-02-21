@@ -293,7 +293,7 @@ export class ChatOutput extends LitElement {
                         msg.content = msg.content || "No response received.";
                         this.loadingTimeouts.delete(msg);
                         this.requestUpdate();
-                    }, 30000); // 30s timeout
+                    }, 60000); // 60s timeout
                     this.loadingTimeouts.set(msg, timeout);
                 }
             });
