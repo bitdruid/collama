@@ -262,6 +262,80 @@ async function searchFiles_exec(args: { pattern: string; glob?: string }): Promi
     return JSON.stringify({ matches, pattern: args.pattern });
 }
 
+export const lsPath_def = {
+    type: "function" as const,
+    function: {
+        name: "lsPath",
+        description:
+            "List the directory tree of a path in the workspace up to a given depth. Use this to orient yourself in the project structure before drilling into files.",
+        parameters: {
+            type: "object",
+            properties: {
+                dirPath: {
+                    type: "string",
+                    description: "Relative path to the directory to list. Use '.' for the workspace root.",
+                },
+                depth: {
+                    type: "number",
+                    description: "How many levels deep to recurse (default 2, max 5).",
+                },
+            },
+            required: ["dirPath"],
+        },
+    },
+};
+
+async function lsPath_exec(args: { dirPath: string; depth?: number }): Promise<string> {
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root" });
+    }
+    if (hasPathTraversal(args.dirPath)) {
+        return JSON.stringify({ error: "Path must not contain path traversal (..)" });
+    }
+
+    const fullPath = path.resolve(root, args.dirPath);
+    if (!isWithinRoot(root, fullPath)) {
+        return JSON.stringify({ error: "Path must not escape the workspace root" });
+    }
+    if (!fs.existsSync(fullPath)) {
+        return JSON.stringify({ error: `Path not found: ${args.dirPath}` });
+    }
+
+    const maxDepth = Math.min(args.depth ?? 2, 5);
+    const ig = buildIgnoreFilter(root);
+
+    function walk(dir: string, depth: number): string[] {
+        if (depth > maxDepth) {
+            return [];
+        }
+        let entries: fs.Dirent[];
+        try {
+            entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch {
+            return [];
+        }
+        const lines: string[] = [];
+        for (const entry of entries) {
+            const rel = path.relative(root!, path.join(dir, entry.name));
+            if (ig.ignores(rel)) {
+                continue;
+            }
+            const indent = "  ".repeat(depth);
+            if (entry.isDirectory()) {
+                lines.push(`${indent}${entry.name}/`);
+                lines.push(...walk(path.join(dir, entry.name), depth + 1));
+            } else {
+                lines.push(`${indent}${entry.name}`);
+            }
+        }
+        return lines;
+    }
+
+    const tree = walk(fullPath, 0);
+    return JSON.stringify({ tree, dirPath: args.dirPath });
+}
+
 /**
  * Registry of available tools.
  * Maps tool names to their definitions (for schema generation) and execute functions.
@@ -278,5 +352,9 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     searchFiles: {
         definition: searchFiles_def,
         execute: searchFiles_exec,
+    },
+    lsPath: {
+        definition: lsPath_def,
+        execute: lsPath_exec,
     },
 };

@@ -106,6 +106,32 @@ function optionsToOpenAI(options: Options): Record<string, any> {
 }
 
 /**
+ * Converts messages to the format expected by the Ollama API.
+ * Our internal ToolCall stores `arguments` as a JSON string (OpenAI-compatible),
+ * but Ollama requires `arguments` to be a plain object.
+ */
+function toOllamaMessages(messages: any[]): any[] {
+    return messages.map((msg) => {
+        if (msg.role === "assistant" && msg.tool_calls) {
+            return {
+                ...msg,
+                tool_calls: msg.tool_calls.map((tc: ToolCall) => ({
+                    ...tc,
+                    function: {
+                        ...tc.function,
+                        arguments:
+                            typeof tc.function.arguments === "string"
+                                ? JSON.parse(tc.function.arguments)
+                                : tc.function.arguments,
+                    },
+                })),
+            };
+        }
+        return msg;
+    });
+}
+
+/**
  * Client implementation for interacting with the Ollama API.
  * Handles chat completions and prompt generation using the `requestOllama` utility.
  */
@@ -125,7 +151,7 @@ class OllamaClient implements LlmClient {
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
             const stream = await ollama.chat({
                 model: model,
-                messages: messages,
+                messages: toOllamaMessages(messages),
                 tools: tools,
                 stream: true,
                 options: { ...options, stop: buildStopTokens(stop) },

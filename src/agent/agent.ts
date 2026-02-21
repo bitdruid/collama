@@ -38,10 +38,18 @@ export class Agent {
         while (true) {
             const result = await this.client.chat({ ...settings, messages: history }, (chunk) => onChunk(chunk));
 
-            // stream thinking first if present
-            // if (result.thinking) {
-            //     onChunk(`\n\`\`\`Think: Reasoning\n${result.thinking}\n\`\`\`\n\n`);
-            // }
+            // stream thinking first if present / prevent code-fence breaks
+            if (result.thinking) {
+                const matches = result.thinking.match(/`+/g) || [];
+                let longestRun = 0;
+                for (const m of matches) {
+                    if (m.length > longestRun) {
+                        longestRun = m.length;
+                    }
+                }
+                const fence = "`".repeat(Math.max(3, longestRun + 1));
+                onChunk(`\n${fence}Think: Reasoning\n${result.thinking}\n${fence}\n\n`);
+            }
 
             if (result.toolCalls.length === 0) {
                 break;
