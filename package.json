@@ -41,6 +41,11 @@
                     "default": "gpt-oss:20b",
                     "markdownDescription": "Model for edits.\n\nUse an **instruct** or **base** model."
                 },
+                "collama.agentic": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use agentic (tool use) mode for chat."
+                },
                 "collama.autoComplete": {
                     "type": "boolean",
                     "default": true,

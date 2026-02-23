@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
-import { RequestType, sysConfig } from "../config";
+import { RequestType, sysConfig, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
@@ -152,7 +152,7 @@ class OllamaClient implements LlmClient {
             const stream = await ollama.chat({
                 model: model,
                 messages: toOllamaMessages(messages),
-                tools: tools,
+                ...(userConfig.agentic ? { tools: tools } : {}),
                 stream: true,
                 options: { ...options, stop: buildStopTokens(stop) },
             });
@@ -255,7 +255,7 @@ class OpenAiClient implements LlmClient {
             const stream = await openai.chat.completions.create({
                 model: model,
                 messages: messages,
-                tools: tools,
+                ...(userConfig.agentic ? { tools: tools } : {}),
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
