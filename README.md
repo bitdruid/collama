@@ -49,6 +49,14 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 - Automatic context trimming — when conversations exceed the context window, older messages are removed from the LLM context while remaining visible in the chat
 - Visual indicators for messages no longer included in the LLM context
 
+**AI Agent with Tool Calling**
+- LLM can interact with your workspace through function calling
+- **File System Tools**: Read files, list directories, search contents with regex
+- **Git Tools**: Browse commit history, compare branches, view diffs, list branches
+- **Security**: Path traversal protection, workspace boundary enforcement, .gitignore integration
+- **Real-time Feedback**: Tool calls streamed to chat as they execute
+- The agent can autonomously explore your codebase to provide context-aware assistance
+
 **Commit Messages**
 - AI-generated conventional commit messages from staged changes
 - Analyzes git diff to create meaningful commit descriptions
@@ -170,6 +178,20 @@ Note: ChatML format is not supported - that means only true fim-models will work
 3. Run **collama: Generate Commit Message**
 4. The AI analyzes your staged diff and generates a conventional commit message
 5. Review and edit the message in the Source Control input box before committing
+
+### AI Agent Usage
+
+The AI agent can autonomously explore your workspace when you ask questions that require context:
+
+1. Open the Chat view in the sidebar
+2. Ask questions like:
+   - "What files are in the src directory?"
+   - "Show me the recent commits on the main branch"
+   - "Search for TODO comments in TypeScript files"
+   - "What changed between the last two commits?"
+3. The agent will use tools to gather information and provide comprehensive answers
+4. Watch as tool calls are streamed in real-time
+
 
 ## Contributing
 

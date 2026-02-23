@@ -1,7 +1,11 @@
+import { execFile } from "node:child_process";
 import path from "node:path";
+import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { logMsg } from "../../logging";
 import { getWorkspaceRoot } from "../tools";
+
+const execFileAsync = promisify(execFile);
 
 /**
  * Represents the VS Code Git extension interface.
@@ -86,33 +90,55 @@ export async function getFirstRepo(): Promise<{ repo: GitRepository } | { error:
 }
 
 /**
- * Retrieves git commits from the current branch.
+ * Retrieves git commits from a branch.
  * @param args - The arguments for the operation.
+ * @param args.branch - Optional. Branch name to get commits from (defaults to current branch).
  * @param args.limit - Maximum number of commits to return (default 10, max 50).
  * @param args.filePath - Optional. Filter to commits affecting this specific file.
  * @returns JSON string containing the list of commits or an error message.
  */
-export async function getCommits_exec(args: { limit?: number; filePath?: string }): Promise<string> {
-    logMsg(`Agent - tool use getCommits limit=${args.limit ?? 10}${args.filePath ? ` file=${args.filePath}` : ""}`);
-
-    const result = await getFirstRepo();
-    if ("error" in result) {
-        return JSON.stringify({ error: result.error });
-    }
+export async function getCommits_exec(args: { branch?: string; limit?: number; filePath?: string }): Promise<string> {
+    logMsg(
+        `Agent - tool use getCommits branch=${args.branch ?? "HEAD"} limit=${args.limit ?? 10}${args.filePath ? ` file=${args.filePath}` : ""}`,
+    );
 
     const limit = Math.min(args.limit ?? 10, 50);
+    const root = getWorkspaceRoot();
+
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root found" });
+    }
 
     try {
-        const commits = await result.repo.log({ maxEntries: limit, path: args.filePath });
+        // Use git log directly to support branch parameter
+        const gitArgs = [
+            "log",
+            args.branch ?? "HEAD",
+            `--max-count=${limit}`,
+            "--format=%H%n%an%n%ae%n%aI%n%s",
+        ];
+        if (args.filePath) {
+            gitArgs.push("--", args.filePath);
+        }
+
+        const { stdout } = await execFileAsync("git", gitArgs, { cwd: root });
+        const lines = stdout.trim().split("\n");
+        const commits: Array<{ hash: string; authorName: string; authorEmail: string; authorDate: string; message: string }> = [];
+
+        // Each commit is 5 lines: hash, authorName, authorEmail, authorDate, message
+        for (let i = 0; i + 4 < lines.length; i += 5) {
+            commits.push({
+                hash: lines[i],
+                authorName: lines[i + 1],
+                authorEmail: lines[i + 2],
+                authorDate: lines[i + 3],
+                message: lines[i + 4],
+            });
+        }
 
         return JSON.stringify({
-            commits: commits.map((c) => ({
-                hash: c.hash,
-                authorName: c.authorName,
-                authorEmail: c.authorEmail,
-                authorDate: c.authorDate?.toISOString() ?? null,
-                message: c.message,
-            })),
+            commits,
+            branch: args.branch ?? "HEAD",
             limit,
             filePath: args.filePath ?? null,
         });
@@ -127,10 +153,15 @@ export const getCommits_def = {
     type: "function" as const,
     function: {
         name: "getCommits",
-        description: "List git commits from the current branch. Returns commit hash, author, date, and message.",
+        description:
+            "List git commits from a branch. Returns commit hash, author, date, and message. Defaults to the current branch if no branch is specified.",
         parameters: {
             type: "object",
             properties: {
+                branch: {
+                    type: "string",
+                    description: "Branch name to get commits from (e.g., 'main', 'feature/foo'). Defaults to current branch.",
+                },
                 limit: {
                     type: "number",
                     description: "Maximum number of commits to return (default 10, max 50).",
