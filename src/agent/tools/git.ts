@@ -361,25 +361,32 @@ export const getWorkingTreeDiff_def = {
  * @returns JSON string containing the list of branches or an error message.
  */
 export async function listBranches_exec(args: { includeRemote?: boolean }): Promise<string> {
-    logMsg(`Agent - tool use listBranches`);
+    logMsg(`Agent - tool use listBranches includeRemote=${args.includeRemote ?? false}`);
 
-    const result = await getFirstRepo();
-    if ("error" in result) {
-        return JSON.stringify({ error: result.error });
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root found" });
     }
 
     try {
-        const head = result.repo.state.HEAD;
-        const refs = result.repo.state.refs;
+        const gitArgs = ["branch", "--format=%(refname:short)\t%(objectname:short)\t%(HEAD)"];
+        if (args.includeRemote) {
+            gitArgs.push("-a");
+        }
 
-        // ref.type: 0 = Head (local branch), 1 = RemoteHead, 2 = Tag
-        const branches = refs
-            .filter((ref) => ref.type === 0 || (args.includeRemote && ref.type === 1))
-            .map((ref) => ({
-                name: ref.name,
-                isCurrent: head?.name === ref.name,
-                commit: ref.commit,
-            }));
+        const { stdout } = await execFileAsync("git", gitArgs, { cwd: root });
+        const branches = stdout
+            .trim()
+            .split("\n")
+            .filter((line) => line.length > 0)
+            .map((line) => {
+                const [name, commit, head] = line.split("\t");
+                return {
+                    name,
+                    isCurrent: head === "*",
+                    commit,
+                };
+            });
 
         return JSON.stringify({ branches });
     } catch (error) {

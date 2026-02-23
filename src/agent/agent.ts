@@ -42,17 +42,17 @@ export class Agent {
             const result = await this.client.chat({ ...settings, messages: history }, (chunk) => onChunk(chunk));
 
             // stream thinking first if present / prevent code-fence breaks
-            if (result.thinking) {
-                const matches = result.thinking.match(/`+/g) || [];
-                let longestRun = 0;
-                for (const m of matches) {
-                    if (m.length > longestRun) {
-                        longestRun = m.length;
-                    }
-                }
-                const fence = "`".repeat(Math.max(3, longestRun + 1));
-                onChunk(`\n${fence}Think: Reasoning\n${result.thinking}\n${fence}\n\n`);
-            }
+            // if (result.thinking) {
+            //     const matches = result.thinking.match(/`+/g) || [];
+            //     let longestRun = 0;
+            //     for (const m of matches) {
+            //         if (m.length > longestRun) {
+            //             longestRun = m.length;
+            //         }
+            //     }
+            //     const fence = "`".repeat(Math.max(3, longestRun + 1));
+            //     onChunk(`\n${fence}Think: Reasoning\n${result.thinking}\n${fence}\n\n`);
+            // }
 
             if (result.toolCalls.length === 0) {
                 break;
@@ -72,10 +72,8 @@ export class Agent {
 
                 // tool info is streamed as a codeblock into the chat
                 const hasArgs = Object.keys(args).length > 0;
-                const argsBlock = hasArgs
-                    ? `\n\`\`\`Tool: ${toolCall.function.name}\n${JSON.stringify(args, null, 2)}\n\`\`\``
-                    : "";
-                onChunk(`\n${argsBlock}\n\n`);
+                const argsBody = hasArgs ? `\n${JSON.stringify(args, null, 2)}` : "";
+                onChunk(`\n\`\`\`Tool: ${toolCall.function.name}${argsBody}\n\`\`\`\n\n`);
 
                 history.push({
                     role: "tool",
