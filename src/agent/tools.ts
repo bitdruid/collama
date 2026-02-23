@@ -1,6 +1,5 @@
-import fs from "fs";
 import fg from "fast-glob";
-import ignore from "ignore";
+import fs from "fs";
 import path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
@@ -81,31 +80,28 @@ function hasPathTraversal(pattern: string): boolean {
 }
 
 /**
- * Creates and configures an ignore filter for workspace operations.
- * Reads .gitignore from the workspace root so ignore rules are fully respected.
+ * Builds an array of ignore patterns from .gitignore and sensible defaults.
+ * Suitable for passing directly to fast-glob's `ignore` option.
  *
  * @param root - The workspace root path (required to load .gitignore)
- * @param additionalPatterns - Optional additional patterns to ignore
- * @returns A configured ignore instance ready for use
+ * @returns An array of glob ignore patterns
  */
-export function buildIgnoreFilter(root: string, additionalPatterns?: string[]): ignore.Ignore {
-    const ig = ignore();
-    ig.add([".git", "node_modules", ".DS_Store"]);
+export function buildIgnorePatterns(root: string): string[] {
+    const patterns = [".git", "**/node_modules", "**/.DS_Store"];
 
-    // Load .gitignore from the workspace root
     const gitignorePath = path.join(root, ".gitignore");
     if (fs.existsSync(gitignorePath)) {
         try {
-            ig.add(fs.readFileSync(gitignorePath, "utf-8"));
-        } catch {
-            // ignore read errors
-        }
+            const lines = fs
+                .readFileSync(gitignorePath, "utf-8")
+                .split("\n")
+                .map((l) => l.trim())
+                .filter((l) => l && !l.startsWith("#"));
+            patterns.push(...lines);
+        } catch {}
     }
 
-    if (additionalPatterns && additionalPatterns.length > 0) {
-        ig.add(additionalPatterns);
-    }
-    return ig;
+    return patterns;
 }
 
 export const readFile_def = {
@@ -150,16 +146,20 @@ async function readFile_exec(args: { filePath: string; startLine?: number; endLi
         return JSON.stringify({ error: `File not found: ${args.filePath}` });
     }
 
-    let content = fs.readFileSync(fullPath, "utf-8");
+    const content = fs.readFileSync(fullPath, "utf-8");
 
-    if (args.startLine !== undefined || args.endLine !== undefined) {
-        const lines = content.split("\n");
-        const start = (args.startLine ?? 1) - 1;
-        const end = args.endLine ?? lines.length;
-        content = lines.slice(start, end).join("\n");
+    if (args.startLine === undefined && args.endLine === undefined) {
+        return JSON.stringify({ content, filePath: args.filePath });
     }
 
-    return JSON.stringify({ content, filePath: args.filePath });
+    const lines = content.split("\n");
+    const start = (args.startLine ?? 1) - 1;
+    const end = args.endLine ?? lines.length;
+
+    return JSON.stringify({
+        content: lines.slice(start, end).join("\n"),
+        filePath: args.filePath,
+    });
 }
 
 export const listFiles_def = {
@@ -189,10 +189,12 @@ async function listFiles_exec(args: { pattern: string }): Promise<string> {
     if (hasPathTraversal(args.pattern)) {
         return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
     }
-    const ig = buildIgnoreFilter(root);
-    const files = (await fg(args.pattern, { cwd: root, dot: false, onlyFiles: false }))
-        .filter((f) => !ig.ignores(f))
-        .filter((f) => isWithinRoot(root, path.join(root, f)));
+    const files = await fg(args.pattern, {
+        cwd: root,
+        dot: false,
+        onlyFiles: false,
+        ignore: buildIgnorePatterns(root),
+    });
     return JSON.stringify({ files, pattern: args.pattern });
 }
 
@@ -237,10 +239,14 @@ async function searchFiles_exec(args: { pattern: string; glob?: string }): Promi
     if (args.glob !== undefined && hasPathTraversal(args.glob)) {
         return JSON.stringify({ error: "Glob must not contain path traversal (..)" });
     }
-    const ig = buildIgnoreFilter(root);
-    const files = (await fg(args.glob ?? "**/*", { cwd: root, dot: false }))
-        .filter((f) => !ig.ignores(f))
-        .filter((f) => isWithinRoot(root, path.join(root, f)));
+
+    const files = (
+        await fg(args.glob ?? "**/*", {
+            cwd: root,
+            dot: false,
+            ignore: buildIgnorePatterns(root),
+        })
+    ).filter((f) => isWithinRoot(root, path.join(root, f)));
 
     const matches: { file: string; line: number; text: string }[] = [];
     for (const file of files) {
@@ -261,13 +267,12 @@ async function searchFiles_exec(args: { pattern: string; glob?: string }): Promi
 
     return JSON.stringify({ matches, pattern: args.pattern });
 }
-
 export const lsPath_def = {
     type: "function" as const,
     function: {
         name: "lsPath",
         description:
-            "List the directory tree of a path in the workspace up to a given depth. Use this to orient yourself in the project structure before drilling into files.",
+            "List the directory tree of a path in the workspace up to a given depth. For exploring the overall repository structure, use depth 3-5 on the root ('.') to get a comprehensive view in a single call. Only drill into specific subdirectories if you need more detail beyond what the root listing provides.",
         parameters: {
             type: "object",
             properties: {
@@ -303,36 +308,17 @@ async function lsPath_exec(args: { dirPath: string; depth?: number }): Promise<s
     }
 
     const maxDepth = Math.min(args.depth ?? 2, 5);
-    const ig = buildIgnoreFilter(root);
+    const tree = (
+        await fg("**/*", {
+            cwd: fullPath,
+            deep: maxDepth,
+            onlyFiles: false,
+            markDirectories: true,
+            dot: false,
+            ignore: buildIgnorePatterns(root),
+        })
+    ).sort();
 
-    function walk(dir: string, depth: number): string[] {
-        if (depth > maxDepth) {
-            return [];
-        }
-        let entries: fs.Dirent[];
-        try {
-            entries = fs.readdirSync(dir, { withFileTypes: true });
-        } catch {
-            return [];
-        }
-        const lines: string[] = [];
-        for (const entry of entries) {
-            const rel = path.relative(root!, path.join(dir, entry.name));
-            if (ig.ignores(rel)) {
-                continue;
-            }
-            const indent = "  ".repeat(depth);
-            if (entry.isDirectory()) {
-                lines.push(`${indent}${entry.name}/`);
-                lines.push(...walk(path.join(dir, entry.name), depth + 1));
-            } else {
-                lines.push(`${indent}${entry.name}`);
-            }
-        }
-        return lines;
-    }
-
-    const tree = walk(fullPath, 0);
     return JSON.stringify({ tree, dirPath: args.dirPath });
 }
 
