@@ -2,6 +2,14 @@ import path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
 import {
+    createFile_def,
+    createFile_exec,
+    createFolder_def,
+    createFolder_exec,
+    editFile_def,
+    editFile_exec,
+} from "./tools/edit";
+import {
     listFiles_def,
     listFiles_exec,
     lsPath_def,
@@ -135,5 +143,17 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     listBranches: {
         definition: listBranches_def,
         execute: listBranches_exec,
+    },
+    editFile: {
+        definition: editFile_def,
+        execute: editFile_exec,
+    },
+    createFile: {
+        definition: createFile_def,
+        execute: createFile_exec,
+    },
+    createFolder: {
+        definition: createFolder_def,
+        execute: createFolder_exec,
     },
 };

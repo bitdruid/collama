@@ -51,7 +51,7 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 
 **AI Agent with Tool Calling**
 - LLM can interact with your workspace through function calling
-- **File System Tools**: Read files, list directories, search contents with regex
+- **File System Tools**: Read files, list directories, search contents with regex, create files and folders, edit files with diff preview
 - **Git Tools**: Browse commit history, compare branches, view diffs, list branches
 - **Security**: Path traversal protection, workspace boundary enforcement, .gitignore integration
 - **Real-time Feedback**: Tool calls streamed to chat as they execute
@@ -189,8 +189,28 @@ The AI agent can autonomously explore your workspace when you ask questions that
    - "Show me the recent commits on the main branch"
    - "Search for TODO comments in TypeScript files"
    - "What changed between the last two commits?"
+   - "Update the README with the new feature description"
+   - "Create a new component file for the user profile"
+   - "Create a new folder for utilities"
 3. The agent will use tools to gather information and provide comprehensive answers
 4. Watch as tool calls are streamed in real-time
+
+**Available Tools:**
+
+- **File System Tools**
+  - `readFile` - Read the contents of a file in the workspace
+  - `listFiles` - Find files in the workspace matching a glob pattern
+  - `searchFiles` - Search file contents in the workspace for a regex pattern
+  - `lsPath` - List the directory tree of a path in the workspace
+  - `createFile` - Create a new file in the workspace with content preview and user confirmation. Shows a preview of the new file content and asks for confirmation before creating the file.
+  - `createFolder` - Create a new folder/directory in the workspace with user confirmation. Asks for confirmation before creating the folder.
+  - `editFile` - Edit a file in the workspace with diff preview and user confirmation. Always shows a side-by-side diff of original vs modified content and asks for confirmation before applying changes.
+
+- **Git Tools**
+  - `getCommits` - List git commits from a branch
+  - `getCommitDiff` - Compare two commits or branches
+  - `getWorkingTreeDiff` - Get unstaged or staged changes in the working directory
+  - `listBranches` - List all local (and optionally remote) git branches
 
 
 ## Contributing
