@@ -5,6 +5,7 @@ import { ChatHistory } from "../common/context_chat";
 import { Context } from "../common/context_editor";
 import { buildInstructionOptions } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
+import { chatCompress_Template } from "../common/prompt";
 import Tokenizer from "../common/utils";
 import { sysConfig } from "../config";
 import { logMsg } from "../logging";
@@ -349,6 +350,44 @@ class ChatPanel {
                     this.currentAgent = null;
                 }
                 webview.postMessage({ type: "chat-complete" });
+                return;
+            }
+
+            if (msg.type === "compress-request") {
+                const { messages, assistantIndex, sessionId } = msg;
+                const session = this.sessions.find((s) => s.id === sessionId);
+
+                const summaryPrompt = [...messages, { role: "user", content: chatCompress_Template }];
+
+                const agent = new Agent();
+                this.currentAgent = agent;
+                let summaryContent = "";
+
+                await agent.work(summaryPrompt, async (chunk) => {
+                    summaryContent += chunk;
+                    webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
+                });
+                this.currentAgent = null;
+
+                const compressedMessages: ChatHistory[] = [
+                    { role: "user", content: "Summarize our conversation." },
+                    {
+                        role: "assistant",
+                        content: `\`\`\`Summary: Conversation\n${summaryContent}\n\`\`\``,
+                    },
+                ];
+
+                if (session) {
+                    session.messages = compressedMessages;
+                    session.contextStartIndex = 0;
+                    session.updatedAt = Date.now();
+                    this.saveSessions();
+                }
+
+                webview.postMessage({ type: "compressed", messages: compressedMessages });
+                webview.postMessage({ type: "chat-complete" });
+                this.sendSessionsUpdate();
+                logMsg(`Compressed chat for session ${sessionId}`);
                 return;
             }
 

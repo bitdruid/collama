@@ -35,7 +35,8 @@ export class ChatInput extends LitElement {
         }
         button-submit,
         button-context,
-        button-cancel {
+        button-cancel,
+        button-compress {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -76,6 +77,12 @@ export class ChatInput extends LitElement {
         }
         button-cancel:hover {
             background-color: #861818;
+        }
+        button-compress {
+            background-color: #7a6030;
+        }
+        button-compress:hover {
+            background-color: #5a4622;
         }
         .context-display {
             display: inline-flex;
@@ -163,6 +170,15 @@ export class ChatInput extends LitElement {
         );
     }
 
+    private _handleCompress() {
+        this.dispatchEvent(
+            new CustomEvent("compress", {
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    }
+
     private _adjustRows() {
         const ta = this.shadowRoot?.querySelector("textarea") as HTMLTextAreaElement | null;
         if (!ta) {
@@ -230,9 +246,14 @@ export class ChatInput extends LitElement {
                 ${this._renderContextButton()}
                 ${this.isLoading
                     ? html`<button-cancel title="Cancel" @click=${this._handleCancel}> ${icons.cancel} </button-cancel>`
-                    : html`<button-submit title="Submit" @click=${this._handleSubmit} ?disabled=${this.isLoading}>
-                          ${icons.enter}
-                      </button-submit>`}
+                    : html`
+                          <button-compress title="Compress chat" @click=${this._handleCompress}>
+                              ${icons.compress}
+                          </button-compress>
+                          <button-submit title="Submit" @click=${this._handleSubmit} ?disabled=${this.isLoading}>
+                              ${icons.enter}
+                          </button-submit>
+                      `}
             </button-row>`;
     }
 }

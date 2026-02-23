@@ -121,6 +121,24 @@ export class ChatAccordion extends LitElement {
                 overflow-x: visible;
             }
 
+            /* think/summary: wrap prose, no horizontal scroll */
+            .accordion.type-think .accordion-content-inner,
+            .accordion.type-summary .accordion-content-inner {
+                overflow-x: hidden;
+            }
+
+            .accordion.type-think .accordion-content pre,
+            .accordion.type-summary .accordion-content pre {
+                min-width: 0;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            .accordion.type-think .accordion-content pre code,
+            .accordion.type-summary .accordion-content pre code {
+                white-space: pre-wrap;
+            }
+
             /* Type-specific styling */
             .accordion.type-think .accordion-header {
                 border-left: 3px solid #2277a8;
