@@ -202,7 +202,7 @@ export function buildAgentOptions(): Options {
     return {
         num_predict: 16384,
         num_ctx: sysConfig.contextLenInstruct,
-        temperature: 0.1,
+        temperature: 0.2,
         top_p: 0.9,
         top_k: 20,
     };
