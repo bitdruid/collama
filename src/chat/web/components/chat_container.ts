@@ -203,6 +203,29 @@ export class ChatContainer extends LitElement {
         });
     }
 
+    private _onCompress() {
+        if (this.isLoading || this.messages.length === 0) {
+            return;
+        }
+
+        const originalMessages = this.messages;
+        const assistantIndex = originalMessages.length + 1;
+
+        this.messages = [
+            ...originalMessages,
+            { role: "user", content: "Summarize our conversation." },
+            { role: "assistant", content: "", loading: true },
+        ];
+        this.isLoading = true;
+
+        window.vscode.postMessage({
+            type: "compress-request",
+            messages: originalMessages,
+            assistantIndex,
+            sessionId: this.activeSessionId,
+        });
+    }
+
     private _onResendMessage(e: CustomEvent) {
         const messageIndex = e.detail.messageIndex;
         // Truncate messages to keep only up to and including the user message at messageIndex
@@ -384,6 +407,13 @@ export class ChatContainer extends LitElement {
                 this.isLoading = false;
             }
 
+            // chat has been compressed into a summary pair
+            if (msg.type === "compressed") {
+                this.messages = msg.messages || [];
+                this.contextStartIndex = 0;
+                this._showToast("Chat compressed");
+            }
+
             // context limit exceeded — old message pairs dropped from LLM context
             if (msg.type === "context-trimmed") {
                 this.contextStartIndex = msg.contextStartIndex || 0;
@@ -448,6 +478,7 @@ export class ChatContainer extends LitElement {
                 <collama-chatinput
                     @submit=${this._onSubmit}
                     @cancel=${this._onCancel}
+                    @compress=${this._onCompress}
                     @context-cleared=${this._onContextCleared}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}

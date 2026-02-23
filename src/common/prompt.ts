@@ -124,3 +124,26 @@ export const commitMsgCommand_Template: PromptTemplate = ({ diff }) =>
         "===== OUTPUT FORMAT =====",
         "Common git commit message format. Without explanation in code fences.",
     ].join("\n");
+
+/**
+ * The user message appended to the conversation history to request a summary.
+ * Used by the chat compress feature to condense a long conversation into a
+ * single Summary accordion message pair.
+ */
+export const chatCompress_Template: string = [
+    "Summarize the entire conversation above in detail.",
+    "",
+    "RULES:",
+    "- Cover every distinct topic, task, and thread from the conversation",
+    "- Preserve all decisions, conclusions, open questions, and agreed-upon approaches",
+    "- Include relevant technical details, file names, code patterns, or constraints that were mentioned",
+    "- Scale the length to the conversation — a long conversation deserves a long summary",
+    "- Do not add new information or opinions",
+    "- Do not mention that this is a summary",
+    "",
+    "OUTPUT FORMAT:",
+    "Use markdown structure to keep the summary scannable:",
+    "- Use ## headers to separate major topics",
+    "- Use bullet points for lists of items, decisions, or findings",
+    "- Write in past tense, third-person neutral",
+].join("\n");
