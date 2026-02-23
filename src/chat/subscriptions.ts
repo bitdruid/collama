@@ -399,6 +399,9 @@ class ChatPanel {
                 });
                 this.currentAgent = null;
 
+                // Notify webview that chat is complete
+                webview.postMessage({ type: "chat-complete" });
+
                 // Update sessions list after response completes
                 this.sendSessionsUpdate();
             }
