@@ -42,6 +42,12 @@ async function applyFileChanges(uri: vscode.Uri, newContent: string): Promise<vo
     );
     edit.replace(uri, entireRange, newContent);
     await vscode.workspace.applyEdit(edit);
+
+    // Save to disk so subsequent reads and git see the changes
+    const doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+    if (doc) {
+        await doc.save();
+    }
 }
 
 /**
@@ -66,10 +72,12 @@ async function handleFileChangesWithDiff(
     const { diffTitle = "collama – Preview Changes", progressMessage = "collama: Processing changes…" } = options;
 
     return await withProgressNotification(progressMessage, async () => {
-        // Read the original file content
+        // Read the original file content (prefer in-memory buffer for unsaved changes)
         const uri = vscode.Uri.file(filePath);
-        const originalContent = await vscode.workspace.fs.readFile(uri);
-        const originalText = Buffer.from(originalContent).toString("utf8");
+        const openDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+        const originalText = openDoc
+            ? openDoc.getText()
+            : Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
 
         // Check if there are actual changes
         if (newContent === originalText) {
@@ -216,7 +224,12 @@ export async function editFile_exec(args: { filePath: string; oldStr: string; ne
 
     try {
         const uri = vscode.Uri.file(fullPath);
-        const originalContent = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
+
+        // Prefer the in-memory document buffer (picks up unsaved edits from previous tool calls)
+        const openDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+        const originalContent = openDoc
+            ? openDoc.getText()
+            : Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
 
         // Count occurrences to ensure unique match
         const occurrences = originalContent.split(args.oldStr).length - 1;
