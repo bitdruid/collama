@@ -114,8 +114,9 @@ Collama is tested primarily with the **Qwen Coder** for Completion and ***gpt-os
 #### For Code Edits (Instruct/Base Models)
 - **any instruct model and thinking** recommended
 - **gpt-oss:20b** (stable quality)
-
 Do not use a FIM model for instructions. It will produce very poor quality answers.
+
+### Openai SDK was tested with glm-4.7-fp8 for instructions giving superior responses
 
 ### Model Completion Compatibility Table
 
