@@ -169,6 +169,7 @@ export function registerChatProvider(context: vscode.ExtensionContext) {
 class ChatPanel {
     private sessions: ChatSession[] = [];
     private activeSessionId: string = "";
+    private currentAgent: Agent | null = null;
 
     /**
      * Creates a new ChatPanel instance and initializes session data.
@@ -340,6 +341,17 @@ class ChatPanel {
                 return;
             }
 
+            if (msg.type === "chat-cancel") {
+                // Cancel the currently running agent
+                if (this.currentAgent) {
+                    logMsg("Cancelling agent execution");
+                    this.currentAgent.cancel();
+                    this.currentAgent = null;
+                }
+                webview.postMessage({ type: "chat-complete" });
+                return;
+            }
+
             if (msg.type === "chat-request") {
                 const { messages, assistantIndex, sessionId } = msg;
 
@@ -367,12 +379,7 @@ class ChatPanel {
                     session.contextStartIndex = contextStartIndex;
                     this.saveSessions();
                 }
-                webview.postMessage({
-                    type: "context-trimmed",
-                    pairsRemoved,
-                    tokensFreed,
-                    contextStartIndex,
-                });
+                webview.postMessage({ type: "context-trimmed", pairsRemoved, tokensFreed, contextStartIndex });
 
                 if (pairsRemoved > 0) {
                     logMsg(
@@ -381,18 +388,16 @@ class ChatPanel {
                 }
 
                 const agent = new Agent();
+                this.currentAgent = agent;
                 await agent.work(trimmedMessages, async (chunk) => {
                     if (session) {
                         session.messages[assistantIndex].content += chunk;
                         session.updatedAt = Date.now();
                         this.saveSessions();
                     }
-                    webview.postMessage({
-                        type: "chunk",
-                        index: assistantIndex,
-                        chunk,
-                    });
+                    webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
                 });
+                this.currentAgent = null;
 
                 // Update sessions list after response completes
                 this.sendSessionsUpdate();
