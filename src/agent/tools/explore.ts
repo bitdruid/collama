@@ -1,0 +1,278 @@
+import FastGlob from "fast-glob";
+import fs from "fs";
+import path from "path";
+import { logMsg } from "../../logging";
+import { getWorkspaceRoot, isWithinRoot } from "../tools";
+
+/**
+ * Returns true if the pattern contains path traversal segments (`..`).
+ */
+function hasPathTraversal(pattern: string): boolean {
+    return pattern.split(/[/\\]/).includes("..");
+}
+
+/**
+ * Builds an array of ignore patterns from .gitignore and sensible defaults.
+ * Suitable for passing directly to fast-glob's `ignore` option.
+ *
+ * @param root - The workspace root path (required to load .gitignore)
+ * @returns An array of glob ignore patterns
+ */
+export function buildIgnorePatterns(root: string): string[] {
+    const patterns = [".git", "**/node_modules", "**/.DS_Store"];
+
+    const gitignorePath = path.join(root, ".gitignore");
+    if (fs.existsSync(gitignorePath)) {
+        try {
+            const lines = fs
+                .readFileSync(gitignorePath, "utf-8")
+                .split("\n")
+                .map((l) => l.trim())
+                .filter((l) => l && !l.startsWith("#"));
+            patterns.push(...lines);
+        } catch {}
+    }
+
+    return patterns;
+}
+
+/**
+ * Executes the readFile operation.
+ * Reads the content of a file from the workspace. Supports reading specific line ranges
+ * via startLine and endLine arguments (1-based indexing).
+ *
+ * @param args - The arguments for the operation.
+ * @param args.filePath - The relative path to the file within the workspace.
+ * @param args.startLine - Optional. The starting line number (1-based). Defaults to 1.
+ * @param args.endLine - Optional. The ending line number (1-based). Defaults to the end of the file.
+ * @returns A JSON string containing the file content and path, or an error object if the operation fails.
+ */
+export async function readFile_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
+    const root = getWorkspaceRoot();
+    if (!root) {
+        throw new Error("No workspace root");
+    }
+
+    const fullPath = path.resolve(root, args.filePath);
+    if (!isWithinRoot(root, fullPath)) {
+        return JSON.stringify({ error: "Path must not escape the workspace root" });
+    }
+    if (!fs.existsSync(fullPath)) {
+        return JSON.stringify({ error: `File not found: ${args.filePath}` });
+    }
+
+    const content = fs.readFileSync(fullPath, "utf-8");
+
+    if (args.startLine === undefined && args.endLine === undefined) {
+        return JSON.stringify({ content, filePath: args.filePath });
+    }
+
+    const lines = content.split("\n");
+    const start = (args.startLine ?? 1) - 1;
+    const end = args.endLine ?? lines.length;
+
+    return JSON.stringify({
+        content: lines.slice(start, end).join("\n"),
+        filePath: args.filePath,
+    });
+}
+export const readFile_def = {
+    type: "function" as const,
+    function: {
+        name: "readFile",
+        description: "Read the contents of a file in the workspace",
+        parameters: {
+            type: "object",
+            properties: {
+                filePath: { type: "string", description: "Path to the file" },
+                startLine: { type: "number", description: "Starting line (optional)" },
+                endLine: { type: "number", description: "Ending line (optional)" },
+            },
+            required: ["filePath"],
+        },
+    },
+};
+
+/**
+ * Executes the listFiles operation.
+ * Finds files in the workspace matching a specific glob pattern.
+ *
+ * @param args - The arguments for the operation.
+ * @param args.pattern - Glob pattern to match files against.
+ * @returns A JSON string containing the list of matching files, or an error object.
+ */
+export async function listFiles_exec(args: { pattern: string }): Promise<string> {
+    logMsg(`Agent - tool use listFiles pattern=${args.pattern}`);
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root" });
+    }
+    if (hasPathTraversal(args.pattern)) {
+        return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
+    }
+    const files = await FastGlob(args.pattern, {
+        cwd: root,
+        dot: false,
+        onlyFiles: false,
+        ignore: buildIgnorePatterns(root),
+    });
+    return JSON.stringify({ files, pattern: args.pattern });
+}
+export const listFiles_def = {
+    type: "function" as const,
+    function: {
+        name: "listFiles",
+        description: "Find files in the workspace matching a glob pattern (e.g. '**/*.ts', 'src/**/*.json').",
+        parameters: {
+            type: "object",
+            properties: {
+                pattern: {
+                    type: "string",
+                    description: "Glob pattern to match files against.",
+                },
+            },
+            required: ["pattern"],
+        },
+    },
+};
+
+/**
+ * Executes the searchFiles operation.
+ * Searches file contents for a regex pattern and returns matching lines.
+ *
+ * @param args - The arguments for the operation.
+ * @param args.pattern - Regex pattern to search for.
+ * @param args.glob - Optional glob pattern to restrict search scope.
+ * @returns A JSON string containing the search matches, or an error object.
+ */
+export async function searchFiles_exec(args: { pattern: string; glob?: string }): Promise<string> {
+    logMsg(`Agent - tool use searchFiles pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root" });
+    }
+
+    let regex: RegExp;
+    try {
+        regex = new RegExp(args.pattern);
+    } catch {
+        return JSON.stringify({ error: `Invalid regex: ${args.pattern}` });
+    }
+
+    if (args.glob !== undefined && hasPathTraversal(args.glob)) {
+        return JSON.stringify({ error: "Glob must not contain path traversal (..)" });
+    }
+
+    const files = (
+        await FastGlob(args.glob ?? "**/*", {
+            cwd: root,
+            dot: false,
+            ignore: buildIgnorePatterns(root),
+        })
+    ).filter((f) => isWithinRoot(root, path.join(root, f)));
+
+    const matches: { file: string; line: number; text: string }[] = [];
+    for (const file of files) {
+        const fullPath = path.join(root, file);
+        let content: string;
+        try {
+            content = fs.readFileSync(fullPath, "utf-8");
+        } catch {
+            continue; // skip binary or unreadable files
+        }
+        const lines = content.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+            if (regex.test(lines[i])) {
+                matches.push({ file, line: i + 1, text: lines[i].trim() });
+            }
+        }
+    }
+
+    return JSON.stringify({ matches, pattern: args.pattern });
+}
+export const searchFiles_def = {
+    type: "function" as const,
+    function: {
+        name: "searchFiles",
+        description:
+            "Search file contents in the workspace for a regex pattern. Returns matching lines with their line numbers and file paths.",
+        parameters: {
+            type: "object",
+            properties: {
+                pattern: {
+                    type: "string",
+                    description: "Regex pattern to search for.",
+                },
+                glob: {
+                    type: "string",
+                    description:
+                        "Optional glob pattern to restrict which files are searched (e.g. '**/*.ts'). Defaults to all files.",
+                },
+            },
+            required: ["pattern"],
+        },
+    },
+};
+
+/**
+ * Executes the lsPath operation.
+ * Lists the directory tree of a path up to a specific depth.
+ *
+ * @param args - The arguments for the operation.
+ * @param args.dirPath - Relative path to the directory to list.
+ * @param args.depth - Optional. Recursion depth (default 2, max 5).
+ * @returns A JSON string containing the directory tree, or an error object.
+ */
+export async function lsPath_exec(args: { dirPath: string; depth?: number }): Promise<string> {
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root" });
+    }
+    if (hasPathTraversal(args.dirPath)) {
+        return JSON.stringify({ error: "Path must not contain path traversal (..)" });
+    }
+
+    const fullPath = path.resolve(root, args.dirPath);
+    if (!isWithinRoot(root, fullPath)) {
+        return JSON.stringify({ error: "Path must not escape the workspace root" });
+    }
+    if (!fs.existsSync(fullPath)) {
+        return JSON.stringify({ error: `Path not found: ${args.dirPath}` });
+    }
+
+    const maxDepth = Math.min(args.depth ?? 2, 5);
+    const tree = (
+        await FastGlob("**/*", {
+            cwd: fullPath,
+            deep: maxDepth,
+            onlyFiles: false,
+            markDirectories: true,
+            dot: false,
+            ignore: buildIgnorePatterns(root),
+        })
+    ).sort();
+
+    return JSON.stringify({ tree, dirPath: args.dirPath });
+}
+export const lsPath_def = {
+    type: "function" as const,
+    function: {
+        name: "lsPath",
+        description:
+            "List the directory tree of a path in the workspace up to a given depth. For exploring the overall repository structure, use depth 3-5 on the root ('.') to get a comprehensive view in a single call. Only drill into specific subdirectories if you need more detail beyond what the root listing provides.",
+        parameters: {
+            type: "object",
+            properties: {
+                dirPath: {
+                    type: "string",
+                    description: "Relative path to the directory to list. Use '.' for the workspace root.",
+                },
+                depth: {
+                    type: "number",
+                    description: "How many levels deep to recurse (default 2, max 5).",
+                },
+            },
+            required: ["dirPath"],
+        },
+    },
+};

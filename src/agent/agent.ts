@@ -1,6 +1,6 @@
 import { ChatHistory } from "../common/context_chat";
 import { LlmClientFactory } from "../common/llmclient";
-import { buildAgentOptions, buildInstructionOptions, emptyStop } from "../common/llmoptions";
+import { buildAgentOptions, emptyStop } from "../common/llmoptions";
 import { userConfig } from "../config";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions } from "./tools";
@@ -9,14 +9,17 @@ export class Agent {
     private client: LlmClientFactory | undefined;
 
     /**
-     * Executes the agent task with an optional tool-calling loop.
+     * Executes the agent task, managing the interaction loop with the LLM.
      *
-     * On each iteration the LLM response is checked for tool calls.
-     * If tool calls are present they are executed, their results appended to the
-     * message history, and the LLM is called again.  When no tool calls remain
-     * the final text response has already been streamed via `onChunk` and the
-     * loop ends.  Tool use is surfaced to the user as markdown streamed into
-     * the same assistant message before the final answer.
+     * Initializes the client and processes the conversation history iteratively.
+     * On each iteration:
+     * 1. Requests a completion from the LLM.
+     * 2. Streams any 'thinking' or reasoning content immediately to the user.
+     * 3. If tool calls are detected, executes them, appends results to history,
+     *    and repeats the loop.
+     * 4. If no tool calls are present, the loop terminates.
+     *
+     * All outputs (reasoning, assistant text, and tool usage) are streamed via `onChunk`.
      *
      * @param messages - The conversation history to send to the LLM.
      * @param onChunk  - Callback invoked for every streamed text token.
@@ -53,11 +56,6 @@ export class Agent {
 
             if (result.toolCalls.length === 0) {
                 break;
-            }
-
-            // stream assistant message content first
-            if (result.content) {
-                onChunk(result.content);
             }
 
             // assistant message (with tool_calls) to history.
