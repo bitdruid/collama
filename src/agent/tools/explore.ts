@@ -1,4 +1,4 @@
-import FastGlob from "fast-glob";
+import fg from "fast-glob";
 import fs from "fs";
 import path from "path";
 import { logMsg } from "../../logging";
@@ -110,7 +110,7 @@ export async function listFiles_exec(args: { pattern: string }): Promise<string>
     if (hasPathTraversal(args.pattern)) {
         return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
     }
-    const files = await FastGlob(args.pattern, {
+    const files = await fg(args.pattern, {
         cwd: root,
         dot: false,
         onlyFiles: false,
@@ -164,7 +164,7 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
     }
 
     const files = (
-        await FastGlob(args.glob ?? "**/*", {
+        await fg(args.glob ?? "**/*", {
             cwd: root,
             dot: false,
             ignore: buildIgnorePatterns(root),
@@ -242,7 +242,7 @@ export async function lsPath_exec(args: { dirPath: string; depth?: number }): Pr
 
     const maxDepth = Math.min(args.depth ?? 2, 5);
     const tree = (
-        await FastGlob("**/*", {
+        await fg("**/*", {
             cwd: fullPath,
             deep: maxDepth,
             onlyFiles: false,

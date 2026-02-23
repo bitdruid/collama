@@ -102,7 +102,7 @@ async function showStatusbar() {
         const options: PickItem[] = [
             {
                 label: `${config.get<boolean>("agentic", false) ? "🟢" : "🔴"} Agentic`,
-                description: "Toggle Agentic-Mode",
+                description: "Toggle Agentic-Mode (Chat - requires tool capability)",
             },
             {
                 label: "Switch Agentic-Mode",
