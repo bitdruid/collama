@@ -9,6 +9,7 @@ export class ChatInput extends LitElement {
             userInput: { type: String },
             rows: { type: Number },
             contexts: { type: Array },
+            isLoading: { type: Boolean },
         };
     }
 
@@ -33,7 +34,8 @@ export class ChatInput extends LitElement {
             box-sizing: border-box;
         }
         button-submit,
-        button-context {
+        button-context,
+        button-cancel {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -58,11 +60,22 @@ export class ChatInput extends LitElement {
         button-submit:hover {
             background-color: #185d86;
         }
+        button-submit:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
         button-context {
             background-color: #2277a8;
         }
         button-context:hover {
             background-color: #185d86;
+        }
+        button-cancel {
+            background-color: #a82222;
+        }
+        button-cancel:hover {
+            background-color: #861818;
         }
         .context-display {
             display: inline-flex;
@@ -111,6 +124,8 @@ export class ChatInput extends LitElement {
     userInput = "";
     rows = 1;
     contexts: ChatContext[] = [];
+    isLoading = false;
+
     private _handleInput(e: Event) {
         this.userInput = (e.target as HTMLTextAreaElement).value;
         this._adjustRows();
@@ -124,6 +139,9 @@ export class ChatInput extends LitElement {
     }
 
     private _handleSubmit() {
+        if (this.isLoading) {
+            return;
+        }
         this.dispatchEvent(
             new CustomEvent("submit", {
                 detail: { value: this.userInput, contexts: this.contexts },
@@ -134,6 +152,15 @@ export class ChatInput extends LitElement {
         this.userInput = "";
         this.rows = 1;
         this.contexts = [];
+    }
+
+    private _handleCancel() {
+        this.dispatchEvent(
+            new CustomEvent("cancel", {
+                bubbles: true,
+                composed: true,
+            }),
+        );
     }
 
     private _adjustRows() {
@@ -197,10 +224,15 @@ export class ChatInput extends LitElement {
                 @input=${this._handleInput}
                 @keydown=${this._handleKeyDown}
                 placeholder="Chat with AI..."
+                ?disabled=${this.isLoading}
             ></textarea>
             <button-row>
                 ${this._renderContextButton()}
-                <button-submit title="Submit" @click=${this._handleSubmit}> ${icons.enter} </button-submit>
+                ${this.isLoading
+                    ? html`<button-cancel title="Cancel" @click=${this._handleCancel}> ${icons.cancel} </button-cancel>`
+                    : html`<button-submit title="Submit" @click=${this._handleSubmit} ?disabled=${this.isLoading}>
+                          ${icons.enter}
+                      </button-submit>`}
             </button-row>`;
     }
 }
