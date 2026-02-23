@@ -4,18 +4,8 @@ import { highlightCodeBlock, hljsStyles, icons } from "../../utils";
 
 export type AccordionType = "think" | "summary" | "code" | "tool";
 
-export class ChatAccordion extends LitElement {
-    static get properties() {
-        return {
-            label: { type: String },
-            type: { type: String },
-            expanded: { type: Boolean },
-            code: { type: String },
-            copyCode: { type: String },
-        };
-    }
-
-    static styles = [
+export const accordionStyles=
+ [
         ...hljsStyles,
         css`
             :host {

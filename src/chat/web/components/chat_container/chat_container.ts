@@ -1,10 +1,13 @@
 import { LitElement, css, html } from "lit";
 
-import { estimateTokenCount } from "../../utils";
-import "./chat_input";
-import "./chat_output/output";
-import "./chat_sessions";
-import { ChatSession } from "./chat_sessions";
+import { estimateTokenCount } from "../../../utils";
+import "../chat_input/chat_input";
+import "../chat_output/output";
+import "../chat_session/components/chat_sessions";
+
+import { chatContainerStyles } from "./styles/chat_container_styles";
+import { ChatSession } from "../chat_session/components/chat_sessions";
+import { ChatSessionStore } from "../chat_session/services/chat_session_store";
 
 declare global {
     interface Window {
@@ -53,61 +56,7 @@ export class ChatContainer extends LitElement {
         isLoading: { state: true },
     };
 
-    static styles = css`
-        :host {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        collama-chatsessions {
-            flex: 0 0 auto;
-        }
-
-        .chat-area {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        collama-chatoutput {
-            flex: 1 1 auto;
-            overflow-y: auto;
-            height: 100%;
-            margin-top: 12px;
-            padding: 0px;
-        }
-
-        collama-chatinput {
-            flex: 0 0 auto;
-            display: flex;
-            flex-direction: column;
-            margin-top: 12px;
-            padding: 8px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--vscode-editorWidget-background, #1e1e1e);
-            border: 1px solid var(--vscode-editorWidget-border, #454545);
-            color: var(--vscode-editorWidget-foreground, #ccc);
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            z-index: 100;
-        }
-
-        .toast.visible {
-            opacity: 1;
-        }
-    `;
+    static styles = chatContainerStyles;
 
     messages: ChatMessage[] = [];
     sessions: ChatSession[] = [];
@@ -333,7 +282,7 @@ export class ChatContainer extends LitElement {
     }
 
     private _onSelectSession(e: CustomEvent) {
-        const sessionId = e.detail.sessionId;
+        const sessionId = e.detail.id;
         logWebview(`Switching to session ${sessionId}`);
         window.vscode.postMessage({
             type: "switch-session",
@@ -377,6 +326,15 @@ export class ChatContainer extends LitElement {
                 this.contextUsed = msg.contextUsed || 0;
                 this.contextMax = msg.contextMax || 0;
                 this.contextStartIndex = msg.contextStartIndex || 0;
+
+                // NEU: Store auch initialisieren
+                ChatSessionStore.instance.loadFromBackend({
+                sessions: this.sessions,
+                activeSessionId: this.activeSessionId,
+                contextUsed: this.contextUsed,
+                contextMax: this.contextMax,
+                });
+    
                 logWebview(`${this.sessions.length} sessions total, active: ${this.activeSessionId}`);
             }
 

@@ -210,6 +210,7 @@
     },
     "dependencies": {
         "@microsoft/tiktokenizer": "^1.0.10",
+        "@vscode/vsce": "^3.7.1",
         "fast-glob": "^3.3.3",
         "highlight.js": "^11.11.1",
         "lit": "^3.3.2",

@@ -1,7 +1,8 @@
 import { LitElement, css, html } from "lit";
 
-import { icons } from "../../utils";
-import { ChatContext } from "./chat_container";
+import { icons } from "../../../utils";
+import { ChatContext } from "../chat_container/chat_container";
+import { chatInputStyles } from "./styles/chat_input_styles";
 
 export class ChatInput extends LitElement {
     static get properties() {
