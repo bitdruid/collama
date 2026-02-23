@@ -192,15 +192,16 @@ async function handleNewFileCreation(
 
 /**
  * Executes the editFile operation.
- * Edits a file in the workspace with diff preview and user confirmation.
- * Always shows the diff preview before applying changes.
+ * Edits a file by replacing a specific string with a new string.
+ * Shows a diff preview and asks for user confirmation before applying.
  *
  * @param args - The arguments for the operation.
  * @param args.filePath - The relative path to the file within the workspace.
- * @param args.content - The new content to write to the file.
+ * @param args.oldStr - The exact string to find and replace. Must match uniquely in the file.
+ * @param args.newStr - The replacement string.
  * @returns A JSON string containing the operation result, or an error object if the operation fails.
  */
-export async function editFile_exec(args: { filePath: string; content: string }): Promise<string> {
+export async function editFile_exec(args: { filePath: string; oldStr: string; newStr: string }): Promise<string> {
     logMsg(`Agent - tool use editFile file=${args.filePath}`);
 
     const root = getWorkspaceRoot();
@@ -213,12 +214,22 @@ export async function editFile_exec(args: { filePath: string; content: string })
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
 
-    if (!vscode.workspace.fs.stat(vscode.Uri.file(fullPath))) {
-        return JSON.stringify({ error: `File not found: ${args.filePath}` });
-    }
-
     try {
-        const result = await handleFileChangesWithDiff(fullPath, args.content, {
+        const uri = vscode.Uri.file(fullPath);
+        const originalContent = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
+
+        // Count occurrences to ensure unique match
+        const occurrences = originalContent.split(args.oldStr).length - 1;
+        if (occurrences === 0) {
+            return JSON.stringify({ error: "oldStr not found in file. Make sure it matches the file content exactly, including whitespace and indentation." });
+        }
+        if (occurrences > 1) {
+            return JSON.stringify({ error: `oldStr found ${occurrences} times. It must be unique. Include more surrounding context to make it unique.` });
+        }
+
+        const newContent = originalContent.replace(args.oldStr, args.newStr);
+
+        const result = await handleFileChangesWithDiff(fullPath, newContent, {
             diffTitle: `collama – Edit ${args.filePath}`,
             progressMessage: `collama: Editing ${args.filePath}…`,
         });
@@ -240,7 +251,7 @@ export const editFile_def = {
     function: {
         name: "editFile",
         description:
-            "Edit a file in the workspace with diff preview and user confirmation. Always shows a side-by-side diff of original vs modified content and asks for confirmation before applying changes.",
+            "Edit a file by replacing a specific string with a new string (search-and-replace). The oldStr must match exactly one location in the file. Shows a diff preview and asks for user confirmation. Use readFile first to see the current content. For multiple changes, call this tool multiple times.",
         parameters: {
             type: "object",
             properties: {
@@ -248,12 +259,17 @@ export const editFile_def = {
                     type: "string",
                     description: "Path to the file to edit (relative to workspace root).",
                 },
-                content: {
+                oldStr: {
                     type: "string",
-                    description: "The new content to write to the file.",
+                    description:
+                        "The exact string to find in the file. Must match exactly one location, including whitespace and indentation. Include enough surrounding lines for a unique match.",
+                },
+                newStr: {
+                    type: "string",
+                    description: "The string to replace oldStr with. Can be empty to delete the matched text.",
                 },
             },
-            required: ["filePath", "content"],
+            required: ["filePath", "oldStr", "newStr"],
         },
     },
 };
