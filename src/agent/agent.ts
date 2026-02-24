@@ -1,6 +1,7 @@
 import { ChatHistory } from "../common/context_chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop } from "../common/llmoptions";
+import { withProgressNotification } from "../common/utils";
 import { userConfig } from "../config";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions } from "./tools";
@@ -108,12 +109,18 @@ export class Agent {
                     }
 
                     const args = JSON.parse(toolCall.function.arguments);
-                    const toolResult = await executeTool(toolCall.function.name, args);
 
                     // tool info is streamed as a codeblock into the chat
                     const hasArgs = Object.keys(args).length > 0;
                     const argsBody = hasArgs ? `\n${JSON.stringify(args, null, 2)}` : "";
                     onChunk(`\n\`\`\`Tool: ${toolCall.function.name}${argsBody}\n\`\`\`\n\n`);
+
+                    const toolResult = await withProgressNotification(
+                        `collama: tooling - ${toolCall.function.name}…`,
+                        async () => {
+                            return await executeTool(toolCall.function.name, args);
+                        },
+                    );
 
                     history.push({
                         role: "tool",
