@@ -5,9 +5,15 @@ import { logMsg } from "../logging";
 import { getBearerCompletion, getBearerInstruct } from "../secrets";
 import { Context } from "./context_editor";
 import { LlmClientFactory } from "./llmclient";
-import { buildCompletionOptions, buildCompletionStop, buildInstructionOptions, emptyStop } from "./llmoptions";
+import {
+    buildCommitOptions,
+    buildCompletionOptions,
+    buildCompletionStop,
+    buildInstructionOptions,
+    emptyStop,
+} from "./llmoptions";
 import { getCompletionModelConfig } from "./models";
-import { contextCommand_Think_Template, PromptParams } from "./prompt";
+import { commitMsgCommand_Template, contextCommand_Think_Template, PromptParams } from "./prompt";
 
 /**
  * Generates a completion from the editor context.
@@ -57,6 +63,37 @@ async function requestContextCommand(promptParams: PromptParams): Promise<string
         stop: emptyStop(),
     });
 
+    return result.content;
+}
+
+/**
+ * Generates a conventional commit message from a staged git diff.
+ *
+ * The function constructs a prompt that combines a predefined message
+ * template with the supplied diff wrapped in XML-style tags, then calls
+ * {@link llmGenerate} to generate the commit text.
+ *
+ * @param stagedDiff - The git diff of the staged changes.
+ * @returns A promise that resolves to the generated commit message string.
+ */
+export async function requestCommitMessage(stagedDiff: string): Promise<string> {
+    logMsg("Generating commit message...");
+
+    const clientFactory = new LlmClientFactory("instruction");
+    const result = await clientFactory.chat({
+        apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
+        model: userConfig.apiModelInstruct,
+        messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
+        options: buildCommitOptions(),
+        stop: emptyStop(),
+    });
+
+    if (!result.content) {
+        logMsg("Warning: LLM returned empty commit message");
+        return "chore: update files";
+    }
+
+    logMsg(`Generated commit message: ${result.content.substring(0, 50)}...`);
     return result.content;
 }
 

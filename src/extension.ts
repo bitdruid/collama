@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
 import { registerChatProvider, registerSendToChatCommand } from "./chat/subscriptions";
-import { registerGenerateCommitMessageCommand } from "./commit/subscriptions";
+import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
 import { updateVSConfig } from "./config";
 import {
     registerEditManualCommand,
@@ -54,7 +54,7 @@ export async function activate(context: vscode.ExtensionContext) {
     registerChatProvider(context);
     registerSendToChatCommand(context);
 
-    registerGenerateCommitMessageCommand(context);
+    registerRequestCommitMessageCommand(context);
 
     logMsg("----- collama initialized -----");
     initialized = true;
