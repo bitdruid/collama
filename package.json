@@ -113,7 +113,7 @@
                 "title": "Send to Chat"
             },
             {
-                "command": "collama.generateCommitMessage",
+                "command": "collama.requestCommitMessage",
                 "title": "collama: Generate Commit Message",
                 "icon": "$(sparkle)"
             },
@@ -174,7 +174,7 @@
             ],
             "scm/title": [
                 {
-                    "command": "collama.generateCommitMessage",
+                    "command": "collama.requestCommitMessage",
                     "group": "navigation",
                     "when": "scmProvider == git"
                 }

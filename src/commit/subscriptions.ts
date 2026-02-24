@@ -1,12 +1,8 @@
 import * as vscode from "vscode";
 
-import { LlmClientFactory } from "../common/llmclient";
-import { buildCommitOptions, emptyStop } from "../common/llmoptions";
-import { commitMsgCommand_Template } from "../common/prompt";
+import { requestCommitMessage } from "../common/requests";
 import { withProgressNotification } from "../common/utils";
-import { userConfig } from "../config";
 import { logMsg } from "../logging";
-import { getBearerInstruct } from "../secrets";
 
 // Type definitions for the Git extension API
 interface GitExtension {
@@ -27,16 +23,16 @@ interface InputBox {
 }
 
 /**
- * Registers the `collama.generateCommitMessage` command with VS Code.
+ * Registers the `collama.requestCommitMessage` command with VS Code.
  *
  * The command retrieves the Git extension, ensures a repository is present,
- * obtains the staged diff, and uses `generateCommitMessage` to produce a
+ * obtains the staged diff, and uses `requestCommitMessage` to produce a
  * commit message. The message is then placed into the repository's input box.
  *
  * @param context - The extension context used to store the disposable.
  */
-export function registerGenerateCommitMessageCommand(context: vscode.ExtensionContext) {
-    const disposable = vscode.commands.registerCommand("collama.generateCommitMessage", async () => {
+export function registerRequestCommitMessageCommand(context: vscode.ExtensionContext) {
+    const disposable = vscode.commands.registerCommand("collama.requestCommitMessage", async () => {
         const gitExtension = vscode.extensions.getExtension<GitExtension>("vscode.git");
         if (!gitExtension) {
             vscode.window.showErrorMessage("collama: Git extension is not available");
@@ -59,7 +55,7 @@ export function registerGenerateCommitMessageCommand(context: vscode.ExtensionCo
             }
             logMsg(`Staged diff size: ${stagedDiff.length} characters`);
             await withProgressNotification("collama: Generating commit message...", async () => {
-                const commitMessage = await generateCommitMessage(stagedDiff);
+                const commitMessage = await requestCommitMessage(stagedDiff);
                 if (commitMessage) {
                     repo.inputBox.value = commitMessage;
                     vscode.window.showInformationMessage("collama: Commit message generated");
@@ -73,35 +69,4 @@ export function registerGenerateCommitMessageCommand(context: vscode.ExtensionCo
         }
     });
     context.subscriptions.push(disposable);
-}
-
-/**
- * Generates a conventional commit message from a staged git diff.
- *
- * The function constructs a prompt that combines a predefined message
- * template with the supplied diff wrapped in XML-style tags, then calls
- * {@link llmGenerate} to generate the commit text.
- *
- * @param stagedDiff - The git diff of the staged changes.
- * @returns A promise that resolves to the generated commit message string.
- */
-export async function generateCommitMessage(stagedDiff: string): Promise<string> {
-    logMsg("Generating commit message...");
-
-    const clientFactory = new LlmClientFactory("instruction");
-    const result = await clientFactory.chat({
-        apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
-        model: userConfig.apiModelInstruct,
-        messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
-        options: buildCommitOptions(),
-        stop: emptyStop(),
-    });
-
-    if (!result.content) {
-        logMsg("Warning: LLM returned empty commit message");
-        return "chore: update files";
-    }
-
-    logMsg(`Generated commit message: ${result.content.substring(0, 50)}...`);
-    return result.content;
 }
