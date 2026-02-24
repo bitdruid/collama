@@ -52,10 +52,12 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 **AI Agent with Tool Calling**
 - LLM can interact with your workspace through function calling
 - **File System Tools**: Read files, list directories, search contents with regex, create files and folders, edit files with diff preview
-- **Git Tools**: Browse commit history, compare branches, view diffs, list branches
+- **Git Tools**: Browse commit history, compare branches, view diffs, list branches, revert files
+- **Code Analysis Tools**: Get symbols, find references, get diagnostics, rename symbols
 - **Security**: Path traversal protection, workspace boundary enforcement, .gitignore integration
 - **Real-time Feedback**: Tool calls streamed to chat as they execute
 - The agent can autonomously explore your codebase to provide context-aware assistance
+- **Read-Only Mode**: Toggle edit tools to run the agent in safe, read-only mode
 
 **Commit Messages**
 - AI-generated conventional commit messages from staged changes
@@ -95,6 +97,8 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 | `collama.autoComplete`          | boolean | `true`                      | Enable auto-suggestions                                  |
 | `collama.suggestMode`           | string  | `inline`                    | Suggestion style: `inline`, `multiline`, or `multiblock` |
 | `collama.suggestDelay`          | number  | `1500`                      | Delay (ms) before requesting completion                  |
+| `collama.agentic`               | boolean | `true`                      | Use agentic (tool use) mode for chat                     |
+| `collama.enableEditTools`       | boolean | `true`                      | Enable edit tools (read-only mode when disabled)         |
 
 ### Bearer Tokens (Optional)
 
@@ -123,8 +127,6 @@ Collama is tested primarily with the **Qwen Coder** for Completion and ***gpt-os
 - **any instruct model and thinking** recommended
 - **gpt-oss:20b** (stable quality)
 Do not use a FIM model for instructions. It will produce very poor quality answers.
-
-### Openai SDK was tested with glm-4.7-fp8 for instructions giving superior responses
 
 ### Model Completion Compatibility Table
 
@@ -181,19 +183,9 @@ Note: ChatML format is not supported - that means only true fim-models will work
 
 ### AI Agent Usage
 
-The AI agent can autonomously explore your workspace when you ask questions that require context:
-
-1. Open the Chat view in the sidebar
-2. Ask questions like:
-   - "What files are in the src directory?"
-   - "Show me the recent commits on the main branch"
-   - "Search for TODO comments in TypeScript files"
-   - "What changed between the last two commits?"
-   - "Update the README with the new feature description"
-   - "Create a new component file for the user profile"
-   - "Create a new folder for utilities"
-3. The agent will use tools to gather information and provide comprehensive answers
-4. Watch as tool calls are streamed in real-time
+#### Agentic was tested on vLLM (Openai SDK) with
+- gpt-oss:120b
+- glm-4.7-fp8
 
 **Available Tools:**
 
@@ -202,15 +194,30 @@ The AI agent can autonomously explore your workspace when you ask questions that
   - `listFiles` - Find files in the workspace matching a glob pattern
   - `searchFiles` - Search file contents in the workspace for a regex pattern
   - `lsPath` - List the directory tree of a path in the workspace
-  - `createFile` - Create a new file in the workspace with content preview and user confirmation. Shows a preview of the new file content and asks for confirmation before creating the file.
-  - `createFolder` - Create a new folder/directory in the workspace with user confirmation. Asks for confirmation before creating the folder.
-  - `editFile` - Edit a file in the workspace with diff preview and user confirmation. Always shows a side-by-side diff of original vs modified content and asks for confirmation before applying changes.
+  - `createFile` - Create a new file in the workspace with content preview and user confirmation
+  - `createFolder` - Create a new folder/directory in the workspace with user confirmation
+  - `editFile` - Edit a file with diff preview and user confirmation (supports multiple search-and-replace operations)
+  - `deleteFile` - Delete a file from the workspace with user confirmation
 
 - **Git Tools**
   - `getCommits` - List git commits from a branch
   - `getCommitDiff` - Compare two commits or branches
   - `getWorkingTreeDiff` - Get unstaged or staged changes in the working directory
   - `listBranches` - List all local (and optionally remote) git branches
+  - `revertFile` - Revert a file to its last git-committed state with user confirmation
+
+- **Code Analysis Tools**
+  - `getSymbols` - Get symbols (classes, functions, variables, interfaces, types, etc.) from a document or the entire workspace
+  - `findReferences` - Find all references to a symbol across the workspace
+  - `getDiagnostics` - Get diagnostics (errors, warnings, hints) from the language server
+  - `renameSymbol` - Rename a symbol across the entire workspace using the language server (type-aware)
+
+**Read-Only Mode:**
+
+When `enableEditTools` is disabled (toggle via status bar), the following tools are unavailable:
+- `editFile`, `createFile`, `createFolder`, `deleteFile`, `revertFile`, `renameSymbol`
+
+The agent can still use read-only tools to explore and analyze your codebase safely.
 
 
 ## Contributing
