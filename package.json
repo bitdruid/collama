@@ -46,6 +46,11 @@
                     "default": true,
                     "description": "Use agentic (tool use) mode for chat."
                 },
+                "collama.enableEditTools": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable edit tools (editFile, createFile, deleteFile, etc.). When disabled, the agent runs in read-only mode."
+                },
                 "collama.autoComplete": {
                     "type": "boolean",
                     "default": true,

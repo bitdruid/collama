@@ -25,6 +25,7 @@ export const userConfig = {
     autoComplete: true,
     suggestMode: "inline",
     suggestDelay: 1500,
+    enableEditTools: true,
 };
 
 /**
@@ -71,6 +72,7 @@ export async function updateVSConfig() {
         autoComplete: cfg.get("autoComplete", userConfig.autoComplete),
         suggestMode: cfg.get("suggestMode", userConfig.suggestMode),
         suggestDelay: Math.max(cfg.get("suggestDelay", userConfig.suggestDelay), 1500),
+        enableEditTools: cfg.get("enableEditTools", userConfig.enableEditTools),
     };
 
     const changed: Partial<Record<keyof typeof userConfig, { from: any; to: any }>> = {};

@@ -1,5 +1,6 @@
 import path from "path";
 import * as vscode from "vscode";
+import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import {
     findReferences_def,
@@ -68,7 +69,14 @@ export interface Tool<TInput = any, TOutput = any> {
  * @returns An array of tool definition objects containing type, name, description, and parameters.
  */
 export function getToolDefinitions() {
-    return Object.values(toolRegistry).map((tool) => ({
+    const tools = Object.values(toolRegistry);
+
+    // Filter out edit tools if enableEditTools is false (read-only mode)
+    const filteredTools = userConfig.enableEditTools
+        ? tools
+        : tools.filter((tool) => !isEditTool(tool.definition.function.name));
+
+    return filteredTools.map((tool) => ({
         type: tool.definition.type,
         function: {
             name: tool.definition.function.name,
@@ -76,6 +84,15 @@ export function getToolDefinitions() {
             parameters: tool.definition.function.parameters, // Pass Zod schema directly
         },
     }));
+}
+
+/**
+ * Checks if a tool is an edit tool (modifies files).
+ * Edit tools are: editFile, createFile, createFolder, deleteFile, revertFile, renameSymbol
+ */
+function isEditTool(toolName: string): boolean {
+    const editTools = ["editFile", "createFile", "createFolder", "deleteFile", "revertFile", "renameSymbol"];
+    return editTools.includes(toolName);
 }
 
 /**
