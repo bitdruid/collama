@@ -2,7 +2,7 @@ import path from "path";
 import * as vscode from "vscode";
 import { withProgressNotification } from "../../common/utils";
 import { logMsg } from "../../logging";
-import { getWorkspaceRoot, isWithinRoot } from "../tools";
+import { confirmAction, getWorkspaceRoot, isWithinRoot } from "../tools";
 
 /**
  * Virtual document provider for diff previews.
@@ -99,14 +99,7 @@ async function handleFileChangesWithDiff(
         // Open diff view
         await vscode.commands.executeCommand("vscode.diff", leftUri, rightUri, diffTitle);
 
-        // Ask user to apply or cancel
-        const applyChoice = await vscode.window.showQuickPick(["Accept", "Cancel"], {
-            placeHolder: "Apply these changes?",
-            canPickMany: false,
-            ignoreFocusOut: true,
-        });
-
-        const shouldApply = applyChoice === "Accept";
+        const shouldApply = await confirmAction("Accept", "Apply these changes?");
         let resultMessage = "";
 
         if (shouldApply) {
@@ -167,14 +160,7 @@ async function handleNewFileCreation(
         // Open preview
         await vscode.commands.executeCommand("vscode.openWith", previewUri, "default");
 
-        // Ask user to create or cancel
-        const createChoice = await vscode.window.showQuickPick(["Create File", "Cancel"], {
-            placeHolder: `Create new file: ${filePath}?`,
-            canPickMany: false,
-            ignoreFocusOut: true,
-        });
-
-        const shouldCreate = createChoice === "Create File";
+        const shouldCreate = await confirmAction("Create File", `Create new file: ${filePath}?`);
         let resultMessage = "";
 
         if (shouldCreate) {
@@ -200,17 +186,17 @@ async function handleNewFileCreation(
 
 /**
  * Executes the editFile operation.
- * Edits a file by replacing a specific string with a new string.
- * Shows a diff preview and asks for user confirmation before applying.
+ * Applies one or more search-and-replace edits to a single file.
+ * Shows a combined diff preview and asks for user confirmation before applying.
  *
- * @param args - The arguments for the operation.
- * @param args.filePath - The relative path to the file within the workspace.
- * @param args.oldStr - The exact string to find and replace. Must match uniquely in the file.
- * @param args.newStr - The replacement string.
- * @returns A JSON string containing the operation result, or an error object if the operation fails.
+ * @param args.filePath - Relative path to the file.
+ * @param args.edits - Array of { oldStr, newStr } replacements, applied in order.
  */
-export async function editFile_exec(args: { filePath: string; oldStr: string; newStr: string }): Promise<string> {
-    logMsg(`Agent - tool use editFile file=${args.filePath}`);
+export async function editFile_exec(args: {
+    filePath: string;
+    edits: Array<{ oldStr: string; newStr: string }>;
+}): Promise<string> {
+    logMsg(`Agent - tool use editFile file=${args.filePath} edits=${args.edits.length}`);
 
     const root = getWorkspaceRoot();
     if (!root) {
@@ -222,27 +208,31 @@ export async function editFile_exec(args: { filePath: string; oldStr: string; ne
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
 
+    if (!args.edits || args.edits.length === 0) {
+        return JSON.stringify({ error: "No edits provided" });
+    }
+
     try {
-        const uri = vscode.Uri.file(fullPath);
+        let content = await readFileContent(fullPath);
 
-        // Prefer the in-memory document buffer (picks up unsaved edits from previous tool calls)
-        const openDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
-        const originalContent = openDoc
-            ? openDoc.getText()
-            : Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
-
-        // Count occurrences to ensure unique match
-        const occurrences = originalContent.split(args.oldStr).length - 1;
-        if (occurrences === 0) {
-            return JSON.stringify({ error: "oldStr not found in file. Make sure it matches the file content exactly, including whitespace and indentation." });
+        // Apply each replacement in order
+        for (let i = 0; i < args.edits.length; i++) {
+            const edit = args.edits[i];
+            const occurrences = content.split(edit.oldStr).length - 1;
+            if (occurrences === 0) {
+                return JSON.stringify({
+                    error: `Edit ${i + 1}: oldStr not found in file. Make sure it matches exactly, including whitespace and indentation.`,
+                });
+            }
+            if (occurrences > 1) {
+                return JSON.stringify({
+                    error: `Edit ${i + 1}: oldStr found ${occurrences} times. Include more surrounding context to make it unique.`,
+                });
+            }
+            content = content.replace(edit.oldStr, edit.newStr);
         }
-        if (occurrences > 1) {
-            return JSON.stringify({ error: `oldStr found ${occurrences} times. It must be unique. Include more surrounding context to make it unique.` });
-        }
 
-        const newContent = originalContent.replace(args.oldStr, args.newStr);
-
-        const result = await handleFileChangesWithDiff(fullPath, newContent, {
+        const result = await handleFileChangesWithDiff(fullPath, content, {
             diffTitle: `collama – Edit ${args.filePath}`,
             progressMessage: `collama: Editing ${args.filePath}…`,
         });
@@ -264,7 +254,7 @@ export const editFile_def = {
     function: {
         name: "editFile",
         description:
-            "Edit a file by replacing a specific string with a new string (search-and-replace). The oldStr must match exactly one location in the file. Shows a diff preview and asks for user confirmation. Use readFile first to see the current content. For multiple changes, call this tool multiple times.",
+            "Edit a file with one or more search-and-replace operations. Each oldStr must match exactly one location. Edits are applied in order, and a combined diff preview is shown for user confirmation. Use readFile first to see the current content.",
         parameters: {
             type: "object",
             properties: {
@@ -272,17 +262,27 @@ export const editFile_def = {
                     type: "string",
                     description: "Path to the file to edit (relative to workspace root).",
                 },
-                oldStr: {
-                    type: "string",
-                    description:
-                        "The exact string to find in the file. Must match exactly one location, including whitespace and indentation. Include enough surrounding lines for a unique match.",
-                },
-                newStr: {
-                    type: "string",
-                    description: "The string to replace oldStr with. Can be empty to delete the matched text.",
+                edits: {
+                    type: "array",
+                    description: "One or more replacements to apply in order.",
+                    items: {
+                        type: "object",
+                        properties: {
+                            oldStr: {
+                                type: "string",
+                                description:
+                                    "The exact string to find. Must match exactly one location, including whitespace and indentation.",
+                            },
+                            newStr: {
+                                type: "string",
+                                description: "The replacement string. Can be empty to delete the matched text.",
+                            },
+                        },
+                        required: ["oldStr", "newStr"],
+                    },
                 },
             },
-            required: ["filePath", "oldStr", "newStr"],
+            required: ["filePath", "edits"],
         },
     },
 };
@@ -393,14 +393,7 @@ export async function createFolder_exec(args: { folderPath: string }): Promise<s
             // Folder doesn't exist, which is what we want
         }
 
-        // Ask user to confirm folder creation
-        const createChoice = await vscode.window.showQuickPick(["Create Folder", "Cancel"], {
-            placeHolder: `Create new folder: ${args.folderPath}?`,
-            canPickMany: false,
-            ignoreFocusOut: true,
-        });
-
-        if (createChoice !== "Create Folder") {
+        if (!(await confirmAction("Create Folder", `Create new folder: ${args.folderPath}?`))) {
             return JSON.stringify({
                 success: false,
                 message: "Folder creation cancelled.",
@@ -441,3 +434,76 @@ export const createFolder_def = {
         },
     },
 };
+
+/**
+ * Deletes a file from the workspace after user confirmation.
+ *
+ * @param args.filePath - Relative path to the file to delete.
+ */
+export async function deleteFile_exec(args: { filePath: string }): Promise<string> {
+    logMsg(`Agent - tool use deleteFile file=${args.filePath}`);
+
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root" });
+    }
+
+    const fullPath = path.resolve(root, args.filePath);
+    if (!isWithinRoot(root, fullPath)) {
+        return JSON.stringify({ error: "Path must not escape the workspace root" });
+    }
+
+    try {
+        const uri = vscode.Uri.file(fullPath);
+
+        // Verify the file exists
+        try {
+            const stat = await vscode.workspace.fs.stat(uri);
+            if (stat.type === vscode.FileType.Directory) {
+                return JSON.stringify({ error: `Path is a directory, not a file: ${args.filePath}` });
+            }
+        } catch {
+            return JSON.stringify({ error: `File not found: ${args.filePath}` });
+        }
+
+        if (!(await confirmAction("Delete", `Delete file: ${args.filePath}?`))) {
+            return JSON.stringify({ success: false, message: "Deletion cancelled.", filePath: args.filePath });
+        }
+
+        await vscode.workspace.fs.delete(uri);
+
+        return JSON.stringify({ success: true, message: "File deleted.", filePath: args.filePath });
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logMsg(`Agent - deleteFile error: ${msg}`);
+        return JSON.stringify({ error: `Failed to delete file: ${msg}` });
+    }
+}
+
+export const deleteFile_def = {
+    type: "function" as const,
+    function: {
+        name: "deleteFile",
+        description: "Delete a file from the workspace. Asks for user confirmation before deleting.",
+        parameters: {
+            type: "object",
+            properties: {
+                filePath: {
+                    type: "string",
+                    description: "Path to the file to delete (relative to workspace root).",
+                },
+            },
+            required: ["filePath"],
+        },
+    },
+};
+
+/**
+ * Reads file content, preferring the in-memory document buffer over disk.
+ */
+async function readFileContent(fullPath: string): Promise<string> {
+    const uri = vscode.Uri.file(fullPath);
+    const openDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+    return openDoc ? openDoc.getText() : Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
+}
+

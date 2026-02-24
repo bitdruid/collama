@@ -373,7 +373,7 @@ class ChatPanel {
                     { role: "user", content: "Summarize our conversation." },
                     {
                         role: "assistant",
-                        content: `\`\`\`Summary: Conversation\n${summaryContent}\n\`\`\``,
+                        content: `\`\`\`Summary: Conversation\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``,
                     },
                 ];
 

@@ -2,10 +2,22 @@ import path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
 import {
+    findReferences_def,
+    findReferences_exec,
+    getDiagnostics_def,
+    getDiagnostics_exec,
+    getSymbols_def,
+    getSymbols_exec,
+    renameSymbol_def,
+    renameSymbol_exec,
+} from "./tools/analyse";
+import {
     createFile_def,
     createFile_exec,
     createFolder_def,
     createFolder_exec,
+    deleteFile_def,
+    deleteFile_exec,
     editFile_def,
     editFile_exec,
 } from "./tools/edit";
@@ -28,6 +40,8 @@ import {
     getWorkingTreeDiff_exec,
     listBranches_def,
     listBranches_exec,
+    revertFile_def,
+    revertFile_exec,
 } from "./tools/git";
 
 /**
@@ -109,6 +123,21 @@ export function isWithinRoot(root: string, resolvedPath: string): boolean {
 }
 
 /**
+ * Shows a quick-pick confirmation prompt with the given action label and a Cancel option.
+ * @param action - The label for the confirm button (e.g. "Accept", "Delete", "Revert").
+ * @param placeHolder - The message shown in the quick-pick.
+ * @returns True if the user selected the action, false if they cancelled.
+ */
+export async function confirmAction(action: string, placeHolder: string): Promise<boolean> {
+    const choice = await vscode.window.showQuickPick([action, "Cancel"], {
+        placeHolder,
+        canPickMany: false,
+        ignoreFocusOut: true,
+    });
+    return choice === action;
+}
+
+/**
  * Registry of available tools.
  */
 export const toolRegistry: Record<string, Tool<any, any>> = {
@@ -155,5 +184,29 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     createFolder: {
         definition: createFolder_def,
         execute: createFolder_exec,
+    },
+    deleteFile: {
+        definition: deleteFile_def,
+        execute: deleteFile_exec,
+    },
+    revertFile: {
+        definition: revertFile_def,
+        execute: revertFile_exec,
+    },
+    getSymbols: {
+        definition: getSymbols_def,
+        execute: getSymbols_exec,
+    },
+    renameSymbol: {
+        definition: renameSymbol_def,
+        execute: renameSymbol_exec,
+    },
+    findReferences: {
+        definition: findReferences_def,
+        execute: findReferences_exec,
+    },
+    getDiagnostics: {
+        definition: getDiagnostics_def,
+        execute: getDiagnostics_exec,
     },
 };
