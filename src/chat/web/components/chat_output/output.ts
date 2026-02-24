@@ -3,9 +3,11 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import MarkdownIt from "markdown-it";
 
 import { estimateTokenCount, highlightAllCodeBlocks, hljsStyles, icons } from "../../../utils";
-import "../chat_accordion";
-import { ChatContext, ChatMessage } from "../chat_container";
+import "../chat_accordion/chat_accordion";
+
 import "./edit";
+import { ChatContext, ChatMessage } from "../chat_container/chat_container";
+import { outputStyles } from "./styles/output_styles";
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.

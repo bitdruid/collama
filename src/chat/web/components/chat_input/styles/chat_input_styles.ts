@@ -23,7 +23,8 @@ export const chatInputStyles = css`
             box-sizing: border-box;
         }
         button-submit,
-        button-context {
+        button-context,
+        button-cancel {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -48,11 +49,22 @@ export const chatInputStyles = css`
         button-submit:hover {
             background-color: #185d86;
         }
+        button-submit:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
         button-context {
             background-color: #2277a8;
         }
         button-context:hover {
             background-color: #185d86;
+        }
+        button-cancel {
+            background-color: #a82222;
+        }
+        button-cancel:hover {
+            background-color: #861818;
         }
         .context-display {
             display: inline-flex;

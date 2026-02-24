@@ -128,6 +128,7 @@ export class ChatInput extends LitElement {
             gap: 8px;
         }
     `;
+    static styles = chatInputStyles
 
     userInput = "";
     rows = 1;

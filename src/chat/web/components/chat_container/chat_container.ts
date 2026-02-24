@@ -19,7 +19,7 @@ declare global {
     }
 }
 
-export {};
+export { };
 
 export function logWebview(message: string) {
     window.vscode.postMessage({
@@ -329,12 +329,12 @@ export class ChatContainer extends LitElement {
 
                 // NEU: Store auch initialisieren
                 ChatSessionStore.instance.loadFromBackend({
-                sessions: this.sessions,
-                activeSessionId: this.activeSessionId,
-                contextUsed: this.contextUsed,
-                contextMax: this.contextMax,
+                    sessions: this.sessions,
+                    activeSessionId: this.activeSessionId,
+                    contextUsed: this.contextUsed,
+                    contextMax: this.contextMax,
                 });
-    
+
                 logWebview(`${this.sessions.length} sessions total, active: ${this.activeSessionId}`);
             }
 
@@ -348,6 +348,12 @@ export class ChatContainer extends LitElement {
                 this.contextStartIndex = msg.contextStartIndex || 0;
             }
 
+            ChatSessionStore.instance.loadFromBackend({
+                sessions: this.sessions,
+                activeSessionId: this.activeSessionId,
+                contextUsed: this.contextUsed,
+                contextMax: this.contextMax,
+            });
             // receives new chunk of assistant response
             if (msg.type === "chunk") {
                 // Update content directly without creating new array (mutate in place)
