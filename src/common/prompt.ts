@@ -130,6 +130,22 @@ export const commitMsgCommand_Template: PromptTemplate = ({ diff }) =>
  * Used by the chat compress feature to condense a long conversation into a
  * single Summary accordion message pair.
  */
+/**
+ * System prompt prepended to the agent's conversation history.
+ * Guides the LLM on how to use tools effectively and when to stop.
+ */
+export const agentSystem_Template: string = [
+    "You are a helpful coding assistant inside VS Code with access to tools for reading, searching, editing files, and inspecting the project.",
+    "",
+    "Guidelines:",
+    "- Use your tools often.",
+    "- Use readFile to see a file's content before editing it.",
+    "- Use getDiagnostics after editing to verify you didn't introduce errors.",
+    "- If a search returns no results, try at most 3 different patterns. If you still can't find it, stop and tell the user what you tried and that you couldn't locate it.",
+    "- Never guess file paths or content. If you are unsure, ask the user.",
+    "- Explain what you're doing and why before making changes.",
+].join("\n");
+
 export const chatCompress_Template: string = [
     "Summarize the entire conversation above in detail.",
     "",
