@@ -254,7 +254,7 @@ export const editFile_def = {
     function: {
         name: "editFile",
         description:
-            "Edit a file with one or more search-and-replace operations. Each oldStr must match exactly one location. Edits are applied in order, and a combined diff preview is shown for user confirmation. Use readFile first to see the current content.",
+            "Edit a file using search-and-replace. ALWAYS use readFile first. To CHANGE code: oldStr=exact existing code, newStr=replacement. To ADD new code after a line: oldStr=that existing line, newStr=that same line + your new lines. To DELETE: oldStr=code to remove, newStr=empty string. Include 3-5 lines of context in oldStr so it matches exactly one location. Supports multiple edits in one call.",
         parameters: {
             type: "object",
             properties: {

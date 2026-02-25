@@ -41,6 +41,26 @@
                     "default": "gpt-oss:20b",
                     "markdownDescription": "Model for edits.\n\nUse an **instruct** or **base** model."
                 },
+                "collama.apiContextLenCompletion": {
+                    "type": "number",
+                    "default": 4096,
+                    "description": "Context window size (tokens) for the completion model."
+                },
+                "collama.apiContextLenInstruct": {
+                    "type": "number",
+                    "default": 4096,
+                    "description": "Context window size (tokens) for the instruct/chat model."
+                },
+                "collama.apiPredictCompletion": {
+                    "type": "number",
+                    "default": 400,
+                    "description": "Max tokens to generate per completion request."
+                },
+                "collama.apiPredictInstruct": {
+                    "type": "number",
+                    "default": 4096,
+                    "description": "Max tokens to generate per instruct/chat request."
+                },
                 "collama.agentic": {
                     "type": "boolean",
                     "default": true,
@@ -50,6 +70,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Enable edit tools (editFile, createFile, deleteFile, etc.). When disabled, the agent runs in read-only mode."
+                },
+                "collama.tlsRejectUnauthorized": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Verify TLS certificates for HTTPS endpoints. **Disable only if you trust the network** (equivalent to `NODE_TLS_REJECT_UNAUTHORIZED=0`)."
                 },
                 "collama.autoComplete": {
                     "type": "boolean",

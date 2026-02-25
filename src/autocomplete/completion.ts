@@ -1,6 +1,6 @@
 import { Context } from "../common/context_editor";
 import { requestCompletion } from "../common/requests";
-import { sysConfig } from "../config";
+import { userConfig } from "../config";
 import { Sanitizer } from "./sanitizer";
 
 export class Completion {
@@ -13,7 +13,7 @@ export class Completion {
             return;
         }
 
-        this.context.recreateTokenLimit(sysConfig.contextLenCompletion);
+        this.context.recreateTokenLimit(userConfig.apiContextLenCompletion);
 
         this.snippet = await requestCompletion(this.context);
         this.snippet = Sanitizer.sanitize(this.snippet, this.context);

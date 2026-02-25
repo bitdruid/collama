@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { Ollama } from "ollama";
 import OpenAI from "openai";
 import * as vscode from "vscode";
+import { logMsg } from "../logging";
 
 /**
  * Wraps an async operation with a VS Code progress notification.
@@ -60,6 +61,20 @@ class Tokenizer {
 
 export default Tokenizer;
 
+let tlsRejectUnauthorized = true;
+
+/**
+ * Toggle TLS certificate validation (process-wide).
+ * When disabled, equivalent to NODE_TLS_REJECT_UNAUTHORIZED=0.
+ */
+export function setTlsRejectUnauthorized(reject: boolean): void {
+    if (reject !== tlsRejectUnauthorized) {
+        tlsRejectUnauthorized = reject;
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = reject ? "1" : "0";
+        logMsg(`TLS certificate validation: ${reject ? "enabled" : "disabled"}`);
+    }
+}
+
 /**
  * Proxy-aware fetch wrapper.
  *
@@ -72,6 +87,9 @@ export default Tokenizer;
  * This wrapper re-packages the response into a standard `Response`
  * with a proper Web ReadableStream body so both Ollama and OpenAI
  * SDKs work correctly.
+ *
+ * TLS settings (custom CA, reject unauthorized) are handled
+ * process-wide via NODE_TLS_REJECT_UNAUTHORIZED and NODE_EXTRA_CA_CERTS.
  */
 export async function proxyFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
     const response = await nodeFetch(input as any, init as any);
