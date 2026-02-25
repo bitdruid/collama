@@ -6,9 +6,29 @@ import { emptyStateStyles } from "./styles";
 
 @customElement("collama-empty-state")
 export class EmptyState extends LitElement {
+  
+  
+
   static styles = [commonStyles, emptyStateStyles];
+  message: string | undefined;
+  
+
+connectedCallback() {
+  super.connectedCallback();
+
+  const messages = [
+    "Hey, wanna code with me?",
+    "Ready to build something awesome?",
+    "Let's create something amazing!",
+    "Time to write some clean code!",
+    "Coffee ☕ + Code = ❤️",
+    "What are we building today?"
+  ];
+
+  this.message = messages[Math.floor(Math.random() * messages.length)];
+}
 
   render() {
-    return html`<div class="empty-state">Hey, wanna code with me?</div>`;
+    return html`<div class="empty-state">${this.message}</div>`;
   }
 }

@@ -1,7 +1,6 @@
 import { LitElement, css, html } from "lit";
 
 import { estimateTokenCount } from "../../../utils";
-import "../chat_input/components/input_panel/input_panel";
 import "../chat_output/output";
 import "../chat_session/components/chat_sessions";
 

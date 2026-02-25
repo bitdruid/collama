@@ -8,7 +8,7 @@ import "../chat_accordion/chat_accordion";
 import "./edit";
 import { ChatContext, ChatMessage } from "../chat_container/chat_container";
 import { outputStyles } from "./styles/output_styles";
-import "../chat_session/components/chat_empty_state";
+import "../chat_session/components/popup/chat_empty_state";
 
 
 /**

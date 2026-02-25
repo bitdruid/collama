@@ -1,8 +1,7 @@
 import { LitElement, css, html } from "lit";
-
-import { icons } from "../../../utils";
 import { ChatContext } from "../chat_container/chat_container";
 import { chatInputStyles } from "./styles/chat_input_styles";
+import  "./components/input_buttons/input_buttons"; // Import
 
 export class ChatInput extends LitElement {
     static get properties() {
@@ -14,8 +13,7 @@ export class ChatInput extends LitElement {
         };
     }
 
-    
-    static styles = chatInputStyles
+    static styles = chatInputStyles;
 
     userInput = "";
     rows = 1;
@@ -73,7 +71,7 @@ export class ChatInput extends LitElement {
         if (!ta) {
             return;
         }
-        ta.rows = 1; // reset so it can shrink
+        ta.rows = 1;
         const style = getComputedStyle(ta);
         const lineHeight = parseFloat(style.lineHeight);
         const paddingTop = parseFloat(style.paddingTop);
@@ -95,35 +93,9 @@ export class ChatInput extends LitElement {
         );
     }
 
-    private _renderContextButton() {
-        if (this.contexts.length > 0) {
-            return html`
-                <div class="context-list">
-                    ${this.contexts.map((ctx, index) => {
-                        const label = ctx.hasSelection
-                            ? `${ctx.fileName} (${ctx.startLine}-${ctx.endLine})`
-                            : ctx.fileName;
-                        return html`
-                            <span class="context-display" title="Context attached">
-                                ${label}
-                                <button
-                                    class="context-close"
-                                    @click=${() => this._clearContext(index)}
-                                    title="Remove context"
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        `;
-                    })}
-                </div>
-            `;
-        }
-        return html`<button-context title="Add context"> ${icons.paperclip} </button-context>`;
-    }
-
     render() {
-        return html` <textarea
+        return html`
+            <textarea
                 .value=${this.userInput}
                 rows=${this.rows}
                 @input=${this._handleInput}
@@ -131,19 +103,15 @@ export class ChatInput extends LitElement {
                 placeholder="Chat with AI..."
                 ?disabled=${this.isLoading}
             ></textarea>
-            <button-row>
-                ${this._renderContextButton()}
-                ${this.isLoading
-                    ? html`<button-cancel title="Cancel" @click=${this._handleCancel}> ${icons.cancel} </button-cancel>`
-                    : html`
-                          <button-compress title="Compress chat" @click=${this._handleCompress}>
-                              ${icons.compress}
-                          </button-compress>
-                          <button-submit title="Submit" @click=${this._handleSubmit} ?disabled=${this.isLoading}>
-                              ${icons.enter}
-                          </button-submit>
-                      `}
-            </button-row>`;
+            <collama-chatinput-buttons
+                .contexts=${this.contexts}
+                .isLoading=${this.isLoading}
+                @cancel=${this._handleCancel}
+                @compress=${this._handleCompress}
+                @submit=${this._handleSubmit}
+                @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
+            ></collama-chatinput-buttons>
+        `;
     }
 }
 
