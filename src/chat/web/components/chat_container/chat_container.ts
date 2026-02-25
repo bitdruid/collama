@@ -290,7 +290,7 @@ export class ChatContainer extends LitElement {
     }
 
     private _onDeleteSession(e: CustomEvent) {
-        const sessionId = e.detail.sessionId;
+        const sessionId = e.detail.id;
         logWebview(`Deleting session ${sessionId}`);
         window.vscode.postMessage({
             type: "delete-session",

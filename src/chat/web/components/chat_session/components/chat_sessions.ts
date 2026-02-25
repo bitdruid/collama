@@ -7,6 +7,7 @@ import "./popup/chat_session_popup";
 
 import { ChatSessionStore } from "../services/chat_session_store";
 import { chatSessionStyle } from "../styles/chat_session_style";
+import { logWebview } from "../../chat_container/chat_container";
 
 export interface ChatSession {
   id: string;
@@ -77,6 +78,7 @@ export class ChatSessions extends LitElement {
 }
 
     private _handleDeleteSession(id: string) {
+        logWebview("massimo_session: " + id);
         ChatSessionStore.instance.deleteSession(id);
     }
 
