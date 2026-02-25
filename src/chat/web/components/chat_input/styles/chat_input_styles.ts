@@ -2,7 +2,7 @@ import { css } from "lit";
 
 
 
-export const chatInputStyles = css`
+export const chatInputStyles  = css`
         :host {
             border-radius: 8px;
             border: 2px solid var(--vscode-commandCenter-activeBorder);
@@ -24,7 +24,8 @@ export const chatInputStyles = css`
         }
         button-submit,
         button-context,
-        button-cancel {
+        button-cancel,
+        button-compress {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -65,6 +66,12 @@ export const chatInputStyles = css`
         }
         button-cancel:hover {
             background-color: #861818;
+        }
+        button-compress {
+            background-color: #7a6030;
+        }
+        button-compress:hover {
+            background-color: #5a4622;
         }
         .context-display {
             display: inline-flex;

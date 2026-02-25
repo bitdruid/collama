@@ -8,6 +8,8 @@ import "../chat_accordion/chat_accordion";
 import "./edit";
 import { ChatContext, ChatMessage } from "../chat_container/chat_container";
 import { outputStyles } from "./styles/output_styles";
+import "../chat_session/components/chat_empty_state";
+
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.
@@ -189,25 +191,36 @@ export class ChatOutput extends LitElement {
     }
 
     render() {
+        const messages = this.messages;
+
+
+        if (!messages || messages.length === 0) {
+            return html`
+                <div class="output-container">
+                    <collama-empty-state></collama-empty-state>
+                </div>
+                `;
+        }
         const lastIndex = this.messages.length - 1;
-        return html`
+         return html`
+            <div class="output-container">
             ${this.messages.map((msg, index) => {
-                const isStreamingMessage = index === lastIndex && msg.role === "assistant" && !msg.loading;
-                const displayContent = this._getMessageWithoutContext(msg);
-                const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
-                return html`
+            const isStreamingMessage = index === lastIndex && msg.role === "assistant" && !msg.loading;
+            const displayContent = this._getMessageWithoutContext(msg);
+            const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
+            return html`
                     <div class="message ${msg.role} ${isOutOfContext ? "out-of-context" : ""}">
                         <div class="bubble ${msg.role === "user" ? "bubble-user" : ""}">
                             <div class="role-header ${msg.role === "user" ? "role-user" : "role-assistant"}">
                                 <span class="role-label"
                                     >${isOutOfContext
-                                        ? html`<span class="warning-icon" title="Not in context"
+                    ? html`<span class="warning-icon" title="Not in context"
                                               >${icons.alertTriangle}</span
                                           >`
-                                        : ""}${msg.role === "user" ? "User" : "Assistant"}</span
+                    : ""}${msg.role === "user" ? "User" : "Assistant"}</span
                                 >
                                 ${msg.role === "user"
-                                    ? html`
+                    ? html`
                                           <div class="message-actions">
                                               <button
                                                   class="edit-button"
@@ -227,18 +240,18 @@ export class ChatOutput extends LitElement {
                                                   class="delete-button"
                                                   @click=${() => this._handleDelete(index)}
                                                   title="Delete this message pair (~${this._estimateTokensFreed(
-                                                      index,
-                                                  )} tokens freed)"
+                        index,
+                    )} tokens freed)"
                                               >
                                                   ✕ Delete
                                               </button>
                                           </div>
                                       `
-                                    : ""}
+                    : ""}
                             </div>
                             ${msg.contexts && msg.contexts.length > 0 ? this._renderContexts(msg.contexts) : ""}
                             ${this.editingIndex === index
-                                ? html`
+                    ? html`
                                       <collama-chatedit
                                           .content=${displayContent}
                                           .messageIndex=${index}
@@ -246,13 +259,14 @@ export class ChatOutput extends LitElement {
                                           @edit-cancel=${() => this._handleEditCancel()}
                                       ></collama-chatedit>
                                   `
-                                : msg.loading
-                                  ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
-                                  : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
+                    : msg.loading
+                        ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
+                        : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
                         </div>
                     </div>
                 `;
-            })}
+        })}
+        </div>
         `;
     }
 }

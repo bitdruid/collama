@@ -2,8 +2,8 @@
 import { LitElement, html } from "lit";
 import { customElement } from "lit/decorators.js";
 
-import "./chat_session_header";
-import "./chat_session_popup";
+import "./header/chat_session_header";
+import "./popup/chat_session_popup";
 
 import { ChatSessionStore } from "../services/chat_session_store";
 import { chatSessionStyle } from "../styles/chat_session_style";

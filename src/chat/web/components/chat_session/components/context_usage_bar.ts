@@ -8,30 +8,48 @@ export class ContextUsageBar extends LitElement {
   @property({ type: Number }) max = 0;
 
   static styles = css`
+    :host {
+      --bar-bg: rgba(255, 255, 255, 0.15);
+      --bar-fill: #4ec9b0;
+      --danger-color: #f14c4c;
+      --warning-color: #cca700;
+      display: block;
+    }
     .context-usage {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 8px;
+      min-width: 120px;
     }
     .context-bar-container {
       flex: 1;
-      height: 8px;
+      min-width: 50px;
+      height: 6px;
       background: var(--bar-bg);
-      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
       overflow: hidden;
+      position: relative;
     }
     .context-bar {
       height: 100%;
       background: var(--bar-fill);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      min-width: 1px;
     }
-    .danger {
+    .context-bar.danger {
       background: var(--danger-color);
     }
-    .warning {
+    .context-bar.warning {
       background: var(--warning-color);
     }
     .context-text {
-      font-size: 0.75rem;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground, #cccccc);
+      white-space: nowrap;
+      min-width: 35px;
+      text-align: right;
     }
   `;
 

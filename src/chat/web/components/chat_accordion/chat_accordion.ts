@@ -1,4 +1,4 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, html } from "lit";
 
 import { highlightCodeBlock, icons } from "../../../utils";
 import { accordionStyles } from "./styles/chat_accordion_styles";
