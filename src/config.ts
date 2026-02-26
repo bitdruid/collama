@@ -27,10 +27,10 @@ export const userConfig = {
     suggestDelay: 1500,
     enableEditTools: true,
     tlsRejectUnauthorized: true,
-    apiContextLenCompletion: 4096,
-    apiContextLenInstruct: 4096,
-    apiPredictCompletion: 400,
-    apiPredictInstruct: 4096,
+    apiTokenContextLenCompletion: 4096,
+    apiTokenContextLenInstruct: 4096,
+    apiTokenPredictCompletion: 400,
+    apiTokenPredictInstruct: 4096,
 };
 
 /**
@@ -74,17 +74,17 @@ export async function updateVSConfig() {
         suggestDelay: Math.max(cfg.get("suggestDelay", userConfig.suggestDelay), 1500),
         enableEditTools: cfg.get("enableEditTools", userConfig.enableEditTools),
         tlsRejectUnauthorized: cfg.get("tlsRejectUnauthorized", userConfig.tlsRejectUnauthorized),
-        apiContextLenCompletion: cfg.get("apiContextLenCompletion", userConfig.apiContextLenCompletion),
-        apiContextLenInstruct: cfg.get("apiContextLenInstruct", userConfig.apiContextLenInstruct),
-        apiPredictCompletion: cfg.get("apiPredictCompletion", userConfig.apiPredictCompletion),
-        apiPredictInstruct: cfg.get("apiPredictInstruct", userConfig.apiPredictInstruct),
+        apiTokenContextLenCompletion: cfg.get("apiTokenContextLenCompletion", userConfig.apiTokenContextLenCompletion),
+        apiTokenContextLenInstruct: cfg.get("apiTokenContextLenInstruct", userConfig.apiTokenContextLenInstruct),
+        apiTokenPredictCompletion: cfg.get("apiTokenPredictCompletion", userConfig.apiTokenPredictCompletion),
+        apiTokenPredictInstruct: cfg.get("apiTokenPredictInstruct", userConfig.apiTokenPredictInstruct),
     };
 
     const changed: Partial<Record<keyof typeof userConfig, { from: any; to: any }>> = {};
     let endpointCompletionChanged = false;
     let endpointInstructChanged = false;
-    // let modelCompletionChanged = false;
-    // let modelInstructChanged = false;
+    let modelCompletionChanged = false;
+    let modelInstructChanged = false;
 
     for (const key of Object.keys(updateConfig) as (keyof typeof userConfig)[]) {
         const oldValue = userConfig[key];
@@ -106,12 +106,12 @@ export async function updateVSConfig() {
             if (key === "apiEndpointInstruct") {
                 endpointInstructChanged = true;
             }
-            // if (key === "apiModelCompletion") {
-            //     modelCompletionChanged = true;
-            // }
-            // if (key === "apiModelInstruct") {
-            //     modelInstructChanged = true;
-            // }
+            if (key === "apiModelCompletion") {
+                modelCompletionChanged = true;
+            }
+            if (key === "apiModelInstruct") {
+                modelInstructChanged = true;
+            }
         }
     }
 
@@ -122,8 +122,8 @@ export async function updateVSConfig() {
     // Apply TLS settings before any network calls
     setTlsRejectUnauthorized(updateConfig.tlsRejectUnauthorized);
 
-    // Detect backends on startup (when not yet detected) or when endpoints changed
-    if (endpointCompletionChanged || !sysConfig.backendCompletion) {
+    // Detect backends on startup (when not yet detected) or when endpoints or models changed
+    if (endpointCompletionChanged || modelCompletionChanged || !sysConfig.backendCompletion) {
         if (!updateConfig.apiEndpointCompletion) {
             sysConfig.backendCompletion = "";
             logMsg("⚠️ Completion endpoint cleared – backend reset");
@@ -139,7 +139,7 @@ export async function updateVSConfig() {
         }
     }
 
-    if (endpointInstructChanged || !sysConfig.backendInstruct) {
+    if (endpointInstructChanged || modelInstructChanged || !sysConfig.backendInstruct) {
         if (!updateConfig.apiEndpointInstruct) {
             sysConfig.backendInstruct = "";
             logMsg("⚠️ Instruct endpoint cleared – backend reset");
@@ -153,6 +153,13 @@ export async function updateVSConfig() {
             }
             sysConfig.backendInstruct = backend;
         }
+    }
+
+    // Retry if any backend is still undetected, reset counter on success
+    if (!sysConfig.backendCompletion || !sysConfig.backendInstruct) {
+        scheduleRetry();
+    } else {
+        retryCount = 0;
     }
 
     // // detect the models max context length if endpoint or model changes
@@ -173,8 +180,28 @@ export async function updateVSConfig() {
     // }
 }
 
-type LlmBackendType = "ollama" | "openai" | "";
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let retryCount = 0;
+const MAX_RETRIES = 60;
+const DELAY = 30000;
 
+function scheduleRetry() {
+    if (retryTimer) {
+        return;
+    }
+    if (retryCount >= MAX_RETRIES) {
+        logMsg(`❌ Backend detection gave up after ${MAX_RETRIES} attempts`);
+        return;
+    }
+    retryCount++;
+    logMsg(`⏳ Retrying backend detection in ${DELAY / 1000}s (attempt ${retryCount}/${MAX_RETRIES})`);
+    retryTimer = setTimeout(() => {
+        retryTimer = null;
+        updateVSConfig();
+    }, DELAY);
+}
+
+type LlmBackendType = "ollama" | "openai" | "";
 const DETECTION_TIMEOUT_MS = 5000;
 
 async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBackendType> {

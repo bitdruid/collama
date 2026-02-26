@@ -239,7 +239,7 @@ class ChatPanel {
     private async sendSessionsUpdate() {
         const activeSession = this.getActiveSession();
         const contextUsed = await calculateContextUsage(activeSession?.messages || []);
-        const contextMax = userConfig.apiContextLenInstruct;
+        const contextMax = userConfig.apiTokenContextLenInstruct;
         this.webviewView.webview.postMessage({
             type: "sessions-update",
             sessions: mapSessionsToSummaries(this.sessions),
@@ -265,7 +265,7 @@ class ChatPanel {
                 // Send initial state when webview is ready
                 const activeSession = this.getActiveSession();
                 const contextUsed = await calculateContextUsage(activeSession?.messages || []);
-                const contextMax = userConfig.apiContextLenInstruct;
+                const contextMax = userConfig.apiTokenContextLenInstruct;
                 webview.postMessage({
                     type: "init",
                     sessions: mapSessionsToSummaries(this.sessions),
@@ -409,7 +409,7 @@ class ChatPanel {
                 const { trimmedMessages, pairsRemoved, tokensFreed } = await trimMessagesForContext(
                     messages,
                     options.num_predict,
-                    userConfig.apiContextLenInstruct,
+                    userConfig.apiTokenContextLenInstruct,
                 );
 
                 // Persist and notify webview of current context boundary

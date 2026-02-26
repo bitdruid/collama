@@ -18,86 +18,98 @@
         "onStartupFinished"
     ],
     "contributes": {
-        "configuration": {
-            "title": "collama",
-            "properties": {
-                "collama.apiEndpointCompletion": {
-                    "type": "string",
-                    "default": "http://127.0.0.1:11434",
-                    "description": "Ollama API endpoint for auto-completion. IP / Domain and don't forget the port if needed."
-                },
-                "collama.apiEndpointInstruct": {
-                    "type": "string",
-                    "default": "http://127.0.0.1:11434",
-                    "description": "Ollama API endpoint for edit/chat. IP / Domain and don't forget the port if needed."
-                },
-                "collama.apiModelCompletion": {
-                    "type": "string",
-                    "default": "qwen2.5-coder:3b",
-                    "description": "Model for autocomplete."
-                },
-                "collama.apiModelInstruct": {
-                    "type": "string",
-                    "default": "gpt-oss:20b",
-                    "markdownDescription": "Model for edits.\n\nUse an **instruct** or **base** model."
-                },
-                "collama.apiContextLenCompletion": {
-                    "type": "number",
-                    "default": 4096,
-                    "description": "Context window size (tokens) for the completion model."
-                },
-                "collama.apiContextLenInstruct": {
-                    "type": "number",
-                    "default": 4096,
-                    "description": "Context window size (tokens) for the instruct/chat model."
-                },
-                "collama.apiPredictCompletion": {
-                    "type": "number",
-                    "default": 400,
-                    "description": "Max tokens to generate per completion request."
-                },
-                "collama.apiPredictInstruct": {
-                    "type": "number",
-                    "default": 4096,
-                    "description": "Max tokens to generate per instruct/chat request."
-                },
-                "collama.agentic": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Use agentic (tool use) mode for chat."
-                },
-                "collama.enableEditTools": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enable edit tools (editFile, createFile, deleteFile, etc.). When disabled, the agent runs in read-only mode."
-                },
-                "collama.tlsRejectUnauthorized": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Verify TLS certificates for HTTPS endpoints. **Disable only if you trust the network** (equivalent to `NODE_TLS_REJECT_UNAUTHORIZED=0`)."
-                },
-                "collama.autoComplete": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Turn auto-suggestions ON."
-                },
-                "collama.suggestMode": {
-                    "type": "string",
-                    "default": "inline",
-                    "enum": [
-                        "inline",
-                        "multiblock",
-                        "multiline"
-                    ],
-                    "markdownDescription": "Suggest code-blocks or code-lines."
-                },
-                "collama.suggestDelay": {
-                    "type": "number",
-                    "default": 1500,
-                    "markdownDescription": "Delay (ms) before requesting inline completion. Prevents Ollama from running every time the completion is triggered. (Spam protection)\n\n**Min:** 1000"
+        "configuration": [
+            {
+                "title": "Autocomplete-API",
+                "properties": {
+                    "collama.apiEndpointCompletion": {
+                        "type": "string",
+                        "default": "http://127.0.0.1:11434",
+                        "description": "API endpoint for auto-completion."
+                    },
+                    "collama.apiModelCompletion": {
+                        "type": "string",
+                        "default": "qwen2.5-coder:3b",
+                        "description": "Model for autocomplete."
+                    },
+                    "collama.apiTokenContextLenCompletion": {
+                        "type": "number",
+                        "default": 4096,
+                        "description": "Context window size (tokens) for the completion model."
+                    },
+                    "collama.apiTokenPredictCompletion": {
+                        "type": "number",
+                        "default": 400,
+                        "description": "Max tokens to generate per completion request."
+                    }
+                }
+            },
+            {
+                "title": "Instruct-API",
+                "properties": {
+                    "collama.apiEndpointInstruct": {
+                        "type": "string",
+                        "default": "http://127.0.0.1:11434",
+                        "description": "API endpoint for edit/chat."
+                    },
+                    "collama.apiModelInstruct": {
+                        "type": "string",
+                        "default": "gpt-oss:20b",
+                        "markdownDescription": "Model for edits.\n\nUse an **instruct** or **base** model."
+                    },
+                    "collama.apiTokenContextLenInstruct": {
+                        "type": "number",
+                        "default": 4096,
+                        "description": "Context window size (tokens) for the instruct/chat model."
+                    },
+                    "collama.apiTokenPredictInstruct": {
+                        "type": "number",
+                        "default": 4096,
+                        "description": "Max tokens to generate per instruct/chat request."
+                    }
+                }
+            },
+            {
+                "title": "General",
+                "properties": {
+                    "collama.tlsRejectUnauthorized": {
+                        "type": "boolean",
+                        "default": true,
+                        "markdownDescription": "Verify TLS certificates for HTTPS endpoints. **Disable only if you trust the network** (equivalent to `NODE_TLS_REJECT_UNAUTHORIZED=0`)."
+                    },
+                    "collama.autoComplete": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Turn auto-suggestions ON."
+                    },
+                    "collama.suggestMode": {
+                        "type": "string",
+                        "default": "inline",
+                        "enum": [
+                            "inline",
+                            "multiblock",
+                            "multiline"
+                        ],
+                        "markdownDescription": "Suggest code-blocks or code-lines."
+                    },
+                    "collama.suggestDelay": {
+                        "type": "number",
+                        "default": 1500,
+                        "markdownDescription": "Delay (ms) before requesting inline completion. Prevents Ollama from running every time the completion is triggered. (Spam protection)\n\n**Min:** 1000"
+                    },
+                    "collama.agentic": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Use agentic (tool use) mode for chat."
+                    },
+                    "collama.enableEditTools": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Enable edit tools (editFile, createFile, deleteFile, etc.). When disabled, the agent runs in read-only mode."
+                    }
                 }
             }
-        },
+        ],
         "viewsContainers": {
             "activitybar": [
                 {

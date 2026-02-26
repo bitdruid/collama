@@ -16,7 +16,7 @@ import { logMsg } from "../logging";
 export async function withProgressNotification<T>(title: string, task: () => Promise<T>): Promise<T> {
     return vscode.window.withProgress(
         {
-            location: vscode.ProgressLocation.Notification,
+            location: vscode.ProgressLocation.Window,
             title,
             cancellable: false,
         },

@@ -145,7 +145,7 @@ class OllamaClient implements LlmClient {
      */
     async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, tools = [], options, stop } = settings;
+            const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
             logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
@@ -163,6 +163,11 @@ class OllamaClient implements LlmClient {
             const toolCalls: ToolCall[] = [];
 
             for await (const part of stream) {
+                // break early on signal abort by agent
+                if (signal?.aborted) {
+                    break;
+                }
+
                 // thinking content separately
                 // if (part.message.thinking) {
                 //     thinking += part.message.thinking;
@@ -246,7 +251,7 @@ class OpenAiClient implements LlmClient {
      */
     async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, tools = [], options, stop } = settings;
+            const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
             logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
@@ -268,6 +273,10 @@ class OpenAiClient implements LlmClient {
             const deltaToolCall: Record<number, { id: string; name: string; argumentsStr: string }> = {};
 
             for await (const part of stream) {
+                // break early on signal abort by agent
+                if (signal?.aborted) {
+                    break;
+                }
                 const delta = part.choices[0]?.delta;
                 const chunk = delta?.content;
 

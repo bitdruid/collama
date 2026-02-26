@@ -3,15 +3,19 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
-## [1.4.0] - 2026-02-25
+## [1.4.0] - 2026-02-26
+
+### Changed
+
+- Settings split into Subs for Completion / Instruction
+- Manual settings for context window (input) and prediction (output)
+- Backend detection loops when no connection was found
 
 ### Added
 - Agentic mode with tool-calling loop for autonomous multi-step tasks
-- Agent system prompt to guide tool usage and prevent stuck loops
-- Cancellation support — abort button interrupts LLM calls and tool execution immediately
 - Turn on / off agentic mode via `agentic` setting
 - Read-only mode via `edit tools` setting — disables all file-modifying tools
-- User confirmation for all destructive actions (edit, delete, revert, rename)
+- Ignore verification of TLS certs (custom certs / testing or trusted network)
 
 ## [1.3.0] - 2026-02-16
 

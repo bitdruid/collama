@@ -13,7 +13,7 @@ export class Completion {
             return;
         }
 
-        this.context.recreateTokenLimit(userConfig.apiContextLenCompletion);
+        this.context.recreateTokenLimit(userConfig.apiTokenContextLenCompletion);
 
         this.snippet = await requestCompletion(this.context);
         this.snippet = Sanitizer.sanitize(this.snippet, this.context);

@@ -88,19 +88,39 @@ Alternatively, you can use [vLLM](https://docs.vllm.ai/) (tested). Point the end
 
 Configure Collama via VS Code Settings (Preferences → Settings, search "collama"):
 
-| Setting                         | Type    | Default                     | Description                                              |
-| ------------------------------- | ------- | --------------------------- | -------------------------------------------------------- |
-| `collama.apiEndpointCompletion` | string  | `http://127.0.0.1:11434`    | Endpoint for code auto-completion                        |
-| `collama.apiEndpointInstruct`   | string  | `http://127.0.0.1:11434`    | Endpoint for code edits/chat                             |
-| `collama.apiCompletionModel`    | string  | `qwen2.5-coder:3b`          | Model for code completions                               |
-| `collama.apiInstructionModel`   | string  | `qwen2.5-coder:3b-instruct` | Model for code edits (use instruct/base variant)         |
-| `collama.autoComplete`          | boolean | `true`                      | Enable auto-suggestions                                  |
-| `collama.suggestMode`           | string  | `inline`                    | Suggestion style: `inline`, `multiline`, or `multiblock` |
-| `collama.suggestDelay`          | number  | `1500`                      | Delay (ms) before requesting completion                  |
-| `collama.agentic`               | boolean | `true`                      | Use agentic (tool use) mode for chat                     |
-| `collama.enableEditTools`       | boolean | `true`                      | Enable edit tools (read-only mode when disabled)         |
+## Configuration
 
-### Bearer Tokens (Optional)
+Configure Collama via VS Code Settings (Preferences → Settings, search "collama"):
+
+| Setting                                | Type    | Default                     | Description                                              |
+| -------------------------------------- | ------- | --------------------------- | -------------------------------------------------------- |
+| `collama.apiEndpointCompletion`        | string  | `http://127.0.0.1:11434`    | Endpoint for code auto-completion                        |
+| `collama.apiEndpointInstruct`          | string  | `http://127.0.0.1:11434`    | Endpoint for code edits/chat                             |
+| `collama.apiCompletionModel`           | string  | `qwen2.5-coder:3b`          | Model for code completions                               |
+| `collama.apiInstructionModel`          | string  | `qwen2.5-coder:3b-instruct` | Model for code edits (use instruct/base variant)         |
+| `collama.apiTokenContextLenCompletion` | number  | `4096`                      | Context window size (tokens) for the completion model    |
+| `collama.apiTokenContextLenInstruct`   | number  | `4096`                      | Context window size (tokens) for the instruct/chat model |
+| `collama.apiTokenPredictCompletion`    | number  | `400`                       | Max tokens to generate per completion request            |
+| `collama.apiTokenPredictInstruct`      | number  | `4096`                      | Max tokens to generate per instruct/chat request         |
+| `collama.autoComplete`                 | boolean | `true`                      | Enable auto-suggestions                                  |
+| `collama.suggestMode`                  | string  | `inline`                    | Suggestion style: `inline`, `multiline`, or `multiblock` |
+| `collama.suggestDelay`                 | number  | `1500`                      | Delay (ms) before requesting completion                  |
+| `collama.agentic`                      | boolean | `true`                      | Use agentic (tool use) mode for chat                     |
+| `collama.enableEditTools`              | boolean | `true`                      | Enable edit tools (read-only mode when disabled)         |
+
+### Manual Token Settings
+
+You have to manually adjust the token limits for context and prediction. The values are expressed in tokens, not characters.
+
+- `collama.apiTokenContextLenCompletion` / `collama.apiTokenContextLenInstruct` – maximum number of tokens that can be sent to the model as context.
+- `collama.apiTokenPredictCompletion` / `collama.apiTokenPredictInstruct` – maximum number of tokens the model can generate in a single request.
+
+Changing these values will automatically trigger a re‑calculation of the context window and may affect the real‑time context usage bar shown in the chat view.
+
+> [!NOTE]
+> Check the max context window of your model online.
+
+### Bearer Tokens (API Key)
 
 If your API endpoints require authentication (e.g. vLLM with `--api-key`, or a reverse proxy), you can securely store bearer tokens using VS Code's encrypted credential storage. Tokens are sent as `Authorization: Bearer <token>` headers with every request.
 
