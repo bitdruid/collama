@@ -1,4 +1,4 @@
-import { sysConfig, userConfig } from "../config";
+import { userConfig } from "../config";
 
 /**
  * A contract for an LLM client.
@@ -14,15 +14,15 @@ import { sysConfig, userConfig } from "../config";
  * The `LlmChatSettings` and `LlmGenerateSettings` types are defined in
  * `llmoptions.ts`.  They already contain everything the provider needs
  * (endpoint, model, options, stop tokens, etc.).
- */
+ **/
 export interface LlmClient {
     /**
      * Sends a chat request to the underlying LLM.
      *
      * @param settings - Full chat request configuration.
-     * @returns The assistant’s reply as a string.
+     * @returns The assistant’s reply and any tool calls it made.
      */
-    chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string>;
+    chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult>;
     /**
      * Sends a generation request to the underlying LLM.
      *
@@ -32,13 +32,27 @@ export interface LlmClient {
     generate(settings: LlmGenerateSettings): Promise<string>;
 }
 
+export interface ChatResult {
+    content: string;
+    thinking?: string;
+    toolCalls: ToolCall[];
+}
+
+export interface ToolCall {
+    id: string;
+    type: "function";
+    function: {
+        name: string;
+        arguments: string;
+    };
+}
+
 /**
  * Configuration for a chat request to the LLM.
  *
  * @property {string} apiEndpoint - The base URL of the LLM API.
  * @property {string} model - Identifier of the LLM model to use.
  * @property {any[]} messages - The conversation history exchanged with the model.
- * @property {boolean} think - If true, the model will internally think before responding.
  * @property {Options} options - Generation options forwarded to the LLM.
  * @property {Stop} stop - Stop token configuration for the request.
  */
@@ -49,9 +63,10 @@ export interface LlmChatSettings {
     };
     model: string;
     messages: any[];
-    think: boolean;
+    tools?: any[]; // only set by the agent; omit for all other callers
     options: Options;
     stop: Stop;
+    signal?: AbortSignal;
 }
 
 /**
@@ -60,7 +75,6 @@ export interface LlmChatSettings {
  * @property {string} apiEndpoint - The base URL of the LLM API.
  * @property {string} model - Identifier of the LLM model to use.
  * @property {string} prompt - The text prompt from which the model should generate.
- * @property {boolean} think - If true, the model will internally think before generating.
  * @property {Options} options - Generation options forwarded to the LLM.
  * @property {Stop} stop - Stop token configuration for the request.
  */
@@ -98,15 +112,15 @@ export interface Options {
  */
 function calculateNumPredict(): number {
     if (userConfig.suggestMode === "multiblock") {
-        return sysConfig.tokensPredictCompletion;
+        return userConfig.apiTokenPredictCompletion;
     }
     if (userConfig.suggestMode === "multiline") {
-        return sysConfig.tokensPredictCompletion / 2;
+        return userConfig.apiTokenPredictCompletion / 2;
     }
     if (userConfig.suggestMode === "inline") {
-        return sysConfig.tokensPredictCompletion / 4;
+        return userConfig.apiTokenPredictCompletion / 4;
     }
-    return sysConfig.tokensPredictCompletion;
+    return userConfig.apiTokenPredictCompletion;
 }
 
 /**
@@ -150,7 +164,7 @@ export function buildCompletionStop(modelStop: string[]): Stop {
 export function buildCompletionOptions(): Options {
     return {
         num_predict: calculateNumPredict(),
-        num_ctx: sysConfig.contextLenCompletion,
+        num_ctx: userConfig.apiTokenContextLenCompletion,
         temperature: 0.4,
         top_p: 0.8,
         top_k: 20,
@@ -163,8 +177,8 @@ export function buildCompletionOptions(): Options {
  */
 export function buildInstructionOptions(): Options {
     return {
-        num_predict: 8192,
-        num_ctx: sysConfig.contextLenInstruct,
+        num_predict: 16384,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.8,
         top_p: 0.95,
         top_k: 40,
@@ -177,10 +191,20 @@ export function buildInstructionOptions(): Options {
  */
 export function buildCommitOptions(): Options {
     return {
-        num_predict: 8192,
-        num_ctx: sysConfig.contextLenInstruct,
+        num_predict: 16384,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.3,
         top_p: 0.95,
         top_k: 40,
+    };
+}
+
+export function buildAgentOptions(): Options {
+    return {
+        num_predict: 16384,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
+        temperature: 0.2,
+        top_p: 0.9,
+        top_k: 20,
     };
 }

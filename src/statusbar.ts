@@ -100,6 +100,18 @@ async function showStatusbar() {
          * Combine static options and model options into a single array of type PickItem.
          */
         const options: PickItem[] = [
+            {
+                label: `${config.get<boolean>("agentic", false) ? "🟢" : "🔴"} Agentic`,
+                description: "Toggle Agentic-Mode (Chat - requires tool capability)",
+            },
+            {
+                label: `${config.get<boolean>("enableEditTools", true) ? "🟢" : "🔴"} Edit Tools`,
+                description: "Toggle edit tools (read-only mode when off)",
+            },
+            {
+                label: "Switch Agentic-Mode",
+                kind: vscode.QuickPickItemKind.Separator,
+            },
             ...staticOptions,
             {
                 label: "Switch Autocomplete-Model",
@@ -117,6 +129,14 @@ async function showStatusbar() {
             return;
         }
 
+        if (selected.label.includes("Agentic")) {
+            const current = config.get<boolean>("agentic", false);
+            await config.update("agentic", !current, vscode.ConfigurationTarget.Global);
+        }
+        if (selected.label.includes("Edit Tools")) {
+            const current = config.get<boolean>("enableEditTools", true);
+            await config.update("enableEditTools", !current, vscode.ConfigurationTarget.Global);
+        }
         // Handle toggling autocomplete and suggestion modes
         if (selected.label.includes("Autocomplete")) {
             const current = config.get<boolean>("autoComplete", false);

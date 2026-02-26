@@ -4,8 +4,8 @@ import MarkdownIt from "markdown-it";
 
 import { estimateTokenCount, highlightAllCodeBlocks, hljsStyles, icons } from "../../../utils";
 import "../chat_accordion";
-import "./edit";
 import { ChatContext, ChatMessage } from "../chat_container";
+import "./edit";
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.
@@ -22,7 +22,23 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         const lang = token.info.trim() || "code";
         const code = token.content;
         const escapedCode = code.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        return `<collama-accordion type="code" label="${lang}" code="${escapedCode}" copyCode="${escapedCode}" expanded></collama-accordion>`;
+
+        // defines accordion type
+        let accordionType = "code";
+        let expandedAttr = "expanded";
+
+        if (lang.startsWith("Tool:")) {
+            accordionType = "tool";
+            expandedAttr = "";
+        } else if (lang.startsWith("Think:")) {
+            accordionType = "think";
+            expandedAttr = "";
+        } else if (lang.startsWith("Summary:")) {
+            accordionType = "summary";
+            expandedAttr = "";
+        }
+
+        return `<collama-accordion type="${accordionType}" label="${lang}" code="${escapedCode}" copyCode="${escapedCode}" ${expandedAttr}></collama-accordion>`;
     };
 
     return md;
@@ -277,7 +293,7 @@ export class ChatOutput extends LitElement {
                         msg.content = msg.content || "No response received.";
                         this.loadingTimeouts.delete(msg);
                         this.requestUpdate();
-                    }, 30000); // 30s timeout
+                    }, 60000); // 60s timeout
                     this.loadingTimeouts.set(msg, timeout);
                 }
             });

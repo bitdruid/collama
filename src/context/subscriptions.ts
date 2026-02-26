@@ -1,13 +1,13 @@
 import * as vscode from "vscode";
 
-import { Context } from "../common/context";
+import { Context } from "../common/context_editor";
 import {
     requestEditManual,
     requestExtractFunctions,
     requestFixSyntax,
     requestSimplifyCode,
     requestWriteDocstrings,
-} from "../common/ollama";
+} from "../common/requests";
 import { withProgressNotification } from "../common/utils";
 import { registerContextCommand } from "./utils";
 
