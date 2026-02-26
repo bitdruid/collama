@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
-import { LlmClient, Options, Stop } from "./llmoptions";
+import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
-import { RequestType, sysConfig } from "../config";
+import { RequestType, sysConfig, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
@@ -33,7 +33,7 @@ export class LlmClientFactory implements LlmClient {
         }
     }
 
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         if (!this.factoryClient) {
             throw new Error("LLM client not initialized");
         }
@@ -106,6 +106,32 @@ function optionsToOpenAI(options: Options): Record<string, any> {
 }
 
 /**
+ * Converts messages to the format expected by the Ollama API.
+ * Our internal ToolCall stores `arguments` as a JSON string (OpenAI-compatible),
+ * but Ollama requires `arguments` to be a plain object.
+ */
+function toOllamaMessages(messages: any[]): any[] {
+    return messages.map((msg) => {
+        if (msg.role === "assistant" && msg.tool_calls) {
+            return {
+                ...msg,
+                tool_calls: msg.tool_calls.map((tc: ToolCall) => ({
+                    ...tc,
+                    function: {
+                        ...tc.function,
+                        arguments:
+                            typeof tc.function.arguments === "string"
+                                ? JSON.parse(tc.function.arguments)
+                                : tc.function.arguments,
+                    },
+                })),
+            };
+        }
+        return msg;
+    });
+}
+
+/**
  * Client implementation for interacting with the Ollama API.
  * Handles chat completions and prompt generation using the `requestOllama` utility.
  */
@@ -117,35 +143,61 @@ class OllamaClient implements LlmClient {
      * @param onChunk - Optional callback invoked for each chunk of the streamed response.
      * @returns The accumulated full response string.
      */
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, think, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
+            const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
             const stream = await ollama.chat({
                 model: model,
-                messages: messages,
-                think: think,
+                messages: toOllamaMessages(messages),
+                ...(userConfig.agentic ? { tools: tools } : {}),
                 stream: true,
                 options: { ...options, stop: buildStopTokens(stop) },
             });
 
             let result = "";
+            // let thinking = "";
             let resultTokens = 0;
+            const toolCalls: ToolCall[] = [];
+
             for await (const part of stream) {
+                // break early on signal abort by agent
+                if (signal?.aborted) {
+                    break;
+                }
+
+                // thinking content separately
+                // if (part.message.thinking) {
+                //     thinking += part.message.thinking;
+                //     continue;
+                // }
+
+                // main content arrives in separate deltas
                 const chunk = part.message.content ?? "";
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
+
+                // tool calls arrive in separate deltas
+                if (part.message.tool_calls) {
+                    for (const tc of part.message.tool_calls) {
+                        toolCalls.push({
+                            id: `call_${toolCalls.length}`,
+                            type: "function",
+                            function: { name: tc.function.name, arguments: JSON.stringify(tc.function.arguments) },
+                        });
+                    }
+                }
                 if (part.done) {
-                    const resultTokens = part.prompt_eval_count ?? 0;
+                    resultTokens = part.prompt_eval_count ?? 0;
                     const resultDurationNano = part.eval_duration ?? 0;
                     logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
                 }
             }
-            return cleanupResult(result, resultTokens, options);
+            return { content: cleanupResult(result, resultTokens, options), /* thinking, */ toolCalls };
         } catch (err) {
             return handleError(err);
         }
@@ -161,7 +213,7 @@ class OllamaClient implements LlmClient {
     async generate(settings: LlmGenerateSettings): Promise<string> {
         try {
             const { apiEndpoint, model, prompt, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, false, options, stop, prompt);
+            logRequest(apiEndpoint.url, model, options, stop, prompt);
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
 
@@ -197,10 +249,10 @@ class OpenAiClient implements LlmClient {
      * @param onChunk - Optional callback invoked for each chunk of the streamed response.
      * @returns The accumulated full response string.
      */
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<string> {
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, think, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, think, options, stop, JSON.stringify(messages));
+            const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
 
@@ -208,8 +260,7 @@ class OpenAiClient implements LlmClient {
             const stream = await openai.chat.completions.create({
                 model: model,
                 messages: messages,
-                //think: think, - not supported by openai
-                //raw: raw, - not supported by openai
+                ...(userConfig.agentic ? { tools: tools } : {}),
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
@@ -219,20 +270,60 @@ class OpenAiClient implements LlmClient {
             let result = "";
             let resultTokens = 0;
 
+            const deltaToolCall: Record<number, { id: string; name: string; argumentsStr: string }> = {};
+
             for await (const part of stream) {
-                const chunk = part.choices[0]?.delta?.content;
+                // break early on signal abort by agent
+                if (signal?.aborted) {
+                    break;
+                }
+                const delta = part.choices[0]?.delta;
+                const chunk = delta?.content;
+
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
+                // tool call id + name + arguments arrive in separate deltas
+                if (delta?.tool_calls) {
+                    for (const tc of delta.tool_calls) {
+                        if (!deltaToolCall[tc.index]) {
+                            deltaToolCall[tc.index] = { id: "", name: "", argumentsStr: "" };
+                        }
+                        // some provider: final summary delta with id/name
+                        // set to null and the complete arguments — replace, don't append.
+                        if (tc.id === null) {
+                            if (tc.function?.arguments) {
+                                deltaToolCall[tc.index].argumentsStr = tc.function.arguments;
+                            }
+                            continue;
+                        }
+                        if (tc.id) {
+                            deltaToolCall[tc.index].id = tc.id;
+                        }
+                        if (tc.function?.name) {
+                            deltaToolCall[tc.index].name += tc.function.name;
+                        }
+                        if (tc.function?.arguments) {
+                            deltaToolCall[tc.index].argumentsStr += tc.function.arguments;
+                        }
+                    }
+                }
                 if (part.usage) {
                     const endTime = process.hrtime.bigint();
-                    const resultTokens = part.usage.completion_tokens ?? 0;
+                    resultTokens = part.usage.completion_tokens ?? 0;
                     const resultDurationNano = endTime - startTime;
                     logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
                 }
             }
-            return cleanupResult(result, resultTokens, options);
+
+            const toolCalls: ToolCall[] = Object.values(deltaToolCall).map((tc) => ({
+                id: tc.id,
+                type: "function",
+                function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
+            }));
+
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
         } catch (err) {
             return handleError(err);
         }
@@ -248,7 +339,7 @@ class OpenAiClient implements LlmClient {
     async generate(settings: LlmGenerateSettings): Promise<string> {
         try {
             const { apiEndpoint, model, prompt, options, stop } = settings;
-            logRequest(apiEndpoint.url, model, false, options, stop, prompt);
+            logRequest(apiEndpoint.url, model, options, stop, prompt);
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
 
@@ -256,7 +347,6 @@ class OpenAiClient implements LlmClient {
             const response = await openai.completions.create({
                 model: model,
                 prompt: prompt,
-                //think: think, - not supported by openai
                 //raw: raw, - not supported by openai
                 stream: false,
                 ...optionsToOpenAI(options),
@@ -277,8 +367,8 @@ class OpenAiClient implements LlmClient {
 }
 // Shared logging
 
-function logRequest(url: string, model: string, think: boolean, options: Options, stop: Stop, input: string): void {
-    logMsg(`Requesting to ${url}; Model: ${model}; Think: ${think};`);
+function logRequest(url: string, model: string, options: Options, stop: Stop, input: string): void {
+    logMsg(`Requesting to ${url}; Model: ${model};`);
     logMsg(`Options:\n${JSON.stringify(options, null, 2)}`);
     logMsg(`Stop:\n${JSON.stringify([...stop.userStop, ...stop.modelStop], null, 2)}`);
     logMsg(`Input:\n${input}`);

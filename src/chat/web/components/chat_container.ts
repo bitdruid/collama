@@ -50,6 +50,7 @@ export class ChatContainer extends LitElement {
         contextMax: { state: true },
         contextStartIndex: { state: true },
         _toastMessage: { state: true },
+        isLoading: { state: true },
     };
 
     static styles = css`
@@ -116,6 +117,7 @@ export class ChatContainer extends LitElement {
     contextMax: number = 0;
     contextStartIndex: number = 0;
     _toastMessage: string = "";
+    isLoading: boolean = false;
     private _updateTimer: number | null = null;
     private _toastTimer: number | null = null;
 
@@ -181,9 +183,44 @@ export class ChatContainer extends LitElement {
             { role: "assistant", content: "", loading: true },
         ];
 
+        this.isLoading = true;
+
         window.vscode.postMessage({
             type: "chat-request",
             messages: this.messages,
+            assistantIndex,
+            sessionId: this.activeSessionId,
+        });
+    }
+
+    private _onCancel() {
+        if (!this.isLoading) {
+            return;
+        }
+
+        window.vscode.postMessage({
+            type: "chat-cancel",
+        });
+    }
+
+    private _onCompress() {
+        if (this.isLoading || this.messages.length === 0) {
+            return;
+        }
+
+        const originalMessages = this.messages;
+        const assistantIndex = originalMessages.length + 1;
+
+        this.messages = [
+            ...originalMessages,
+            { role: "user", content: "Summarize our conversation." },
+            { role: "assistant", content: "", loading: true },
+        ];
+        this.isLoading = true;
+
+        window.vscode.postMessage({
+            type: "compress-request",
+            messages: originalMessages,
             assistantIndex,
             sessionId: this.activeSessionId,
         });
@@ -203,6 +240,8 @@ export class ChatContainer extends LitElement {
         const assistantIndex = truncatedMessages.length;
 
         this.messages = [...truncatedMessages, { role: "assistant", content: "", loading: true }];
+
+        this.isLoading = true;
 
         logWebview(`Resending from message ${messageIndex}`);
 
@@ -245,6 +284,8 @@ export class ChatContainer extends LitElement {
         const assistantIndex = truncatedMessages.length + 1;
 
         this.messages = [...truncatedMessages, editedMessage, { role: "assistant", content: "", loading: true }];
+
+        this.isLoading = true;
 
         logWebview(`Editing and resending message ${messageIndex}`);
 
@@ -361,6 +402,18 @@ export class ChatContainer extends LitElement {
                 }
             }
 
+            // chat completed
+            if (msg.type === "chat-complete") {
+                this.isLoading = false;
+            }
+
+            // chat has been compressed into a summary pair
+            if (msg.type === "compressed") {
+                this.messages = msg.messages || [];
+                this.contextStartIndex = 0;
+                this._showToast("Chat compressed");
+            }
+
             // context limit exceeded — old message pairs dropped from LLM context
             if (msg.type === "context-trimmed") {
                 this.contextStartIndex = msg.contextStartIndex || 0;
@@ -424,8 +477,11 @@ export class ChatContainer extends LitElement {
                 ></collama-chatoutput>
                 <collama-chatinput
                     @submit=${this._onSubmit}
+                    @cancel=${this._onCancel}
+                    @compress=${this._onCompress}
                     @context-cleared=${this._onContextCleared}
                     .contexts=${this.currentContexts}
+                    .isLoading=${this.isLoading}
                 ></collama-chatinput>
             </div>
             <div class="toast ${this._toastMessage ? "visible" : ""}">${this._toastMessage}</div>

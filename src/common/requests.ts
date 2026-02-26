@@ -3,11 +3,17 @@ import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getBearerCompletion, getBearerInstruct } from "../secrets";
-import { Context } from "./context";
+import { Context } from "./context_editor";
 import { LlmClientFactory } from "./llmclient";
-import { buildCompletionOptions, buildCompletionStop, buildInstructionOptions, emptyStop } from "./llmoptions";
-import { getCompletionModelConfig, getModelThinking } from "./models";
-import { contextCommand_noThink_Template, contextCommand_Think_Template, PromptParams } from "./prompt";
+import {
+    buildCommitOptions,
+    buildCompletionOptions,
+    buildCompletionStop,
+    buildInstructionOptions,
+    emptyStop,
+} from "./llmoptions";
+import { getCompletionModelConfig } from "./models";
+import { commitMsgCommand_Template, contextCommand_Think_Template, PromptParams } from "./prompt";
 
 /**
  * Generates a completion from the editor context.
@@ -48,24 +54,47 @@ export async function requestCompletion(context: Context): Promise<string> {
  * @throws {Error} If the LLM request fails.
  */
 async function requestContextCommand(promptParams: PromptParams): Promise<string> {
-    let prompt: string;
-    const think = await getModelThinking(userConfig.apiModelInstruct);
-    if (think) {
-        prompt = contextCommand_Think_Template(promptParams);
-    } else {
-        prompt = contextCommand_noThink_Template(promptParams);
-    }
     const clientFactory = new LlmClientFactory("instruction");
     const result = await clientFactory.chat({
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
-        messages: [{ role: "user", content: prompt }],
-        think: think,
+        messages: [{ role: "user", content: contextCommand_Think_Template(promptParams) }],
         options: buildInstructionOptions(),
         stop: emptyStop(),
     });
 
-    return result;
+    return result.content;
+}
+
+/**
+ * Generates a conventional commit message from a staged git diff.
+ *
+ * The function constructs a prompt that combines a predefined message
+ * template with the supplied diff wrapped in XML-style tags, then calls
+ * {@link llmGenerate} to generate the commit text.
+ *
+ * @param stagedDiff - The git diff of the staged changes.
+ * @returns A promise that resolves to the generated commit message string.
+ */
+export async function requestCommitMessage(stagedDiff: string): Promise<string> {
+    logMsg("Generating commit message...");
+
+    const clientFactory = new LlmClientFactory("instruction");
+    const result = await clientFactory.chat({
+        apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
+        model: userConfig.apiModelInstruct,
+        messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
+        options: buildCommitOptions(),
+        stop: emptyStop(),
+    });
+
+    if (!result.content) {
+        logMsg("Warning: LLM returned empty commit message");
+        return "chore: update files";
+    }
+
+    logMsg(`Generated commit message: ${result.content.substring(0, 50)}...`);
+    return result.content;
 }
 
 /**
