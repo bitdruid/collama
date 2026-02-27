@@ -111,19 +111,20 @@ export async function getCommits_exec(args: { branch?: string; limit?: number; f
 
     try {
         // Use git log directly to support branch parameter
-        const gitArgs = [
-            "log",
-            args.branch ?? "HEAD",
-            `--max-count=${limit}`,
-            "--format=%H%n%an%n%ae%n%aI%n%s",
-        ];
+        const gitArgs = ["log", args.branch ?? "HEAD", `--max-count=${limit}`, "--format=%H%n%an%n%ae%n%aI%n%s"];
         if (args.filePath) {
             gitArgs.push("--", args.filePath);
         }
 
         const { stdout } = await execFileAsync("git", gitArgs, { cwd: root });
         const lines = stdout.trim().split("\n");
-        const commits: Array<{ hash: string; authorName: string; authorEmail: string; authorDate: string; message: string }> = [];
+        const commits: Array<{
+            hash: string;
+            authorName: string;
+            authorEmail: string;
+            authorDate: string;
+            message: string;
+        }> = [];
 
         // Each commit is 5 lines: hash, authorName, authorEmail, authorDate, message
         for (let i = 0; i + 4 < lines.length; i += 5) {
@@ -160,7 +161,8 @@ export const getCommits_def = {
             properties: {
                 branch: {
                     type: "string",
-                    description: "Branch name to get commits from (e.g., 'main', 'feature/foo'). Defaults to current branch.",
+                    description:
+                        "Branch name to get commits from (e.g., 'main', 'feature/foo'). Defaults to current branch.",
                 },
                 limit: {
                     type: "number",
@@ -433,7 +435,12 @@ export async function revertFile_exec(args: { filePath: string }): Promise<strin
     }
 
     try {
-        if (!(await confirmAction("Revert", `Revert ${args.filePath} to last committed state? Unsaved changes will be lost.`))) {
+        if (
+            !(await confirmAction(
+                "Revert",
+                `Revert ${args.filePath} to last committed state? Unsaved changes will be lost.`,
+            ))
+        ) {
             return JSON.stringify({ success: false, message: "Revert cancelled.", filePath: args.filePath });
         }
 
@@ -446,7 +453,11 @@ export async function revertFile_exec(args: { filePath: string }): Promise<strin
             await vscode.commands.executeCommand("workbench.action.files.revert");
         }
 
-        return JSON.stringify({ success: true, message: "File reverted to last committed state.", filePath: args.filePath });
+        return JSON.stringify({
+            success: true,
+            message: "File reverted to last committed state.",
+            filePath: args.filePath,
+        });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         if (msg.includes("did not match any file")) {

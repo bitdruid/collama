@@ -88,10 +88,6 @@ Alternatively, you can use [vLLM](https://docs.vllm.ai/) (tested). Point the end
 
 Configure Collama via VS Code Settings (Preferences → Settings, search "collama"):
 
-## Configuration
-
-Configure Collama via VS Code Settings (Preferences → Settings, search "collama"):
-
 | Setting                                | Type    | Default                     | Description                                              |
 | -------------------------------------- | ------- | --------------------------- | -------------------------------------------------------- |
 | `collama.apiEndpointCompletion`        | string  | `http://127.0.0.1:11434`    | Endpoint for code auto-completion                        |
