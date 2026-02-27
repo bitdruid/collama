@@ -53,7 +53,42 @@ export const inputButtonsStyles = css`
         button-compress:hover {
             background-color: #5a4622;
         }
-        
+        .context-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background-color: #2277a8;
+            color: #fff;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .context-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            margin-left: 4px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            font-size: 10px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+        }
+        .context-close:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .context-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
         button-row {
             display: flex;
             justify-content: flex-end;
