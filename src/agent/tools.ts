@@ -2,16 +2,7 @@ import path from "path";
 import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
-import {
-    findReferences_def,
-    findReferences_exec,
-    getDiagnostics_def,
-    getDiagnostics_exec,
-    getSymbols_def,
-    getSymbols_exec,
-    renameSymbol_def,
-    renameSymbol_exec,
-} from "./tools/analyse";
+import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
 import {
     createFile_def,
     createFile_exec,
@@ -23,8 +14,6 @@ import {
     editFile_exec,
 } from "./tools/edit";
 import {
-    listFiles_def,
-    listFiles_exec,
     lsPath_def,
     lsPath_exec,
     readFile_def,
@@ -162,10 +151,10 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: readFile_def,
         execute: readFile_exec,
     },
-    listFiles: {
-        definition: listFiles_def,
-        execute: listFiles_exec,
-    },
+    // listFiles: {
+    //     definition: listFiles_def,
+    //     execute: listFiles_exec,
+    // },
     searchFiles: {
         definition: searchFiles_def,
         execute: searchFiles_exec,
@@ -210,18 +199,18 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: revertFile_def,
         execute: revertFile_exec,
     },
-    getSymbols: {
-        definition: getSymbols_def,
-        execute: getSymbols_exec,
-    },
-    renameSymbol: {
-        definition: renameSymbol_def,
-        execute: renameSymbol_exec,
-    },
-    findReferences: {
-        definition: findReferences_def,
-        execute: findReferences_exec,
-    },
+    // getSymbols: {
+    //     definition: getSymbols_def,
+    //     execute: getSymbols_exec,
+    // },
+    // renameSymbol: {
+    //     definition: renameSymbol_def,
+    //     execute: renameSymbol_exec,
+    // },
+    // findReferences: {
+    //     definition: findReferences_def,
+    //     execute: findReferences_exec,
+    // },
     getDiagnostics: {
         definition: getDiagnostics_def,
         execute: getDiagnostics_exec,

@@ -156,7 +156,7 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
     try {
         regex = new RegExp(args.pattern);
     } catch {
-        return JSON.stringify({ error: `Invalid regex: ${args.pattern}` });
+        regex = new RegExp(args.pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
     }
 
     if (args.glob !== undefined && hasPathTraversal(args.glob)) {
@@ -201,7 +201,7 @@ export const searchFiles_def = {
             properties: {
                 pattern: {
                     type: "string",
-                    description: "Regex pattern to search for.",
+                    description: "Valid regex pattern to search for.",
                 },
                 glob: {
                     type: "string",
