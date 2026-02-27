@@ -1,4 +1,4 @@
-import { sysConfig, userConfig } from "../config";
+import { userConfig } from "../config";
 
 /**
  * A contract for an LLM client.
@@ -66,6 +66,7 @@ export interface LlmChatSettings {
     tools?: any[]; // only set by the agent; omit for all other callers
     options: Options;
     stop: Stop;
+    signal?: AbortSignal;
 }
 
 /**
@@ -111,15 +112,15 @@ export interface Options {
  */
 function calculateNumPredict(): number {
     if (userConfig.suggestMode === "multiblock") {
-        return sysConfig.tokensPredictCompletion;
+        return userConfig.apiTokenPredictCompletion;
     }
     if (userConfig.suggestMode === "multiline") {
-        return sysConfig.tokensPredictCompletion / 2;
+        return userConfig.apiTokenPredictCompletion / 2;
     }
     if (userConfig.suggestMode === "inline") {
-        return sysConfig.tokensPredictCompletion / 4;
+        return userConfig.apiTokenPredictCompletion / 4;
     }
-    return sysConfig.tokensPredictCompletion;
+    return userConfig.apiTokenPredictCompletion;
 }
 
 /**
@@ -163,7 +164,7 @@ export function buildCompletionStop(modelStop: string[]): Stop {
 export function buildCompletionOptions(): Options {
     return {
         num_predict: calculateNumPredict(),
-        num_ctx: sysConfig.contextLenCompletion,
+        num_ctx: userConfig.apiTokenContextLenCompletion,
         temperature: 0.4,
         top_p: 0.8,
         top_k: 20,
@@ -177,7 +178,7 @@ export function buildCompletionOptions(): Options {
 export function buildInstructionOptions(): Options {
     return {
         num_predict: 16384,
-        num_ctx: sysConfig.contextLenInstruct,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.8,
         top_p: 0.95,
         top_k: 40,
@@ -191,7 +192,7 @@ export function buildInstructionOptions(): Options {
 export function buildCommitOptions(): Options {
     return {
         num_predict: 16384,
-        num_ctx: sysConfig.contextLenInstruct,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.3,
         top_p: 0.95,
         top_k: 40,
@@ -201,7 +202,7 @@ export function buildCommitOptions(): Options {
 export function buildAgentOptions(): Options {
     return {
         num_predict: 16384,
-        num_ctx: sysConfig.contextLenInstruct,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.2,
         top_p: 0.9,
         top_k: 20,

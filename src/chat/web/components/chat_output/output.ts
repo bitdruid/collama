@@ -1,15 +1,14 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import MarkdownIt from "markdown-it";
 
-import { estimateTokenCount, highlightAllCodeBlocks, hljsStyles, icons } from "../../../utils";
+import { estimateTokenCount, highlightAllCodeBlocks, icons } from "../../../utils";
 import "../chat_accordion/chat_accordion";
 
-import "./edit";
 import { ChatContext, ChatMessage } from "../chat_container/chat_container";
-import { outputStyles } from "./styles/output_styles";
 import "../chat_session/components/popup/chat_empty_state";
-
+import "./edit";
+import { outputStyles } from "./styles/output_styles";
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.
@@ -193,80 +192,81 @@ export class ChatOutput extends LitElement {
     render() {
         const messages = this.messages;
 
-
         if (!messages || messages.length === 0) {
             return html`
                 <div class="output-container">
                     <collama-empty-state></collama-empty-state>
                 </div>
-                `;
+            `;
         }
         const lastIndex = this.messages.length - 1;
-         return html`
+        return html`
             <div class="output-container">
-            ${this.messages.map((msg, index) => {
-            const isStreamingMessage = index === lastIndex && msg.role === "assistant" && !msg.loading;
-            const displayContent = this._getMessageWithoutContext(msg);
-            const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
-            return html`
-                    <div class="message ${msg.role} ${isOutOfContext ? "out-of-context" : ""}">
-                        <div class="bubble ${msg.role === "user" ? "bubble-user" : ""}">
-                            <div class="role-header ${msg.role === "user" ? "role-user" : "role-assistant"}">
-                                <span class="role-label"
-                                    >${isOutOfContext
-                    ? html`<span class="warning-icon" title="Not in context"
-                                              >${icons.alertTriangle}</span
-                                          >`
-                    : ""}${msg.role === "user" ? "User" : "Assistant"}</span
-                                >
-                                ${msg.role === "user"
-                    ? html`
-                                          <div class="message-actions">
-                                              <button
-                                                  class="edit-button"
-                                                  @click=${() => this._handleEdit(index)}
-                                                  title="Edit and resend"
-                                              >
-                                                  ✎ Edit
-                                              </button>
-                                              <button
-                                                  class="resend-button"
-                                                  @click=${() => this._handleResend(index)}
-                                                  title="Resend from here"
-                                              >
-                                                  ↻ Resend
-                                              </button>
-                                              <button
-                                                  class="delete-button"
-                                                  @click=${() => this._handleDelete(index)}
-                                                  title="Delete this message pair (~${this._estimateTokensFreed(
-                        index,
-                    )} tokens freed)"
-                                              >
-                                                  ✕ Delete
-                                              </button>
-                                          </div>
+                ${this.messages.map((msg, index) => {
+                    const isStreamingMessage = index === lastIndex && msg.role === "assistant" && !msg.loading;
+                    const displayContent = this._getMessageWithoutContext(msg);
+                    const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
+                    return html`
+                        <div class="message ${msg.role} ${isOutOfContext ? "out-of-context" : ""}">
+                            <div class="bubble ${msg.role === "user" ? "bubble-user" : ""}">
+                                <div class="role-header ${msg.role === "user" ? "role-user" : "role-assistant"}">
+                                    <span class="role-label"
+                                        >${isOutOfContext
+                                            ? html`<span class="warning-icon" title="Not in context"
+                                                  >${icons.alertTriangle}</span
+                                              >`
+                                            : ""}${msg.role === "user" ? "User" : "Assistant"}</span
+                                    >
+                                    ${msg.role === "user"
+                                        ? html`
+                                              <div class="message-actions">
+                                                  <button
+                                                      class="edit-button"
+                                                      @click=${() => this._handleEdit(index)}
+                                                      title="Edit and resend"
+                                                  >
+                                                      ✎ Edit
+                                                  </button>
+                                                  <button
+                                                      class="resend-button"
+                                                      @click=${() => this._handleResend(index)}
+                                                      title="Resend from here"
+                                                  >
+                                                      ↻ Resend
+                                                  </button>
+                                                  <button
+                                                      class="delete-button"
+                                                      @click=${() => this._handleDelete(index)}
+                                                      title="Delete this message pair (~${this._estimateTokensFreed(
+                                                          index,
+                                                      )} tokens freed)"
+                                                  >
+                                                      ✕ Delete
+                                                  </button>
+                                              </div>
+                                          `
+                                        : ""}
+                                </div>
+                                ${msg.contexts && msg.contexts.length > 0 ? this._renderContexts(msg.contexts) : ""}
+                                ${this.editingIndex === index
+                                    ? html`
+                                          <collama-chatedit
+                                              .content=${displayContent}
+                                              .messageIndex=${index}
+                                              @edit-send=${(e: CustomEvent) => this._handleEditSend(e)}
+                                              @edit-cancel=${() => this._handleEditCancel()}
+                                          ></collama-chatedit>
                                       `
-                    : ""}
+                                    : msg.loading
+                                      ? html`<span class="loading"
+                                            >Generating response<span class="dots">...</span></span
+                                        >`
+                                      : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
                             </div>
-                            ${msg.contexts && msg.contexts.length > 0 ? this._renderContexts(msg.contexts) : ""}
-                            ${this.editingIndex === index
-                    ? html`
-                                      <collama-chatedit
-                                          .content=${displayContent}
-                                          .messageIndex=${index}
-                                          @edit-send=${(e: CustomEvent) => this._handleEditSend(e)}
-                                          @edit-cancel=${() => this._handleEditCancel()}
-                                      ></collama-chatedit>
-                                  `
-                    : msg.loading
-                        ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
-                        : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
                         </div>
-                    </div>
-                `;
-        })}
-        </div>
+                    `;
+                })}
+            </div>
         `;
     }
 }

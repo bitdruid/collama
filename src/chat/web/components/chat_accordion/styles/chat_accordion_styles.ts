@@ -1,180 +1,176 @@
-import { LitElement, css, html } from "lit";
+import { css } from "lit";
 import { hljsStyles } from "../../../../utils";
 
+export const accordionStyles = [
+    ...hljsStyles,
+    css`
+        :host {
+            display: block;
+            margin: 8px 0;
+            position: relative;
+            z-index: 0;
+        }
 
+        .accordion {
+            border: 1px solid var(--vscode-commandCenter-activeBorder);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
 
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: var(--vscode-textCodeBlock-background);
+            color: var(--vscode-descriptionForeground);
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.9em;
+            border: none;
+            width: 100%;
+            text-align: left;
+            transition: background 0.15s;
+        }
 
-export const accordionStyles=
- [
-        ...hljsStyles,
-        css`
-            :host {
-                display: block;
-                margin: 8px 0;
-                position: relative;
-                z-index: 0;
-            }
+        .accordion-header:hover {
+            background: var(--vscode-toolbar-hoverBackground);
+        }
 
-            .accordion {
-                border: 1px solid var(--vscode-commandCenter-activeBorder);
-                border-radius: 6px;
-                overflow: hidden;
-                position: relative;
-            }
+        .accordion-arrow {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s ease;
+        }
 
-            .accordion-header {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 6px 10px;
-                background: var(--vscode-textCodeBlock-background);
-                color: var(--vscode-descriptionForeground);
-                cursor: pointer;
-                user-select: none;
-                font-size: 0.9em;
-                border: none;
-                width: 100%;
-                text-align: left;
-                transition: background 0.15s;
-            }
+        .accordion-arrow.expanded {
+            transform: rotate(180deg);
+        }
 
-            .accordion-header:hover {
-                background: var(--vscode-toolbar-hoverBackground);
-            }
+        .accordion-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+        }
 
-            .accordion-arrow {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 16px;
-                height: 16px;
-                transition: transform 0.2s ease;
-            }
+        .accordion-label {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
-            .accordion-arrow.expanded {
-                transform: rotate(180deg);
-            }
+        /* Smooth animation using CSS grid trick */
+        .accordion-content-wrapper {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.25s ease-out;
+        }
 
-            .accordion-icon {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 16px;
-                height: 16px;
-            }
+        .accordion-content-wrapper.expanded {
+            grid-template-rows: 1fr;
+        }
 
-            .accordion-label {
-                flex: 1;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
+        .accordion-content {
+            overflow: hidden;
+        }
 
-            /* Smooth animation using CSS grid trick */
-            .accordion-content-wrapper {
-                display: grid;
-                grid-template-rows: 0fr;
-                transition: grid-template-rows 0.25s ease-out;
-            }
+        .accordion-content-inner {
+            background: var(--vscode-editor-background);
+            border-top: 1px solid var(--vscode-commandCenter-activeBorder);
+            max-height: min(300px, 40vh);
+            overflow: auto;
+        }
 
-            .accordion-content-wrapper.expanded {
-                grid-template-rows: 1fr;
-            }
+        .accordion-content-wrapper:not(.expanded) .accordion-content-inner {
+            border-top: none;
+        }
 
-            .accordion-content {
-                overflow: hidden;
-            }
+        .accordion-content pre {
+            margin: 0;
+            min-width: max-content;
+        }
 
-            .accordion-content-inner {
-                background: var(--vscode-editor-background);
-                border-top: 1px solid var(--vscode-commandCenter-activeBorder);
-                max-height: min(300px, 40vh);
-                overflow: auto;
-            }
+        .accordion-content pre code {
+            padding: 8px 10px;
+            white-space: pre;
+            display: block;
+        }
 
-            .accordion-content-wrapper:not(.expanded) .accordion-content-inner {
-                border-top: none;
-            }
+        .accordion-content pre code.hljs {
+            overflow-x: visible;
+        }
 
-            .accordion-content pre {
-                margin: 0;
-                min-width: max-content;
-            }
+        /* think/summary: wrap prose, no horizontal scroll */
+        .accordion.type-think .accordion-content-inner,
+        .accordion.type-summary .accordion-content-inner {
+            overflow-x: hidden;
+        }
 
-            .accordion-content pre code {
-                padding: 8px 10px;
-                white-space: pre;
-                display: block;
-            }
+        .accordion.type-think .accordion-content pre,
+        .accordion.type-summary .accordion-content pre {
+            min-width: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
 
-            .accordion-content pre code.hljs {
-                overflow-x: visible;
-            }
+        .accordion.type-think .accordion-content pre code,
+        .accordion.type-summary .accordion-content pre code {
+            white-space: pre-wrap;
+        }
 
-            /* think/summary: wrap prose, no horizontal scroll */
-            .accordion.type-think .accordion-content-inner,
-            .accordion.type-summary .accordion-content-inner {
-                overflow-x: hidden;
-            }
+        /* Type-specific styling */
+        .accordion.type-think .accordion-header {
+            border-left: 3px solid #2277a8;
+        }
 
-            .accordion.type-think .accordion-content pre,
-            .accordion.type-summary .accordion-content pre {
-                min-width: 0;
-                white-space: pre-wrap;
-                word-break: break-word;
-            }
+        .accordion.type-summary .accordion-header {
+            border-left: 3px solid #e9a849;
+        }
 
-            .accordion.type-think .accordion-content pre code,
-            .accordion.type-summary .accordion-content pre code {
-                white-space: pre-wrap;
-            }
+        .accordion.type-tool .accordion-header {
+            border-left: 3px solid #d87979;
+        }
 
-            /* Type-specific styling */
-            .accordion.type-think .accordion-header {
-                border-left: 3px solid #2277a8;
-            }
+        .accordion.type-code .accordion-header {
+            border-left: none;
+        }
 
-            .accordion.type-summary .accordion-header {
-                border-left: 3px solid #e9a849;
-            }
+        .accordion-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-            .accordion.type-tool .accordion-header {
-                border-left: 3px solid #d87979;
-            }
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            color: var(--vscode-descriptionForeground);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            transition:
+                background 0.15s,
+                color 0.15s;
+        }
 
-            .accordion.type-code .accordion-header {
-                border-left: none;
-            }
+        .copy-btn:hover {
+            background: var(--vscode-toolbar-hoverBackground);
+            color: var(--vscode-foreground);
+        }
 
-            .accordion-actions {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-
-            .copy-btn {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                background: transparent;
-                border: none;
-                color: var(--vscode-descriptionForeground);
-                cursor: pointer;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 0.85em;
-                transition:
-                    background 0.15s,
-                    color 0.15s;
-            }
-
-            .copy-btn:hover {
-                background: var(--vscode-toolbar-hoverBackground);
-                color: var(--vscode-foreground);
-            }
-
-            .copy-btn:active {
-                background: var(--vscode-toolbar-activeBackground);
-            }
-        `,
-    ];
+        .copy-btn:active {
+            background: var(--vscode-toolbar-activeBackground);
+        }
+    `,
+];

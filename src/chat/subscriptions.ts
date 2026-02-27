@@ -7,7 +7,7 @@ import { buildInstructionOptions } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
 import { chatCompress_Template } from "../common/prompt";
 import Tokenizer from "../common/utils";
-import { sysConfig } from "../config";
+import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { mapSessionsToSummaries } from "./utils";
 import { StartPage } from "./web/components/chat_start";
@@ -239,7 +239,7 @@ class ChatPanel {
     private async sendSessionsUpdate() {
         const activeSession = this.getActiveSession();
         const contextUsed = await calculateContextUsage(activeSession?.messages || []);
-        const contextMax = sysConfig.contextLenInstruct;
+        const contextMax = userConfig.apiTokenContextLenInstruct;
         this.webviewView.webview.postMessage({
             type: "sessions-update",
             sessions: mapSessionsToSummaries(this.sessions),
@@ -265,7 +265,7 @@ class ChatPanel {
                 // Send initial state when webview is ready
                 const activeSession = this.getActiveSession();
                 const contextUsed = await calculateContextUsage(activeSession?.messages || []);
-                const contextMax = sysConfig.contextLenInstruct;
+                const contextMax = userConfig.apiTokenContextLenInstruct;
                 webview.postMessage({
                     type: "init",
                     sessions: mapSessionsToSummaries(this.sessions),
@@ -373,7 +373,7 @@ class ChatPanel {
                     { role: "user", content: "Summarize our conversation." },
                     {
                         role: "assistant",
-                        content: `\`\`\`Summary: Conversation\n${summaryContent}\n\`\`\``,
+                        content: `\`\`\`Summary: Conversation\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``,
                     },
                 ];
 
@@ -409,7 +409,7 @@ class ChatPanel {
                 const { trimmedMessages, pairsRemoved, tokensFreed } = await trimMessagesForContext(
                     messages,
                     options.num_predict,
-                    sysConfig.contextLenInstruct,
+                    userConfig.apiTokenContextLenInstruct,
                 );
 
                 // Persist and notify webview of current context boundary

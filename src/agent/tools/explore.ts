@@ -195,7 +195,7 @@ export const searchFiles_def = {
     function: {
         name: "searchFiles",
         description:
-            "Search file contents in the workspace for a regex pattern. Returns matching lines with their line numbers and file paths.",
+            "Search file contents for a regex pattern. Use short, simple patterns (e.g. a function name or keyword). Do NOT use long or complex patterns. If no results, try a simpler pattern once, then stop.",
         parameters: {
             type: "object",
             properties: {
