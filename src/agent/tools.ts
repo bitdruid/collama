@@ -4,10 +4,8 @@ import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
 import {
-    createFile_def,
-    createFile_exec,
-    createFolder_def,
-    createFolder_exec,
+    create_def,
+    create_exec,
     deleteFile_def,
     deleteFile_exec,
     editFile_def,
@@ -22,14 +20,10 @@ import {
     searchFiles_exec,
 } from "./tools/explore";
 import {
-    getCommitDiff_def,
-    getCommitDiff_exec,
-    getCommits_def,
-    getCommits_exec,
-    getWorkingTreeDiff_def,
-    getWorkingTreeDiff_exec,
-    listBranches_def,
-    listBranches_exec,
+    gitDiff_def,
+    gitDiff_exec,
+    gitLog_def,
+    gitLog_exec,
     revertFile_def,
     revertFile_exec,
 } from "./tools/git";
@@ -80,7 +74,7 @@ export function getToolDefinitions() {
  * Edit tools are: editFile, createFile, createFolder, deleteFile, revertFile, renameSymbol
  */
 function isEditTool(toolName: string): boolean {
-    const editTools = ["editFile", "createFile", "createFolder", "deleteFile", "revertFile", "renameSymbol"];
+    const editTools = ["editFile", "create", "deleteFile", "revertFile", "renameSymbol"];
     return editTools.includes(toolName);
 }
 
@@ -163,33 +157,21 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: lsPath_def,
         execute: lsPath_exec,
     },
-    getCommits: {
-        definition: getCommits_def,
-        execute: getCommits_exec,
+    gitLog: {
+        definition: gitLog_def,
+        execute: gitLog_exec,
     },
-    getCommitDiff: {
-        definition: getCommitDiff_def,
-        execute: getCommitDiff_exec,
-    },
-    getWorkingTreeDiff: {
-        definition: getWorkingTreeDiff_def,
-        execute: getWorkingTreeDiff_exec,
-    },
-    listBranches: {
-        definition: listBranches_def,
-        execute: listBranches_exec,
+    gitDiff: {
+        definition: gitDiff_def,
+        execute: gitDiff_exec,
     },
     editFile: {
         definition: editFile_def,
         execute: editFile_exec,
     },
-    createFile: {
-        definition: createFile_def,
-        execute: createFile_exec,
-    },
-    createFolder: {
-        definition: createFolder_def,
-        execute: createFolder_exec,
+    create: {
+        definition: create_def,
+        execute: create_exec,
     },
     deleteFile: {
         definition: deleteFile_def,

@@ -90,27 +90,56 @@ export async function getFirstRepo(): Promise<{ repo: GitRepository } | { error:
 }
 
 /**
- * Retrieves git commits from a branch.
- * @param args - The arguments for the operation.
- * @param args.branch - Optional. Branch name to get commits from (defaults to current branch).
- * @param args.limit - Maximum number of commits to return (default 10, max 50).
- * @param args.filePath - Optional. Filter to commits affecting this specific file.
- * @returns JSON string containing the list of commits or an error message.
+ * Retrieves git log info: commits or branches.
+ * @param args.mode - "commits" (default) or "branches".
+ * @param args.branch - Branch to list commits from (default: current). Only for mode "commits".
+ * @param args.limit - Max commits to return (default 10, max 50). Only for mode "commits".
+ * @param args.filePath - Filter commits to a specific file. Only for mode "commits".
+ * @param args.includeRemote - Include remote branches. Only for mode "branches".
  */
-export async function getCommits_exec(args: { branch?: string; limit?: number; filePath?: string }): Promise<string> {
-    logMsg(
-        `Agent - tool use getCommits branch=${args.branch ?? "HEAD"} limit=${args.limit ?? 10}${args.filePath ? ` file=${args.filePath}` : ""}`,
-    );
+export async function gitLog_exec(args: {
+    mode?: string;
+    branch?: string;
+    limit?: number;
+    filePath?: string;
+    includeRemote?: boolean;
+}): Promise<string> {
+    const mode = args.mode ?? "commits";
+    logMsg(`Agent - tool use gitLog mode=${mode}`);
 
-    const limit = Math.min(args.limit ?? 10, 50);
     const root = getWorkspaceRoot();
-
     if (!root) {
         return JSON.stringify({ error: "No workspace root found" });
     }
 
+    if (mode === "branches") {
+        try {
+            const gitArgs = ["branch", "--format=%(refname:short)\t%(objectname:short)\t%(HEAD)"];
+            if (args.includeRemote) {
+                gitArgs.push("-a");
+            }
+
+            const { stdout } = await execFileAsync("git", gitArgs, { cwd: root });
+            const branches = stdout
+                .trim()
+                .split("\n")
+                .filter((line) => line.length > 0)
+                .map((line) => {
+                    const [name, commit, head] = line.split("\t");
+                    return { name, isCurrent: head === "*", commit };
+                });
+
+            return JSON.stringify({ branches });
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logMsg(`Agent - gitLog branches error: ${msg}`);
+            return JSON.stringify({ error: `Failed to list branches: ${msg}` });
+        }
+    }
+
+    // Default: commits
+    const limit = Math.min(args.limit ?? 10, 50);
     try {
-        // Use git log directly to support branch parameter
         const gitArgs = ["log", args.branch ?? "HEAD", `--max-count=${limit}`, "--format=%H%n%an%n%ae%n%aI%n%s"];
         if (args.filePath) {
             gitArgs.push("--", args.filePath);
@@ -126,7 +155,6 @@ export async function getCommits_exec(args: { branch?: string; limit?: number; f
             message: string;
         }> = [];
 
-        // Each commit is 5 lines: hash, authorName, authorEmail, authorDate, message
         for (let i = 0; i + 4 < lines.length; i += 5) {
             commits.push({
                 hash: lines[i],
@@ -145,32 +173,39 @@ export async function getCommits_exec(args: { branch?: string; limit?: number; f
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - getCommits error: ${msg}`);
+        logMsg(`Agent - gitLog commits error: ${msg}`);
         return JSON.stringify({ error: `Failed to get commits: ${msg}` });
     }
 }
 
-export const getCommits_def = {
+export const gitLog_def = {
     type: "function" as const,
     function: {
-        name: "getCommits",
+        name: "gitLog",
         description:
-            "List git commits from a branch. Returns commit hash, author, date, and message. Defaults to the current branch if no branch is specified.",
+            "Git log info. Use mode 'commits' to list commits (default), or mode 'branches' to list branches.",
         parameters: {
             type: "object",
             properties: {
+                mode: {
+                    type: "string",
+                    description: "'commits' (default) to list commits, 'branches' to list branches.",
+                },
                 branch: {
                     type: "string",
-                    description:
-                        "Branch name to get commits from (e.g., 'main', 'feature/foo'). Defaults to current branch.",
+                    description: "Branch to get commits from (e.g., 'main'). Defaults to current. Only for mode 'commits'.",
                 },
                 limit: {
                     type: "number",
-                    description: "Maximum number of commits to return (default 10, max 50).",
+                    description: "Max commits to return (default 10, max 50). Only for mode 'commits'.",
                 },
                 filePath: {
                     type: "string",
-                    description: "Optional. Filter to commits affecting this specific file.",
+                    description: "Filter to commits affecting this file. Only for mode 'commits'.",
+                },
+                includeRemote: {
+                    type: "boolean",
+                    description: "Include remote branches (default false). Only for mode 'branches'.",
                 },
             },
             required: [],
@@ -191,20 +226,20 @@ const GIT_CHANGE_STATUS: Record<number, string> = {
 };
 
 /**
- * Compares two commits or branches.
- * @param args - The arguments for the operation.
- * @param args.fromCommit - Starting commit hash or branch name (e.g., 'main', 'abc123').
- * @param args.toCommit - Ending commit hash or branch name (e.g., 'HEAD', 'feature/my-feature', 'def456').
- * @param args.filePath - Optional. Returns the full diff text for this file if provided. Otherwise returns a list of changed files.
- * @returns JSON string containing the diff text or list of files, or an error message.
+ * Unified git diff: compare commits/branches or show working tree changes.
+ * @param args.fromCommit - Starting commit/branch. If omitted, shows working tree diff.
+ * @param args.toCommit - Ending commit/branch (default: HEAD). Only for commit diff.
+ * @param args.staged - If true and no fromCommit, shows staged changes (default false).
+ * @param args.filePath - Filter diff to a specific file.
  */
-export async function getCommitDiff_exec(args: {
-    fromCommit: string;
-    toCommit: string;
+export async function gitDiff_exec(args: {
+    fromCommit?: string;
+    toCommit?: string;
+    staged?: boolean;
     filePath?: string;
 }): Promise<string> {
     logMsg(
-        `Agent - tool use getCommitDiff from=${args.fromCommit} to=${args.toCommit}${args.filePath ? ` file=${args.filePath}` : ""}`,
+        `Agent - tool use gitDiff${args.fromCommit ? ` from=${args.fromCommit}` : ""}${args.toCommit ? ` to=${args.toCommit}` : ""}${args.staged ? " staged" : ""}${args.filePath ? ` file=${args.filePath}` : ""}`,
     );
 
     const result = await getFirstRepo();
@@ -212,22 +247,69 @@ export async function getCommitDiff_exec(args: {
         return JSON.stringify({ error: result.error });
     }
 
+    // Working tree diff (no commits specified)
+    if (!args.fromCommit) {
+        try {
+            const diff = await result.repo.diff(args.staged ?? false);
+
+            if (!diff || diff.trim().length === 0) {
+                return JSON.stringify({
+                    diff: "",
+                    staged: args.staged ?? false,
+                    filePath: args.filePath ?? null,
+                    message: args.staged ? "No staged changes" : "No unstaged changes",
+                });
+            }
+
+            let filteredDiff = diff;
+            if (args.filePath) {
+                const normalizedTarget = args.filePath.replace(/^\//, "");
+                const lines = diff.split("\n");
+                let inTargetFile = false;
+                const filteredLines: string[] = [];
+
+                for (const line of lines) {
+                    const diffHeaderMatch = line.match(/^diff --git a\/(\S+) b\/(\S+)$/);
+                    if (diffHeaderMatch) {
+                        inTargetFile =
+                            diffHeaderMatch[1] === normalizedTarget || diffHeaderMatch[2] === normalizedTarget;
+                    }
+                    if (inTargetFile) {
+                        filteredLines.push(line);
+                    }
+                }
+
+                filteredDiff = filteredLines.join("\n");
+            }
+
+            return JSON.stringify({
+                diff: filteredDiff,
+                staged: args.staged ?? false,
+                filePath: args.filePath ?? null,
+            });
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logMsg(`Agent - gitDiff working tree error: ${msg}`);
+            return JSON.stringify({ error: `Failed to get working tree diff: ${msg}` });
+        }
+    }
+
+    // Commit diff
+    const toCommit = args.toCommit ?? "HEAD";
     try {
         const root = getWorkspaceRoot();
 
         if (args.filePath) {
-            // With filePath: return the actual diff text for that file
-            const diff = await result.repo.diffBetween(args.fromCommit, args.toCommit, args.filePath);
+            const diff = await result.repo.diffBetween(args.fromCommit, toCommit, args.filePath);
             return JSON.stringify({
                 diff,
                 fromCommit: args.fromCommit,
-                toCommit: args.toCommit,
+                toCommit,
                 filePath: args.filePath,
             });
         }
 
-        // Without filePath: return list of changed files
-        const changes = await result.repo.diffBetween(args.fromCommit, args.toCommit);
+        const changes = await result.repo.diffBetween(args.fromCommit, toCommit);
         const files = changes.map((c) => ({
             path: root ? path.relative(root, c.uri.fsPath) : c.uri.fsPath,
             status: GIT_CHANGE_STATUS[c.status] ?? `unknown(${c.status})`,
@@ -236,179 +318,41 @@ export async function getCommitDiff_exec(args: {
         return JSON.stringify({
             files,
             fromCommit: args.fromCommit,
-            toCommit: args.toCommit,
+            toCommit,
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - getCommitDiff error: ${msg}`);
+        logMsg(`Agent - gitDiff commit error: ${msg}`);
         return JSON.stringify({ error: `Failed to get commit diff: ${msg}` });
     }
 }
 
-export const getCommitDiff_def = {
+export const gitDiff_def = {
     type: "function" as const,
     function: {
-        name: "getCommitDiff",
+        name: "gitDiff",
         description:
-            "Compare two commits or branches. Without filePath, returns the list of changed files and their status. With filePath, returns the actual diff text for that specific file. Use getCommits to find commit hashes first.",
+            "Get a git diff. Without fromCommit, shows working tree changes (unstaged by default, staged with staged=true). With fromCommit, compares two commits or branches.",
         parameters: {
             type: "object",
             properties: {
                 fromCommit: {
                     type: "string",
-                    description: "Starting commit hash or branch name (e.g., 'main', 'abc123').",
+                    description:
+                        "Starting commit hash or branch name. If omitted, shows working tree changes instead.",
                 },
                 toCommit: {
                     type: "string",
-                    description: "Ending commit hash or branch name (e.g., 'HEAD', 'feature/my-feature', 'def456').",
+                    description: "Ending commit hash or branch name (default: HEAD). Only used with fromCommit.",
                 },
-                filePath: {
-                    type: "string",
-                    description:
-                        "Optional. When provided, returns the full diff text for this specific file. When omitted, returns the list of all changed files.",
-                },
-            },
-            required: ["fromCommit", "toCommit"],
-        },
-    },
-};
-
-/**
- * Gets unstaged or staged changes in the working directory.
- * @param args - The arguments for the operation.
- * @param args.staged - If true, returns staged changes. Defaults to false (unstaged).
- * @param args.filePath - Optional. Filter the diff to a specific file.
- * @returns JSON string containing the diff text or an error message.
- */
-export async function getWorkingTreeDiff_exec(args: { staged?: boolean; filePath?: string }): Promise<string> {
-    logMsg(
-        `Agent - tool use getWorkingTreeDiff staged=${args.staged ?? false}${args.filePath ? ` file=${args.filePath}` : ""}`,
-    );
-
-    const result = await getFirstRepo();
-    if ("error" in result) {
-        return JSON.stringify({ error: result.error });
-    }
-
-    try {
-        const diff = await result.repo.diff(args.staged ?? false);
-
-        if (!diff || diff.trim().length === 0) {
-            return JSON.stringify({
-                diff: "",
-                staged: args.staged ?? false,
-                filePath: args.filePath ?? null,
-                message: args.staged ? "No staged changes" : "No unstaged changes",
-            });
-        }
-
-        let filteredDiff = diff;
-        if (args.filePath) {
-            const normalizedTarget = args.filePath.replace(/^\//, "");
-            const lines = diff.split("\n");
-            let inTargetFile = false;
-            const filteredLines: string[] = [];
-
-            for (const line of lines) {
-                const diffHeaderMatch = line.match(/^diff --git a\/(\S+) b\/(\S+)$/);
-                if (diffHeaderMatch) {
-                    inTargetFile = diffHeaderMatch[1] === normalizedTarget || diffHeaderMatch[2] === normalizedTarget;
-                }
-                if (inTargetFile) {
-                    filteredLines.push(line);
-                }
-            }
-
-            filteredDiff = filteredLines.join("\n");
-        }
-
-        return JSON.stringify({
-            diff: filteredDiff,
-            staged: args.staged ?? false,
-            filePath: args.filePath ?? null,
-        });
-    } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - getWorkingTreeDiff error: ${msg}`);
-        return JSON.stringify({ error: `Failed to get working tree diff: ${msg}` });
-    }
-}
-
-export const getWorkingTreeDiff_def = {
-    type: "function" as const,
-    function: {
-        name: "getWorkingTreeDiff",
-        description: "Get unstaged or staged changes in the working directory.",
-        parameters: {
-            type: "object",
-            properties: {
                 staged: {
                     type: "boolean",
-                    description: "If true, returns staged changes. If false, returns unstaged changes (default false).",
+                    description:
+                        "If true and no fromCommit, shows staged changes. Default false (unstaged).",
                 },
                 filePath: {
                     type: "string",
-                    description: "Optional. Filter the diff to a specific file.",
-                },
-            },
-            required: [],
-        },
-    },
-};
-
-/**
- * Lists all local (and optionally remote) git branches in the repository.
- * @param args - The arguments for the operation.
- * @param args.includeRemote - If true, include remote branches. Defaults to false.
- * @returns JSON string containing the list of branches or an error message.
- */
-export async function listBranches_exec(args: { includeRemote?: boolean }): Promise<string> {
-    logMsg(`Agent - tool use listBranches includeRemote=${args.includeRemote ?? false}`);
-
-    const root = getWorkspaceRoot();
-    if (!root) {
-        return JSON.stringify({ error: "No workspace root found" });
-    }
-
-    try {
-        const gitArgs = ["branch", "--format=%(refname:short)\t%(objectname:short)\t%(HEAD)"];
-        if (args.includeRemote) {
-            gitArgs.push("-a");
-        }
-
-        const { stdout } = await execFileAsync("git", gitArgs, { cwd: root });
-        const branches = stdout
-            .trim()
-            .split("\n")
-            .filter((line) => line.length > 0)
-            .map((line) => {
-                const [name, commit, head] = line.split("\t");
-                return {
-                    name,
-                    isCurrent: head === "*",
-                    commit,
-                };
-            });
-
-        return JSON.stringify({ branches });
-    } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - listBranches error: ${msg}`);
-        return JSON.stringify({ error: `Failed to list branches: ${msg}` });
-    }
-}
-
-export const listBranches_def = {
-    type: "function" as const,
-    function: {
-        name: "listBranches",
-        description: "List all local (and optionally remote) git branches in the repository.",
-        parameters: {
-            type: "object",
-            properties: {
-                includeRemote: {
-                    type: "boolean",
-                    description: "If true, include remote branches. Defaults to false (local only).",
+                    description: "Filter the diff to a specific file.",
                 },
             },
             required: [],

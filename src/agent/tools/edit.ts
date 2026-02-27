@@ -288,17 +288,15 @@ export const editFile_def = {
 };
 
 /**
- * Executes the createFile operation.
- * Creates a new file in the workspace with content preview and user confirmation.
- * Shows a preview of the new file content before creating it.
+ * Creates a file or folder in the workspace with user confirmation.
+ * If `content` is provided, creates a file (with preview). Otherwise creates a folder.
  *
- * @param args - The arguments for the operation.
- * @param args.filePath - The relative path to the new file within the workspace.
- * @param args.content - The content to write to the new file.
- * @returns A JSON string containing the operation result, or an error object if the operation fails.
+ * @param args.filePath - Relative path to the file or folder to create.
+ * @param args.content - File content. If omitted, creates a folder instead.
  */
-export async function createFile_exec(args: { filePath: string; content: string }): Promise<string> {
-    logMsg(`Agent - tool use createFile file=${args.filePath}`);
+export async function create_exec(args: { filePath: string; content?: string }): Promise<string> {
+    const isFolder = args.content === undefined;
+    logMsg(`Agent - tool use create ${isFolder ? "folder" : "file"}=${args.filePath}`);
 
     const root = getWorkspaceRoot();
     if (!root) {
@@ -311,15 +309,29 @@ export async function createFile_exec(args: { filePath: string; content: string 
     }
 
     try {
-        // Check if file already exists
+        // Check if path already exists
         try {
-            await vscode.workspace.fs.stat(vscode.Uri.file(fullPath));
+            const stat = await vscode.workspace.fs.stat(vscode.Uri.file(fullPath));
+            if (stat.type === vscode.FileType.Directory) {
+                return JSON.stringify({ error: `Folder already exists: ${args.filePath}` });
+            }
             return JSON.stringify({ error: `File already exists: ${args.filePath}` });
         } catch {
-            // File doesn't exist, which is what we want
+            // Doesn't exist, which is what we want
         }
 
-        const result = await handleNewFileCreation(fullPath, args.content, {
+        if (isFolder) {
+            if (!(await confirmAction("Create Folder", `Create new folder: ${args.filePath}?`))) {
+                return JSON.stringify({ success: false, message: "Folder creation cancelled.", filePath: args.filePath });
+            }
+
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(fullPath));
+
+            return JSON.stringify({ success: true, message: "Folder created.", filePath: args.filePath });
+        }
+
+        // Create file with preview
+        const result = await handleNewFileCreation(fullPath, args.content!, {
             previewTitle: `collama – New File: ${args.filePath}`,
             progressMessage: `collama: Creating ${args.filePath}…`,
         });
@@ -331,106 +343,30 @@ export async function createFile_exec(args: { filePath: string; content: string 
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - createFile error: ${msg}`);
-        return JSON.stringify({ error: `Failed to create file: ${msg}` });
+        logMsg(`Agent - create error: ${msg}`);
+        return JSON.stringify({ error: `Failed to create ${isFolder ? "folder" : "file"}: ${msg}` });
     }
 }
 
-export const createFile_def = {
+export const create_def = {
     type: "function" as const,
     function: {
-        name: "createFile",
+        name: "create",
         description:
-            "Create a new file in the workspace with content preview and user confirmation. Shows a preview of the new file content and asks for confirmation before creating the file.",
+            "Create a new file or folder. With content: creates a file (shows preview, asks confirmation). Without content: creates a folder (asks confirmation).",
         parameters: {
             type: "object",
             properties: {
                 filePath: {
                     type: "string",
-                    description: "Path to the new file to create (relative to workspace root).",
+                    description: "Path to the new file or folder (relative to workspace root).",
                 },
                 content: {
                     type: "string",
-                    description: "The content to write to the new file.",
+                    description: "File content. Omit to create a folder instead.",
                 },
             },
-            required: ["filePath", "content"],
-        },
-    },
-};
-
-/**
- * Executes the createFolder operation.
- * Creates a new folder/directory in the workspace with user confirmation.
- *
- * @param args - The arguments for the operation.
- * @param args.folderPath - The relative path to the new folder within the workspace.
- * @returns A JSON string containing the operation result, or an error object if the operation fails.
- */
-export async function createFolder_exec(args: { folderPath: string }): Promise<string> {
-    logMsg(`Agent - tool use createFolder folder=${args.folderPath}`);
-
-    const root = getWorkspaceRoot();
-    if (!root) {
-        return JSON.stringify({ error: "No workspace root" });
-    }
-
-    const fullPath = path.resolve(root, args.folderPath);
-    if (!isWithinRoot(root, fullPath)) {
-        return JSON.stringify({ error: "Path must not escape the workspace root" });
-    }
-
-    try {
-        // Check if folder already exists
-        try {
-            const stat = await vscode.workspace.fs.stat(vscode.Uri.file(fullPath));
-            if (stat.type === vscode.FileType.Directory) {
-                return JSON.stringify({ error: `Folder already exists: ${args.folderPath}` });
-            } else {
-                return JSON.stringify({ error: `A file with that name already exists: ${args.folderPath}` });
-            }
-        } catch {
-            // Folder doesn't exist, which is what we want
-        }
-
-        if (!(await confirmAction("Create Folder", `Create new folder: ${args.folderPath}?`))) {
-            return JSON.stringify({
-                success: false,
-                message: "Folder creation cancelled.",
-                folderPath: args.folderPath,
-            });
-        }
-
-        // Create the folder
-        await vscode.workspace.fs.createDirectory(vscode.Uri.file(fullPath));
-
-        return JSON.stringify({
-            success: true,
-            message: "Folder created.",
-            folderPath: args.folderPath,
-        });
-    } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - createFolder error: ${msg}`);
-        return JSON.stringify({ error: `Failed to create folder: ${msg}` });
-    }
-}
-
-export const createFolder_def = {
-    type: "function" as const,
-    function: {
-        name: "createFolder",
-        description:
-            "Create a new folder/directory in the workspace with user confirmation. Asks for confirmation before creating the folder.",
-        parameters: {
-            type: "object",
-            properties: {
-                folderPath: {
-                    type: "string",
-                    description: "Path to the new folder to create (relative to workspace root).",
-                },
-            },
-            required: ["folderPath"],
+            required: ["filePath"],
         },
     },
 };
