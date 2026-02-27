@@ -1,11 +1,14 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import MarkdownIt from "markdown-it";
 
-import { estimateTokenCount, highlightAllCodeBlocks, hljsStyles, icons } from "../../../utils";
-import "../chat_accordion";
-import { ChatContext, ChatMessage } from "../chat_container";
+import { estimateTokenCount, highlightAllCodeBlocks, icons } from "../../../utils";
+import "../chat_accordion/chat_accordion";
+
+import { ChatContext, ChatMessage } from "../chat_container/chat_container";
+import "../chat_session/components/popup/chat_empty_state";
 import "./edit";
+import { outputStyles } from "./styles/output_styles";
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.
@@ -53,202 +56,7 @@ export class ChatOutput extends LitElement {
         editingIndex: { state: true },
     };
 
-    static styles = [
-        ...hljsStyles,
-        css`
-            .loading {
-                font-style: italic;
-                opacity: 0.7;
-            }
-
-            .loading .dots::after {
-                content: "";
-                animation: blink 1s steps(3, end) infinite;
-            }
-
-            @keyframes blink {
-                0%,
-                20% {
-                    content: "";
-                }
-                40% {
-                    content: ".";
-                }
-                60% {
-                    content: "..";
-                }
-                80%,
-                100% {
-                    content: "...";
-                }
-            }
-        `,
-        css`
-            :host {
-            }
-
-            .role-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                font-weight: bold;
-                font-size: 1em;
-                margin-bottom: 6px;
-                padding: 2px 6px;
-                border-radius: 4px;
-                color: #fff;
-            }
-
-            .role-label {
-                flex: 1;
-            }
-
-            .message-actions {
-                display: flex;
-                gap: 4px;
-            }
-
-            .resend-button {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 2px 6px;
-                border: none;
-                border-radius: 4px;
-                background: transparent;
-                color: #fff;
-                font-size: 11px;
-                cursor: pointer;
-                opacity: 1;
-                transition: background 0.15s;
-            }
-
-            .resend-button:hover {
-                background: rgba(255, 255, 255, 0.4);
-            }
-
-            .delete-button {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 2px 6px;
-                border: none;
-                border-radius: 4px;
-                background: transparent;
-                color: #fff;
-                font-size: 11px;
-                cursor: pointer;
-                opacity: 1;
-                transition: background 0.15s;
-            }
-
-            .delete-button:hover {
-                background: rgba(255, 80, 80, 0.5);
-            }
-
-            .edit-button {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 2px 6px;
-                border: none;
-                border-radius: 4px;
-                background: transparent;
-                color: #fff;
-                font-size: 11px;
-                cursor: pointer;
-                opacity: 1;
-                transition: background 0.15s;
-            }
-
-            .edit-button:hover {
-                background: rgba(255, 255, 255, 0.4);
-            }
-
-            .role-user {
-                background-color: #2277a8;
-            }
-
-            .role-assistant {
-                background-color: #4aaf50;
-            }
-
-            .message {
-                margin-bottom: 12px;
-            }
-
-            .bubble {
-                margin: 24px 0;
-                padding: 8px;
-                border-radius: 8px;
-            }
-
-            .bubble-user {
-                border: 1px solid var(--vscode-commandCenter-activeBorder);
-                background: var(--vscode-input-background);
-            }
-
-            .bubble > p {
-                margin: 0;
-            }
-
-            .bubble > pre {
-                margin: 8px 0;
-                white-space: pre;
-            }
-
-            /* Table styling to prevent overflow */
-            .bubble {
-                overflow-x: auto;
-                max-width: 100%;
-            }
-
-            table {
-                border-collapse: collapse;
-                margin: 8px 0;
-                font-size: 0.9em;
-                min-width: 100%;
-                max-width: 100%;
-                display: block;
-                overflow-x: auto;
-            }
-
-            th,
-            td {
-                border: 1px solid var(--vscode-editorWidget-border, #444);
-                padding: 6px 10px;
-                text-align: left;
-            }
-
-            th {
-                background: var(--vscode-editorWidget-background);
-                font-weight: bold;
-            }
-
-            tr:nth-child(even) {
-                background: var(--vscode-editor-background);
-            }
-
-            tr:hover {
-                background: var(--vscode-list-hoverBackground);
-            }
-
-            .out-of-context .bubble {
-                background: rgba(255, 60, 60, 0.08);
-                border-color: rgba(255, 60, 60, 0.25);
-            }
-
-            .out-of-context .bubble.bubble-user {
-                background: rgba(255, 60, 60, 0.08);
-                border-color: rgba(255, 60, 60, 0.25);
-            }
-
-            .warning-icon {
-                margin-right: 4px;
-                font-size: 0.9em;
-            }
-        `,
-    ];
+    static styles = outputStyles;
 
     messages: ChatMessage[] = [];
     contextStartIndex: number = 0;
@@ -382,70 +190,83 @@ export class ChatOutput extends LitElement {
     }
 
     render() {
+        const messages = this.messages;
+
+        if (!messages || messages.length === 0) {
+            return html`
+                <div class="output-container">
+                    <collama-empty-state></collama-empty-state>
+                </div>
+            `;
+        }
         const lastIndex = this.messages.length - 1;
         return html`
-            ${this.messages.map((msg, index) => {
-                const isStreamingMessage = index === lastIndex && msg.role === "assistant" && !msg.loading;
-                const displayContent = this._getMessageWithoutContext(msg);
-                const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
-                return html`
-                    <div class="message ${msg.role} ${isOutOfContext ? "out-of-context" : ""}">
-                        <div class="bubble ${msg.role === "user" ? "bubble-user" : ""}">
-                            <div class="role-header ${msg.role === "user" ? "role-user" : "role-assistant"}">
-                                <span class="role-label"
-                                    >${isOutOfContext
-                                        ? html`<span class="warning-icon" title="Not in context"
-                                              >${icons.alertTriangle}</span
-                                          >`
-                                        : ""}${msg.role === "user" ? "User" : "Assistant"}</span
-                                >
-                                ${msg.role === "user"
+            <div class="output-container">
+                ${this.messages.map((msg, index) => {
+                    const isStreamingMessage = index === lastIndex && msg.role === "assistant" && !msg.loading;
+                    const displayContent = this._getMessageWithoutContext(msg);
+                    const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
+                    return html`
+                        <div class="message ${msg.role} ${isOutOfContext ? "out-of-context" : ""}">
+                            <div class="bubble ${msg.role === "user" ? "bubble-user" : ""}">
+                                <div class="role-header ${msg.role === "user" ? "role-user" : "role-assistant"}">
+                                    <span class="role-label"
+                                        >${isOutOfContext
+                                            ? html`<span class="warning-icon" title="Not in context"
+                                                  >${icons.alertTriangle}</span
+                                              >`
+                                            : ""}${msg.role === "user" ? "User" : "Assistant"}</span
+                                    >
+                                    ${msg.role === "user"
+                                        ? html`
+                                              <div class="message-actions">
+                                                  <button
+                                                      class="edit-button"
+                                                      @click=${() => this._handleEdit(index)}
+                                                      title="Edit and resend"
+                                                  >
+                                                      ✎ Edit
+                                                  </button>
+                                                  <button
+                                                      class="resend-button"
+                                                      @click=${() => this._handleResend(index)}
+                                                      title="Resend from here"
+                                                  >
+                                                      ↻ Resend
+                                                  </button>
+                                                  <button
+                                                      class="delete-button"
+                                                      @click=${() => this._handleDelete(index)}
+                                                      title="Delete this message pair (~${this._estimateTokensFreed(
+                                                          index,
+                                                      )} tokens freed)"
+                                                  >
+                                                      ✕ Delete
+                                                  </button>
+                                              </div>
+                                          `
+                                        : ""}
+                                </div>
+                                ${msg.contexts && msg.contexts.length > 0 ? this._renderContexts(msg.contexts) : ""}
+                                ${this.editingIndex === index
                                     ? html`
-                                          <div class="message-actions">
-                                              <button
-                                                  class="edit-button"
-                                                  @click=${() => this._handleEdit(index)}
-                                                  title="Edit and resend"
-                                              >
-                                                  ✎ Edit
-                                              </button>
-                                              <button
-                                                  class="resend-button"
-                                                  @click=${() => this._handleResend(index)}
-                                                  title="Resend from here"
-                                              >
-                                                  ↻ Resend
-                                              </button>
-                                              <button
-                                                  class="delete-button"
-                                                  @click=${() => this._handleDelete(index)}
-                                                  title="Delete this message pair (~${this._estimateTokensFreed(
-                                                      index,
-                                                  )} tokens freed)"
-                                              >
-                                                  ✕ Delete
-                                              </button>
-                                          </div>
+                                          <collama-chatedit
+                                              .content=${displayContent}
+                                              .messageIndex=${index}
+                                              @edit-send=${(e: CustomEvent) => this._handleEditSend(e)}
+                                              @edit-cancel=${() => this._handleEditCancel()}
+                                          ></collama-chatedit>
                                       `
-                                    : ""}
+                                    : msg.loading
+                                      ? html`<span class="loading"
+                                            >Generating response<span class="dots">...</span></span
+                                        >`
+                                      : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
                             </div>
-                            ${msg.contexts && msg.contexts.length > 0 ? this._renderContexts(msg.contexts) : ""}
-                            ${this.editingIndex === index
-                                ? html`
-                                      <collama-chatedit
-                                          .content=${displayContent}
-                                          .messageIndex=${index}
-                                          @edit-send=${(e: CustomEvent) => this._handleEditSend(e)}
-                                          @edit-cancel=${() => this._handleEditCancel()}
-                                      ></collama-chatedit>
-                                  `
-                                : msg.loading
-                                  ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
-                                  : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
                         </div>
-                    </div>
-                `;
-            })}
+                    `;
+                })}
+            </div>
         `;
     }
 }
