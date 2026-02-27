@@ -3,6 +3,12 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-02-27
+
+### Changed
+
+- Refactoring of chat related code to regain some readability
+
 ## [1.4.0] - 2026-02-26
 
 ### Changed
