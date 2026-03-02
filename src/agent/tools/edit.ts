@@ -63,9 +63,7 @@ async function handleFileChangesWithDiff(
     filePath: string,
     newContent: string,
     options: {
-        /** Title for the diff view */
         diffTitle?: string;
-        /** Progress message during processing */
         progressMessage?: string;
     } = {},
 ): Promise<{ success: boolean; message: string }> {
@@ -322,7 +320,11 @@ export async function create_exec(args: { filePath: string; content?: string }):
 
         if (isFolder) {
             if (!(await confirmAction("Create Folder", `Create new folder: ${args.filePath}?`))) {
-                return JSON.stringify({ success: false, message: "Folder creation cancelled.", filePath: args.filePath });
+                return JSON.stringify({
+                    success: false,
+                    message: "Folder creation cancelled.",
+                    filePath: args.filePath,
+                });
             }
 
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(fullPath));

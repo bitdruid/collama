@@ -3,14 +3,7 @@ import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
-import {
-    create_def,
-    create_exec,
-    deleteFile_def,
-    deleteFile_exec,
-    editFile_def,
-    editFile_exec,
-} from "./tools/edit";
+import { create_def, create_exec, deleteFile_def, deleteFile_exec, editFile_def, editFile_exec } from "./tools/edit";
 import {
     lsPath_def,
     lsPath_exec,
@@ -19,14 +12,7 @@ import {
     searchFiles_def,
     searchFiles_exec,
 } from "./tools/explore";
-import {
-    gitDiff_def,
-    gitDiff_exec,
-    gitLog_def,
-    gitLog_exec,
-    revertFile_def,
-    revertFile_exec,
-} from "./tools/git";
+import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec, revertFile_def, revertFile_exec } from "./tools/git";
 
 /**
  * Represents a tool that can be executed by the agent.
@@ -145,10 +131,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: readFile_def,
         execute: readFile_exec,
     },
-    // listFiles: {
-    //     definition: listFiles_def,
-    //     execute: listFiles_exec,
-    // },
     searchFiles: {
         definition: searchFiles_def,
         execute: searchFiles_exec,
@@ -181,18 +163,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: revertFile_def,
         execute: revertFile_exec,
     },
-    // getSymbols: {
-    //     definition: getSymbols_def,
-    //     execute: getSymbols_exec,
-    // },
-    // renameSymbol: {
-    //     definition: renameSymbol_def,
-    //     execute: renameSymbol_exec,
-    // },
-    // findReferences: {
-    //     definition: findReferences_def,
-    //     execute: findReferences_exec,
-    // },
     getDiagnostics: {
         definition: getDiagnostics_def,
         execute: getDiagnostics_exec,
