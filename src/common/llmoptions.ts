@@ -205,6 +205,6 @@ export function buildAgentOptions(): Options {
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.2,
         top_p: 0.9,
-        top_k: 20,
+        top_k: 40,
     };
 }

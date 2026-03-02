@@ -12,7 +12,7 @@ import {
     searchFiles_def,
     searchFiles_exec,
 } from "./tools/explore";
-import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec, revertFile_def, revertFile_exec } from "./tools/git";
+import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
 
 /**
  * Represents a tool that can be executed by the agent.
@@ -60,7 +60,7 @@ export function getToolDefinitions() {
  * Edit tools are: editFile, createFile, createFolder, deleteFile, revertFile, renameSymbol
  */
 function isEditTool(toolName: string): boolean {
-    const editTools = ["editFile", "create", "deleteFile", "revertFile", "renameSymbol"];
+    const editTools = ["editFile", "editLines", "create", "deleteFile", "revertFile", "renameSymbol"];
     return editTools.includes(toolName);
 }
 
@@ -158,10 +158,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     deleteFile: {
         definition: deleteFile_def,
         execute: deleteFile_exec,
-    },
-    revertFile: {
-        definition: revertFile_def,
-        execute: revertFile_exec,
     },
     getDiagnostics: {
         definition: getDiagnostics_def,

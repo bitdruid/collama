@@ -183,18 +183,15 @@ async function handleNewFileCreation(
 }
 
 /**
- * Executes the editFile operation.
- * Applies one or more search-and-replace edits to a single file.
- * Shows a combined diff preview and asks for user confirmation before applying.
+ * Edits a file by replacing an exact string match with new content.
+ * Shows a diff preview and asks for user confirmation before applying.
  *
- * @param args.filePath - Relative path to the file.
- * @param args.edits - Array of { oldStr, newStr } replacements, applied in order.
+ * @param args.filePath - Relative path to the file to edit.
+ * @param args.oldString - The exact string to find in the file (must match uniquely).
+ * @param args.newString - The replacement string.
  */
-export async function editFile_exec(args: {
-    filePath: string;
-    edits: Array<{ oldStr: string; newStr: string }>;
-}): Promise<string> {
-    logMsg(`Agent - tool use editFile file=${args.filePath} edits=${args.edits.length}`);
+export async function editFile_exec(args: { filePath: string; oldString: string; newString: string }): Promise<string> {
+    logMsg(`Agent - tool use editFile file=${args.filePath}`);
 
     const root = getWorkspaceRoot();
     if (!root) {
@@ -206,32 +203,34 @@ export async function editFile_exec(args: {
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
 
-    if (!args.edits || args.edits.length === 0) {
-        return JSON.stringify({ error: "No edits provided" });
-    }
-
     try {
-        let content = await readFileContent(fullPath);
+        const content = await readFileContent(fullPath);
 
-        // Apply each replacement in order
-        for (let i = 0; i < args.edits.length; i++) {
-            const edit = args.edits[i];
-            const occurrences = content.split(edit.oldStr).length - 1;
-            if (occurrences === 0) {
-                return JSON.stringify({
-                    error: `Edit ${i + 1}: oldStr not found in file. Make sure it matches exactly, including whitespace and indentation.`,
-                });
-            }
-            if (occurrences > 1) {
-                return JSON.stringify({
-                    error: `Edit ${i + 1}: oldStr found ${occurrences} times. Include more surrounding context to make it unique.`,
-                });
-            }
-            content = content.replace(edit.oldStr, edit.newStr);
+        // Validate that oldString exists and is unique
+        const firstIndex = content.indexOf(args.oldString);
+        if (firstIndex === -1) {
+            return JSON.stringify({
+                error: "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
+                filePath: args.filePath,
+            });
         }
 
-        const result = await handleFileChangesWithDiff(fullPath, content, {
-            diffTitle: `collama – Edit ${args.filePath}`,
+        const secondIndex = content.indexOf(args.oldString, firstIndex + 1);
+        if (secondIndex !== -1) {
+            return JSON.stringify({
+                error: "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
+                filePath: args.filePath,
+            });
+        }
+
+        if (args.oldString === args.newString) {
+            return JSON.stringify({ error: "oldString and newString are identical. No changes to apply." });
+        }
+
+        const newContent = content.replace(args.oldString, args.newString);
+
+        const result = await handleFileChangesWithDiff(fullPath, newContent, {
+            diffTitle: `collama – Edit: ${args.filePath}`,
             progressMessage: `collama: Editing ${args.filePath}…`,
         });
 
@@ -252,7 +251,7 @@ export const editFile_def = {
     function: {
         name: "editFile",
         description:
-            "Edit a file with one or more search-and-replace operations. Each oldStr must match exactly one location. Edits are applied in order, and a combined diff preview is shown for user confirmation. Use readFile first to see the current content.",
+            "Edit a file by replacing an exact string match with new content. The oldString must match exactly one location in the file (including whitespace and indentation). Use readFile first to see the current content. Shows a diff preview and asks for user confirmation.",
         parameters: {
             type: "object",
             properties: {
@@ -260,27 +259,17 @@ export const editFile_def = {
                     type: "string",
                     description: "Path to the file to edit (relative to workspace root).",
                 },
-                edits: {
-                    type: "array",
-                    description: "One or more replacements to apply in order.",
-                    items: {
-                        type: "object",
-                        properties: {
-                            oldStr: {
-                                type: "string",
-                                description:
-                                    "The exact string to find. Must match exactly one location, including whitespace and indentation.",
-                            },
-                            newStr: {
-                                type: "string",
-                                description: "The replacement string. Can be empty to delete the matched text.",
-                            },
-                        },
-                        required: ["oldStr", "newStr"],
-                    },
+                oldString: {
+                    type: "string",
+                    description:
+                        "The exact string to find and replace. Must match exactly one location in the file. Include enough surrounding context to be unique.",
+                },
+                newString: {
+                    type: "string",
+                    description: "The replacement string.",
                 },
             },
-            required: ["filePath", "edits"],
+            required: ["filePath", "oldString", "newString"],
         },
     },
 };

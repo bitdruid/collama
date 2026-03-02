@@ -1,8 +1,10 @@
 import { ChatHistory } from "../common/context_chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
+import { agent_Template } from "../common/prompt";
 import { withProgressNotification } from "../common/utils";
 import { userConfig } from "../config";
+import { logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions } from "./tools";
 
@@ -47,7 +49,7 @@ export class Agent {
         await withProgressNotification(`collama: Agent running …`, async () => {
             this.abortController = new AbortController();
             const signal = this.abortController.signal;
-            const history: ChatHistory[] = [...messages];
+            const history: ChatHistory[] = [{ role: "system", content: agent_Template }, ...messages];
 
             try {
                 this.client = new LlmClientFactory("instruction");
@@ -90,14 +92,12 @@ export class Agent {
                         break;
                     }
 
-                    // assistant message (with tool_calls) to history.
                     history.push({
                         role: "assistant",
                         content: result.content,
                         tool_calls: result.toolCalls,
                     });
 
-                    // execute tool, append result to history, stream tool-use into chat
                     for (const toolCall of result.toolCalls) {
                         if (signal.aborted) {
                             break;
@@ -123,9 +123,12 @@ export class Agent {
                         break;
                     }
 
-                    // blank line after tools
                     onChunk("\n");
                 }
+            } catch (error) {
+                // Catch-all for LLM API errors and other unexpected errors
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n`);
             } finally {
                 if (signal.aborted) {
                     onChunk("\n\n**Cancelled**");

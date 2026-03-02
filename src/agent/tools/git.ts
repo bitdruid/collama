@@ -3,7 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { logMsg } from "../../logging";
-import { confirmAction, getWorkspaceRoot, isWithinRoot } from "../tools";
+import { getWorkspaceRoot } from "../tools";
 
 const execFileAsync = promisify(execFile);
 
@@ -182,8 +182,7 @@ export const gitLog_def = {
     type: "function" as const,
     function: {
         name: "gitLog",
-        description:
-            "Git log info. Use mode 'commits' to list commits (default), or mode 'branches' to list branches.",
+        description: "Git log info. Use mode 'commits' to list commits (default), or mode 'branches' to list branches.",
         parameters: {
             type: "object",
             properties: {
@@ -193,7 +192,8 @@ export const gitLog_def = {
                 },
                 branch: {
                     type: "string",
-                    description: "Branch to get commits from (e.g., 'main'). Defaults to current. Only for mode 'commits'.",
+                    description:
+                        "Branch to get commits from (e.g., 'main'). Defaults to current. Only for mode 'commits'.",
                 },
                 limit: {
                     type: "number",
@@ -338,8 +338,7 @@ export const gitDiff_def = {
             properties: {
                 fromCommit: {
                     type: "string",
-                    description:
-                        "Starting commit hash or branch name. If omitted, shows working tree changes instead.",
+                    description: "Starting commit hash or branch name. If omitted, shows working tree changes instead.",
                 },
                 toCommit: {
                     type: "string",
@@ -347,8 +346,7 @@ export const gitDiff_def = {
                 },
                 staged: {
                     type: "boolean",
-                    description:
-                        "If true and no fromCommit, shows staged changes. Default false (unstaged).",
+                    description: "If true and no fromCommit, shows staged changes. Default false (unstaged).",
                 },
                 filePath: {
                     type: "string",
@@ -356,77 +354,6 @@ export const gitDiff_def = {
                 },
             },
             required: [],
-        },
-    },
-};
-
-/**
- * Reverts a file to its last git-committed state using `git checkout`.
- *
- * @param args.filePath - Relative path to the file to revert.
- */
-export async function revertFile_exec(args: { filePath: string }): Promise<string> {
-    logMsg(`Agent - tool use revertFile file=${args.filePath}`);
-
-    const root = getWorkspaceRoot();
-    if (!root) {
-        return JSON.stringify({ error: "No workspace root found" });
-    }
-
-    const fullPath = path.resolve(root, args.filePath);
-    if (!isWithinRoot(root, fullPath)) {
-        return JSON.stringify({ error: "Path must not escape the workspace root" });
-    }
-
-    try {
-        if (
-            !(await confirmAction(
-                "Revert",
-                `Revert ${args.filePath} to last committed state? Unsaved changes will be lost.`,
-            ))
-        ) {
-            return JSON.stringify({ success: false, message: "Revert cancelled.", filePath: args.filePath });
-        }
-
-        await execFileAsync("git", ["checkout", "HEAD", "--", args.filePath], { cwd: root });
-
-        // Reload the file in the editor if it's open so VS Code picks up the reverted content
-        const uri = vscode.Uri.file(fullPath);
-        const openDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
-        if (openDoc) {
-            await vscode.commands.executeCommand("workbench.action.files.revert");
-        }
-
-        return JSON.stringify({
-            success: true,
-            message: "File reverted to last committed state.",
-            filePath: args.filePath,
-        });
-    } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        if (msg.includes("did not match any file")) {
-            return JSON.stringify({ error: `File not tracked by git: ${args.filePath}` });
-        }
-        logMsg(`Agent - revertFile error: ${msg}`);
-        return JSON.stringify({ error: `Failed to revert file: ${msg}` });
-    }
-}
-
-export const revertFile_def = {
-    type: "function" as const,
-    function: {
-        name: "revertFile",
-        description:
-            "Revert a file to its last git-committed state, discarding all uncommitted changes. Asks for user confirmation. Useful to undo mistakes or restore a file to a known good state.",
-        parameters: {
-            type: "object",
-            properties: {
-                filePath: {
-                    type: "string",
-                    description: "Path to the file to revert (relative to workspace root).",
-                },
-            },
-            required: ["filePath"],
         },
     },
 };

@@ -125,25 +125,6 @@ export const commitMsgCommand_Template: PromptTemplate = ({ diff }) =>
         "Common git commit message format. Without explanation in code fences.",
     ].join("\n");
 
-/**
- * The user message appended to the conversation history to request a summary.
- * Used by the chat compress feature to condense a long conversation into a
- * single Summary accordion message pair.
- */
-/**
- * System prompt prepended to the agent's conversation history.
- * Guides the LLM on how to use tools effectively and when to stop.
- */
-export const agentSystem_Template: string = [
-    "You are a helpful coding assistant inside VS Code with access to tools for reading, searching, editing files, and inspecting the project.",
-    "",
-    "Guidelines:",
-    "- Use readFile to see a file's content before editing it.",
-    "- Use getDiagnostics after editing to verify you didn't introduce errors.",
-    "- Never guess file paths or content. If you are unsure, ask the user.",
-    "- Explain what you're doing and why before making changes.",
-].join("\n");
-
 export const chatCompress_Template: string = [
     "Summarize the entire conversation above in detail.",
     "",
@@ -160,4 +141,20 @@ export const chatCompress_Template: string = [
     "- Use ## headers to separate major topics",
     "- Use bullet points for lists of items, decisions, or findings",
     "- Write in past tense, third-person neutral",
+].join("\n");
+
+/**
+ * The user message appended to the conversation history to request a summary.
+ * Used by the chat compress feature to condense a long conversation into a
+ * single Summary accordion message pair.
+ */
+/**
+ * System prompt prepended to the agent's conversation history.
+ * Guides the LLM on how to use tools effectively and when to stop.
+ */
+export const agent_Template: string = [
+    "Guidelines:",
+    "- Prefer reading files over searching patterns.",
+    "- Explain what you're doing and why before making changes.",
+    '- Tool arguments are JSON. Always escape quotes as \\" and newlines as \\n inside string values.',
 ].join("\n");
