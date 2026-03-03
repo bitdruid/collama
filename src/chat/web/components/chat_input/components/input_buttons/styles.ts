@@ -5,7 +5,8 @@ export const inputButtonsStyles = css`
           button-submit,
         button-context,
         button-cancel,
-        button-compress {
+        button-compress,
+        button-gallery {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -52,6 +53,12 @@ export const inputButtonsStyles = css`
         }
         button-compress:hover {
             background-color: #5a4622;
+        }
+        button-gallery {
+            background-color: #2277a8;
+        }
+        button-gallery:hover {
+            background-color: #185d86;
         }
         .context-display {
             display: inline-flex;

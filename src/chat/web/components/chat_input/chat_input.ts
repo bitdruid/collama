@@ -1,9 +1,16 @@
 import { LitElement, css, html } from "lit";
 import { ChatContext } from "../chat_container/chat_container";
 import { chatInputStyles } from "./styles/chat_input_styles";
-import  "./components/input_buttons/input_buttons"; // Import
+import "./components/input_buttons/input_buttons"; // Import
+import "../prompt_gallery/prompt_gallery";
+import { state } from "lit/decorators.js";
+
 
 export class ChatInput extends LitElement {
+    
+    @state()
+    private showGallery = false;
+
     static get properties() {
         return {
             userInput: { type: String },
@@ -93,8 +100,30 @@ export class ChatInput extends LitElement {
         );
     }
 
+    
+
+    private _openGallery() {
+        this.showGallery = true;
+    }
+
+    private _closeGallery() {
+        this.showGallery = false;
+    }
+
+    private _handlePrompt(e: CustomEvent) {
+        this.userInput = e.detail.value;
+        this.showGallery = false;
+    }
+
+
     render() {
         return html`
+            <collama-prompt-gallery
+                .visible=${this.showGallery}
+                @submit-prompt=${this._handlePrompt}
+                @close-gallery=${this._closeGallery}>
+            </collama-prompt-gallery>
+            
             <textarea
                 .value=${this.userInput}
                 rows=${this.rows}
@@ -103,9 +132,11 @@ export class ChatInput extends LitElement {
                 placeholder="Chat with AI..."
                 ?disabled=${this.isLoading}
             ></textarea>
+            
             <collama-chatinput-buttons
                 .contexts=${this.contexts}
                 .isLoading=${this.isLoading}
+                @gallery-click=${this._openGallery}
                 @cancel=${this._handleCancel}
                 @compress=${this._handleCompress}
                 @submit=${this._handleSubmit}
