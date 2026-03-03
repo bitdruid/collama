@@ -5,6 +5,19 @@ import { logMsg } from "../../logging";
 import { confirmAction, getWorkspaceRoot, isWithinRoot } from "../tools";
 
 /**
+ * When true, editFile applies changes without showing a diff preview.
+ * Set by the "Accept All" quick-pick option; reset per agent session.
+ */
+let autoAcceptEdits = false;
+
+/**
+ * Resets the auto-accept flag. Call at the start of each agent session.
+ */
+export function resetAutoAcceptEdits(): void {
+    autoAcceptEdits = false;
+}
+
+/**
  * Virtual document provider for diff previews.
  */
 class DiffContentProvider implements vscode.TextDocumentContentProvider {
@@ -65,9 +78,11 @@ async function handleFileChangesWithDiff(
     options: {
         diffTitle?: string;
         progressMessage?: string;
+        /** When true, offer an "Accept All" choice that sets autoAcceptEdits. */
+        showAcceptAll?: boolean;
     } = {},
 ): Promise<{ success: boolean; message: string }> {
-    const { diffTitle = "collama – Preview Changes", progressMessage = "collama: Processing changes…" } = options;
+    const { diffTitle = "collama – Preview Changes", progressMessage = "collama: Processing changes…", showAcceptAll = false } = options;
 
     return await withProgressNotification(progressMessage, async () => {
         // Read the original file content (prefer in-memory buffer for unsaved changes)
@@ -97,14 +112,24 @@ async function handleFileChangesWithDiff(
         // Open diff view
         await vscode.commands.executeCommand("vscode.diff", leftUri, rightUri, diffTitle);
 
-        const shouldApply = await confirmAction("Accept", "Apply these changes?");
-        let resultMessage = "";
+        const picks = showAcceptAll ? ["Accept", "Accept All", "Cancel"] : ["Accept", "Cancel"];
+        const choice = await vscode.window.showQuickPick(picks, {
+            placeHolder: "Apply these changes?",
+            canPickMany: false,
+            ignoreFocusOut: true,
+        });
 
-        if (shouldApply) {
+        let applied = false;
+        let resultMessage = "Changes discarded.";
+
+        if (choice === "Accept" || choice === "Accept All") {
             await applyFileChanges(uri, newContent);
+            applied = true;
             resultMessage = "Changes applied.";
-        } else {
-            resultMessage = "Changes discarded.";
+            if (choice === "Accept All") {
+                autoAcceptEdits = true;
+                resultMessage = "Changes applied. Auto-accepting future edits.";
+            }
         }
 
         // Close the diff preview if it's still active
@@ -119,7 +144,7 @@ async function handleFileChangesWithDiff(
 
         registration.dispose();
 
-        return { success: shouldApply, message: resultMessage };
+        return { success: applied, message: resultMessage };
     });
 }
 
@@ -229,9 +254,20 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
 
         const newContent = content.replace(args.oldString, args.newString);
 
+        // Auto-accept: apply without diff preview
+        if (autoAcceptEdits) {
+            await applyFileChanges(vscode.Uri.file(fullPath), newContent);
+            return JSON.stringify({
+                success: true,
+                message: "Changes applied (auto-accepted).",
+                filePath: args.filePath,
+            });
+        }
+
         const result = await handleFileChangesWithDiff(fullPath, newContent, {
             diffTitle: `collama – Edit: ${args.filePath}`,
             progressMessage: `collama: Editing ${args.filePath}…`,
+            showAcceptAll: true,
         });
 
         return JSON.stringify({

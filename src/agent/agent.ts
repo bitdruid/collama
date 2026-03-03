@@ -6,7 +6,7 @@ import { withProgressNotification } from "../common/utils";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import { executeTool, getToolDefinitions } from "./tools";
+import { executeTool, getToolDefinitions, resetAutoAcceptEdits } from "./tools";
 
 export class Agent {
     private client: LlmClientFactory | undefined;
@@ -48,8 +48,10 @@ export class Agent {
     async work(messages: ChatHistory[], onChunk: (chunk: string) => void) {
         await withProgressNotification(`collama: Agent running …`, async () => {
             this.abortController = new AbortController();
+            resetAutoAcceptEdits();
             const signal = this.abortController.signal;
             const history: ChatHistory[] = [{ role: "system", content: agent_Template }, ...messages];
+            // const history: ChatHistory[] = [...messages];
 
             try {
                 this.client = new LlmClientFactory("instruction");
@@ -58,7 +60,7 @@ export class Agent {
                     apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
                     model: userConfig.apiModelInstruct,
                     messages: history,
-                    tools: getToolDefinitions(),
+                    tools: userConfig.agentic ? getToolDefinitions() : [],
                     options: buildAgentOptions(),
                     stop: emptyStop(),
                     signal: signal,
@@ -103,7 +105,15 @@ export class Agent {
                             break;
                         }
 
-                        const args = JSON.parse(toolCall.function.arguments);
+                        let args: any = {};
+                        try {
+                            args = JSON.parse(toolCall.function.arguments);
+                        } catch (e) {
+                            logMsg(
+                                `\n\n**Agent Error**: Failed to parse tool arguments for ${toolCall.function.name}: ${e}\nArguments: ${toolCall.function.arguments}\n`,
+                            );
+                            args = {};
+                        }
 
                         // tool info is streamed as a codeblock into the chat
                         const hasArgs = Object.keys(args).length > 0;
@@ -126,9 +136,9 @@ export class Agent {
                     onChunk("\n");
                 }
             } catch (error) {
-                // Catch-all for LLM API errors and other unexpected errors
                 const errorMsg = error instanceof Error ? error.message : String(error);
-                logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n`);
+                const errorStack = error instanceof Error ? error.stack : "";
+                logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n${errorStack}\n\n`);
             } finally {
                 if (signal.aborted) {
                     onChunk("\n\n**Cancelled**");

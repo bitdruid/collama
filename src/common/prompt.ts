@@ -155,6 +155,8 @@ export const chatCompress_Template: string = [
 export const agent_Template: string = [
     "Guidelines:",
     "- Prefer reading files over searching patterns.",
-    "- Explain what you're doing and why before making changes.",
+    "- Explain your actions and why before making changes.",
     '- Tool arguments are JSON. Always escape quotes as \\" and newlines as \\n inside string values.',
+    "- Never repeat yourself. Instead move on to the next step.",
+    "- Do not re-check conditions you have already confirmed.",
 ].join("\n");

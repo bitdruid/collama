@@ -3,7 +3,15 @@ import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
-import { create_def, create_exec, deleteFile_def, deleteFile_exec, editFile_def, editFile_exec } from "./tools/edit";
+import {
+    create_def,
+    create_exec,
+    deleteFile_def,
+    deleteFile_exec,
+    editFile_def,
+    editFile_exec,
+    resetAutoAcceptEdits,
+} from "./tools/edit";
 import {
     lsPath_def,
     lsPath_exec,
@@ -13,6 +21,7 @@ import {
     searchFiles_exec,
 } from "./tools/explore";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
+export { resetAutoAcceptEdits };
 
 /**
  * Represents a tool that can be executed by the agent.

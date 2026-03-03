@@ -104,6 +104,7 @@ export interface Options {
     temperature: number;
     top_k: number;
     top_p: number;
+    repeat_penalty?: number;
 }
 
 /**
@@ -204,7 +205,8 @@ export function buildAgentOptions(): Options {
         num_predict: 16384,
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.2,
-        top_p: 0.9,
+        top_p: 0.5,
         top_k: 40,
+        repeat_penalty: 1.2,
     };
 }

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
-import { RequestType, sysConfig, userConfig } from "../config";
+import { RequestType, sysConfig } from "../config";
 import { logMsg } from "../logging";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
@@ -152,7 +152,7 @@ class OllamaClient implements LlmClient {
             const stream = await ollama.chat({
                 model: model,
                 messages: toOllamaMessages(messages),
-                ...(userConfig.agentic ? { tools: tools } : {}),
+                ...(tools.length > 0 ? { tools: tools } : {}),
                 stream: true,
                 options: { ...options, stop: buildStopTokens(stop) },
             });
@@ -260,7 +260,8 @@ class OpenAiClient implements LlmClient {
             const stream = await openai.chat.completions.create({
                 model: model,
                 messages: messages,
-                ...(userConfig.agentic ? { tools: tools } : {}),
+                tools: tools,
+                tool_choice: "auto",
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
@@ -291,8 +292,8 @@ class OpenAiClient implements LlmClient {
                             deltaToolCall[tc.index] = { id: "", name: "", argumentsStr: "" };
                         }
                         // some provider: final summary delta with id/name
-                        // set to null and the complete arguments — replace, don't append.
-                        if (tc.id === null) {
+                        // set to null/undefined and the complete arguments — replace, don't append.
+                        if (tc.id === null || tc.id === undefined) {
                             if (tc.function?.arguments) {
                                 deltaToolCall[tc.index].argumentsStr = tc.function.arguments;
                             }
