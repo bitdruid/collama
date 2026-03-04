@@ -244,10 +244,11 @@ class OllamaClient implements LlmClient {
 class OpenAiClient implements LlmClient {
     /**
      * Streams a chat completion response from an OpenAI-compatible endpoint.
+     * Handles text streaming, tool call aggregation, and request abortion.
      *
-     * @param settings - Configuration for the chat request (endpoint, model, messages, options).
-     * @param onChunk - Optional callback invoked for each chunk of the streamed response.
-     * @returns The accumulated full response string.
+     * @param settings - Configuration for the chat request (endpoint, model, messages, tools, options).
+     * @param onChunk - Optional callback invoked for each text chunk of the streamed response.
+     * @returns A ChatResult object containing the cleaned content and any aggregated tool calls.
      */
     async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
@@ -260,8 +261,8 @@ class OpenAiClient implements LlmClient {
             const stream = await openai.chat.completions.create({
                 model: model,
                 messages: messages,
-                tools: tools,
-                tool_choice: "auto",
+                tools: tools.length > 0 ? tools : undefined,
+                tool_choice: tools.length > 0 ? "auto" : undefined,
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
@@ -271,45 +272,56 @@ class OpenAiClient implements LlmClient {
             let result = "";
             let resultTokens = 0;
 
-            const deltaToolCall: Record<number, { id: string; name: string; argumentsStr: string }> = {};
+            // map for tool call
+            const deltaToolCalls: Map<
+                number,
+                {
+                    id: string;
+                    name: string;
+                    argumentsStr: string;
+                }
+            > = new Map();
 
             for await (const part of stream) {
-                // break early on signal abort by agent
                 if (signal?.aborted) {
                     break;
                 }
-                const delta = part.choices[0]?.delta;
-                const chunk = delta?.content;
 
+                const delta = part.choices[0]?.delta;
+
+                // text
+                const chunk = delta?.content;
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
-                // tool call id + name + arguments arrive in separate deltas
+
+                // tool call
                 if (delta?.tool_calls) {
                     for (const tc of delta.tool_calls) {
-                        if (!deltaToolCall[tc.index]) {
-                            deltaToolCall[tc.index] = { id: "", name: "", argumentsStr: "" };
-                        }
-                        // some provider: final summary delta with id/name
-                        // set to null/undefined and the complete arguments — replace, don't append.
-                        if (tc.id === null || tc.id === undefined) {
-                            if (tc.function?.arguments) {
-                                deltaToolCall[tc.index].argumentsStr = tc.function.arguments;
+                        const idx = tc.index ?? 0;
+
+                        if (!deltaToolCalls.has(idx)) {
+                            deltaToolCalls.set(idx, {
+                                id: tc.id ?? "",
+                                name: tc.function?.name ?? "",
+                                argumentsStr: tc.function?.arguments ?? "",
+                            });
+                        } else {
+                            const existing = deltaToolCalls.get(idx)!;
+                            if (tc.id) {
+                                existing.id = tc.id;
                             }
-                            continue;
-                        }
-                        if (tc.id) {
-                            deltaToolCall[tc.index].id = tc.id;
-                        }
-                        if (tc.function?.name) {
-                            deltaToolCall[tc.index].name += tc.function.name;
-                        }
-                        if (tc.function?.arguments) {
-                            deltaToolCall[tc.index].argumentsStr += tc.function.arguments;
+                            if (tc.function?.name) {
+                                existing.name += tc.function.name;
+                            }
+                            if (tc.function?.arguments) {
+                                existing.argumentsStr += tc.function.arguments;
+                            }
                         }
                     }
                 }
+
                 if (part.usage) {
                     const endTime = process.hrtime.bigint();
                     resultTokens = part.usage.completion_tokens ?? 0;
@@ -318,8 +330,8 @@ class OpenAiClient implements LlmClient {
                 }
             }
 
-            const toolCalls: ToolCall[] = Object.values(deltaToolCall).map((tc) => ({
-                id: tc.id,
+            const toolCalls: ToolCall[] = Array.from(deltaToolCalls.values()).map((tc) => ({
+                id: tc.id || `call_${crypto.randomUUID()}`,
                 type: "function",
                 function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
             }));
@@ -328,9 +340,7 @@ class OpenAiClient implements LlmClient {
         } catch (err) {
             return handleError(err);
         }
-    }
-
-    /**
+    } /**
      * Generates a completion for a single prompt using an OpenAI-compatible endpoint.
      * Performs cleanup on the result (e.g., removing code fences).
      *

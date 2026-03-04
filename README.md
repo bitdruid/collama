@@ -211,10 +211,11 @@ Note: ChatML format is not supported - that means only true fim-models will work
 > [!IMPORTANT]
 > It is recommended to turn off agentic-mode for small local/home models (like gpt-oss:20b) and use them in chat-only mode instead.
 
-#### Agentic was tested on vLLM (Openai SDK) with
+#### Agentic was tested on local hosted vLLM (Openai SDK) with
 
 - gpt-oss:120b
 - glm-4.7-fp8
+- minimax2.5
 
 **Available Tools:**
 

@@ -32,18 +32,19 @@ export class Agent {
     /**
      * Executes the agent task, managing the interaction loop with the LLM.
      *
-     * Initializes the client and processes the conversation history iteratively.
-     * On each iteration:
+     * Initializes the LLM client and processes the conversation history iteratively.
+     * The loop proceeds as follows:
      * 1. Requests a completion from the LLM.
-     * 2. Streams any 'thinking' or reasoning content immediately to the user.
+     * 2. Streams generated text tokens via the `onChunk` callback.
      * 3. If tool calls are detected, executes them, appends results to history,
      *    and repeats the loop.
      * 4. If no tool calls are present, the loop terminates.
      *
-     * All outputs (reasoning, assistant text, and tool usage) are streamed via `onChunk`.
+     * The operation can be cancelled externally via the `cancel` method.
      *
      * @param messages - The conversation history to send to the LLM.
      * @param onChunk  - Callback invoked for every streamed text token.
+     * @returns {Promise<void>}
      */
     async work(messages: ChatHistory[], onChunk: (chunk: string) => void) {
         await withProgressNotification(`collama: Agent running …`, async () => {
@@ -105,15 +106,7 @@ export class Agent {
                             break;
                         }
 
-                        let args: any = {};
-                        try {
-                            args = JSON.parse(toolCall.function.arguments);
-                        } catch (e) {
-                            logMsg(
-                                `\n\n**Agent Error**: Failed to parse tool arguments for ${toolCall.function.name}: ${e}\nArguments: ${toolCall.function.arguments}\n`,
-                            );
-                            args = {};
-                        }
+                        const args = JSON.parse(toolCall.function.arguments);
 
                         // tool info is streamed as a codeblock into the chat
                         const hasArgs = Object.keys(args).length > 0;
