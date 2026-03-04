@@ -3,6 +3,25 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-03-04
+
+### Fixed
+
+- Handle LiteLLM tool call streaming duplicates
+- Improve tool call handling and update agent prompt
+
+### Added
+
+- Accept all edits functionality
+- Improved agent robustness
+
+### Changed
+
+- Update README, agent, and tool logic
+- Cleanup tools in analyse.ts
+- Merge several tools to reduce amount
+- Trim tool list
+
 ## [1.4.1] - 2026-02-27
 
 ### Changed

@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 
+import { updateVSConfig } from "./config";
+
 const BEARER_COMPLETION_KEY = "collama.bearerCompletion";
 const BEARER_INSTRUCT_KEY = "collama.bearerInstruct";
 
@@ -84,6 +86,8 @@ export async function commandSetBearerCompletion(): Promise<void> {
             await setBearerCompletion(token);
             vscode.window.showInformationMessage("Bearer token (Completion) saved securely");
         }
+        // Trigger backend detection since bearer token changed
+        await updateVSConfig();
     }
 }
 
@@ -106,5 +110,7 @@ export async function commandSetBearerInstruct(): Promise<void> {
             await setBearerInstruct(token);
             vscode.window.showInformationMessage("Bearer token (Instruct) saved securely");
         }
+        // Trigger backend detection since bearer token changed
+        await updateVSConfig();
     }
 }

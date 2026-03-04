@@ -125,9 +125,11 @@ export function requestOllama(url: string, bearer?: string): Ollama {
  * @returns A configured OpenAI client.
  */
 export function requestOpenAI(url: string, bearer?: string): OpenAI {
+    // Only append /v1 if it's not already present in the URL
+    const baseURL = url.endsWith("/v1") ? url : url + "/v1";
     const openai = new OpenAI({
-        apiKey: bearer || "no-key-required",
-        baseURL: url + "/v1",
+        apiKey: bearer ?? "",
+        baseURL: baseURL,
         fetch: proxyFetch as typeof fetch,
     });
     return openai;

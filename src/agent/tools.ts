@@ -2,29 +2,17 @@ import path from "path";
 import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
+import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
 import {
-    findReferences_def,
-    findReferences_exec,
-    getDiagnostics_def,
-    getDiagnostics_exec,
-    getSymbols_def,
-    getSymbols_exec,
-    renameSymbol_def,
-    renameSymbol_exec,
-} from "./tools/analyse";
-import {
-    createFile_def,
-    createFile_exec,
-    createFolder_def,
-    createFolder_exec,
+    create_def,
+    create_exec,
     deleteFile_def,
     deleteFile_exec,
     editFile_def,
     editFile_exec,
+    resetAutoAcceptEdits,
 } from "./tools/edit";
 import {
-    listFiles_def,
-    listFiles_exec,
     lsPath_def,
     lsPath_exec,
     readFile_def,
@@ -32,18 +20,8 @@ import {
     searchFiles_def,
     searchFiles_exec,
 } from "./tools/explore";
-import {
-    getCommitDiff_def,
-    getCommitDiff_exec,
-    getCommits_def,
-    getCommits_exec,
-    getWorkingTreeDiff_def,
-    getWorkingTreeDiff_exec,
-    listBranches_def,
-    listBranches_exec,
-    revertFile_def,
-    revertFile_exec,
-} from "./tools/git";
+import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
+export { resetAutoAcceptEdits };
 
 /**
  * Represents a tool that can be executed by the agent.
@@ -91,7 +69,7 @@ export function getToolDefinitions() {
  * Edit tools are: editFile, createFile, createFolder, deleteFile, revertFile, renameSymbol
  */
 function isEditTool(toolName: string): boolean {
-    const editTools = ["editFile", "createFile", "createFolder", "deleteFile", "revertFile", "renameSymbol"];
+    const editTools = ["editFile", "editLines", "create", "deleteFile", "revertFile", "renameSymbol"];
     return editTools.includes(toolName);
 }
 
@@ -162,10 +140,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: readFile_def,
         execute: readFile_exec,
     },
-    listFiles: {
-        definition: listFiles_def,
-        execute: listFiles_exec,
-    },
     searchFiles: {
         definition: searchFiles_def,
         execute: searchFiles_exec,
@@ -174,53 +148,25 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: lsPath_def,
         execute: lsPath_exec,
     },
-    getCommits: {
-        definition: getCommits_def,
-        execute: getCommits_exec,
+    gitLog: {
+        definition: gitLog_def,
+        execute: gitLog_exec,
     },
-    getCommitDiff: {
-        definition: getCommitDiff_def,
-        execute: getCommitDiff_exec,
-    },
-    getWorkingTreeDiff: {
-        definition: getWorkingTreeDiff_def,
-        execute: getWorkingTreeDiff_exec,
-    },
-    listBranches: {
-        definition: listBranches_def,
-        execute: listBranches_exec,
+    gitDiff: {
+        definition: gitDiff_def,
+        execute: gitDiff_exec,
     },
     editFile: {
         definition: editFile_def,
         execute: editFile_exec,
     },
-    createFile: {
-        definition: createFile_def,
-        execute: createFile_exec,
-    },
-    createFolder: {
-        definition: createFolder_def,
-        execute: createFolder_exec,
+    create: {
+        definition: create_def,
+        execute: create_exec,
     },
     deleteFile: {
         definition: deleteFile_def,
         execute: deleteFile_exec,
-    },
-    revertFile: {
-        definition: revertFile_def,
-        execute: revertFile_exec,
-    },
-    getSymbols: {
-        definition: getSymbols_def,
-        execute: getSymbols_exec,
-    },
-    renameSymbol: {
-        definition: renameSymbol_def,
-        execute: renameSymbol_exec,
-    },
-    findReferences: {
-        definition: findReferences_def,
-        execute: findReferences_exec,
     },
     getDiagnostics: {
         definition: getDiagnostics_def,

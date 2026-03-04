@@ -31,10 +31,12 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 ## Features
 
 **Code Completion**
+
 - Inline, multiline, and multiblock (more a "fun" feature) suggestions
 - Uses currently opened tabs as context
 
 **Code Edits**
+
 - Generate docstrings and documentation
 - Extract functions and refactor code
 - Simplify complex code
@@ -42,6 +44,7 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 - Manual instructions
 
 **Chat Interface**
+
 - Chat with multiple sessions - organize conversations by topic
 - Send selected code or files to chat as context
 - Context is automatically attached to messages with file reference and line numbers
@@ -50,6 +53,7 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 - Visual indicators for messages no longer included in the LLM context
 
 **AI Agent with Tool Calling**
+
 - LLM can interact with your workspace through function calling
 - **File System Tools**: Read files, list directories, search contents with regex, create files and folders, edit files with diff preview
 - **Git Tools**: Browse commit history, compare branches, view diffs, list branches, revert files
@@ -60,11 +64,13 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 - **Read-Only Mode**: Toggle edit tools to run the agent in safe, read-only mode
 
 **Commit Messages**
+
 - AI-generated conventional commit messages from staged changes
 - Analyzes git diff to create meaningful commit descriptions
 - Accessible via command palette or Source Control view
 
 **Context Management**
+
 - Automatic detection of the model's context window size (Ollama and OpenAI)
 - Prompts that exceed the context window are blocked with a clear notification
 - Open editor tabs are used as additional context for completions, with smart pruning to fit the context window
@@ -88,21 +94,22 @@ Alternatively, you can use [vLLM](https://docs.vllm.ai/) (tested). Point the end
 
 Configure Collama via VS Code Settings (Preferences → Settings, search "collama"):
 
-| Setting                                | Type    | Default                     | Description                                              |
-| -------------------------------------- | ------- | --------------------------- | -------------------------------------------------------- |
-| `collama.apiEndpointCompletion`        | string  | `http://127.0.0.1:11434`    | Endpoint for code auto-completion                        |
-| `collama.apiEndpointInstruct`          | string  | `http://127.0.0.1:11434`    | Endpoint for code edits/chat                             |
-| `collama.apiCompletionModel`           | string  | `qwen2.5-coder:3b`          | Model for code completions                               |
-| `collama.apiInstructionModel`          | string  | `qwen2.5-coder:3b-instruct` | Model for code edits (use instruct/base variant)         |
-| `collama.apiTokenContextLenCompletion` | number  | `4096`                      | Context window size (tokens) for the completion model    |
-| `collama.apiTokenContextLenInstruct`   | number  | `4096`                      | Context window size (tokens) for the instruct/chat model |
-| `collama.apiTokenPredictCompletion`    | number  | `400`                       | Max tokens to generate per completion request            |
-| `collama.apiTokenPredictInstruct`      | number  | `4096`                      | Max tokens to generate per instruct/chat request         |
-| `collama.autoComplete`                 | boolean | `true`                      | Enable auto-suggestions                                  |
-| `collama.suggestMode`                  | string  | `inline`                    | Suggestion style: `inline`, `multiline`, or `multiblock` |
-| `collama.suggestDelay`                 | number  | `1500`                      | Delay (ms) before requesting completion                  |
-| `collama.agentic`                      | boolean | `true`                      | Use agentic (tool use) mode for chat                     |
-| `collama.enableEditTools`              | boolean | `true`                      | Enable edit tools (read-only mode when disabled)         |
+| Setting                                | Type    | Default                  | Description                                              |
+| -------------------------------------- | ------- | ------------------------ | -------------------------------------------------------- |
+| `collama.apiEndpointCompletion`        | string  | `http://127.0.0.1:11434` | Endpoint for code auto-completion                        |
+| `collama.apiEndpointInstruct`          | string  | `http://127.0.0.1:11434` | Endpoint for code edits/chat                             |
+| `collama.apiModelCompletion`           | string  | `qwen2.5-coder:3b`       | Model for code completions                               |
+| `collama.apiModelInstruct`             | string  | `gpt-oss:20b`            | Model for code edits (use instruct/base variant)         |
+| `collama.apiTokenContextLenCompletion` | number  | `4096`                   | Context window size (tokens) for the completion model    |
+| `collama.apiTokenContextLenInstruct`   | number  | `4096`                   | Context window size (tokens) for the instruct/chat model |
+| `collama.apiTokenPredictCompletion`    | number  | `400`                    | Max tokens to generate per completion request            |
+| `collama.apiTokenPredictInstruct`      | number  | `4096`                   | Max tokens to generate per instruct/chat request         |
+| `collama.autoComplete`                 | boolean | `true`                   | Enable auto-suggestions                                  |
+| `collama.suggestMode`                  | string  | `inline`                 | Suggestion style: `inline`, `multiline`, or `multiblock` |
+| `collama.suggestDelay`                 | number  | `1500`                   | Delay (ms) before requesting completion                  |
+| `collama.agentic`                      | boolean | `true`                   | Use agentic (tool use) mode for chat                     |
+| `collama.enableEditTools`              | boolean | `true`                   | Enable edit tools (read-only mode when disabled)         |
+| `collama.tlsRejectUnauthorized`        | boolean | `true`                   | Verify TLS certificates for HTTPS endpoints              |
 
 ### Manual Token Settings
 
@@ -122,8 +129,8 @@ If your API endpoints require authentication (e.g. vLLM with `--api-key`, or a r
 
 1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
 2. Run one of these commands:
-   - `collama: Set Bearer Token (Completion)` - for the completion endpoint
-   - `collama: Set Bearer Token (Instruct)` - for the instruct/chat endpoint
+    - `collama: Set Bearer Token (Completion)` - for the completion endpoint
+    - `collama: Set Bearer Token (Instruct)` - for the instruct/chat endpoint
 3. Enter your token in the password input (characters will be masked)
 4. The token is stored encrypted in your system's credential manager
 
@@ -133,16 +140,18 @@ If your API endpoints require authentication (e.g. vLLM with `--api-key`, or a r
 
 ### Recommended Models
 
-Collama is tested primarily with the **Qwen Coder** for Completion and ***gpt-oss** for Instruction.
+Collama is tested primarily with the **Qwen Coder** for Completion and **\*gpt-oss** for Instruction.
 
 #### For Code Completion (FIM - Fill In Middle)
+
 - **any qwen coder > 3b** recommended
 - **qwen2.5-coder:7b** (stable quality)
 
 #### For Code Edits (Instruct/Base Models)
+
 - **any instruct model and thinking** recommended
 - **gpt-oss:20b** (stable quality)
-Do not use a FIM model for instructions. It will produce very poor quality answers.
+  Do not use a FIM model for instructions. It will produce very poor quality answers.
 
 ### Model Completion Compatibility Table
 
@@ -164,7 +173,7 @@ Note: ChatML format is not supported - that means only true fim-models will work
 ### Code Completion
 
 1. **Trigger Completion**: Use `editor.action.inlineSuggest.trigger` (default keybinding varies by OS)
-   - Set custom keybinding: `Alt + S` or `Ctrl + NumPad 1` (example)
+    - Set custom keybinding: `Alt + S` or `Ctrl + NumPad 1` (example)
 2. **Auto-Trigger**: Completions trigger automatically after 1.5 seconds of inactivity (configurable via `suggestDelay`)
 3. **Accept**: Press `Tab` to accept suggestion, `Esc` to dismiss
 
@@ -172,20 +181,20 @@ Note: ChatML format is not supported - that means only true fim-models will work
 
 1. Select code in the editor
 2. Right-click → **collama (on selection)** and choose:
-   - **Write Docstring** - Generate documentation
-   - **Extract Functions** - Refactor into separate functions
-   - **Simplify Code** - Improve readability and efficiency
-   - **Fix Syntax** - Correct syntax errors
-   - **Edit (manual)** - Custom AI-assisted edits
+    - **Write Docstring** - Generate documentation
+    - **Extract Functions** - Refactor into separate functions
+    - **Simplify Code** - Improve readability and efficiency
+    - **Fix Syntax** - Correct syntax errors
+    - **Edit (manual)** - Custom AI-assisted edits
 
 ### Chat Interface
 
 1. Open the Chat view in the sidebar (Collama icon)
 2. Right-click on selected code in editor → **Send to Chat**
 3. Type your message - the context is automatically attached with:
-   - File name and path
-   - Line number references
-   - Selected code or full file content
+    - File name and path
+    - Line number references
+    - Selected code or full file content
 4. Monitor token usage with the real-time context bar (shows usage vs. model's max context)
 5. Create multiple chat sessions to organize conversations by topic
 
@@ -202,42 +211,44 @@ Note: ChatML format is not supported - that means only true fim-models will work
 > [!IMPORTANT]
 > It is recommended to turn off agentic-mode for small local/home models (like gpt-oss:20b) and use them in chat-only mode instead.
 
-#### Agentic was tested on vLLM (Openai SDK) with
+#### Agentic was tested on local hosted vLLM (Openai SDK) with
+
 - gpt-oss:120b
 - glm-4.7-fp8
+- minimax2.5
 
 **Available Tools:**
 
 - **File System Tools**
-  - `readFile` - Read the contents of a file in the workspace
-  - `listFiles` - Find files in the workspace matching a glob pattern
-  - `searchFiles` - Search file contents in the workspace for a regex pattern
-  - `lsPath` - List the directory tree of a path in the workspace
-  - `createFile` - Create a new file in the workspace with content preview and user confirmation
-  - `createFolder` - Create a new folder/directory in the workspace with user confirmation
-  - `editFile` - Edit a file with diff preview and user confirmation (supports multiple search-and-replace operations)
-  - `deleteFile` - Delete a file from the workspace with user confirmation
+    - `readFile` - Read the contents of a file in the workspace
+    - `listFiles` - Find files in the workspace matching a glob pattern
+    - `searchFiles` - Search file contents in the workspace for a regex pattern
+    - `lsPath` - List the directory tree of a path in the workspace
+    - `createFile` - Create a new file in the workspace with content preview and user confirmation
+    - `createFolder` - Create a new folder/directory in the workspace with user confirmation
+    - `editFile` - Edit a file with diff preview and user confirmation (supports multiple search-and-replace operations)
+    - `deleteFile` - Delete a file from the workspace with user confirmation
 
 - **Git Tools**
-  - `getCommits` - List git commits from a branch
-  - `getCommitDiff` - Compare two commits or branches
-  - `getWorkingTreeDiff` - Get unstaged or staged changes in the working directory
-  - `listBranches` - List all local (and optionally remote) git branches
-  - `revertFile` - Revert a file to its last git-committed state with user confirmation
+    - `getCommits` - List git commits from a branch
+    - `getCommitDiff` - Compare two commits or branches
+    - `getWorkingTreeDiff` - Get unstaged or staged changes in the working directory
+    - `listBranches` - List all local (and optionally remote) git branches
+    - `revertFile` - Revert a file to its last git-committed state with user confirmation
 
 - **Code Analysis Tools**
-  - `getSymbols` - Get symbols (classes, functions, variables, interfaces, types, etc.) from a document or the entire workspace
-  - `findReferences` - Find all references to a symbol across the workspace
-  - `getDiagnostics` - Get diagnostics (errors, warnings, hints) from the language server
-  - `renameSymbol` - Rename a symbol across the entire workspace using the language server (type-aware)
+    - `getSymbols` - Get symbols (classes, functions, variables, interfaces, types, etc.) from a document or the entire workspace
+    - `findReferences` - Find all references to a symbol across the workspace
+    - `getDiagnostics` - Get diagnostics (errors, warnings, hints) from the language server
+    - `renameSymbol` - Rename a symbol across the entire workspace using the language server (type-aware)
 
 **Read-Only Mode:**
 
 When `enableEditTools` is disabled (toggle via status bar), the following tools are unavailable:
+
 - `editFile`, `createFile`, `createFolder`, `deleteFile`, `revertFile`, `renameSymbol`
 
 The agent can still use read-only tools to explore and analyze your codebase safely.
-
 
 ## Contributing
 

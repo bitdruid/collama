@@ -94,49 +94,6 @@ export const readFile_def = {
 };
 
 /**
- * Executes the listFiles operation.
- * Finds files in the workspace matching a specific glob pattern.
- *
- * @param args - The arguments for the operation.
- * @param args.pattern - Glob pattern to match files against.
- * @returns A JSON string containing the list of matching files, or an error object.
- */
-export async function listFiles_exec(args: { pattern: string }): Promise<string> {
-    logMsg(`Agent - tool use listFiles pattern=${args.pattern}`);
-    const root = getWorkspaceRoot();
-    if (!root) {
-        return JSON.stringify({ error: "No workspace root" });
-    }
-    if (hasPathTraversal(args.pattern)) {
-        return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
-    }
-    const files = await fg(args.pattern, {
-        cwd: root,
-        dot: false,
-        onlyFiles: false,
-        ignore: buildIgnorePatterns(root),
-    });
-    return JSON.stringify({ files, pattern: args.pattern });
-}
-export const listFiles_def = {
-    type: "function" as const,
-    function: {
-        name: "listFiles",
-        description: "Find files in the workspace matching a glob pattern (e.g. '**/*.ts', 'src/**/*.json').",
-        parameters: {
-            type: "object",
-            properties: {
-                pattern: {
-                    type: "string",
-                    description: "Glob pattern to match files against.",
-                },
-            },
-            required: ["pattern"],
-        },
-    },
-};
-
-/**
  * Executes the searchFiles operation.
  * Searches file contents for a regex pattern and returns matching lines.
  *
@@ -156,7 +113,7 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
     try {
         regex = new RegExp(args.pattern);
     } catch {
-        return JSON.stringify({ error: `Invalid regex: ${args.pattern}` });
+        regex = new RegExp(args.pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
     }
 
     if (args.glob !== undefined && hasPathTraversal(args.glob)) {
@@ -201,7 +158,7 @@ export const searchFiles_def = {
             properties: {
                 pattern: {
                     type: "string",
-                    description: "Regex pattern to search for.",
+                    description: "Valid regex pattern to search for.",
                 },
                 glob: {
                     type: "string",
@@ -216,20 +173,28 @@ export const searchFiles_def = {
 
 /**
  * Executes the lsPath operation.
- * Lists the directory tree of a path up to a specific depth.
+ * Lists files and folders in a workspace directory, optionally filtered by a glob pattern.
+ * Results are capped at {@link MAX_LS_RESULTS} to prevent context overflow.
  *
  * @param args - The arguments for the operation.
- * @param args.dirPath - Relative path to the directory to list.
+ * @param args.dirPath - Relative path to the directory to list. Use '.' for root.
  * @param args.depth - Optional. Recursion depth (default 2, max 5).
- * @returns A JSON string containing the directory tree, or an error object.
+ * @param args.pattern - Optional. Glob pattern to filter results (e.g. '*.ts').
+ * @returns A JSON string containing the entries, or an error object.
  */
-export async function lsPath_exec(args: { dirPath: string; depth?: number }): Promise<string> {
+const MAX_LS_RESULTS = 200;
+
+export async function lsPath_exec(args: { dirPath: string; depth?: number; pattern?: string }): Promise<string> {
+    logMsg(`Agent - tool use lsPath dirPath=${args.dirPath}${args.depth ? ` depth=${args.depth}` : ""}${args.pattern ? ` pattern=${args.pattern}` : ""}`);
     const root = getWorkspaceRoot();
     if (!root) {
         return JSON.stringify({ error: "No workspace root" });
     }
     if (hasPathTraversal(args.dirPath)) {
         return JSON.stringify({ error: "Path must not contain path traversal (..)" });
+    }
+    if (args.pattern && hasPathTraversal(args.pattern)) {
+        return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
     }
 
     const fullPath = path.resolve(root, args.dirPath);
@@ -241,8 +206,8 @@ export async function lsPath_exec(args: { dirPath: string; depth?: number }): Pr
     }
 
     const maxDepth = Math.min(args.depth ?? 2, 5);
-    const tree = (
-        await fg("**/*", {
+    const entries = (
+        await fg(args.pattern ?? "**/*", {
             cwd: fullPath,
             deep: maxDepth,
             onlyFiles: false,
@@ -252,24 +217,35 @@ export async function lsPath_exec(args: { dirPath: string; depth?: number }): Pr
         })
     ).sort();
 
-    return JSON.stringify({ tree, dirPath: args.dirPath });
+    const truncated = entries.length > MAX_LS_RESULTS;
+
+    return JSON.stringify({
+        entries: truncated ? entries.slice(0, MAX_LS_RESULTS) : entries,
+        dirPath: args.dirPath,
+        total: entries.length,
+        ...(truncated && { truncated: true, showing: MAX_LS_RESULTS }),
+    });
 }
 export const lsPath_def = {
     type: "function" as const,
     function: {
         name: "lsPath",
         description:
-            "List the directory tree of a path in the workspace up to a given depth. For exploring the overall repository structure, use depth 3-5 on the root ('.') to get a comprehensive view in a single call. Only drill into specific subdirectories if you need more detail beyond what the root listing provides.",
+            "List files and folders in a workspace directory. Directories end with '/'. Use to explore project structure or find files matching a pattern.",
         parameters: {
             type: "object",
             properties: {
                 dirPath: {
                     type: "string",
-                    description: "Relative path to the directory to list. Use '.' for the workspace root.",
+                    description: "Relative path to the directory. Use '.' for the workspace root.",
                 },
                 depth: {
                     type: "number",
-                    description: "How many levels deep to recurse (default 2, max 5).",
+                    description: "Recursion depth (default 2, max 5).",
+                },
+                pattern: {
+                    type: "string",
+                    description: "Glob pattern to filter results (e.g. '**/*.ts'). Defaults to all files.",
                 },
             },
             required: ["dirPath"],
