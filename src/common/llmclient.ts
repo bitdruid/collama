@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
 import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
-import { RequestType, sysConfig, userConfig } from "../config";
+import { RequestType, sysConfig } from "../config";
 import { logMsg } from "../logging";
+import { ToolCallAccumulator } from "./litellmfix";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
 import Tokenizer, { requestOllama, requestOpenAI } from "./utils";
@@ -152,7 +153,7 @@ class OllamaClient implements LlmClient {
             const stream = await ollama.chat({
                 model: model,
                 messages: toOllamaMessages(messages),
-                ...(userConfig.agentic ? { tools: tools } : {}),
+                ...(tools.length > 0 ? { tools: tools } : {}),
                 stream: true,
                 options: { ...options, stop: buildStopTokens(stop) },
             });
@@ -244,10 +245,11 @@ class OllamaClient implements LlmClient {
 class OpenAiClient implements LlmClient {
     /**
      * Streams a chat completion response from an OpenAI-compatible endpoint.
+     * Handles text streaming, tool call aggregation, and request abortion.
      *
-     * @param settings - Configuration for the chat request (endpoint, model, messages, options).
-     * @param onChunk - Optional callback invoked for each chunk of the streamed response.
-     * @returns The accumulated full response string.
+     * @param settings - Configuration for the chat request (endpoint, model, messages, tools, options).
+     * @param onChunk - Optional callback invoked for each text chunk of the streamed response.
+     * @returns A ChatResult object containing the cleaned content and any aggregated tool calls.
      */
     async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
         try {
@@ -260,7 +262,8 @@ class OpenAiClient implements LlmClient {
             const stream = await openai.chat.completions.create({
                 model: model,
                 messages: messages,
-                ...(userConfig.agentic ? { tools: tools } : {}),
+                tools: tools.length > 0 ? tools : undefined,
+                tool_choice: tools.length > 0 ? "auto" : undefined,
                 stream: true,
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
@@ -269,46 +272,29 @@ class OpenAiClient implements LlmClient {
 
             let result = "";
             let resultTokens = 0;
-
-            const deltaToolCall: Record<number, { id: string; name: string; argumentsStr: string }> = {};
+            const toolAccumulator = new ToolCallAccumulator();
 
             for await (const part of stream) {
-                // break early on signal abort by agent
                 if (signal?.aborted) {
                     break;
                 }
-                const delta = part.choices[0]?.delta;
-                const chunk = delta?.content;
 
+                const delta = part.choices[0]?.delta;
+
+                // text
+                const chunk = delta?.content;
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
                 }
-                // tool call id + name + arguments arrive in separate deltas
+
+                // tool calls
                 if (delta?.tool_calls) {
                     for (const tc of delta.tool_calls) {
-                        if (!deltaToolCall[tc.index]) {
-                            deltaToolCall[tc.index] = { id: "", name: "", argumentsStr: "" };
-                        }
-                        // some provider: final summary delta with id/name
-                        // set to null and the complete arguments — replace, don't append.
-                        if (tc.id === null) {
-                            if (tc.function?.arguments) {
-                                deltaToolCall[tc.index].argumentsStr = tc.function.arguments;
-                            }
-                            continue;
-                        }
-                        if (tc.id) {
-                            deltaToolCall[tc.index].id = tc.id;
-                        }
-                        if (tc.function?.name) {
-                            deltaToolCall[tc.index].name += tc.function.name;
-                        }
-                        if (tc.function?.arguments) {
-                            deltaToolCall[tc.index].argumentsStr += tc.function.arguments;
-                        }
+                        toolAccumulator.push(tc);
                     }
                 }
+
                 if (part.usage) {
                     const endTime = process.hrtime.bigint();
                     resultTokens = part.usage.completion_tokens ?? 0;
@@ -317,18 +303,14 @@ class OpenAiClient implements LlmClient {
                 }
             }
 
-            const toolCalls: ToolCall[] = Object.values(deltaToolCall).map((tc) => ({
-                id: tc.id,
-                type: "function",
-                function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
-            }));
-
-            return { content: cleanupResult(result, resultTokens, options), toolCalls };
+            return {
+                content: cleanupResult(result, resultTokens, options),
+                toolCalls: toolAccumulator.build(),
+            };
         } catch (err) {
             return handleError(err);
         }
     }
-
     /**
      * Generates a completion for a single prompt using an OpenAI-compatible endpoint.
      * Performs cleanup on the result (e.g., removing code fences).
@@ -396,3 +378,96 @@ function handleError(err: unknown): never {
 function buildStopTokens(stop: Stop): string[] {
     return [...stop.userStop, ...stop.modelStop];
 }
+
+// chat how it should be without duplicate args issue 20480 litellm
+// async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+//     try {
+//         const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
+//         logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
+
+//         const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
+
+//         const startTime = process.hrtime.bigint();
+//         const stream = await openai.chat.completions.create({
+//             model: model,
+//             messages: messages,
+//             tools: tools.length > 0 ? tools : undefined,
+//             tool_choice: tools.length > 0 ? "auto" : undefined,
+//             stream: true,
+//             ...optionsToOpenAI(options),
+//             stop: buildStopTokens(stop),
+//             stream_options: { include_usage: true },
+//         });
+
+//         let result = "";
+//         let resultTokens = 0;
+
+//         // map for tool call
+//         const deltaToolCalls: Map<
+//             number,
+//             {
+//                 id: string;
+//                 name: string;
+//                 argumentsStr: string;
+//             }
+//         > = new Map();
+
+//         for await (const part of stream) {
+//             if (signal?.aborted) {
+//                 break;
+//             }
+
+//             const delta = part.choices[0]?.delta;
+
+//             // text
+//             const chunk = delta?.content;
+//             if (chunk) {
+//                 result += chunk;
+//                 onChunk?.(chunk);
+//             }
+
+//             // tool call
+//             if (delta?.tool_calls) {
+//                 for (const tc of delta.tool_calls) {
+//                     const idx = tc.index ?? 0;
+
+//                     if (!deltaToolCalls.has(idx)) {
+//                         deltaToolCalls.set(idx, {
+//                             id: tc.id ?? "",
+//                             name: tc.function?.name ?? "",
+//                             argumentsStr: tc.function?.arguments ?? "",
+//                         });
+//                     } else {
+//                         const existing = deltaToolCalls.get(idx)!;
+//                         if (tc.id) {
+//                             existing.id = tc.id;
+//                         }
+//                         if (tc.function?.name) {
+//                             existing.name += tc.function.name;
+//                         }
+//                         if (tc.function?.arguments) {
+//                             existing.argumentsStr += tc.function.arguments;
+//                         }
+//                     }
+//                 }
+//             }
+
+//             if (part.usage) {
+//                 const endTime = process.hrtime.bigint();
+//                 resultTokens = part.usage.completion_tokens ?? 0;
+//                 const resultDurationNano = endTime - startTime;
+//                 logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
+//             }
+//         }
+
+//         const toolCalls: ToolCall[] = Array.from(deltaToolCalls.values()).map((tc) => ({
+//             id: tc.id || `call_${crypto.randomUUID()}`,
+//             type: "function",
+//             function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
+//         }));
+
+//         return { content: cleanupResult(result, resultTokens, options), toolCalls };
+//     } catch (err) {
+//         return handleError(err);
+//     }
+// }
