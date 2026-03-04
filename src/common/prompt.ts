@@ -154,7 +154,7 @@ export const chatCompress_Template: string = [
  */
 export const agent_Template: string = [
     "Guidelines:",
-    "- At first, explore by useing lsPath.",
+    "- At first, explore by useing lsPath with max depth.",
     "- Prefer reading files over searching patterns.",
     "- Explain your actions and why before making changes.",
     "- After you finished, use getDiagnostics to validate the changes.",

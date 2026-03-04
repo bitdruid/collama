@@ -2,9 +2,9 @@ import { ChatHistory } from "../common/context_chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
 import { agent_Template } from "../common/prompt";
-import { withProgressNotification } from "../common/utils";
+import Tokenizer, { withProgressNotification } from "../common/utils";
 import { userConfig } from "../config";
-import { logMsg } from "../logging";
+import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions, resetAutoAcceptEdits } from "./tools";
 
@@ -121,6 +121,10 @@ export class Agent {
                             content: toolResult,
                         });
                     }
+
+                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history));
+                    logAgent(`Agent Tokens: ${toolTokens}`);
+                    // onChunk(JSON.stringify({ type: "agent-tokens", tokens: toolTokens }));
 
                     if (signal.aborted) {
                         break;
