@@ -38,7 +38,7 @@ export function logMsg(message: string, level: "debug" | "info" | "warn" | "erro
     (channel as any)[level](message);
 }
 
-// export function logAgent(message: string) {
-//     const channel = getChannel("collama-agent", { log: true }) as vscode.LogOutputChannel;
-//     channel.info(message);
-// }
+export function logAgent(message: string) {
+    const channel = getChannel("collama-agent", { log: true }) as vscode.LogOutputChannel;
+    channel.info(message);
+}

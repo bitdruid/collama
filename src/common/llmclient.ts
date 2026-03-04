@@ -3,6 +3,7 @@ import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
 import { RequestType, sysConfig } from "../config";
 import { logMsg } from "../logging";
+import { ToolCallAccumulator } from "./litellmfix";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
 import Tokenizer, { requestOllama, requestOpenAI } from "./utils";
@@ -271,16 +272,7 @@ class OpenAiClient implements LlmClient {
 
             let result = "";
             let resultTokens = 0;
-
-            // map for tool call
-            const deltaToolCalls: Map<
-                number,
-                {
-                    id: string;
-                    name: string;
-                    argumentsStr: string;
-                }
-            > = new Map();
+            const toolAccumulator = new ToolCallAccumulator();
 
             for await (const part of stream) {
                 if (signal?.aborted) {
@@ -296,29 +288,10 @@ class OpenAiClient implements LlmClient {
                     onChunk?.(chunk);
                 }
 
-                // tool call
+                // tool calls
                 if (delta?.tool_calls) {
                     for (const tc of delta.tool_calls) {
-                        const idx = tc.index ?? 0;
-
-                        if (!deltaToolCalls.has(idx)) {
-                            deltaToolCalls.set(idx, {
-                                id: tc.id ?? "",
-                                name: tc.function?.name ?? "",
-                                argumentsStr: tc.function?.arguments ?? "",
-                            });
-                        } else {
-                            const existing = deltaToolCalls.get(idx)!;
-                            if (tc.id) {
-                                existing.id = tc.id;
-                            }
-                            if (tc.function?.name) {
-                                existing.name += tc.function.name;
-                            }
-                            if (tc.function?.arguments) {
-                                existing.argumentsStr += tc.function.arguments;
-                            }
-                        }
+                        toolAccumulator.push(tc);
                     }
                 }
 
@@ -330,17 +303,15 @@ class OpenAiClient implements LlmClient {
                 }
             }
 
-            const toolCalls: ToolCall[] = Array.from(deltaToolCalls.values()).map((tc) => ({
-                id: tc.id || `call_${crypto.randomUUID()}`,
-                type: "function",
-                function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
-            }));
-
-            return { content: cleanupResult(result, resultTokens, options), toolCalls };
+            return {
+                content: cleanupResult(result, resultTokens, options),
+                toolCalls: toolAccumulator.build(),
+            };
         } catch (err) {
             return handleError(err);
         }
-    } /**
+    }
+    /**
      * Generates a completion for a single prompt using an OpenAI-compatible endpoint.
      * Performs cleanup on the result (e.g., removing code fences).
      *
@@ -407,3 +378,96 @@ function handleError(err: unknown): never {
 function buildStopTokens(stop: Stop): string[] {
     return [...stop.userStop, ...stop.modelStop];
 }
+
+// chat how it should be without duplicate args issue 20480 litellm
+// async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+//     try {
+//         const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
+//         logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
+
+//         const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
+
+//         const startTime = process.hrtime.bigint();
+//         const stream = await openai.chat.completions.create({
+//             model: model,
+//             messages: messages,
+//             tools: tools.length > 0 ? tools : undefined,
+//             tool_choice: tools.length > 0 ? "auto" : undefined,
+//             stream: true,
+//             ...optionsToOpenAI(options),
+//             stop: buildStopTokens(stop),
+//             stream_options: { include_usage: true },
+//         });
+
+//         let result = "";
+//         let resultTokens = 0;
+
+//         // map for tool call
+//         const deltaToolCalls: Map<
+//             number,
+//             {
+//                 id: string;
+//                 name: string;
+//                 argumentsStr: string;
+//             }
+//         > = new Map();
+
+//         for await (const part of stream) {
+//             if (signal?.aborted) {
+//                 break;
+//             }
+
+//             const delta = part.choices[0]?.delta;
+
+//             // text
+//             const chunk = delta?.content;
+//             if (chunk) {
+//                 result += chunk;
+//                 onChunk?.(chunk);
+//             }
+
+//             // tool call
+//             if (delta?.tool_calls) {
+//                 for (const tc of delta.tool_calls) {
+//                     const idx = tc.index ?? 0;
+
+//                     if (!deltaToolCalls.has(idx)) {
+//                         deltaToolCalls.set(idx, {
+//                             id: tc.id ?? "",
+//                             name: tc.function?.name ?? "",
+//                             argumentsStr: tc.function?.arguments ?? "",
+//                         });
+//                     } else {
+//                         const existing = deltaToolCalls.get(idx)!;
+//                         if (tc.id) {
+//                             existing.id = tc.id;
+//                         }
+//                         if (tc.function?.name) {
+//                             existing.name += tc.function.name;
+//                         }
+//                         if (tc.function?.arguments) {
+//                             existing.argumentsStr += tc.function.arguments;
+//                         }
+//                     }
+//                 }
+//             }
+
+//             if (part.usage) {
+//                 const endTime = process.hrtime.bigint();
+//                 resultTokens = part.usage.completion_tokens ?? 0;
+//                 const resultDurationNano = endTime - startTime;
+//                 logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
+//             }
+//         }
+
+//         const toolCalls: ToolCall[] = Array.from(deltaToolCalls.values()).map((tc) => ({
+//             id: tc.id || `call_${crypto.randomUUID()}`,
+//             type: "function",
+//             function: { name: tc.name, arguments: tc.argumentsStr || "{}" },
+//         }));
+
+//         return { content: cleanupResult(result, resultTokens, options), toolCalls };
+//     } catch (err) {
+//         return handleError(err);
+//     }
+// }
