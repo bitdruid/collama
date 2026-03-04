@@ -58,6 +58,10 @@ export class ChatInputButtons extends LitElement {
         );
     }
 
+    private _handleGalleryClick() {
+    this.dispatchEvent(new CustomEvent("gallery-click"));
+}
+
     // Render Methods
     private _renderContextButton() {
         if (this.contexts.length > 0) {
@@ -104,9 +108,14 @@ export class ChatInputButtons extends LitElement {
         `;
     }
 
+    private _renderPromptGalleryButton(){
+        return html`<button-gallery title="Open Prompt Gallery" @click=${this._handleGalleryClick}> ${icons.gallery} </button-gallery>`
+    }
+
     render() {
         return html`
             <button-row>
+                ${this._renderPromptGalleryButton()}
                 ${this._renderContextButton()}
                 ${this._renderActionButtons()}
             </button-row>
