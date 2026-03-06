@@ -392,12 +392,15 @@ class ChatPanel {
             }
 
             if (msg.type === "chat-request") {
-                const { messages, assistantIndex, sessionId } = msg;
+                const { messages, sessionId } = msg;
 
-                // Update the active session's messages (full history)
+                // Derive assistantIndex — the slot right after the last received message
+                const assistantIndex = messages.length;
+
+                // Update the active session's messages (full history + empty assistant slot)
                 const session = this.sessions.find((s) => s.id === sessionId);
                 if (session) {
-                    session.messages = messages;
+                    session.messages = [...messages, { role: "assistant", content: "" }];
                     session.updatedAt = Date.now();
                     session.title = generateSessionTitle(messages);
                     this.saveSessions();
@@ -428,14 +431,20 @@ class ChatPanel {
 
                 const agent = new Agent();
                 this.currentAgent = agent;
-                await agent.work(trimmedMessages, async (chunk) => {
-                    if (session) {
-                        session.messages[assistantIndex].content += chunk;
-                        session.updatedAt = Date.now();
-                        this.saveSessions();
-                    }
-                    webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
-                });
+                await agent.work(
+                    trimmedMessages,
+                    async (chunk) => {
+                        if (session) {
+                            session.messages[assistantIndex].content += chunk;
+                            session.updatedAt = Date.now();
+                            this.saveSessions();
+                        }
+                        webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
+                    },
+                    async (event) => {
+                        webview.postMessage({ type: "agent-event", event });
+                    },
+                );
                 this.currentAgent = null;
 
                 // Notify webview that chat is complete

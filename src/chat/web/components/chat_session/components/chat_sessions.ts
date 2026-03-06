@@ -78,7 +78,6 @@ export class ChatSessions extends LitElement {
 }
 
     private _handleDeleteSession(id: string) {
-        logWebview("massimo_session: " + id);
         ChatSessionStore.instance.deleteSession(id);
     }
 

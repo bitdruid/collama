@@ -3,6 +3,18 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-03-05
+
+### Added
+
+- Token counter for agent operations
+- Deduplicate readFile calls
+
+### Changed
+
+- Auto-focus textarea after loading and reset
+- Remove empty assistant message template from backend
+
 ## [1.4.2] - 2026-03-04
 
 ### Fixed

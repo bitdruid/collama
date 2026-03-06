@@ -19,7 +19,6 @@ export class PromptGallery extends LitElement {
     @state()
     private _newPrompt = "";
 
-   
     //##### Gallery Handling #####
     private _close() {
         this.dispatchEvent(new CustomEvent("close-gallery"));
@@ -39,7 +38,6 @@ export class PromptGallery extends LitElement {
         window.addEventListener("keydown", this._handleKeyDown);
     }
 
-
     private _loadPrompts() {
         const saved = localStorage.getItem("collama-custom-prompts");
         if (saved) {
@@ -48,14 +46,13 @@ export class PromptGallery extends LitElement {
     }
 
     private _savePrompts() {
-        localStorage.setItem(
-            "collama-custom-prompts",
-            JSON.stringify(this.customPrompts),
-        );
+        localStorage.setItem("collama-custom-prompts", JSON.stringify(this.customPrompts));
     }
 
     private _saveNewPrompt() {
-        if (!this._newPrompt.trim()) { return };
+        if (!this._newPrompt.trim()) {
+            return;
+        }
 
         if (this._editingIndex !== undefined) {
             //edit existing prompt
@@ -79,13 +76,11 @@ export class PromptGallery extends LitElement {
     private _editPrompt(index: number) {
         this._newPrompt = this.customPrompts[index];
         this._adding = true;
-        this._editingIndex = index; // optional: speichern, um beim Save zu wissen, dass es ein Edit ist
+        this._editingIndex = index;
     }
-
 
     private _editingIndex?: number;
 
-    
     disconnectedCallback() {
         window.removeEventListener("keydown", this._handleKeyDown);
         super.disconnectedCallback();
@@ -97,67 +92,58 @@ export class PromptGallery extends LitElement {
         }
     };
 
+    render() {
+        if (!this.visible) {
+            return html``;
+        }
 
-  render() {
-    if (!this.visible) {return html``};
+        return html`
+            <div class="modal" @click=${this._close}>
+                <div class="modal-content" @click=${(e: Event) => e.stopPropagation()}>
+                    <h3>Prompt Gallery</h3>
 
-    return html`
-        <div class="modal" @click=${this._close}>
-            <div class="modal-content" @click=${(e: Event) => e.stopPropagation()}>
+                    <div class="prompt-list">
+                        ${this.customPrompts.map(
+                            (p, index) => html`
+                                <div class="prompt-item">
+                                    <div class="prompt-text" @click=${() => this._selectPrompt(p)}>${p}</div>
 
-                <h3>Prompt Gallery</h3>
-
-                <div class="prompt-list">
-                    ${this.customPrompts.map(
-                        (p, index) => html`
-                            <div class="prompt-item">
-                                <div
-                                    class="prompt-text"
-                                    @click=${() => this._selectPrompt(p)}
-                                >
-                                    ${p}
+                                    <div class="prompt-actions">
+                                        <prompt-gallery-buttons
+                                            .index=${index}
+                                            @delete-prompt=${(e: CustomEvent) => this._deletePrompt(e.detail.index)}
+                                            @edit-prompt=${(e: CustomEvent) => this._editPrompt(e.detail.index)}
+                                        ></prompt-gallery-buttons>
+                                    </div>
                                 </div>
+                            `,
+                        )}
+                    </div>
 
-                                <div class="prompt-actions">
-                                    <prompt-gallery-buttons
-                                        .index=${index}
-                                        @delete-prompt=${(e: CustomEvent) =>
-                                            this._deletePrompt(e.detail.index)}
-                                        @edit-prompt=${(e: CustomEvent) =>
-                                            this._editPrompt(e.detail.index)}
-                                    ></prompt-gallery-buttons>
-                                </div>
-                            </div>
-                        `
-                    )}
+                    <div class="prompt-add-section">
+                        ${this._adding
+                            ? html`
+                                  <textarea
+                                      rows="3"
+                                      class="custom-prompt-input"
+                                      .value=${this._newPrompt}
+                                      @input=${(e: any) => (this._newPrompt = e.target.value)}
+                                      placeholder="Enter your custom prompt..."
+                                  ></textarea>
+                              `
+                            : null}
+
+                        <prompt-gallery-buttons
+                            .adding=${this._adding}
+                            @add-prompt=${() => (this._adding = true)}
+                            @save-new-prompt=${this._saveNewPrompt}
+                            @cancel-new-prompt=${() => (this._adding = false)}
+                        ></prompt-gallery-buttons>
+                    </div>
                 </div>
-
-                <div class="prompt-add-section">
-                    ${this._adding
-                        ? html`
-                              <textarea
-                                  rows="3"
-                                  class="custom-prompt-input"
-                                  .value=${this._newPrompt}
-                                  @input=${(e: any) =>
-                                      (this._newPrompt = e.target.value)}
-                                  placeholder="Enter your custom prompt..."
-                              ></textarea>
-                          `
-                        : null}
-
-                    <prompt-gallery-buttons
-                        .adding=${this._adding}
-                        @add-prompt=${() => (this._adding = true)}
-                        @save-new-prompt=${this._saveNewPrompt}
-                        @cancel-new-prompt=${() => (this._adding = false)}
-                    ></prompt-gallery-buttons>
-                </div>
-
             </div>
-        </div>
-    `;
-}
+        `;
+    }
 }
 
 customElements.define("collama-prompt-gallery", PromptGallery);

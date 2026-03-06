@@ -56,8 +56,8 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 
 - LLM can interact with your workspace through function calling
 - **File System Tools**: Read files, list directories, search contents with regex, create files and folders, edit files with diff preview
-- **Git Tools**: Browse commit history, compare branches, view diffs, list branches, revert files
-- **Code Analysis Tools**: Get symbols, find references, get diagnostics, rename symbols
+- **Git Tools**: List commits or branches, view diffs (working tree or compare commits/branches)
+- **Code Analysis Tools**: Get diagnostics (errors, warnings, hints) from the language server
 - **Security**: Path traversal protection, workspace boundary enforcement, .gitignore integration
 - **Real-time Feedback**: Tool calls streamed to chat as they execute
 - The agent can autonomously explore your codebase to provide context-aware assistance
@@ -220,33 +220,25 @@ Note: ChatML format is not supported - that means only true fim-models will work
 **Available Tools:**
 
 - **File System Tools**
-    - `readFile` - Read the contents of a file in the workspace
-    - `listFiles` - Find files in the workspace matching a glob pattern
-    - `searchFiles` - Search file contents in the workspace for a regex pattern
-    - `lsPath` - List the directory tree of a path in the workspace
-    - `createFile` - Create a new file in the workspace with content preview and user confirmation
-    - `createFolder` - Create a new folder/directory in the workspace with user confirmation
-    - `editFile` - Edit a file with diff preview and user confirmation (supports multiple search-and-replace operations)
-    - `deleteFile` - Delete a file from the workspace with user confirmation
+    - `readFile` - Read the contents of a file in the workspace (supports optional line ranges)
+    - `searchFiles` - Search file contents for a regex pattern (supports optional glob pattern to filter files)
+    - `lsPath` - List files and folders in a workspace directory (supports recursion depth and glob pattern filtering)
+    - `create` - Create a new file or folder (with content: creates a file with preview; without content: creates a folder)
+    - `editFile` - Edit a file by replacing an exact string match with new content (shows diff preview and asks for confirmation)
+    - `deleteFile` - Delete a file from the workspace (asks for user confirmation)
 
 - **Git Tools**
-    - `getCommits` - List git commits from a branch
-    - `getCommitDiff` - Compare two commits or branches
-    - `getWorkingTreeDiff` - Get unstaged or staged changes in the working directory
-    - `listBranches` - List all local (and optionally remote) git branches
-    - `revertFile` - Revert a file to its last git-committed state with user confirmation
+    - `gitLog` - Git log info (list commits or list branches with optional filters)
+    - `gitDiff` - Get a git diff (working tree changes or compare commits/branches)
 
 - **Code Analysis Tools**
-    - `getSymbols` - Get symbols (classes, functions, variables, interfaces, types, etc.) from a document or the entire workspace
-    - `findReferences` - Find all references to a symbol across the workspace
     - `getDiagnostics` - Get diagnostics (errors, warnings, hints) from the language server
-    - `renameSymbol` - Rename a symbol across the entire workspace using the language server (type-aware)
 
 **Read-Only Mode:**
 
 When `enableEditTools` is disabled (toggle via status bar), the following tools are unavailable:
 
-- `editFile`, `createFile`, `createFolder`, `deleteFile`, `revertFile`, `renameSymbol`
+- `editFile`, `create`, `deleteFile`
 
 The agent can still use read-only tools to explore and analyze your codebase safely.
 

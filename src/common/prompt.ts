@@ -154,11 +154,12 @@ export const chatCompress_Template: string = [
  */
 export const agent_Template: string = [
     "Guidelines:",
-    "- At first, explore by useing lsPath with max depth.",
+    "- Only use tools when the user's request requires reading, searching, or modifying files.",
+    "- For general questions, greetings, or conversations respond directly without tools.",
+    "- When tools are needed, start by exploring with lsPath at max depth.",
     "- Prefer reading files over searching patterns.",
     "- Explain your actions and why before making changes.",
-    "- After you finished, use getDiagnostics to validate the changes.",
-    "- You can ask the user for specific files, paths or commits if it would help you.",
+    "- After you finished editing, use getDiagnostics to validate the changes.",
     '- Tool arguments are JSON. Always escape quotes as \\" and newlines as \\n inside string values.',
     "- Never repeat yourself. Instead move on to the next step.",
     "- Do not re-check conditions you have already confirmed.",
