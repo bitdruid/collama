@@ -233,6 +233,16 @@ class ChatPanel {
         this.context.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
     }
 
+    /** Mutates a session, stamps updatedAt, and persists. No-op if session is undefined. */
+    private updateSession(session: ChatSession | undefined, mutate: (s: ChatSession) => void) {
+        if (!session) {
+            return;
+        }
+        mutate(session);
+        session.updatedAt = Date.now();
+        this.saveSessions();
+    }
+
     /**
      * Sends the current session state to the webview.
      */
@@ -319,9 +329,7 @@ class ChatPanel {
                 const { sessionId, newTitle } = msg;
                 const session = this.sessions.find((s) => s.id === sessionId);
                 if (session && newTitle && newTitle.trim() !== "") {
-                    session.title = newTitle.trim();
-                    session.updatedAt = Date.now();
-                    this.saveSessions();
+                    this.updateSession(session, (s) => { s.title = newTitle.trim(); });
                     this.sendSessionsUpdate();
                     logMsg(`Renamed session ${sessionId} to "${newTitle}"`);
                 }
@@ -331,12 +339,7 @@ class ChatPanel {
             if (msg.type === "update-messages") {
                 const { messages, sessionId, approxTokensFreed } = msg;
                 const session = this.sessions.find((s) => s.id === sessionId);
-                if (session) {
-                    session.messages = messages;
-                    session.updatedAt = Date.now();
-                    session.title = generateSessionTitle(messages);
-                    this.saveSessions();
-                }
+                this.updateSession(session, (s) => { s.messages = messages; s.title = generateSessionTitle(messages); });
                 this.sendSessionsUpdate();
                 logMsg(`Messages updated for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
                 return;
@@ -369,21 +372,12 @@ class ChatPanel {
                 });
                 this.currentAgent = null;
 
+                const fenced = `\`\`\`Summary: Conversation\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
                 const compressedMessages: ChatHistory[] = [
                     { role: "user", content: "Summarize our conversation." },
-                    {
-                        role: "assistant",
-                        content: `\`\`\`Summary: Conversation\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``,
-                    },
+                    { role: "assistant", content: fenced },
                 ];
-
-                if (session) {
-                    session.messages = compressedMessages;
-                    session.contextStartIndex = 0;
-                    session.updatedAt = Date.now();
-                    this.saveSessions();
-                }
-
+                this.updateSession(session, (s) => { s.messages = compressedMessages; s.contextStartIndex = 0; });
                 webview.postMessage({ type: "compressed", messages: compressedMessages });
                 webview.postMessage({ type: "chat-complete" });
                 this.sendSessionsUpdate();
@@ -399,12 +393,10 @@ class ChatPanel {
 
                 // Update the active session's messages (full history + empty assistant slot)
                 const session = this.sessions.find((s) => s.id === sessionId);
-                if (session) {
-                    session.messages = [...messages, { role: "assistant", content: "" }];
-                    session.updatedAt = Date.now();
-                    session.title = generateSessionTitle(messages);
-                    this.saveSessions();
-                }
+                this.updateSession(session, (s) => {
+                    s.messages = [...messages, { role: "assistant", content: "" }];
+                    s.title = generateSessionTitle(messages);
+                });
 
                 const options = buildInstructionOptions();
 
@@ -417,10 +409,7 @@ class ChatPanel {
 
                 // Persist and notify webview of current context boundary
                 const contextStartIndex = pairsRemoved * 2;
-                if (session) {
-                    session.contextStartIndex = contextStartIndex;
-                    this.saveSessions();
-                }
+                this.updateSession(session, (s) => { s.contextStartIndex = contextStartIndex; });
                 webview.postMessage({ type: "context-trimmed", pairsRemoved, tokensFreed, contextStartIndex });
 
                 if (pairsRemoved > 0) {
@@ -434,15 +423,13 @@ class ChatPanel {
                 await agent.work(
                     trimmedMessages,
                     async (chunk) => {
-                        if (session) {
-                            session.messages[assistantIndex].content += chunk;
-                            session.updatedAt = Date.now();
-                            this.saveSessions();
-                        }
+                        this.updateSession(session, (s) => { s.messages[assistantIndex].content += chunk; });
                         webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
                     },
                     async (event) => {
-                        webview.postMessage({ type: "agent-event", event });
+                        if (event.type === "agent-tokens") {
+                            webview.postMessage({ type: "agent-tokens", tokens: event.tokens });
+                        }
                     },
                 );
                 this.currentAgent = null;

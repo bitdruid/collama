@@ -9,7 +9,6 @@ import "../agent_token_counter/token_counter";
 import { ChatSession } from "../chat_session/components/chat_sessions";
 import { ChatSessionStore } from "../chat_session/services/chat_session_store";
 import { chatContainerStyles } from "./styles/chat_container_styles";
-import { AgentEvent } from "../../../../agent/agent";
 
 declare global {
     interface Window {
@@ -369,11 +368,10 @@ export class ChatContainer extends LitElement {
             // receive events from the assistant
             if (msg.type === "agent-event") {
                 const event = msg.event;
-                this.agent_token = msg.event.tokens;
-
                 switch (event.type) {
                     case "agent-tokens":
-                        console.log("Agent");
+                        this.agent_token = event.tokens;
+                        break;
                 }
             }
 

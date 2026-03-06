@@ -106,7 +106,6 @@ export class Agent {
 
                         const args = JSON.parse(toolCall.function.arguments);
 
-                        // tool info is streamed as a codeblock into the chat
                         const hasArgs = Object.keys(args).length > 0;
                         const argsBody = hasArgs ? `\n${JSON.stringify(args, null, 2)}` : "";
                         onChunk(`\n\`\`\`Tool: ${toolCall.function.name}${argsBody}\n\`\`\`\n\n`);
