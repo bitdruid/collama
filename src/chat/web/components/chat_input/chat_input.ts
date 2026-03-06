@@ -1,4 +1,4 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, PropertyValues } from "lit";
 import { ChatContext } from "../chat_container/chat_container";
 import { chatInputStyles } from "./styles/chat_input_styles";
 import "./components/input_buttons/input_buttons"; // Import
@@ -27,6 +27,14 @@ export class ChatInput extends LitElement {
     contexts: ChatContext[] = [];
     isLoading = false;
 
+    updated(changedProperties: PropertyValues) {
+        if (changedProperties.has("isLoading") && !this.isLoading) {
+            this.updateComplete.then(() => {
+                this.shadowRoot?.querySelector("textarea")?.focus();
+            });
+        }
+    }
+
     private _handleInput(e: Event) {
         this.userInput = (e.target as HTMLTextAreaElement).value;
         this._adjustRows();
@@ -53,6 +61,9 @@ export class ChatInput extends LitElement {
         this.userInput = "";
         this.rows = 1;
         this.contexts = [];
+        this.updateComplete.then(() => {
+            this.shadowRoot?.querySelector("textarea")?.focus();
+        });
     }
 
     private _handleCancel() {

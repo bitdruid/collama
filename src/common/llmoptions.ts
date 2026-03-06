@@ -178,7 +178,7 @@ export function buildCompletionOptions(): Options {
  */
 export function buildInstructionOptions(): Options {
     return {
-        num_predict: 16384,
+        num_predict: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.8,
         top_p: 0.95,
@@ -192,7 +192,7 @@ export function buildInstructionOptions(): Options {
  */
 export function buildCommitOptions(): Options {
     return {
-        num_predict: 16384,
+        num_predict: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.3,
         top_p: 0.95,
@@ -202,7 +202,7 @@ export function buildCommitOptions(): Options {
 
 export function buildAgentOptions(): Options {
     return {
-        num_predict: 16384,
+        num_predict: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.2,
         top_p: 0.5,

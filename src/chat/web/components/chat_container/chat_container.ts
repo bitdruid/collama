@@ -1,12 +1,15 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, html } from "lit";
 
 import { estimateTokenCount } from "../../../utils";
 import "../chat_output/output";
 import "../chat_session/components/chat_sessions";
 
-import { chatContainerStyles } from "./styles/chat_container_styles";
+import "../agent_token_counter/token_counter";
+
 import { ChatSession } from "../chat_session/components/chat_sessions";
 import { ChatSessionStore } from "../chat_session/services/chat_session_store";
+import { chatContainerStyles } from "./styles/chat_container_styles";
+import { AgentEvent } from "../../../../agent/agent";
 
 declare global {
     interface Window {
@@ -18,7 +21,7 @@ declare global {
     }
 }
 
-export { };
+export {};
 
 export function logWebview(message: string) {
     window.vscode.postMessage({
@@ -53,6 +56,7 @@ export class ChatContainer extends LitElement {
         contextStartIndex: { state: true },
         _toastMessage: { state: true },
         isLoading: { state: true },
+        agent_token: { state: true },
     };
 
     static styles = chatContainerStyles;
@@ -68,6 +72,7 @@ export class ChatContainer extends LitElement {
     isLoading: boolean = false;
     private _updateTimer: number | null = null;
     private _toastTimer: number | null = null;
+    agent_token: number = 0;
 
     /**
      * Debounce UI updates during streaming to avoid excessive re-renders.
@@ -123,20 +128,18 @@ export class ChatContainer extends LitElement {
             this.currentContexts = [];
         }
 
-        const assistantIndex = this.messages.length + 1;
-
-        this.messages = [
+        const messagesToSend: ChatMessage[] = [
             ...this.messages,
             { role: "user", content: userContent, contexts: messageContexts },
-            { role: "assistant", content: "", loading: true },
         ];
+
+        this.messages = [...messagesToSend, { role: "assistant", content: "", loading: true }];
 
         this.isLoading = true;
 
         window.vscode.postMessage({
             type: "chat-request",
-            messages: this.messages,
-            assistantIndex,
+            messages: messagesToSend,
             sessionId: this.activeSessionId,
         });
     }
@@ -185,7 +188,6 @@ export class ChatContainer extends LitElement {
 
         // Keep messages up to and including the user message
         const truncatedMessages = this.messages.slice(0, messageIndex + 1);
-        const assistantIndex = truncatedMessages.length;
 
         this.messages = [...truncatedMessages, { role: "assistant", content: "", loading: true }];
 
@@ -195,8 +197,7 @@ export class ChatContainer extends LitElement {
 
         window.vscode.postMessage({
             type: "chat-request",
-            messages: this.messages,
-            assistantIndex,
+            messages: truncatedMessages,
             sessionId: this.activeSessionId,
         });
     }
@@ -229,9 +230,9 @@ export class ChatContainer extends LitElement {
             content: updatedContent,
             contexts: userMessage.contexts,
         };
-        const assistantIndex = truncatedMessages.length + 1;
+        const messagesToSend = [...truncatedMessages, editedMessage];
 
-        this.messages = [...truncatedMessages, editedMessage, { role: "assistant", content: "", loading: true }];
+        this.messages = [...messagesToSend, { role: "assistant", content: "", loading: true }];
 
         this.isLoading = true;
 
@@ -239,8 +240,7 @@ export class ChatContainer extends LitElement {
 
         window.vscode.postMessage({
             type: "chat-request",
-            messages: this.messages,
-            assistantIndex,
+            messages: messagesToSend,
             sessionId: this.activeSessionId,
         });
     }
@@ -360,8 +360,20 @@ export class ChatContainer extends LitElement {
                 if (message) {
                     message.content += msg.chunk;
                     message.loading = false;
+
                     // Debounce UI updates to reduce render frequency
                     this._scheduleUpdate();
+                }
+            }
+
+            // receive events from the assistant
+            if (msg.type === "agent-event") {
+                const event = msg.event;
+                this.agent_token = msg.event.tokens;
+
+                switch (event.type) {
+                    case "agent-tokens":
+                        console.log("Agent");
                 }
             }
 
@@ -438,6 +450,7 @@ export class ChatContainer extends LitElement {
                     @edit-message=${this._onEditMessage}
                     @delete-message=${this._onDeleteMessage}
                 ></collama-chatoutput>
+                <collama-token-counter .agentToken=${this.agent_token}></collama-token-counter>
                 <collama-chatinput
                     @submit=${this._onSubmit}
                     @cancel=${this._onCancel}

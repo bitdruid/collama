@@ -6,7 +6,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -105,7 +105,7 @@
                     "collama.enableEditTools": {
                         "type": "boolean",
                         "default": true,
-                        "description": "Enable edit tools (editFile, createFile, deleteFile, etc.). When disabled, the agent runs in read-only mode."
+                        "description": "Enable edit tools (editFile, create, deleteFile). When disabled, the agent runs in read-only mode."
                     }
                 }
             }

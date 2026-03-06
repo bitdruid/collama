@@ -8,6 +8,8 @@ import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions, resetAutoAcceptEdits } from "./tools";
 
+export type AgentEvent = { type: string; [key: string]: unknown };
+
 export class Agent {
     private client: LlmClientFactory | undefined;
     private abortController: AbortController | null = null;
@@ -44,15 +46,17 @@ export class Agent {
      *
      * @param messages - The conversation history to send to the LLM.
      * @param onChunk  - Callback invoked for every streamed text token.
+     * @param onEvent  - Optional callback for structured metadata events (e.g. token counts).
      * @returns {Promise<void>}
      */
-    async work(messages: ChatHistory[], onChunk: (chunk: string) => void) {
+    async work(messages: ChatHistory[], onChunk: (chunk: string) => void, onEvent?: (event: AgentEvent) => void) {
         await withProgressNotification(`collama: Agent running …`, async () => {
             this.abortController = new AbortController();
             resetAutoAcceptEdits();
             const signal = this.abortController.signal;
-            const history: ChatHistory[] = [{ role: "system", content: agent_Template }, ...messages];
-            // const history: ChatHistory[] = [...messages];
+            const history: ChatHistory[] = userConfig.agentic
+                ? [{ role: "system", content: agent_Template }, ...messages]
+                : [...messages];
 
             try {
                 this.client = new LlmClientFactory("instruction");
@@ -77,19 +81,6 @@ export class Agent {
                             onChunk(chunk);
                         }
                     });
-
-                    // stream thinking first if present / prevent code-fence breaks
-                    // if (result.thinking) {
-                    //     const matches = result.thinking.match(/`+/g) || [];
-                    //     let longestRun = 0;
-                    //     for (const m of matches) {
-                    //         if (m.length > longestRun) {
-                    //             longestRun = m.length;
-                    //         }
-                    //     }
-                    //     const fence = "`".repeat(Math.max(3, longestRun + 1));
-                    //     onChunk(`\n${fence}Think: Reasoning\n${result.thinking}\n${fence}\n\n`);
-                    // }
 
                     if (result.toolCalls.length === 0) {
                         break;
@@ -120,11 +111,16 @@ export class Agent {
                             tool_call_id: toolCall.id,
                             content: toolResult,
                         });
+
+                        // if a file is read again, remove the old content to trim context
+                        if (toolCall.function.name === "readFile") {
+                            this.deduplicateReadFile(history, toolCall.id);
+                        }
                     }
 
                     const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history));
                     logAgent(`Agent Tokens: ${toolTokens}`);
-                    // onChunk(JSON.stringify({ type: "agent-tokens", tokens: toolTokens }));
+                    onEvent?.({ type: "agent-tokens", tokens: toolTokens });
 
                     if (signal.aborted) {
                         break;
@@ -143,5 +139,47 @@ export class Agent {
                 this.abortController = null;
             }
         });
+    }
+
+    /**
+     * Replaces stale readFile tool results with a short note.
+     * Only removes readFile calls where no line numbers are given.
+     */
+    private deduplicateReadFile(history: ChatHistory[], newToolCallId: string): void {
+        const newReadInfo = this.getReadFileCallInfo(history, newToolCallId);
+        if (!newReadInfo) {
+            return;
+        }
+
+        for (const msg of history) {
+            if (msg.role !== "tool" || msg.tool_call_id === newToolCallId) {
+                continue;
+            }
+            const msgReadInfo = this.getReadFileCallInfo(history, msg.tool_call_id);
+            // Only mark as stale if same file and previous call had no line numbers
+            if (msgReadInfo && msgReadInfo.filePath === newReadInfo.filePath && !msgReadInfo.hasLineNumbers) {
+                msg.content = "[stale - file re-read later]";
+            }
+        }
+    }
+
+    private getReadFileCallInfo(
+        history: ChatHistory[],
+        toolCallId: string,
+    ): { filePath: string; hasLineNumbers: boolean } | null {
+        for (const msg of history) {
+            if (msg.role !== "assistant" || !msg.tool_calls) {
+                continue;
+            }
+            const tc = msg.tool_calls.find((tc) => tc.id === toolCallId);
+            if (tc && tc.function.name === "readFile") {
+                const args = JSON.parse(tc.function.arguments);
+                return {
+                    filePath: args.filePath,
+                    hasLineNumbers: args.startLine !== undefined || args.endLine !== undefined,
+                };
+            }
+        }
+        return null;
     }
 }

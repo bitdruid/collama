@@ -66,10 +66,10 @@ export function getToolDefinitions() {
 
 /**
  * Checks if a tool is an edit tool (modifies files).
- * Edit tools are: editFile, createFile, createFolder, deleteFile, revertFile, renameSymbol
+ * Edit tools are: editFile, create, deleteFile
  */
 function isEditTool(toolName: string): boolean {
-    const editTools = ["editFile", "editLines", "create", "deleteFile", "revertFile", "renameSymbol"];
+    const editTools = ["editFile", "create", "deleteFile"];
     return editTools.includes(toolName);
 }
 
