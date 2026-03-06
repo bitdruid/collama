@@ -115,8 +115,8 @@ export class ChatInputButtons extends LitElement {
     render() {
         return html`
             <button-row>
-                ${this._renderPromptGalleryButton()}
                 ${this._renderContextButton()}
+                ${this._renderPromptGalleryButton()}
                 ${this._renderActionButtons()}
             </button-row>
         `;
