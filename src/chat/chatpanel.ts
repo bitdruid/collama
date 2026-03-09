@@ -68,6 +68,11 @@ export class ChatPanel {
                 return;
             }
 
+            if (msg.type === "copy-session") {
+                this.handleCopySession(msg);
+                return;
+            }
+
             if (msg.type === "update-messages") {
                 this.handleUpdateMessages(msg);
                 return;
@@ -181,6 +186,18 @@ export class ChatPanel {
     }
 
     /**
+     * Handles copying a session.
+     */
+    private handleCopySession(msg: { sessionId: string }) {
+        const { sessionId } = msg;
+        const newSession = this.session.copySession(sessionId);
+        if (newSession) {
+            this.session.sendSessionsUpdate();
+            logMsg(`Copied session ${sessionId} → ${newSession.id}`);
+        }
+    }
+
+    /**
      * Handles renaming a session.
      */
     private handleRenameSession(msg: { sessionId: string; newTitle: string }) {
@@ -189,6 +206,7 @@ export class ChatPanel {
         if (session && newTitle && newTitle.trim() !== "") {
             this.session.updateSession(session, (s) => {
                 s.title = newTitle.trim();
+                s.customTitle = true;
             });
             this.session.sendSessionsUpdate();
             logMsg(`Renamed session ${sessionId} to "${newTitle}"`);
@@ -203,7 +221,9 @@ export class ChatPanel {
         const session = this.session.sessions.find((s) => s.id === sessionId);
         this.session.updateSession(session, (s) => {
             s.messages = messages;
-            s.title = Session.generateSessionTitle(messages);
+            if (!s.customTitle) {
+                s.title = Session.generateSessionTitle(messages);
+            }
         });
         this.session.sendSessionsUpdate();
         logMsg(`Messages updated for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
@@ -273,7 +293,9 @@ export class ChatPanel {
         const session = this.session.sessions.find((s) => s.id === sessionId);
         this.session.updateSession(session, (s) => {
             s.messages = [...messages, { role: "assistant" as const, content: "" }];
-            s.title = Session.generateSessionTitle(messages);
+            if (!s.customTitle) {
+                s.title = Session.generateSessionTitle(messages);
+            }
         });
 
         const options = buildInstructionOptions();

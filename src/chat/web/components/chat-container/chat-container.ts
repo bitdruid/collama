@@ -297,12 +297,22 @@ export class ChatContainer extends LitElement {
     }
 
     private _onRenameSession(e: CustomEvent) {
-        const { sessionId, newTitle } = e.detail;
+        const sessionId = e.detail.id;
+        const newTitle = e.detail.newTitle;
         logWebview(`Renaming session ${sessionId} to "${newTitle}"`);
         window.vscode.postMessage({
             type: "rename-session",
             sessionId,
             newTitle,
+        });
+    }
+
+    private _onCopySession(e: CustomEvent) {
+        const sessionId = e.detail.id;
+        logWebview(`Copying session ${sessionId}`);
+        window.vscode.postMessage({
+            type: "copy-session",
+            sessionId,
         });
     }
 
@@ -433,6 +443,7 @@ export class ChatContainer extends LitElement {
                 @select-session=${this._onSelectSession}
                 @delete-session=${this._onDeleteSession}
                 @rename-session=${this._onRenameSession}
+                @copy-session=${this._onCopySession}
             ></collama-chatsessions>
             <div class="chat-area">
                 <collama-chatoutput
@@ -442,7 +453,10 @@ export class ChatContainer extends LitElement {
                     @edit-message=${this._onEditMessage}
                     @delete-message=${this._onDeleteMessage}
                 ></collama-chatoutput>
-                <collama-token-counter .agentToken=${this.agent_token} .visible=${this.isLoading}></collama-token-counter>
+                <collama-token-counter
+                    .agentToken=${this.agent_token}
+                    .visible=${this.isLoading}
+                ></collama-token-counter>
                 <collama-chatinput
                     @submit=${this._onSubmit}
                     @cancel=${this._onCancel}

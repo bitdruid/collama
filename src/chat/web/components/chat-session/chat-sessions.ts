@@ -101,6 +101,10 @@ export class ChatSessions extends LitElement {
         ChatSessionStore.instance.renameSession(id, newTitle);
     }
 
+    private _handleCopySession(id: string) {
+        ChatSessionStore.instance.copySession(id);
+    }
+
     render() {
         return html`
             <collama-chatsession-header
@@ -120,6 +124,7 @@ export class ChatSessions extends LitElement {
                 @select-session=${(e: CustomEvent) => this._handleSelectSession(e.detail.id)}
                 @delete-session=${(e: CustomEvent) => this._handleDeleteSession(e.detail.id)}
                 @rename-session=${(e: CustomEvent) => this._handleRenameSession(e.detail.id, e.detail.newTitle)}
+                @copy-session=${(e: CustomEvent) => this._handleCopySession(e.detail.id)}
             ></collama-chatsessions-popup>
         `;
     }

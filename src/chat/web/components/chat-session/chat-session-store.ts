@@ -50,6 +50,23 @@ export class ChatSessionStore extends EventTarget {
         this._emitChange();
     }
 
+    copySession(id: string) {
+        const source = this.sessions.find((s) => s.id === id);
+        if (!source) {
+            return;
+        }
+        const now = Date.now();
+        const newSession: ChatSession = {
+            id: now.toString(),
+            title: source.title + " (Copy)",
+            createdAt: now,
+            updatedAt: now,
+        };
+        this.sessions = [...this.sessions, newSession];
+        this.activeSessionId = newSession.id;
+        this._emitChange();
+    }
+
     /* ---------- Context‑Usage ---------- */
 
     setContextUsage(used: number, max: number) {

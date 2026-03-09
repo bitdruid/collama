@@ -10,6 +10,7 @@ import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from 
 export interface ChatSession {
     id: string;
     title: string;
+    customTitle?: boolean;
     messages: ChatHistory[];
     contextStartIndex: number;
     createdAt: number;
@@ -96,6 +97,33 @@ export class Session {
             contextStartIndex: 0,
             createdAt: Date.now(),
             updatedAt: Date.now(),
+        };
+        this.sessions.push(newSession);
+        this.activeSessionId = newSession.id;
+        this.saveSessions();
+        return newSession;
+    }
+
+    /**
+     * Creates a copy of an existing session with cloned messages and a "(Copy)" title suffix.
+     *
+     * @param sourceId - The ID of the session to copy.
+     * @returns The newly created session, or undefined if the source was not found.
+     */
+    copySession(sourceId: string): ChatSession | undefined {
+        const source = this.sessions.find((s) => s.id === sourceId);
+        if (!source) {
+            return undefined;
+        }
+        const now = Date.now();
+        const newSession: ChatSession = {
+            id: Session.generateSessionId(),
+            title: source.title + " (Copy)",
+            customTitle: true,
+            messages: JSON.parse(JSON.stringify(source.messages)),
+            contextStartIndex: source.contextStartIndex,
+            createdAt: now,
+            updatedAt: now,
         };
         this.sessions.push(newSession);
         this.activeSessionId = newSession.id;

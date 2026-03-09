@@ -1,6 +1,6 @@
 // src/chat/web/components/chat_session/components/popup/chat_session_item.ts
 import { LitElement, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { ChatSession } from "../../chat-sessions";
 import { commonStyles } from "../../styles-shared";
 import { sessionItemStyles } from "./styles";
@@ -28,7 +28,7 @@ export class ChatSessionItem extends LitElement {
     @property({ type: Object }) session!: ChatSession;
     @property({ type: Boolean }) isActive = false;
 
-    private editing = false;
+    @state() private editing = false;
     private inputEl?: HTMLInputElement;
 
     static styles = [commonStyles, sessionItemStyles];
@@ -55,6 +55,9 @@ export class ChatSessionItem extends LitElement {
                     <button class="action-button rename-button" @click=${this._startRename} title="Rename chat">
                         R
                     </button>
+                    <button class="action-button copy-button" @click=${this._handleCopy} title="Copy chat">
+                        C
+                    </button>
                     <button class="action-button delete-button" @click=${this._handleDelete} title="Delete chat">
                         X
                     </button>
@@ -79,6 +82,11 @@ export class ChatSessionItem extends LitElement {
             this.inputEl?.focus();
             this.inputEl?.select();
         });
+    }
+
+    private _handleCopy(e: Event) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent("copy", { bubbles: true, composed: true }));
     }
 
     private _handleDelete(e: Event) {

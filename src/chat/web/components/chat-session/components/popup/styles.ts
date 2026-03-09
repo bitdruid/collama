@@ -101,6 +101,10 @@ export const sessionItemStyles = css`
         color: var(--vscode-foreground);
     }
 
+    .copy-button {
+        color: var(--vscode-foreground);
+    }
+
     .delete-button {
         color: var(--vscode-errorForeground);
     }
