@@ -66,6 +66,17 @@ export class ChatOutput extends LitElement {
     private renderedMarkdownCache = new Map<string, string>();
     private highlightDebounceTimer: number | null = null;
 
+    private _isUserScrolling = false;
+
+    /**
+     * Determines if the chat output is scrolled near its bottom.
+     * If true, we allow automatic scrolling when new messages arrive.
+     */
+    private _isNearBottom(): boolean {
+        const threshold = 100; // pixels from bottom to consider "near"
+        return this.scrollHeight - (this.clientHeight + this.scrollTop) <= threshold;
+    }
+
     private _getCachedMarkdown(content: string, isStreaming: boolean): string {
         // Don't cache streaming content as it changes frequently
         if (isStreaming) {
@@ -92,7 +103,9 @@ export class ChatOutput extends LitElement {
                 highlightAllCodeBlocks(this.shadowRoot, this.highlightedBlocks);
             }, 250);
 
-            this.scrollTop = this.scrollHeight;
+            if (this._isNearBottom()) {
+                this.scrollTop = this.scrollHeight;
+            }
 
             this.messages.forEach((msg) => {
                 if (msg.loading && !this.loadingTimeouts.has(msg)) {
