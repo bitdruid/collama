@@ -55,6 +55,7 @@ export class ChatContainer extends LitElement {
         _toastMessage: { state: true },
         isLoading: { state: true },
         agent_token: { state: true },
+        hasTokenData: { state: true },
     };
 
     static styles = chatContainerStyles;
@@ -71,6 +72,7 @@ export class ChatContainer extends LitElement {
     private _updateTimer: number | null = null;
     private _toastTimer: number | null = null;
     agent_token: number = 0;
+    hasTokenData: boolean = false;
 
     /**
      * Debounce UI updates during streaming to avoid excessive re-renders.
@@ -377,12 +379,14 @@ export class ChatContainer extends LitElement {
             // receive token usage from agent tools
             if (msg.type === "agent-tokens") {
                 this.agent_token = msg.tokens;
+                this.hasTokenData = true;
             }
 
             // chat completed
             if (msg.type === "chat-complete") {
                 this.isLoading = false;
                 this.agent_token = 0;
+                this.hasTokenData = false;
             }
 
             // chat has been compressed into a summary pair
@@ -456,7 +460,7 @@ export class ChatContainer extends LitElement {
                 ></collama-chatoutput>
                 <collama-token-counter
                     .agentToken=${this.agent_token}
-                    .visible=${this.isLoading}
+                    .visible=${this.isLoading && this.hasTokenData}
                 ></collama-token-counter>
                 <collama-chatinput
                     @submit=${this._onSubmit}
