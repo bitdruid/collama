@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { requestOllama, requestOpenAI, setTlsRejectUnauthorized } from "./common/utils";
+import { requestOllama, requestOpenAI, setTlsRejectUnauthorized } from "./common/utils-common";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 

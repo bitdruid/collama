@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { EditorContext } from "../common/context_editor";
+import { EditorContext } from "../common/context-editor";
 import {
     requestEditManual,
     requestExtractFunctions,
@@ -8,8 +8,8 @@ import {
     requestSimplifyCode,
     requestWriteDocstrings,
 } from "../common/requests";
-import { withProgressNotification } from "../common/utils";
-import { registerContextCommand } from "./utils";
+import { withProgressNotification } from "../common/utils-common";
+import { registerContextCommand } from "./utils-context";
 
 /**
  * Virtual document provider for diff previews.
@@ -146,7 +146,13 @@ export function registerExtractFunctionsCommand(extContext: vscode.ExtensionCont
 }
 
 export function registerSimplifyCommand(extContext: vscode.ExtensionContext) {
-    registerContextCommand(extContext, "collama.simplifyCode", "Simplify", requestSimplifyCode, handleSelectionWithDiff);
+    registerContextCommand(
+        extContext,
+        "collama.simplifyCode",
+        "Simplify",
+        requestSimplifyCode,
+        handleSelectionWithDiff,
+    );
 }
 
 export function registerFixSyntaxCommand(extContext: vscode.ExtensionContext) {

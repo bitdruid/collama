@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getBearerCompletion, getBearerInstruct } from "../secrets";
-import { EditorContext } from "./context_editor";
+import { EditorContext } from "./context-editor";
 import { LlmClientFactory } from "./llmclient";
 import {
     buildCommitOptions,

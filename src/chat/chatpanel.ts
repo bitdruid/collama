@@ -1,17 +1,17 @@
 import * as vscode from "vscode";
 
 import { Agent } from "../agent/agent";
-import { ChatHistory } from "../common/context_chat";
-import { EditorContext } from "../common/context_editor";
+import { ChatHistory } from "../common/context-chat";
+import { EditorContext } from "../common/context-editor";
 import { buildInstructionOptions } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
 import { chatCompress_Template } from "../common/prompt";
-import Tokenizer from "../common/utils";
+import Tokenizer from "../common/utils-common";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { Session } from "./session";
-import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils_host";
-import { StartPage } from "./web/components/chat_start";
+import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-host";
+import { StartPage } from "./web/components/chat-start";
 
 /**
  * Encapsulates the chat panel logic within the extension.

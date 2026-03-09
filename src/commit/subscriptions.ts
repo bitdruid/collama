@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { requestCommitMessage } from "../common/requests";
-import { withProgressNotification } from "../common/utils";
+import { withProgressNotification } from "../common/utils-common";
 import { logMsg } from "../logging";
 
 // Type definitions for the Git extension API

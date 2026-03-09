@@ -1,4 +1,4 @@
-import { EditorContext } from "../common/context_editor";
+import { EditorContext } from "../common/context-editor";
 import { requestCompletion } from "../common/requests";
 import { userConfig } from "../config";
 import { Sanitizer } from "./sanitizer";

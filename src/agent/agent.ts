@@ -1,8 +1,8 @@
-import { ChatContext, ChatHistory } from "../common/context_chat";
+import { ChatContext, ChatHistory } from "../common/context-chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
 import { agent_Template } from "../common/prompt";
-import Tokenizer, { withProgressNotification } from "../common/utils";
+import Tokenizer, { withProgressNotification } from "../common/utils-common";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";

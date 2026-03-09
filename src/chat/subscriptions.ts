@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { EditorContext } from "../common/context_editor";
+import { EditorContext } from "../common/context-editor";
 import { logMsg } from "../logging";
 import { ChatPanel } from "./chatpanel";
 
