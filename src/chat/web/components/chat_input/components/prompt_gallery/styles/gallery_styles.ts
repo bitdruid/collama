@@ -11,7 +11,6 @@ export const gallery_styles = css`
             animation: fadeIn 0.18s ease-out;
         }
        
-
         .modal-content {
             background: var(--vscode-editor-background);
             padding: 16px;

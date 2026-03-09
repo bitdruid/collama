@@ -190,7 +190,7 @@ class ChatPanel {
 
                 await agent.work(summaryPrompt, async (chunk) => {
                     summaryContent += chunk;
-                    webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
+                    webview.postMessage({ type: "agent-chunk", index: assistantIndex, chunk });
                 });
                 this.currentAgent = null;
 
@@ -253,7 +253,7 @@ class ChatPanel {
                         this.session.updateSession(session, (s) => {
                             s.messages[assistantIndex].content += chunk;
                         });
-                        webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
+                        webview.postMessage({ type: "agent-chunk", index: assistantIndex, chunk });
                     },
                     async (event) => {
                         if (event.type === "agent-tokens") {
