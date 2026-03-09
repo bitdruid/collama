@@ -382,6 +382,7 @@ export class ChatContainer extends LitElement {
             // chat completed
             if (msg.type === "chat-complete") {
                 this.isLoading = false;
+                this.agent_token = 0;
             }
 
             // chat has been compressed into a summary pair
