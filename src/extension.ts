@@ -19,15 +19,15 @@ import { setStatusbar } from "./statusbar";
  *
  * ENTRYPOINT for the extension
  */
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(extContext: vscode.ExtensionContext) {
     let initialized = false;
 
     // init secrets and bearer commands
-    initSecrets(context);
-    context.subscriptions.push(
+    initSecrets(extContext);
+    extContext.subscriptions.push(
         vscode.commands.registerCommand("collama.setBearerCompletion", commandSetBearerCompletion),
     );
-    context.subscriptions.push(vscode.commands.registerCommand("collama.setBearerInstruct", commandSetBearerInstruct));
+    extContext.subscriptions.push(vscode.commands.registerCommand("collama.setBearerInstruct", commandSetBearerInstruct));
 
     await updateVSConfig();
     // live reload config if changed
@@ -41,20 +41,20 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    setStatusbar(context);
+    setStatusbar(extContext);
 
-    registerWriteDocstringsCommand(context);
-    registerExtractFunctionsCommand(context);
-    registerSimplifyCommand(context);
-    registerFixSyntaxCommand(context);
-    registerEditManualCommand(context);
+    registerWriteDocstringsCommand(extContext);
+    registerExtractFunctionsCommand(extContext);
+    registerSimplifyCommand(extContext);
+    registerFixSyntaxCommand(extContext);
+    registerEditManualCommand(extContext);
 
-    registerAutoCompleteProvider(context);
+    registerAutoCompleteProvider(extContext);
 
-    registerChatProvider(context);
-    registerSendToChatCommand(context);
+    registerChatProvider(extContext);
+    registerSendToChatCommand(extContext);
 
-    registerRequestCommitMessageCommand(context);
+    registerRequestCommitMessageCommand(extContext);
 
     logMsg("----- collama initialized -----");
     initialized = true;

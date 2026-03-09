@@ -36,17 +36,17 @@ export class Session {
      * @param webviewView - The webview view used for communication with the UI.
      */
     constructor(
-        private context: vscode.ExtensionContext,
+        private extContext: vscode.ExtensionContext,
         private webviewView: vscode.WebviewView,
     ) {
-        this.sessions = this.context.globalState.get<ChatSession[]>(CHAT_SESSIONS_KEY, []);
-        this.activeSessionId = this.context.globalState.get<string>(ACTIVE_SESSION_KEY, "");
+        this.sessions = this.extContext.globalState.get<ChatSession[]>(CHAT_SESSIONS_KEY, []);
+        this.activeSessionId = this.extContext.globalState.get<string>(ACTIVE_SESSION_KEY, "");
 
         if (this.sessions.length === 0) {
             this.createNewSession();
         } else if (!this.activeSessionId || !this.sessions.find((s) => s.id === this.activeSessionId)) {
             this.activeSessionId = this.sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0].id;
-            this.context.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
+            this.extContext.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
         }
     }
 
@@ -107,8 +107,8 @@ export class Session {
      * Persists all sessions and the active session ID to the global state.
      */
     saveSessions() {
-        this.context.globalState.update(CHAT_SESSIONS_KEY, this.sessions);
-        this.context.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
+        this.extContext.globalState.update(CHAT_SESSIONS_KEY, this.sessions);
+        this.extContext.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
     }
 
     /**

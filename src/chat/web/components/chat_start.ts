@@ -6,13 +6,13 @@ export class StartPage {
     private logoUri: vscode.Uri;
     private bundleUri: vscode.Uri;
 
-    constructor(context: vscode.ExtensionContext, webviewView: vscode.WebviewView) {
+    constructor(extContext: vscode.ExtensionContext, webviewView: vscode.WebviewView) {
         this.webviewView = webviewView;
 
         this.webview = webviewView.webview;
 
-        this.logoUri = this.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "media", "collama.svg"));
-        this.bundleUri = this.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "dist", "chatpanel.js"));
+        this.logoUri = this.webview.asWebviewUri(vscode.Uri.joinPath(extContext.extensionUri, "media", "collama.svg"));
+        this.bundleUri = this.webview.asWebviewUri(vscode.Uri.joinPath(extContext.extensionUri, "dist", "chatpanel.js"));
     }
 
     generate(): string {

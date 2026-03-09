@@ -38,7 +38,7 @@ export interface ContextTokens {
 /**
  * Encapsulates the state of the current editor selection and open files.
  */
-export class Context {
+export class EditorContext {
     readonly textEditor: vscode.TextEditor;
     readonly selectionObject: vscode.Selection;
     readonly selectionText: string;
@@ -112,7 +112,7 @@ export class Context {
      * - The returned {@link Context} includes token statistics for prefix, suffix, selection,
      *   the active file, and all other open files.
      */
-    static async create(): Promise<Context | null> {
+    static async create(): Promise<EditorContext | null> {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showErrorMessage("collama: Could not find active editor!");
@@ -173,7 +173,7 @@ export class Context {
             total: prefixTokens + suffixTokens + selectionTokens + openFilesTokens,
         };
 
-        return new Context(editor, selection, selectionText, prefix, suffix, openFiles, tokens);
+        return new EditorContext(editor, selection, selectionText, prefix, suffix, openFiles, tokens);
     }
 
     /**
@@ -189,7 +189,7 @@ export class Context {
      * @returns A new {@link Context} instance containing the same editor, selection, and active file content,
      *          but with a subset of open files that fit within the token budget.
      */
-    recreateTokenLimit(maxTokens: number): Context {
+    recreateTokenLimit(maxTokens: number): EditorContext {
         const fixedTokens = this.tokens.prefix + this.tokens.suffix + this.tokens.selection;
 
         let remaining = maxTokens - fixedTokens;
@@ -198,7 +198,7 @@ export class Context {
 
         if (remaining <= 0) {
             logMsg(`CONTEXT - Dropped all open files [total-tokens=${this.tokens.total} / limit=${maxTokens}]`);
-            return new Context(
+            return new EditorContext(
                 this.textEditor,
                 this.selectionObject,
                 this.selectionText,
@@ -230,7 +230,7 @@ export class Context {
             }
         }
 
-        return new Context(
+        return new EditorContext(
             this.textEditor,
             this.selectionObject,
             this.selectionText,

@@ -31,7 +31,7 @@ interface InputBox {
  *
  * @param context - The extension context used to store the disposable.
  */
-export function registerRequestCommitMessageCommand(context: vscode.ExtensionContext) {
+export function registerRequestCommitMessageCommand(extContext: vscode.ExtensionContext) {
     const disposable = vscode.commands.registerCommand("collama.requestCommitMessage", async () => {
         const gitExtension = vscode.extensions.getExtension<GitExtension>("vscode.git");
         if (!gitExtension) {
@@ -68,5 +68,5 @@ export function registerRequestCommitMessageCommand(context: vscode.ExtensionCon
             vscode.window.showErrorMessage(`collama: Error generating commit message: ${error}`);
         }
     });
-    context.subscriptions.push(disposable);
+    extContext.subscriptions.push(disposable);
 }

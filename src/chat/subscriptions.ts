@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { Agent } from "../agent/agent";
 import { ChatHistory } from "../common/context_chat";
-import { Context } from "../common/context_editor";
+import { EditorContext } from "../common/context_editor";
 import { buildInstructionOptions } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
 import { chatCompress_Template } from "../common/prompt";
@@ -20,18 +20,18 @@ let panel: ChatPanel | null = null;
  *
  * @param context - The extension context used to register the command.
  */
-export function registerSendToChatCommand(context: vscode.ExtensionContext) {
+export function registerSendToChatCommand(extContext: vscode.ExtensionContext) {
     const disposable = vscode.commands.registerCommand("collama.sendToChat", async () => {
         if (panel) {
             logMsg("Edit (Selection): SendToChat triggered");
             await vscode.commands.executeCommand("workbench.view.extension.collama_chat");
-            const currentContext = await Context.create();
+            const currentContext = await EditorContext.create();
             if (currentContext) {
                 panel.receiveCurrentContext(currentContext);
             }
         }
     });
-    context.subscriptions.push(disposable);
+    extContext.subscriptions.push(disposable);
 }
 
 /**
@@ -39,21 +39,21 @@ export function registerSendToChatCommand(context: vscode.ExtensionContext) {
  *
  * @param context - The extension context used to register the provider.
  */
-export function registerChatProvider(context: vscode.ExtensionContext) {
+export function registerChatProvider(extContext: vscode.ExtensionContext) {
     const provider: vscode.WebviewViewProvider = {
         resolveWebviewView(webviewView) {
             webviewView.webview.options = {
                 enableScripts: true,
                 localResourceRoots: [
-                    vscode.Uri.joinPath(context.extensionUri, "media"),
-                    vscode.Uri.joinPath(context.extensionUri, "dist"),
+                    vscode.Uri.joinPath(extContext.extensionUri, "media"),
+                    vscode.Uri.joinPath(extContext.extensionUri, "dist"),
                 ],
             };
-            panel = new ChatPanel(webviewView, context);
+            panel = new ChatPanel(webviewView, extContext);
             panel.renderPanel();
         },
     };
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider("collama_chatview", provider));
+    extContext.subscriptions.push(vscode.window.registerWebviewViewProvider("collama_chatview", provider));
 }
 
 /**
@@ -71,16 +71,16 @@ class ChatPanel {
      */
     constructor(
         private webviewView: vscode.WebviewView,
-        private context: vscode.ExtensionContext,
+        private extContext: vscode.ExtensionContext,
     ) {
-        this.session = new Session(context, webviewView);
+        this.session = new Session(extContext, webviewView);
     }
 
     /**
      * Renders the initial chat page inside the webview.
      */
     renderPanel() {
-        const page = new StartPage(this.context, this.webviewView);
+        const page = new StartPage(this.extContext, this.webviewView);
         const webview = this.webviewView.webview;
 
         webview.html = page.generate();
@@ -281,7 +281,7 @@ class ChatPanel {
      *
      * @param currentContext - The context object containing editor state.
      */
-    receiveCurrentContext(currentContext: Context) {
+    receiveCurrentContext(currentContext: EditorContext) {
         const document = currentContext.textEditor.document;
         const fileName = document.fileName.split("/").pop() || document.fileName;
         const hasSelection = currentContext.selectionText.length > 0;
