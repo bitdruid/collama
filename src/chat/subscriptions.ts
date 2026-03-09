@@ -9,45 +9,11 @@ import { chatCompress_Template } from "../common/prompt";
 import Tokenizer from "../common/utils";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
+import { Session } from "./session";
 import { mapSessionsToSummaries } from "./utils";
 import { StartPage } from "./web/components/chat_start";
 
 let panel: ChatPanel | null = null;
-const CHAT_SESSIONS_KEY = "collama.chatSessions";
-const ACTIVE_SESSION_KEY = "collama.activeSessionId";
-
-export interface ChatSession {
-    id: string;
-    title: string;
-    messages: ChatHistory[];
-    contextStartIndex: number;
-    createdAt: number;
-    updatedAt: number;
-}
-
-/**
- * Generates a unique session ID using the current timestamp.
- *
- * @returns A string that uniquely identifies a chat session.
- */
-function generateSessionId(): string {
-    return `session_${Date.now()}`;
-}
-
-/**
- * Generates a title for a chat session based on the first user message.
- *
- * @param messages - The array of chat history messages.
- * @returns A truncated title derived from the first user message, or "New Chat" if none.
- */
-function generateSessionTitle(messages: ChatHistory[]): string {
-    const firstUserMessage = messages.find((m) => m.role === "user");
-    if (firstUserMessage) {
-        const content = firstUserMessage.content.trim();
-        return content.length > 40 ? content.substring(0, 40) + "..." : content;
-    }
-    return "New Chat";
-}
 
 /**
  * Calculates the total token usage for a chat session's messages.
@@ -55,7 +21,7 @@ function generateSessionTitle(messages: ChatHistory[]): string {
  * @param messages - The array of chat history messages.
  * @returns The total token count.
  */
-async function calculateContextUsage(messages: ChatHistory[]): Promise<number> {
+export async function calculateContextUsage(messages: ChatHistory[]): Promise<number> {
     const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(msg.content)));
     return tokenCounts.reduce((total, count) => total + count, 0);
 }
@@ -112,7 +78,7 @@ async function trimMessagesForContext(
  * @param messages - The array of chat history messages to sanitize.
  * @returns A new array of messages without loading flags and with fallback content where appropriate.
  */
-function sanitizeMessages(messages: ChatHistory[]): ChatHistory[] {
+export function sanitizeMessages(messages: ChatHistory[]): ChatHistory[] {
     return messages.map((m) => {
         const { loading, ...rest } = m as ChatHistory & { loading?: boolean };
         // If assistant message is empty and was loading, show fallback
@@ -168,8 +134,7 @@ export function registerChatProvider(context: vscode.ExtensionContext) {
  * Encapsulates the chat panel logic within the extension.
  */
 class ChatPanel {
-    private sessions: ChatSession[] = [];
-    private activeSessionId: string = "";
+    private session: Session;
     private currentAgent: Agent | null = null;
 
     /**
@@ -182,83 +147,7 @@ class ChatPanel {
         private webviewView: vscode.WebviewView,
         private context: vscode.ExtensionContext,
     ) {
-        // Use globalState for persistence across IDE restarts
-        this.sessions = this.context.globalState.get<ChatSession[]>(CHAT_SESSIONS_KEY, []);
-        this.activeSessionId = this.context.globalState.get<string>(ACTIVE_SESSION_KEY, "");
-
-        // If no sessions exist, create a default one
-        if (this.sessions.length === 0) {
-            this.createNewSession();
-        } else if (!this.activeSessionId || !this.sessions.find((s) => s.id === this.activeSessionId)) {
-            // If active session doesn't exist, use the most recent one
-            this.activeSessionId = this.sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0].id;
-            this.context.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
-        }
-    }
-
-    /**
-     * Retrieves the currently active chat session.
-     *
-     * @returns The active {@link ChatSession} or {@code undefined} if none is active.
-     */
-    private getActiveSession(): ChatSession | undefined {
-        return this.sessions.find((s) => s.id === this.activeSessionId);
-    }
-
-    /**
-     * Creates a new chat session, sets it as active, and persists the change.
-     *
-     * @returns The newly created {@link ChatSession}.
-     */
-    private createNewSession(): ChatSession {
-        const newSession: ChatSession = {
-            id: generateSessionId(),
-            title: "New Chat",
-            messages: [],
-            contextStartIndex: 0,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        };
-        this.sessions.push(newSession);
-        this.activeSessionId = newSession.id;
-        this.saveSessions();
-        return newSession;
-    }
-
-    /**
-     * Persists all sessions and the active session ID to the global state.
-     */
-    private saveSessions() {
-        this.context.globalState.update(CHAT_SESSIONS_KEY, this.sessions);
-        this.context.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
-    }
-
-    /** Mutates a session, stamps updatedAt, and persists. No-op if session is undefined. */
-    private updateSession(session: ChatSession | undefined, mutate: (s: ChatSession) => void) {
-        if (!session) {
-            return;
-        }
-        mutate(session);
-        session.updatedAt = Date.now();
-        this.saveSessions();
-    }
-
-    /**
-     * Sends the current session state to the webview.
-     */
-    private async sendSessionsUpdate() {
-        const activeSession = this.getActiveSession();
-        const contextUsed = await calculateContextUsage(activeSession?.messages || []);
-        const contextMax = userConfig.apiTokenContextLenInstruct;
-        this.webviewView.webview.postMessage({
-            type: "sessions-update",
-            sessions: mapSessionsToSummaries(this.sessions),
-            activeSessionId: this.activeSessionId,
-            history: sanitizeMessages(activeSession?.messages || []),
-            contextUsed,
-            contextMax,
-            contextStartIndex: activeSession?.contextStartIndex || 0,
-        });
+        this.session = new Session(context, webviewView);
     }
 
     /**
@@ -273,13 +162,13 @@ class ChatPanel {
         webview.onDidReceiveMessage(async (msg) => {
             if (msg.type === "chat-ready") {
                 // Send initial state when webview is ready
-                const activeSession = this.getActiveSession();
+                const activeSession = this.session.getActiveSession();
                 const contextUsed = await calculateContextUsage(activeSession?.messages || []);
                 const contextMax = userConfig.apiTokenContextLenInstruct;
                 webview.postMessage({
                     type: "init",
-                    sessions: mapSessionsToSummaries(this.sessions),
-                    activeSessionId: this.activeSessionId,
+                    sessions: mapSessionsToSummaries(this.session.sessions),
+                    activeSessionId: this.session.activeSessionId,
                     history: sanitizeMessages(activeSession?.messages || []),
                     contextUsed,
                     contextMax,
@@ -289,18 +178,18 @@ class ChatPanel {
             }
 
             if (msg.type === "new-session") {
-                this.createNewSession();
-                this.sendSessionsUpdate();
-                logMsg(`Created new session: ${this.activeSessionId}`);
+                this.session.createNewSession();
+                this.session.sendSessionsUpdate();
+                logMsg(`Created new session: ${this.session.activeSessionId}`);
                 return;
             }
 
             if (msg.type === "switch-session") {
                 const { sessionId } = msg;
-                if (this.sessions.find((s) => s.id === sessionId)) {
-                    this.activeSessionId = sessionId;
-                    this.context.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
-                    this.sendSessionsUpdate();
+                if (this.session.sessions.find((s) => s.id === sessionId)) {
+                    this.session.activeSessionId = sessionId;
+                    this.session.saveSessions();
+                    this.session.sendSessionsUpdate();
                     logMsg(`Switched to session: ${sessionId}`);
                 }
                 return;
@@ -308,29 +197,33 @@ class ChatPanel {
 
             if (msg.type === "delete-session") {
                 const { sessionId } = msg;
-                this.sessions = this.sessions.filter((s) => s.id !== sessionId);
+                this.session.sessions = this.session.sessions.filter((s) => s.id !== sessionId);
 
                 // If we deleted the active session, switch to another or create new
-                if (this.activeSessionId === sessionId) {
-                    if (this.sessions.length > 0) {
-                        this.activeSessionId = this.sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0].id;
+                if (this.session.activeSessionId === sessionId) {
+                    if (this.session.sessions.length > 0) {
+                        this.session.activeSessionId = this.session.sessions.sort(
+                            (a, b) => b.updatedAt - a.updatedAt,
+                        )[0].id;
                     } else {
-                        this.createNewSession();
+                        this.session.createNewSession();
                     }
                 }
 
-                this.saveSessions();
-                this.sendSessionsUpdate();
+                this.session.saveSessions();
+                this.session.sendSessionsUpdate();
                 logMsg(`Deleted session: ${sessionId}`);
                 return;
             }
 
             if (msg.type === "rename-session") {
                 const { sessionId, newTitle } = msg;
-                const session = this.sessions.find((s) => s.id === sessionId);
+                const session = this.session.sessions.find((s) => s.id === sessionId);
                 if (session && newTitle && newTitle.trim() !== "") {
-                    this.updateSession(session, (s) => { s.title = newTitle.trim(); });
-                    this.sendSessionsUpdate();
+                    this.session.updateSession(session, (s) => {
+                        s.title = newTitle.trim();
+                    });
+                    this.session.sendSessionsUpdate();
                     logMsg(`Renamed session ${sessionId} to "${newTitle}"`);
                 }
                 return;
@@ -338,9 +231,12 @@ class ChatPanel {
 
             if (msg.type === "update-messages") {
                 const { messages, sessionId, approxTokensFreed } = msg;
-                const session = this.sessions.find((s) => s.id === sessionId);
-                this.updateSession(session, (s) => { s.messages = messages; s.title = generateSessionTitle(messages); });
-                this.sendSessionsUpdate();
+                const session = this.session.sessions.find((s) => s.id === sessionId);
+                this.session.updateSession(session, (s) => {
+                    s.messages = messages;
+                    s.title = Session.generateSessionTitle(messages);
+                });
+                this.session.sendSessionsUpdate();
                 logMsg(`Messages updated for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
                 return;
             }
@@ -358,7 +254,7 @@ class ChatPanel {
 
             if (msg.type === "compress-request") {
                 const { messages, assistantIndex, sessionId } = msg;
-                const session = this.sessions.find((s) => s.id === sessionId);
+                const session = this.session.sessions.find((s) => s.id === sessionId);
 
                 const summaryPrompt = [...messages, { role: "user", content: chatCompress_Template }];
 
@@ -377,10 +273,13 @@ class ChatPanel {
                     { role: "user", content: "Summarize our conversation." },
                     { role: "assistant", content: fenced },
                 ];
-                this.updateSession(session, (s) => { s.messages = compressedMessages; s.contextStartIndex = 0; });
+                this.session.updateSession(session, (s) => {
+                    s.messages = compressedMessages;
+                    s.contextStartIndex = 0;
+                });
                 webview.postMessage({ type: "compressed", messages: compressedMessages });
                 webview.postMessage({ type: "chat-complete" });
-                this.sendSessionsUpdate();
+                this.session.sendSessionsUpdate();
                 logMsg(`Compressed chat for session ${sessionId}`);
                 return;
             }
@@ -392,10 +291,10 @@ class ChatPanel {
                 const assistantIndex = messages.length;
 
                 // Update the active session's messages (full history + empty assistant slot)
-                const session = this.sessions.find((s) => s.id === sessionId);
-                this.updateSession(session, (s) => {
+                const session = this.session.sessions.find((s) => s.id === sessionId);
+                this.session.updateSession(session, (s) => {
                     s.messages = [...messages, { role: "assistant", content: "" }];
-                    s.title = generateSessionTitle(messages);
+                    s.title = Session.generateSessionTitle(messages);
                 });
 
                 const options = buildInstructionOptions();
@@ -409,7 +308,9 @@ class ChatPanel {
 
                 // Persist and notify webview of current context boundary
                 const contextStartIndex = pairsRemoved * 2;
-                this.updateSession(session, (s) => { s.contextStartIndex = contextStartIndex; });
+                this.session.updateSession(session, (s) => {
+                    s.contextStartIndex = contextStartIndex;
+                });
                 webview.postMessage({ type: "context-trimmed", pairsRemoved, tokensFreed, contextStartIndex });
 
                 if (pairsRemoved > 0) {
@@ -423,7 +324,9 @@ class ChatPanel {
                 await agent.work(
                     trimmedMessages,
                     async (chunk) => {
-                        this.updateSession(session, (s) => { s.messages[assistantIndex].content += chunk; });
+                        this.session.updateSession(session, (s) => {
+                            s.messages[assistantIndex].content += chunk;
+                        });
                         webview.postMessage({ type: "chunk", index: assistantIndex, chunk });
                     },
                     async (event) => {
@@ -438,7 +341,7 @@ class ChatPanel {
                 webview.postMessage({ type: "chat-complete" });
 
                 // Update sessions list after response completes
-                this.sendSessionsUpdate();
+                this.session.sendSessionsUpdate();
             }
 
             if (msg.type === "log") {
