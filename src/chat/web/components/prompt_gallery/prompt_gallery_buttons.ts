@@ -1,6 +1,6 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
-import { icons } from "../../../utils";
+import { icons } from "../../../utils_web";
 import { gallery_buttons_styles } from "./styles/gallery_buttons_styles";
 
 export class PromptGalleryButtons extends LitElement {
@@ -10,44 +10,57 @@ export class PromptGalleryButtons extends LitElement {
     @property({ type: Boolean })
     adding = false;
 
-   
     @property({ type: Number })
     index?: number;
 
     render() {
         if (this.index !== undefined) {
             return html`
-            <button class="edit-btn" title="Edit prompt"
+                <button
+                    class="edit-btn"
+                    title="Edit prompt"
                     @click=${() =>
                         this.dispatchEvent(
                             new CustomEvent("edit-prompt", {
                                 detail: { index: this.index },
                                 bubbles: true,
                                 composed: true,
-                            })
+                            }),
                         )}
-                >${icons.pencil}</button>
+                >
+                    ${icons.pencil}
+                </button>
 
-                <button class="delete-btn" title="Delete prompt"
+                <button
+                    class="delete-btn"
+                    title="Delete prompt"
                     @click=${() =>
                         this.dispatchEvent(
                             new CustomEvent("delete-prompt", {
                                 detail: { index: this.index },
                                 bubbles: true,
                                 composed: true,
-                            })
+                            }),
                         )}
-                >🗑</button>
+                >
+                    🗑
+                </button>
             `;
         }
 
         if (this.adding) {
             return html`
                 <div class="button-container">
-                    <button @click=${() => this.dispatchEvent(new CustomEvent("save-new-prompt", { bubbles: true, composed: true }))}>
+                    <button
+                        @click=${() =>
+                            this.dispatchEvent(new CustomEvent("save-new-prompt", { bubbles: true, composed: true }))}
+                    >
                         Save
                     </button>
-                    <button @click=${() => this.dispatchEvent(new CustomEvent("cancel-new-prompt", { bubbles: true, composed: true }))}>
+                    <button
+                        @click=${() =>
+                            this.dispatchEvent(new CustomEvent("cancel-new-prompt", { bubbles: true, composed: true }))}
+                    >
                         Cancel
                     </button>
                 </div>
@@ -55,7 +68,9 @@ export class PromptGalleryButtons extends LitElement {
         }
 
         return html`
-            <button @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}>
+            <button
+                @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
+            >
                 + Add Prompt
             </button>
         `;

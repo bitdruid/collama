@@ -2,9 +2,10 @@ import { LitElement, html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import MarkdownIt from "markdown-it";
 
-import { estimateTokenCount, highlightAllCodeBlocks, icons } from "../../../utils";
+import { highlightAllCodeBlocks, icons } from "../../../utils_web";
 import "../chat_accordion/chat_accordion";
 
+import { estimateTokenCount } from "../../../utils_web";
 import { ChatContext, ChatMessage } from "../chat_container/chat_container";
 import "../chat_session/components/popup/chat_empty_state";
 import "./edit";

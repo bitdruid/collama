@@ -1,12 +1,9 @@
-import { LitElement, css, html } from "lit";
-import { icons } from "../../../../../utils";
+import { LitElement, html } from "lit";
+import { icons } from "../../../../../utils_web";
 import { inputButtonsStyles } from "./styles";
 
-
 export class ChatInputButtons extends LitElement {
-
-
-  static styles = inputButtonsStyles;
+    static styles = inputButtonsStyles;
     static get properties() {
         return {
             contexts: { type: Array },
@@ -59,8 +56,8 @@ export class ChatInputButtons extends LitElement {
     }
 
     private _handleGalleryClick() {
-    this.dispatchEvent(new CustomEvent("gallery-click"));
-}
+        this.dispatchEvent(new CustomEvent("gallery-click"));
+    }
 
     // Render Methods
     private _renderContextButton() {
@@ -92,32 +89,26 @@ export class ChatInputButtons extends LitElement {
 
     private _renderActionButtons() {
         if (this.isLoading) {
-            return html`
-                <button-cancel title="Cancel" @click=${this._handleCancel}>
-                    ${icons.cancel}
-                </button-cancel>
-            `;
+            return html` <button-cancel title="Cancel" @click=${this._handleCancel}> ${icons.cancel} </button-cancel> `;
         }
         return html`
-            <button-compress title="Compress chat" @click=${this._handleCompress}>
-                ${icons.compress}
-            </button-compress>
+            <button-compress title="Compress chat" @click=${this._handleCompress}> ${icons.compress} </button-compress>
             <button-submit title="Submit" @click=${this._handleSubmit} ?disabled=${this.isLoading}>
                 ${icons.enter}
             </button-submit>
         `;
     }
 
-    private _renderPromptGalleryButton(){
-        return html`<button-gallery title="Open Prompt Gallery" @click=${this._handleGalleryClick}> ${icons.gallery} </button-gallery>`
+    private _renderPromptGalleryButton() {
+        return html`<button-gallery title="Open Prompt Gallery" @click=${this._handleGalleryClick}>
+            ${icons.gallery}
+        </button-gallery>`;
     }
 
     render() {
         return html`
             <button-row>
-                ${this._renderContextButton()}
-                ${this._renderPromptGalleryButton()}
-                ${this._renderActionButtons()}
+                ${this._renderContextButton()} ${this._renderPromptGalleryButton()} ${this._renderActionButtons()}
             </button-row>
         `;
     }

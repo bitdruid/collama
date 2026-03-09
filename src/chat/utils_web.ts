@@ -2,46 +2,11 @@ import hljs from "highlight.js";
 import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import { css, html, unsafeCSS } from "lit";
 
-/**
- * Session summary for UI display (excludes full message history).
- */
-export interface SessionSummary {
-    id: string;
-    title: string;
-    createdAt: number;
-    updatedAt: number;
-}
-
 export function logWebview(message: string) {
     window.vscode.postMessage({
         type: "log",
         message,
     });
-}
-
-/**
- * Maps a session to a summary object for UI display.
- *
- * @param session - The session object with id, title, createdAt, updatedAt properties.
- * @returns A summary object suitable for sending to the webview.
- */
-export function mapSessionToSummary<T extends SessionSummary>(session: T): SessionSummary {
-    return {
-        id: session.id,
-        title: session.title,
-        createdAt: session.createdAt,
-        updatedAt: session.updatedAt,
-    };
-}
-
-/**
- * Maps an array of sessions to summary objects for UI display.
- *
- * @param sessions - Array of session objects.
- * @returns Array of summary objects.
- */
-export function mapSessionsToSummaries<T extends SessionSummary>(sessions: T[]): SessionSummary[] {
-    return sessions.map(mapSessionToSummary);
 }
 
 /**
@@ -303,7 +268,6 @@ export const icons = {
         <line x1="21" y1="3" x2="14" y2="10"></line>
     </svg>`,
 
-    
     gallery: html`<svg
         width="14"
         height="14"
@@ -314,10 +278,10 @@ export const icons = {
         stroke-linecap="round"
         stroke-linejoin="round"
     >
-        <rect x="3" y="3" width="7" height="7" rx="1"/>
-        <rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/>
-        <rect x="14" y="14" width="7" height="7" rx="1"/>
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>`,
 
     pencil: html`<svg
@@ -330,8 +294,9 @@ export const icons = {
         stroke-linecap="round"
         stroke-linejoin="round"
     >
-        <path d="M12 20h9" /> <!-- Bodenlinie -->
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /> <!-- Bleistift -->
-    </svg>`
-
+        <path d="M12 20h9" />
+        <!-- Bodenlinie -->
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        <!-- Bleistift -->
+    </svg>`,
 };

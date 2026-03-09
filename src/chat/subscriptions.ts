@@ -10,84 +10,10 @@ import Tokenizer from "../common/utils";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { Session } from "./session";
-import { mapSessionsToSummaries } from "./utils";
+import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils_host";
 import { StartPage } from "./web/components/chat_start";
 
 let panel: ChatPanel | null = null;
-
-/**
- * Calculates the total token usage for a chat session's messages.
- *
- * @param messages - The array of chat history messages.
- * @returns The total token count.
- */
-export async function calculateContextUsage(messages: ChatHistory[]): Promise<number> {
-    const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(msg.content)));
-    return tokenCounts.reduce((total, count) => total + count, 0);
-}
-
-/**
- * Trims user+assistant message pairs from the beginning of the conversation
- * until the predicted response fits within the remaining context window.
- * Uses {@link checkPredictFitsContextLength} to account for num_predict and overhead buffers.
- * Always keeps at least the last message pair (the new user message + empty assistant).
- *
- * @param messages - The full message array.
- * @param numPredict - The number of tokens reserved for the model response.
- * @param contextMax - The maximum context length in tokens.
- * @returns The trimmed messages and info about what was removed.
- */
-async function trimMessagesForContext(
-    messages: ChatHistory[],
-    numPredict: number,
-    contextMax: number,
-): Promise<{ trimmedMessages: ChatHistory[]; pairsRemoved: number; tokensFreed: number }> {
-    const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(msg.content)));
-    let totalTokens = tokenCounts.reduce((sum, count) => sum + count, 0);
-
-    if (checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
-        return { trimmedMessages: messages, pairsRemoved: 0, tokensFreed: 0 };
-    }
-
-    let pairsRemoved = 0;
-    let tokensFreed = 0;
-    let startIndex = 0;
-
-    // Remove pairs from the beginning, but keep at least the last pair
-    while (!checkPredictFitsContextLength(numPredict, totalTokens, contextMax) && startIndex + 2 < messages.length) {
-        const pairTokens = tokenCounts[startIndex] + tokenCounts[startIndex + 1];
-        totalTokens -= pairTokens;
-        tokensFreed += pairTokens;
-        startIndex += 2;
-        pairsRemoved++;
-    }
-
-    return {
-        trimmedMessages: messages.slice(startIndex),
-        pairsRemoved,
-        tokensFreed,
-    };
-}
-
-/**
- * Sanitizes chat messages for persistence and display.
- *
- * Removes any temporary loading flags and ensures that empty assistant messages
- * display a fallback text.
- *
- * @param messages - The array of chat history messages to sanitize.
- * @returns A new array of messages without loading flags and with fallback content where appropriate.
- */
-export function sanitizeMessages(messages: ChatHistory[]): ChatHistory[] {
-    return messages.map((m) => {
-        const { loading, ...rest } = m as ChatHistory & { loading?: boolean };
-        // If assistant message is empty and was loading, show fallback
-        if (rest.role === "assistant" && !rest.content && loading) {
-            return { ...rest, content: "No response received." };
-        }
-        return rest;
-    });
-}
 
 /**
  * Registers the command that sends the current selection to the chat view.
@@ -373,4 +299,47 @@ class ChatPanel {
             },
         });
     }
+}
+
+/**
+ * Trims user+assistant message pairs from the beginning of the conversation
+ * until the predicted response fits within the remaining context window.
+ * Uses {@link checkPredictFitsContextLength} to account for num_predict and overhead buffers.
+ * Always keeps at least the last message pair (the new user message + empty assistant).
+ *
+ * @param messages - The full message array.
+ * @param numPredict - The number of tokens reserved for the model response.
+ * @param contextMax - The maximum context length in tokens.
+ * @returns The trimmed messages and info about what was removed.
+ */
+async function trimMessagesForContext(
+    messages: ChatHistory[],
+    numPredict: number,
+    contextMax: number,
+): Promise<{ trimmedMessages: ChatHistory[]; pairsRemoved: number; tokensFreed: number }> {
+    const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(msg.content)));
+    let totalTokens = tokenCounts.reduce((sum, count) => sum + count, 0);
+
+    if (checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
+        return { trimmedMessages: messages, pairsRemoved: 0, tokensFreed: 0 };
+    }
+
+    let pairsRemoved = 0;
+    let tokensFreed = 0;
+    let startIndex = 0;
+
+    // Remove pairs from the beginning, but keep at least the last pair
+    while (!checkPredictFitsContextLength(numPredict, totalTokens, contextMax) && startIndex + 2 < messages.length) {
+        const pairTokens = tokenCounts[startIndex] + tokenCounts[startIndex + 1];
+        totalTokens -= pairTokens;
+        tokensFreed += pairTokens;
+        startIndex += 2;
+        pairsRemoved++;
+    }
+
+    return {
+        trimmedMessages: messages.slice(startIndex),
+        pairsRemoved,
+        tokensFreed,
+    };
 }
