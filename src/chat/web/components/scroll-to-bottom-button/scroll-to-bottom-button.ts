@@ -11,10 +11,12 @@ export class ScrollToBottomButton extends LitElement {
     static styles = scrollToBottomButtonStyles;
 
     private _scrollToBottom() {
-        const chatOutput = document.querySelector("collama-chatoutput") as any;
-        if (chatOutput && typeof chatOutput.scrollToBottom === "function") {
-            chatOutput.scrollToBottom();
-        }
+        this.dispatchEvent(
+            new CustomEvent("scroll-to-bottom-requested", {
+                bubbles: true,
+                composed: true,
+            }),
+        );
     }
 
     render() {

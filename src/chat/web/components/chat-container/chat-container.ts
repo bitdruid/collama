@@ -445,6 +445,14 @@ export class ChatContainer extends LitElement {
         this.showScrollButton = !e.detail.nearBottom;
     }
 
+    private _onScrollToBottomRequested() {
+        // Forward scroll request to chat output
+        const chatOutput = this.shadowRoot?.querySelector("collama-chatoutput") as any;
+        if (chatOutput && typeof chatOutput.scrollToBottom === "function") {
+            chatOutput.scrollToBottom();
+        }
+    }
+
     render() {
         return html`
             <collama-chatsessions
@@ -471,7 +479,10 @@ export class ChatContainer extends LitElement {
                     .agentToken=${this.agent_token}
                     .visible=${this.isLoading && this.hasTokenData}
                 ></collama-token-counter>
-                <collama-scroll-to-bottom .visible=${this.showScrollButton}></collama-scroll-to-bottom>
+                <collama-scroll-to-bottom
+                    .visible=${this.showScrollButton}
+                    @scroll-to-bottom-requested=${this._onScrollToBottomRequested}
+                ></collama-scroll-to-bottom>
                 <collama-chatinput
                     @submit=${this._onSubmit}
                     @cancel=${this._onCancel}

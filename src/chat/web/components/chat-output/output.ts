@@ -107,13 +107,17 @@ export class ChatOutput extends LitElement {
         }
     }
 
-    private _handleScrollToBottom() {
-        this._autoScroll = true;
+    /**
+     * Public method to scroll to bottom (used by scroll-to-bottom button)
+     * Always scrolls regardless of auto-scroll state
+     */
+    public scrollToBottom() {
         this.scrollTo({
             top: this.scrollHeight,
             behavior: "smooth",
         });
     }
+
     firstUpdated() {
         this.addEventListener("scroll", () => {
             this._isUserScrolling = true;
