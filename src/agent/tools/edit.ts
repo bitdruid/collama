@@ -1,6 +1,6 @@
 import path from "path";
 import * as vscode from "vscode";
-import { withProgressNotification } from "../../common/utils";
+import { withProgressNotification } from "../../common/utils-common";
 import { logMsg } from "../../logging";
 import { confirmAction, getWorkspaceRoot, isWithinRoot } from "../tools";
 
@@ -82,7 +82,11 @@ async function handleFileChangesWithDiff(
         showAcceptAll?: boolean;
     } = {},
 ): Promise<{ success: boolean; message: string }> {
-    const { diffTitle = "collama – Preview Changes", progressMessage = "collama: Processing changes…", showAcceptAll = false } = options;
+    const {
+        diffTitle = "collama – Preview Changes",
+        progressMessage = "collama: Processing changes…",
+        showAcceptAll = false,
+    } = options;
 
     return await withProgressNotification(progressMessage, async () => {
         // Read the original file content (prefer in-memory buffer for unsaved changes)

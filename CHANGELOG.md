@@ -3,6 +3,29 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.4] - 2026-03-10
+
+### Added
+
+- Session copy functionality with preserved custom titles
+- Dedicated `Session` class to manage chat session lifecycle
+
+### Changed
+
+- Extracted `ChatPanel` class from monolithic subscriptions module
+- Separated host-side and web-side utility modules (`utils-host`, `utils-web`)
+- Encapsulated chat history logic in `AgentContext`
+- Standardized all web component file and folder naming to kebab-case
+- Restructured web components into a cleaner directory layout
+- Renamed `Context` to `EditorContext` to avoid ambiguity
+- Updated dependencies
+
+### Fixed
+
+- Token counter only appears when data arrives
+- Token counter resets when the chat completes
+- Edit submit button not sending the changed message
+
 ## [1.4.3] - 2026-03-05
 
 ### Added

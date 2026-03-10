@@ -14,7 +14,7 @@ export function clearDebounce() {
     }
 }
 
-export function registerAutoCompleteProvider(context: vscode.ExtensionContext) {
+export function registerAutoCompleteProvider(extContext: vscode.ExtensionContext) {
     const provider: vscode.InlineCompletionItemProvider = {
         async provideInlineCompletionItems(document, position, context, token) {
             const manualTrigger = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
@@ -76,7 +76,7 @@ export function registerAutoCompleteProvider(context: vscode.ExtensionContext) {
     };
 
     let disposable = vscode.languages.registerInlineCompletionItemProvider({ pattern: "**" }, provider);
-    context.subscriptions.push(disposable);
+    extContext.subscriptions.push(disposable);
 }
 export function deactivate() {
     if (debounceTimer) {

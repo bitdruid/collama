@@ -26,7 +26,7 @@
 
 Collama is a VS Code extension that uses local LLM backends to get code completions, refactoring suggestions, and documentation generation — all running privately on your machine with no external API calls. Supports [Ollama](https://ollama.com) and OpenAI-compatible API (verified only [vLLM](https://docs.vllm.ai/)).
 
-> **Status:** This project is in heavy active development. For sure there will be a lot of strange output. If you have any ideas to improve the quality just let me know and contribute!
+> **Status:** This project is in heavy active development. Please note that the output may sometimes be unexpected or unusual. If you have any ideas to improve the quality just let me know and contribute!
 
 ## Features
 
@@ -85,8 +85,8 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 
 ## Installation
 
-Use the marketplace to install the extension or build the vsix yourself. Furthermore you need an `ollama` instance in your local network.<br>
-See [this link how to install ollama](https://docs.ollama.com/quickstart) or [this link for the docker image](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image).
+Use the marketplace to install the extension or build the vsix yourself. Additionally, you need an Ollama instance running on your local network.<br>
+See [this link for Ollama installation instructions](https://docs.ollama.com/quickstart) or [this link for the Docker image](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image).
 
 Alternatively, you can use [vLLM](https://docs.vllm.ai/) (tested). Point the endpoint settings to your server and the backend is auto-detected. If authentication is required, see [Bearer Tokens](#bearer-tokens-optional).
 
@@ -140,7 +140,7 @@ If your API endpoints require authentication (e.g. vLLM with `--api-key`, or a r
 
 ### Recommended Models
 
-Collama is tested primarily with the **Qwen Coder** for Completion and **\*gpt-oss** for Instruction.
+Collama is tested primarily with the **Qwen Coder** for Completion and **gpt-oss** for Instruction.
 
 #### For Code Completion (FIM - Fill In Middle)
 
@@ -149,9 +149,9 @@ Collama is tested primarily with the **Qwen Coder** for Completion and **\*gpt-o
 
 #### For Code Edits (Instruct/Base Models)
 
-- **any instruct model and thinking** recommended
+- **any instruct model with thinking capabilities** recommended
 - **gpt-oss:20b** (stable quality)
-  Do not use a FIM model for instructions. It will produce very poor quality answers.
+  Do not use an FIM model for instructions. It will produce very poor quality answers.
 
 ### Model Completion Compatibility Table
 
@@ -166,7 +166,7 @@ Collama is tested primarily with the **Qwen Coder** for Completion and **\*gpt-o
 
 Note: Models are tested primarily with quantization level q4. Results may vary with other quantization levels.
 
-Note: ChatML format is not supported - that means only true fim-models will work for autocomplete!
+Note: ChatML format is not supported - that means only true FIM models will work for autocomplete!
 
 ## Usage
 
@@ -200,7 +200,7 @@ Note: ChatML format is not supported - that means only true fim-models will work
 
 ### Commit Message Generation
 
-1. Stage your changes in Git (using Source Control view or `git add`)
+1. Stage your changes in Git
 2. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
 3. Run **collama: Generate Commit Message**
 4. The AI analyzes your staged diff and generates a conventional commit message
@@ -211,7 +211,7 @@ Note: ChatML format is not supported - that means only true fim-models will work
 > [!IMPORTANT]
 > It is recommended to turn off agentic-mode for small local/home models (like gpt-oss:20b) and use them in chat-only mode instead.
 
-#### Agentic was tested on local hosted vLLM (Openai SDK) with
+#### Agentic mode was tested on locally hosted vLLM (OpenAI SDK) with
 
 - gpt-oss:120b
 - glm-4.7-fp8

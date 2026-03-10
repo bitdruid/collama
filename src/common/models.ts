@@ -2,7 +2,7 @@ import { Ollama } from "ollama";
 
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
-import { Context, OpenFilesContext } from "./context_editor";
+import { EditorContext, OpenFilesContext } from "./context-editor";
 
 /**
  * Configuration for a supported model, including its name patterns,
@@ -131,7 +131,7 @@ const findModelConfig = (apiModelCompletion: string): ModelConfig | undefined =>
  * @returns An object with `prompt` and `stop` properties or `false`
  *          if no matching model configuration is found.
  */
-export const getCompletionModelConfig = (context: Context): { prompt: string; stop: string[] } | false => {
+export const getCompletionModelConfig = (context: EditorContext): { prompt: string; stop: string[] } | false => {
     const cfg = findModelConfig(userConfig.apiModelCompletion);
     if (!cfg) {
         return false;

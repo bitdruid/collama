@@ -13,8 +13,8 @@ let secretStorage: vscode.SecretStorage;
  *
  * @param {vscode.ExtensionContext} context - The extension context.
  */
-export function initSecrets(context: vscode.ExtensionContext): void {
-    secretStorage = context.secrets;
+export function initSecrets(extContext: vscode.ExtensionContext): void {
+    secretStorage = extContext.secrets;
 }
 
 /**
