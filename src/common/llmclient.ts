@@ -6,7 +6,7 @@ import { logMsg } from "../logging";
 import { ToolCallAccumulator } from "./litellmfix";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
-import Tokenizer, { requestOllama, requestOpenAI } from "./utils";
+import Tokenizer, { requestOllama, requestOpenAI } from "./utils-common";
 
 /**
  * Factory that creates and delegates to the appropriate LLM client implementation

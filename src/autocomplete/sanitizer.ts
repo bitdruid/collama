@@ -1,18 +1,18 @@
 import { distance } from "fastest-levenshtein";
 
 import { isFullLineComment } from "../common/comments";
-import { Context } from "../common/context_editor";
+import { EditorContext } from "../common/context-editor";
 import { logMsg } from "../logging";
 
 export class Sanitizer {
-    static sanitize(snippet: string, context: Context): string {
+    static sanitize(snippet: string, context: EditorContext): string {
         const s = new Sanitizer(snippet, context);
         return s.run();
     }
 
     private constructor(
         private snippet: string,
-        private context: Context,
+        private context: EditorContext,
         private normSnippetLines: string[] = [],
         private normPrefixLines: string[] = [],
         private normSuffixLines: string[] = [],

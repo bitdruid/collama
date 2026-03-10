@@ -33,15 +33,15 @@ let statusBarItem: vscode.StatusBarItem | undefined;
  *
  * @param context - The extension context for subscription management.
  */
-export function setStatusbar(context: vscode.ExtensionContext) {
+export function setStatusbar(extContext: vscode.ExtensionContext) {
     try {
         statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
         statusBarItem.text = "🦙 collama 🦙";
         statusBarItem.tooltip = "Toggle collama - Auto-Suggestions";
         statusBarItem.command = "collama.showStatusbar";
 
-        context.subscriptions.push(statusBarItem);
-        context.subscriptions.push(vscode.commands.registerCommand("collama.showStatusbar", showStatusbar));
+        extContext.subscriptions.push(statusBarItem);
+        extContext.subscriptions.push(vscode.commands.registerCommand("collama.showStatusbar", showStatusbar));
 
         statusBarItem.show();
         logMsg("Statusbar initialized");

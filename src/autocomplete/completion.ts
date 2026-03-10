@@ -1,14 +1,14 @@
-import { Context } from "../common/context_editor";
+import { EditorContext } from "../common/context-editor";
 import { requestCompletion } from "../common/requests";
 import { userConfig } from "../config";
 import { Sanitizer } from "./sanitizer";
 
 export class Completion {
     snippet = "";
-    context: Context | null = null;
+    context: EditorContext | null = null;
 
     public async generate() {
-        this.context = await Context.create();
+        this.context = await EditorContext.create();
         if (!this.context) {
             return;
         }

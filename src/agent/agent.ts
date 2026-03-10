@@ -1,8 +1,8 @@
-import { ChatHistory } from "../common/context_chat";
+import { ChatContext, ChatHistory } from "../common/context-chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
 import { agent_Template } from "../common/prompt";
-import Tokenizer, { withProgressNotification } from "../common/utils";
+import Tokenizer, { withProgressNotification } from "../common/utils-common";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
@@ -10,6 +10,11 @@ import { executeTool, getToolDefinitions, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
 
+/**
+ * This class manages the lifecycle of an agent task, including initializing the client,
+ * maintaining conversation history via `AgentContext`, executing tool calls, and streaming
+ * generated text chunks. It supports cancellation of ongoing operations.
+ */
 export class Agent {
     private client: LlmClientFactory | undefined;
     private abortController: AbortController | null = null;
@@ -54,9 +59,11 @@ export class Agent {
             this.abortController = new AbortController();
             resetAutoAcceptEdits();
             const signal = this.abortController.signal;
-            const history: ChatHistory[] = userConfig.agentic
+
+            const initMessages: ChatHistory[] = userConfig.agentic
                 ? [{ role: "system", content: agent_Template }, ...messages]
                 : [...messages];
+            const history = new AgentContext(initMessages);
 
             try {
                 this.client = new LlmClientFactory("instruction");
@@ -64,7 +71,7 @@ export class Agent {
                 const settings: LlmChatSettings = {
                     apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
                     model: userConfig.apiModelInstruct,
-                    messages: history,
+                    messages: history.getMessages(),
                     tools: userConfig.agentic ? getToolDefinitions() : [],
                     options: buildAgentOptions(),
                     stop: emptyStop(),
@@ -99,7 +106,6 @@ export class Agent {
 
                         const args = JSON.parse(toolCall.function.arguments);
 
-                        // tool info is streamed as a codeblock into the chat
                         const hasArgs = Object.keys(args).length > 0;
                         const argsBody = hasArgs ? `\n${JSON.stringify(args, null, 2)}` : "";
                         onChunk(`\n\`\`\`Tool: ${toolCall.function.name}${argsBody}\n\`\`\`\n\n`);
@@ -112,13 +118,10 @@ export class Agent {
                             content: toolResult,
                         });
 
-                        // if a file is read again, remove the old content to trim context
-                        if (toolCall.function.name === "readFile") {
-                            this.deduplicateReadFile(history, toolCall.id);
-                        }
+                        history.deduplicateReadFile(toolCall.id);
                     }
 
-                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history));
+                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history.getMessages()));
                     logAgent(`Agent Tokens: ${toolTokens}`);
                     onEvent?.({ type: "agent-tokens", tokens: toolTokens });
 
@@ -140,46 +143,67 @@ export class Agent {
             }
         });
     }
+}
+
+/**
+ * Manages the conversation history and context for the Agent.
+ *
+ * Wraps a ChatContext instance to handle message storage, retrieval,
+ * and specific optimization logic.
+ */
+class AgentContext {
+    private context: ChatContext;
+
+    /**
+     * Initializes a new AgentContext with a set of initial messages.
+     * @param messages - The initial conversation history.
+     */
+    constructor(messages: ChatHistory[]) {
+        this.context = new ChatContext();
+        this.context.setMessages([...messages]);
+    }
+
+    /**
+     * Retrieves the current list of messages in the conversation history.
+     * @returns An array of ChatHistory objects.
+     */
+    public getMessages(): ChatHistory[] {
+        return this.context.getMessages();
+    }
+
+    /**
+     * Appends a new message to the conversation history.
+     * @param message - The message object to add.
+     */
+    public push(message: ChatHistory): void {
+        this.context.push(message);
+    }
 
     /**
      * Replaces stale readFile tool results with a short note.
-     * Only removes readFile calls where no line numbers are given.
+     * When readFile is called for the same file again (without line numbers),
+     * older responses are marked as stale to trim context.
      */
-    private deduplicateReadFile(history: ChatHistory[], newToolCallId: string): void {
-        const newReadInfo = this.getReadFileCallInfo(history, newToolCallId);
-        if (!newReadInfo) {
+    public deduplicateReadFile(newToolCallId: string): void {
+        const newTc = this.context.findToolCall(newToolCallId);
+        if (!newTc || newTc.function.name !== "readFile") {
             return;
         }
+        const newArgs = JSON.parse(newTc.function.arguments);
 
-        for (const msg of history) {
-            if (msg.role !== "tool" || msg.tool_call_id === newToolCallId) {
+        for (let i = 0; i < this.context.length(); i++) {
+            const toolCallId = this.context.getToolCallId(i);
+            if (!toolCallId || toolCallId === newToolCallId) {
                 continue;
             }
-            const msgReadInfo = this.getReadFileCallInfo(history, msg.tool_call_id);
-            // Only mark as stale if same file and previous call had no line numbers
-            if (msgReadInfo && msgReadInfo.filePath === newReadInfo.filePath && !msgReadInfo.hasLineNumbers) {
-                msg.content = "[stale - file re-read later]";
-            }
-        }
-    }
-
-    private getReadFileCallInfo(
-        history: ChatHistory[],
-        toolCallId: string,
-    ): { filePath: string; hasLineNumbers: boolean } | null {
-        for (const msg of history) {
-            if (msg.role !== "assistant" || !msg.tool_calls) {
+            const tc = this.context.findToolCall(toolCallId);
+            if (!tc || tc.function.name !== "readFile") {
                 continue;
             }
-            const tc = msg.tool_calls.find((tc) => tc.id === toolCallId);
-            if (tc && tc.function.name === "readFile") {
-                const args = JSON.parse(tc.function.arguments);
-                return {
-                    filePath: args.filePath,
-                    hasLineNumbers: args.startLine !== undefined || args.endLine !== undefined,
-                };
+            const args = JSON.parse(tc.function.arguments);
+            if (args.filePath === newArgs.filePath && args.startLine === undefined && args.endLine === undefined) {
+                this.context.setToolResponse(toolCallId, { content: "[stale - file re-read later]" });
             }
         }
-        return null;
     }
 }

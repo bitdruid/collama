@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getBearerCompletion, getBearerInstruct } from "../secrets";
-import { Context } from "./context_editor";
+import { EditorContext } from "./context-editor";
 import { LlmClientFactory } from "./llmclient";
 import {
     buildCommitOptions,
@@ -27,7 +27,7 @@ import { commitMsgCommand_Template, contextCommand_Think_Template, PromptParams 
  * @param {Context} context - The editor context containing the selection and file data.
  * @returns {Promise<string>} The LLM generated text, or an empty string when no model config is available.
  */
-export async function requestCompletion(context: Context): Promise<string> {
+export async function requestCompletion(context: EditorContext): Promise<string> {
     const modelConfig = getCompletionModelConfig(context);
 
     if (modelConfig) {
@@ -103,7 +103,7 @@ export async function requestCommitMessage(stagedDiff: string): Promise<string> 
  * @param {Context} currentContext - The editor context containing the selection and file data.
  * @returns {Promise<string>} The generated docstring or an empty string if no model configuration is available.
  */
-export async function requestWriteDocstrings(currentContext: Context): Promise<string> {
+export async function requestWriteDocstrings(currentContext: EditorContext): Promise<string> {
     return requestContextCommand({
         instruction: "Add or update the docstring for the code according to best practice.",
         snippet: currentContext.selectionText,
@@ -117,7 +117,7 @@ export async function requestWriteDocstrings(currentContext: Context): Promise<s
  * @param {Context} currentContext - The editor context containing the selection and file data.
  * @returns {Promise<string>} The refactored code with extracted functions.
  */
-export async function requestExtractFunctions(currentContext: Context): Promise<string> {
+export async function requestExtractFunctions(currentContext: EditorContext): Promise<string> {
     return requestContextCommand({
         instruction: "Split the code into separate functions if it increases code quality.",
         snippet: currentContext.selectionText,
@@ -131,7 +131,7 @@ export async function requestExtractFunctions(currentContext: Context): Promise<
  * @param {Context} currentContext - The editor context containing the selection and file data.
  * @returns {Promise<string>} The simplified code.
  */
-export async function requestSimplifyCode(currentContext: Context): Promise<string> {
+export async function requestSimplifyCode(currentContext: EditorContext): Promise<string> {
     return requestContextCommand({
         instruction: "Simplify the code to increase readability and comprehensibility.",
         snippet: currentContext.selectionText,
@@ -145,7 +145,7 @@ export async function requestSimplifyCode(currentContext: Context): Promise<stri
  * @param {Context} currentContext - The editor context containing the selection and file data.
  * @returns {Promise<string>} The corrected code.
  */
-export async function requestFixSyntax(currentContext: Context): Promise<string> {
+export async function requestFixSyntax(currentContext: EditorContext): Promise<string> {
     return requestContextCommand({
         instruction: "Fix the logic, syntax and structure of the code if needed.",
         snippet: currentContext.selectionText,
@@ -159,7 +159,7 @@ export async function requestFixSyntax(currentContext: Context): Promise<string>
  * @param {Context} currentContext - The editor context containing the selection and file data.
  * @returns {Promise<string>} The edited code according to the user's instruction.
  */
-export async function requestEditManual(currentContext: Context): Promise<string> {
+export async function requestEditManual(currentContext: EditorContext): Promise<string> {
     const userInstruction = await vscode.window.showInputBox({
         prompt: "Describe how you want the code to be edited",
         placeHolder: "e.g. Refactor for readability, optimize loops, simplify logic…",

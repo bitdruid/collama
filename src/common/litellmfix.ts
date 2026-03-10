@@ -38,7 +38,7 @@ export class ToolCallAccumulator {
             }
         }
 
-        logAgent(`[tool] idx=${idx} id=${entry.id} name=${entry.name} args=${entry.args}`);
+        // logAgent(`[tool] idx=${idx} id=${entry.id} name=${entry.name} args=${entry.args}`);
     }
 
     /**
