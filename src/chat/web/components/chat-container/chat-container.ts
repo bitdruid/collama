@@ -4,6 +4,7 @@ import { estimateTokenCount } from "../../../utils-web";
 import "../chat-agent-counter/agent-token-counter";
 import "../chat-output/output";
 import "../chat-session/chat-sessions";
+import "../scroll-to-bottom-button/scroll-to-bottom-button";
 
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import { ChatSession } from "../chat-session/chat-sessions";
@@ -56,6 +57,7 @@ export class ChatContainer extends LitElement {
         isLoading: { state: true },
         agent_token: { state: true },
         hasTokenData: { state: true },
+        showScrollButton: { state: true },
     };
 
     static styles = chatContainerStyles;
@@ -73,6 +75,7 @@ export class ChatContainer extends LitElement {
     private _toastTimer: number | null = null;
     agent_token: number = 0;
     hasTokenData: boolean = false;
+    showScrollButton: boolean = true;
 
     /**
      * Debounce UI updates during streaming to avoid excessive re-renders.
@@ -462,6 +465,7 @@ export class ChatContainer extends LitElement {
                     .agentToken=${this.agent_token}
                     .visible=${this.isLoading && this.hasTokenData}
                 ></collama-token-counter>
+                <collama-scroll-to-bottom .visible=${this.showScrollButton}></collama-scroll-to-bottom>
                 <collama-chatinput
                     @submit=${this._onSubmit}
                     @cancel=${this._onCancel}
