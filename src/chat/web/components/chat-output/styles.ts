@@ -191,6 +191,11 @@ export const outputStyles = [
             border-color: rgba(255, 60, 60, 0.25);
         }
 
+        .output-container {
+            overflow-y: auto;
+            scroll-behavior: smooth; /* animated scrolling */
+        }
+
         .warning-icon {
             margin-right: 4px;
             font-size: 0.9em;

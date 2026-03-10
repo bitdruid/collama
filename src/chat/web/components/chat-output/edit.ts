@@ -2,6 +2,15 @@ import { LitElement, html } from "lit";
 import { editStyles } from "./styles";
 
 export class ChatEditMessage extends LitElement {
+    firstUpdated() {
+        const textarea = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement;
+        if (textarea) {
+            // Focus immediately when edit starts
+            textarea.focus();
+            // Close edit view when focus is lost
+            textarea.addEventListener("blur", () => this._handleCancel());
+        }
+    }
     static properties = {
         content: { type: String },
         messageIndex: { type: Number },

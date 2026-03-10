@@ -65,6 +65,20 @@ export class ChatOutput extends LitElement {
     private renderedMarkdownCache = new Map<string, string>();
     private highlightDebounceTimer: number | null = null;
 
+    private _autoScroll = true;
+    private _isUserScrolling = false;
+    private _scrollDebounce?: number;
+    private _showScrollButton = false;
+
+    /**
+     * Determines if the chat output is scrolled near its bottom.
+     * If true, we allow automatic scrolling when new messages arrive.
+     */
+    private _isNearBottom(): boolean {
+        const threshold = 50;
+        return this.scrollHeight - (this.clientHeight + this.scrollTop) < threshold;
+    }
+
     private _getCachedMarkdown(content: string, isStreaming: boolean): string {
         // Don't cache streaming content as it changes frequently
         if (isStreaming) {
@@ -78,35 +92,91 @@ export class ChatOutput extends LitElement {
         }
         return cached;
     }
+    private _scrollToBottom(smooth = false) {
+        if (!this._autoScroll) {
+            return;
+        }
 
+        if (smooth) {
+            this.scrollTo({
+                top: this.scrollHeight,
+                behavior: "smooth",
+            });
+        } else {
+            this.scrollTop = this.scrollHeight;
+        }
+    }
+
+    private _handleScrollToBottom() {
+        this._autoScroll = true;
+        this.scrollTo({
+            top: this.scrollHeight,
+            behavior: "smooth",
+        });
+    }
+    firstUpdated() {
+        this.addEventListener("scroll", () => {
+            this._isUserScrolling = true;
+
+            if (this._scrollDebounce) {
+                clearTimeout(this._scrollDebounce);
+            }
+
+            this._scrollDebounce = window.setTimeout(() => {
+                this._isUserScrolling = false;
+            }, 50);
+
+            const nearBottom = this._isNearBottom();
+
+            if (!nearBottom) {
+                this._autoScroll = false;
+            }
+
+            if (nearBottom) {
+                this._autoScroll = true;
+            }
+        });
+    }
     updated(changed: Map<string, unknown>) {
         if (changed.has("messages")) {
-            // Debounce highlighting - will run 250ms after last update
-            // This ensures it runs after streaming completes
+            // Code highlighting debounce
             if (this.highlightDebounceTimer !== null) {
                 window.clearTimeout(this.highlightDebounceTimer);
             }
+
             this.highlightDebounceTimer = window.setTimeout(() => {
                 this.highlightDebounceTimer = null;
                 highlightAllCodeBlocks(this.shadowRoot, this.highlightedBlocks);
+
+                // Highlight kann Layout verändern → danach scroll korrigieren
+                this._scrollToBottom();
             }, 250);
 
-            this.scrollTop = this.scrollHeight;
+            // scroll nach DOM update
+            requestAnimationFrame(() => {
+                if (this._isNearBottom()) {
+                    this._autoScroll = true;
+                }
 
+                this._scrollToBottom();
+            });
+
+            // dein Loading Timeout
             this.messages.forEach((msg) => {
                 if (msg.loading && !this.loadingTimeouts.has(msg)) {
                     const timeout = window.setTimeout(() => {
                         msg.loading = false;
                         msg.content = msg.content || "No response received.";
+
                         this.loadingTimeouts.delete(msg);
                         this.requestUpdate();
-                    }, 60000); // 60s timeout
+                    }, 60000);
+
                     this.loadingTimeouts.set(msg, timeout);
                 }
             });
         }
     }
-
     private _getContextLabel(context: ChatContext): string {
         return context.hasSelection
             ? `${context.fileName} (${context.startLine}-${context.endLine})`
