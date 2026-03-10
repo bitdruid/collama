@@ -440,6 +440,11 @@ export class ChatContainer extends LitElement {
         }
     }
 
+    private _onScrollPositionChanged(e: CustomEvent) {
+        // Show scroll button only when not at the bottom
+        this.showScrollButton = !e.detail.nearBottom;
+    }
+
     render() {
         return html`
             <collama-chatsessions
@@ -460,6 +465,7 @@ export class ChatContainer extends LitElement {
                     @resend-message=${this._onResendMessage}
                     @edit-message=${this._onEditMessage}
                     @delete-message=${this._onDeleteMessage}
+                    @scroll-position-changed=${this._onScrollPositionChanged}
                 ></collama-chatoutput>
                 <collama-token-counter
                     .agentToken=${this.agent_token}

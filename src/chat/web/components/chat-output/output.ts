@@ -135,6 +135,15 @@ export class ChatOutput extends LitElement {
             if (nearBottom) {
                 this._autoScroll = true;
             }
+
+            // Send scroll position event to parent container
+            this.dispatchEvent(
+                new CustomEvent("scroll-position-changed", {
+                    detail: { nearBottom },
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
         });
     }
     updated(changed: Map<string, unknown>) {
@@ -159,6 +168,15 @@ export class ChatOutput extends LitElement {
                 }
 
                 this._scrollToBottom();
+
+                // Send scroll position event after messages update
+                this.dispatchEvent(
+                    new CustomEvent("scroll-position-changed", {
+                        detail: { nearBottom: this._isNearBottom() },
+                        bubbles: true,
+                        composed: true,
+                    }),
+                );
             });
 
             // dein Loading Timeout
