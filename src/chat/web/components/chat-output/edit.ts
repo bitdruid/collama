@@ -52,8 +52,8 @@ export class ChatEditMessage extends LitElement {
         return html`
             <textarea class="edit-textarea">${this.content}</textarea>
             <div class="edit-actions">
-                <button class="edit-cancel" @click=${() => this._handleCancel()}>Cancel</button>
-                <button class="edit-send" @click=${() => this._handleSend()}>Send</button>
+                <button class="edit-cancel" @mousedown=${(e: Event) => e.preventDefault()} @click=${() => this._handleCancel()}>Cancel</button>
+                <button class="edit-send" @mousedown=${(e: Event) => e.preventDefault()} @click=${() => this._handleSend()}>Send</button>
             </div>
         `;
     }
