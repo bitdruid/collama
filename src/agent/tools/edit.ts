@@ -234,29 +234,38 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
 
     try {
         const content = await readFileContent(fullPath);
+        let newContent: string;
 
-        // Validate that oldString exists and is unique
-        const firstIndex = content.indexOf(args.oldString);
-        if (firstIndex === -1) {
-            return JSON.stringify({
-                error: "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
-                filePath: args.filePath,
-            });
+        if (content === "" && args.oldString === "") {
+            // Insert into an empty file
+            if (!args.newString) {
+                return JSON.stringify({ error: "newString must not be empty when inserting into an empty file." });
+            }
+            newContent = args.newString;
+        } else {
+            // Validate that oldString exists and is unique
+            const firstIndex = content.indexOf(args.oldString);
+            if (firstIndex === -1) {
+                return JSON.stringify({
+                    error: "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
+                    filePath: args.filePath,
+                });
+            }
+
+            const secondIndex = content.indexOf(args.oldString, firstIndex + 1);
+            if (secondIndex !== -1) {
+                return JSON.stringify({
+                    error: "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
+                    filePath: args.filePath,
+                });
+            }
+
+            if (args.oldString === args.newString) {
+                return JSON.stringify({ error: "oldString and newString are identical. No changes to apply." });
+            }
+
+            newContent = content.replace(args.oldString, args.newString);
         }
-
-        const secondIndex = content.indexOf(args.oldString, firstIndex + 1);
-        if (secondIndex !== -1) {
-            return JSON.stringify({
-                error: "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
-                filePath: args.filePath,
-            });
-        }
-
-        if (args.oldString === args.newString) {
-            return JSON.stringify({ error: "oldString and newString are identical. No changes to apply." });
-        }
-
-        const newContent = content.replace(args.oldString, args.newString);
 
         // Auto-accept: apply without diff preview
         if (autoAcceptEdits) {
@@ -291,7 +300,7 @@ export const editFile_def = {
     function: {
         name: "editFile",
         description:
-            "Edit a file by replacing an exact string match with new content. The oldString must match exactly one location in the file (including whitespace and indentation). Use readFile first to see the current content. Shows a diff preview and asks for user confirmation.",
+            "Edit a file by replacing an exact string match with new content. The oldString must match exactly one location in the file (including whitespace and indentation). To add content to an empty file, set oldString to an empty string. Use readFile first to see the current content. Shows a diff preview and asks for user confirmation.",
         parameters: {
             type: "object",
             properties: {

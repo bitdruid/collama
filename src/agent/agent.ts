@@ -107,7 +107,14 @@ export class Agent {
                         const args = JSON.parse(toolCall.function.arguments);
 
                         const hasArgs = Object.keys(args).length > 0;
-                        const argsBody = hasArgs ? `\n${JSON.stringify(args, null, 2)}` : "";
+                        let argsBody = "";
+                        if (hasArgs) {
+                            argsBody =
+                                "\n" +
+                                Object.entries(args)
+                                    .map(([key, value]) => `${key}:\n${value}`)
+                                    .join("\n");
+                        }
                         onChunk(`\n\`\`\`Tool: ${toolCall.function.name}${argsBody}\n\`\`\`\n\n`);
 
                         const toolResult = await executeTool(toolCall.function.name, args);

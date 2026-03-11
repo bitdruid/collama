@@ -3,6 +3,18 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.5] - 2026-03-11
+
+### Fixed
+- Edit tool can now fill empty files
+- Reduced tool-use hallucination by removing JSON data from responses
+
+### Changed
+- Reverted "split output into component per message type" changes
+
+### Documentation
+- Improved searchFiles tool descriptions
+
 ## [1.4.4] - 2026-03-10
 
 ### Added

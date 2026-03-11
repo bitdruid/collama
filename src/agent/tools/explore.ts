@@ -152,13 +152,14 @@ export const searchFiles_def = {
     function: {
         name: "searchFiles",
         description:
-            "Search file contents for a regex pattern. Use short, simple patterns (e.g. a function name or keyword). Do NOT use long or complex patterns. If no results, try a simpler pattern once, then stop.",
+            "Search file contents for a regex pattern. STRATEGY: Start with broad, common patterns that will definitely match (e.g., a function name, variable name, or keyword). Get results first, then read files to find what you need. Avoid overly specific patterns or complex regex - they often fail. If no results, try a simpler pattern once, then stop.",
         parameters: {
             type: "object",
             properties: {
                 pattern: {
                     type: "string",
-                    description: "Valid regex pattern to search for.",
+                    description:
+                        "Valid regex pattern to search for. Start broad (e.g., 'functionName', 'myVar', 'import') rather than specific context. You'll get results faster and can then read files for details.",
                 },
                 glob: {
                     type: "string",
@@ -185,7 +186,9 @@ export const searchFiles_def = {
 const MAX_LS_RESULTS = 200;
 
 export async function lsPath_exec(args: { dirPath: string; depth?: number; pattern?: string }): Promise<string> {
-    logMsg(`Agent - tool use lsPath dirPath=${args.dirPath}${args.depth ? ` depth=${args.depth}` : ""}${args.pattern ? ` pattern=${args.pattern}` : ""}`);
+    logMsg(
+        `Agent - tool use lsPath dirPath=${args.dirPath}${args.depth ? ` depth=${args.depth}` : ""}${args.pattern ? ` pattern=${args.pattern}` : ""}`,
+    );
     const root = getWorkspaceRoot();
     if (!root) {
         return JSON.stringify({ error: "No workspace root" });
