@@ -12,15 +12,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![VS Code Version](https://img.shields.io/badge/VS%20Code-%5E1.109.0-blue)](https://code.visualstudio.com/)
 
-[Features](#features) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Contributing](#contributing)
+[Overview](#overview) • [Features](#features) • [Infos](#infos) • [Quick Start](#quick-start) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Usage](#usage) • [Contributing](#contributing)
 
 </div>
 
-<p align="center">
-  <img src="media/collama.gif" alt="collama" width="500px"/>
-</p>
-
----
+___
 
 ## Overview
 
@@ -31,49 +27,49 @@ Collama is a VS Code extension that uses local LLM backends to get code completi
 ## Features
 
 **Code Completion**
-
-- Inline, multiline, and multiblock (more a "fun" feature) suggestions
+- Inline, multiline, and multiblock suggestions
 - Uses currently opened tabs as context
+<p align="left">
+  <img src="media/collama.gif" alt="collama" width="500px"/>
+</p>
 
 **Code Edits**
-
-- Generate docstrings and documentation
-- Extract functions and refactor code
-- Simplify complex code
-- Fix syntax errors
-- Manual instructions
+- Generate docstrings, extract functions, refactor code
+- Simplify complex code, fix syntax errors
+- Manual instructions for custom edits
 
 **Chat Interface**
-
-- Chat with multiple sessions - organize conversations by topic
-- Send selected code or files to chat as context
-- Context is automatically attached to messages with file reference and line numbers
-- Real-time context usage bar showing token consumption vs model's context window
-- Automatic context trimming — when conversations exceed the context window, older messages are removed from the LLM context while remaining visible in the chat
-- Visual indicators for messages no longer included in the LLM context
+- Multiple chat sessions with custom titles
+- Send selected code/files as context with file references
+- Real-time context usage bar with automatic trimming
+- Edit messages, copy sessions, scroll navigation
 
 **AI Agent with Tool Calling**
-
-- LLM can interact with your workspace through function calling
-- **File System Tools**: Read files, list directories, search contents with regex, create files and folders, edit files with diff preview
-- **Git Tools**: List commits or branches, view diffs (working tree or compare commits/branches)
-- **Code Analysis Tools**: Get diagnostics (errors, warnings, hints) from the language server
-- **Security**: Path traversal protection, workspace boundary enforcement, .gitignore integration
-- **Real-time Feedback**: Tool calls streamed to chat as they execute
-- The agent can autonomously explore your codebase to provide context-aware assistance
-- **Read-Only Mode**: Toggle edit tools to run the agent in safe, read-only mode
+- File system tools: read, list, search, create, edit files
+- Git tools: list commits/branches, view diffs
+- Code analysis: get diagnostics from language server
+- Security: path protection, workspace boundaries, .gitignore integration
+- Real-time tool execution feedback
+- Read-only mode for safe exploration
 
 **Commit Messages**
-
-- AI-generated conventional commit messages from staged changes
-- Analyzes git diff to create meaningful commit descriptions
+- AI-generated conventional commits from staged changes
 - Accessible via command palette or Source Control view
 
-**Context Management**
+**Current Context Management**
+- Smart pruning of editor tabs in autocomplete to fit context
+- Chat history optimization (tool results removed)
+- Token counter visualization in agent-loop / total usage
 
-- Automatic detection of the model's context window size (Ollama and OpenAI)
-- Prompts that exceed the context window are blocked with a clear notification
-- Open editor tabs are used as additional context for completions, with smart pruning to fit the context window
+## Infos
+
+- The agentic mode (tool-calling) has been tested on vLLM (nvidia h200) with the following models:
+  - gpt-oss:120b
+  - glm-4.7-fp8
+  - minimax2.5
+> [!NOTE]
+> For smaller models (like gpt-oss:20b), it's recommended to use chat-only mode instead of agentic mode for better performance.
+
 
 ## Quick Start
 
@@ -195,8 +191,9 @@ Note: ChatML format is not supported - that means only true FIM models will work
     - File name and path
     - Line number references
     - Selected code or full file content
-4. Monitor token usage with the real-time context bar (shows usage vs. model's max context)
+4. Monitor token usage with the real-time context bar and agent-token counter
 5. Create multiple chat sessions to organize conversations by topic
+6. Session ManagementCopy / rename / delete sessions
 
 ### Commit Message Generation
 
