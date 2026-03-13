@@ -153,12 +153,12 @@ Collama is tested primarily with the **Qwen Coder** for Completion and **gpt-oss
 
 | Model         | Tested Sizes | FIM Support | Status   | Notes                                    |
 | ------------- | ------------ | ----------- | -------- | ---------------------------------------- |
+| codeqwen      | —            | ⚠️           | Untested | May work; contributions welcome          |
 | qwen2.5-coder | 1.5B, 3B, 7B | ✅           | Stable   | Recommended for most use cases           |
 | qwen3-coder   | 30B          | ✅           | Stable   | Excellent quality, higher resource usage |
 | starcoder     | —            | ⚠️           | Untested | May work; contributions welcome          |
-| starcoder2    | 3B           | ✅           | Stable   | Improved over v1                         |
+| starcoder2    | 3B           | ✅           | Stable   | Like qwen2.5-coder                       |
 | codellama     | 7B, 13B      | ⚠️           | Limited  | Limited file context support; FIM is ok  |
-| codeqwen      | —            | ⚠️           | Untested | May work; contributions welcome          |
 
 Note: Models are tested primarily with quantization level q4. Results may vary with other quantization levels.
 
