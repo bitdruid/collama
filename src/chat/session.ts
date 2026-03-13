@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { ChatHistory } from "../common/context-chat";
 import { userConfig } from "../config";
-import {} from "./subscriptions";
 import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-host";
 
 /**

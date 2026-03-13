@@ -159,7 +159,6 @@ class OllamaClient implements LlmClient {
             });
 
             let result = "";
-            // let thinking = "";
             let resultTokens = 0;
             const toolCalls: ToolCall[] = [];
 
@@ -168,12 +167,6 @@ class OllamaClient implements LlmClient {
                 if (signal?.aborted) {
                     break;
                 }
-
-                // thinking content separately
-                // if (part.message.thinking) {
-                //     thinking += part.message.thinking;
-                //     continue;
-                // }
 
                 // main content arrives in separate deltas
                 const chunk = part.message.content ?? "";
@@ -198,7 +191,7 @@ class OllamaClient implements LlmClient {
                     logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
                 }
             }
-            return { content: cleanupResult(result, resultTokens, options), /* thinking, */ toolCalls };
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
         } catch (err) {
             return handleError(err);
         }
