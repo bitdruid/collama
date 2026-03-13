@@ -1,7 +1,7 @@
 import path from "path";
 import * as vscode from "vscode";
 import { withProgressNotification } from "../../common/utils-common";
-import { logMsg } from "../../logging";
+import { logAgent, logMsg } from "../../logging";
 import { confirmAction, getWorkspaceRoot, isWithinRoot } from "../tools";
 
 /**
@@ -116,21 +116,45 @@ async function handleFileChangesWithDiff(
         // Open diff view
         await vscode.commands.executeCommand("vscode.diff", leftUri, rightUri, diffTitle);
 
-        const picks = showAcceptAll ? ["Accept", "Accept All", "Cancel"] : ["Accept", "Cancel"];
+        // QuickPick menu
+        const picks: (vscode.QuickPickItem & { value?: string })[] = [
+            {
+                label: "$(check) Accept",
+                value: "accept",
+            },
+            ...(showAcceptAll
+                ? [
+                      {
+                          label: "$(check-all) Accept All",
+                          value: "acceptAll",
+                      },
+                  ]
+                : []),
+            {
+                label: "$(close) Cancel",
+                value: "cancel",
+            },
+        ];
+
+        // Calculate relative path from workspace root for display
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, filePath) : filePath;
+
         const choice = await vscode.window.showQuickPick(picks, {
-            placeHolder: "Apply these changes?",
+            placeHolder: `Apply to: ${relativePath}`,
             canPickMany: false,
             ignoreFocusOut: true,
         });
 
         let applied = false;
-        let resultMessage = "Changes discarded.";
+        let resultMessage = "Edit rejected by user.";
 
-        if (choice === "Accept" || choice === "Accept All") {
+        if (choice?.value === "accept" || choice?.value === "acceptAll") {
             await applyFileChanges(uri, newContent);
             applied = true;
             resultMessage = "Changes applied.";
-            if (choice === "Accept All") {
+
+            if (choice.value === "acceptAll") {
                 autoAcceptEdits = true;
                 resultMessage = "Changes applied. Auto-accepting future edits.";
             }
@@ -196,7 +220,7 @@ async function handleNewFileCreation(
             await vscode.workspace.fs.writeFile(uri, encoder.encode(content));
             resultMessage = "File created.";
         } else {
-            resultMessage = "File creation cancelled.";
+            resultMessage = "File creation rejected by user.";
         }
 
         // Close the preview if it's still active
@@ -224,11 +248,13 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
 
     const root = getWorkspaceRoot();
     if (!root) {
+        logAgent(`[editFile] No workspace root`);
         return JSON.stringify({ error: "No workspace root" });
     }
 
     const fullPath = path.resolve(root, args.filePath);
     if (!isWithinRoot(root, fullPath)) {
+        logAgent(`[editFile] Path must not escape the workspace root: ${args.filePath}`);
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
 
@@ -239,6 +265,7 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
         if (content === "" && args.oldString === "") {
             // Insert into an empty file
             if (!args.newString) {
+                logAgent(`[editFile] newString must not be empty when inserting into an empty file: ${args.filePath}`);
                 return JSON.stringify({ error: "newString must not be empty when inserting into an empty file." });
             }
             newContent = args.newString;
@@ -246,6 +273,7 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
             // Validate that oldString exists and is unique
             const firstIndex = content.indexOf(args.oldString);
             if (firstIndex === -1) {
+                logAgent(`[editFile] oldString not found in file: ${args.filePath}`);
                 return JSON.stringify({
                     error: "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
                     filePath: args.filePath,
@@ -254,6 +282,7 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
 
             const secondIndex = content.indexOf(args.oldString, firstIndex + 1);
             if (secondIndex !== -1) {
+                logAgent(`[editFile] oldString matches multiple locations in file: ${args.filePath}`);
                 return JSON.stringify({
                     error: "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
                     filePath: args.filePath,
@@ -261,6 +290,7 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
             }
 
             if (args.oldString === args.newString) {
+                logAgent(`[editFile] oldString and newString are identical: ${args.filePath}`);
                 return JSON.stringify({ error: "oldString and newString are identical. No changes to apply." });
             }
 
@@ -290,6 +320,7 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
+        logAgent(`[editFile] Failed to edit file: ${args.filePath} - ${msg}`);
         logMsg(`Agent - editFile error: ${msg}`);
         return JSON.stringify({ error: `Failed to edit file: ${msg}` });
     }
@@ -300,7 +331,7 @@ export const editFile_def = {
     function: {
         name: "editFile",
         description:
-            "Edit a file by replacing an exact string match with new content. The oldString must match exactly one location in the file (including whitespace and indentation). To add content to an empty file, set oldString to an empty string. Use readFile first to see the current content. Shows a diff preview and asks for user confirmation.",
+            "Edit a file by replacing exact string matches. The oldString must match exactly a string to replace in the filePath file. To add content to an empty file, set oldString to an empty string. Prefered more small changes instead of one big.",
         parameters: {
             type: "object",
             properties: {
@@ -336,11 +367,13 @@ export async function create_exec(args: { filePath: string; content?: string }):
 
     const root = getWorkspaceRoot();
     if (!root) {
+        logAgent(`[create] No workspace root`);
         return JSON.stringify({ error: "No workspace root" });
     }
 
     const fullPath = path.resolve(root, args.filePath);
     if (!isWithinRoot(root, fullPath)) {
+        logAgent(`[create] Path must not escape the workspace root: ${args.filePath}`);
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
 
@@ -349,8 +382,10 @@ export async function create_exec(args: { filePath: string; content?: string }):
         try {
             const stat = await vscode.workspace.fs.stat(vscode.Uri.file(fullPath));
             if (stat.type === vscode.FileType.Directory) {
+                logAgent(`[create] Folder already exists: ${args.filePath}`);
                 return JSON.stringify({ error: `Folder already exists: ${args.filePath}` });
             }
+            logAgent(`[create] File already exists: ${args.filePath}`);
             return JSON.stringify({ error: `File already exists: ${args.filePath}` });
         } catch {
             // Doesn't exist, which is what we want
@@ -360,7 +395,7 @@ export async function create_exec(args: { filePath: string; content?: string }):
             if (!(await confirmAction("Create Folder", `Create new folder: ${args.filePath}?`))) {
                 return JSON.stringify({
                     success: false,
-                    message: "Folder creation cancelled.",
+                    message: "Folder creation rejected by user.",
                     filePath: args.filePath,
                 });
             }
@@ -383,6 +418,7 @@ export async function create_exec(args: { filePath: string; content?: string }):
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
+        logAgent(`[create] Failed to create ${isFolder ? "folder" : "file"}: ${args.filePath} - ${msg}`);
         logMsg(`Agent - create error: ${msg}`);
         return JSON.stringify({ error: `Failed to create ${isFolder ? "folder" : "file"}: ${msg}` });
     }
@@ -421,11 +457,13 @@ export async function deleteFile_exec(args: { filePath: string }): Promise<strin
 
     const root = getWorkspaceRoot();
     if (!root) {
+        logAgent(`[deleteFile] No workspace root`);
         return JSON.stringify({ error: "No workspace root" });
     }
 
     const fullPath = path.resolve(root, args.filePath);
     if (!isWithinRoot(root, fullPath)) {
+        logAgent(`[deleteFile] Path must not escape the workspace root: ${args.filePath}`);
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
 
@@ -436,14 +474,16 @@ export async function deleteFile_exec(args: { filePath: string }): Promise<strin
         try {
             const stat = await vscode.workspace.fs.stat(uri);
             if (stat.type === vscode.FileType.Directory) {
+                logAgent(`[deleteFile] Path is a directory, not a file: ${args.filePath}`);
                 return JSON.stringify({ error: `Path is a directory, not a file: ${args.filePath}` });
             }
         } catch {
+            logAgent(`[deleteFile] File not found: ${args.filePath}`);
             return JSON.stringify({ error: `File not found: ${args.filePath}` });
         }
 
         if (!(await confirmAction("Delete", `Delete file: ${args.filePath}?`))) {
-            return JSON.stringify({ success: false, message: "Deletion cancelled.", filePath: args.filePath });
+            return JSON.stringify({ success: false, message: "Deletion rejected by user.", filePath: args.filePath });
         }
 
         await vscode.workspace.fs.delete(uri);
@@ -451,6 +491,7 @@ export async function deleteFile_exec(args: { filePath: string }): Promise<strin
         return JSON.stringify({ success: true, message: "File deleted.", filePath: args.filePath });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
+        logAgent(`[deleteFile] Failed to delete file: ${args.filePath} - ${msg}`);
         logMsg(`Agent - deleteFile error: ${msg}`);
         return JSON.stringify({ error: `Failed to delete file: ${msg}` });
     }

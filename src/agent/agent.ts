@@ -109,14 +109,10 @@ export class Agent {
                         const hasArgs = Object.keys(args).length > 0;
                         let argsBody = "";
                         if (hasArgs) {
-                            argsBody =
-                                "\n" +
-                                Object.entries(args)
-                                    .map(([key, value]) => `${key}:\n${value}`)
-                                    .join("\n");
+                            argsBody = Object.entries(args)
+                                .map(([key, value]) => `${key}:\n${value}`)
+                                .join("\n");
                         }
-                        onChunk(`\n\`\`\`Tool: ${toolCall.function.name}${argsBody}\n\`\`\`\n\n`);
-
                         const toolResult = await executeTool(toolCall.function.name, args);
 
                         history.push({
@@ -126,6 +122,13 @@ export class Agent {
                         });
 
                         history.deduplicateReadFile(toolCall.id);
+
+                        onEvent?.({
+                            type: "agent-tool-done",
+                            toolName: toolCall.function.name,
+                            toolArgs: argsBody,
+                            toolResult: toolResult,
+                        });
                     }
 
                     const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history.getMessages()));
@@ -136,7 +139,7 @@ export class Agent {
                         break;
                     }
 
-                    onChunk("\n");
+                    onEvent?.({ type: "agent-assistant-new" });
                 }
             } catch (error) {
                 const errorMsg = error instanceof Error ? error.message : String(error);
@@ -188,8 +191,8 @@ class AgentContext {
 
     /**
      * Replaces stale readFile tool results with a short note.
-     * When readFile is called for the same file again (without line numbers),
-     * older responses are marked as stale to trim context.
+     * - Full-file reads (no line numbers) evict all previous reads of the same file.
+     * - Partial reads evict older reads with identical startLine/endLine arguments.
      */
     public deduplicateReadFile(newToolCallId: string): void {
         const newTc = this.context.findToolCall(newToolCallId);
@@ -197,6 +200,7 @@ class AgentContext {
             return;
         }
         const newArgs = JSON.parse(newTc.function.arguments);
+        const isFullRead = newArgs.startLine === undefined && newArgs.endLine === undefined;
 
         for (let i = 0; i < this.context.length(); i++) {
             const toolCallId = this.context.getToolCallId(i);
@@ -208,7 +212,13 @@ class AgentContext {
                 continue;
             }
             const args = JSON.parse(tc.function.arguments);
-            if (args.filePath === newArgs.filePath && args.startLine === undefined && args.endLine === undefined) {
+            if (args.filePath !== newArgs.filePath) {
+                continue;
+            }
+            // if full re-read OR all args are identical - deduplicate
+            const isDuplicate =
+                isFullRead || (args.startLine === newArgs.startLine && args.endLine === newArgs.endLine);
+            if (isDuplicate) {
                 this.context.setToolResponse(toolCallId, { content: "[stale - file re-read later]" });
             }
         }

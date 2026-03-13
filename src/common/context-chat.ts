@@ -14,6 +14,8 @@ export type ChatHistory =
           role: "tool";
           content: string;
           tool_call_id: string;
+          toolName?: string;
+          toolArgs?: string;
       };
 
 export class ChatContext {

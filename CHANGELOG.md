@@ -3,14 +3,30 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.6] - 2026-03-13
+
+### Added
+- Improved readFile tool with enhanced deduplication logic
+- Scroll-down button component for better chat navigation
+
+### Changed
+- Refactored chat output into clean role objects (assistant, tool, user)
+- Improved chat UI layout and edit tool UX
+- Defer tokenization and add caching for improved context usage performance
+- Agent counter now has reduced opacity for better visual hierarchy
+- Removed model selection from status bar for cleaner UI
+- Split output.ts into modular role-based components
+- Cleaned up extensions.ts structure
+
+### Fixed
+- Auto-scroll chat to bottom after message submit
+- Clarified readFile tool description for better agent understanding
+
 ## [1.4.5] - 2026-03-11
 
 ### Fixed
 - Edit tool can now fill empty files
 - Reduced tool-use hallucination by removing JSON data from responses
-
-### Changed
-- Reverted "split output into component per message type" changes
 
 ### Documentation
 - Improved searchFiles tool descriptions

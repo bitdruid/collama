@@ -220,7 +220,7 @@ Note: ChatML format is not supported - that means only true FIM models will work
 **Available Tools:**
 
 - **File System Tools**
-    - `readFile` - Read the contents of a file in the workspace (supports optional line ranges)
+    - `readFile` - Read the contents of a file in the workspace (supports optional line ranges with automatic chunking to 100-line boundaries for efficient reading)
     - `searchFiles` - Search file contents for a regex pattern (supports optional glob pattern to filter files)
     - `lsPath` - List files and folders in a workspace directory (supports recursion depth and glob pattern filtering)
     - `create` - Create a new file or folder (with content: creates a file with preview; without content: creates a folder)

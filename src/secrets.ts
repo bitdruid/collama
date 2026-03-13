@@ -8,6 +8,26 @@ const BEARER_INSTRUCT_KEY = "collama.bearerInstruct";
 let secretStorage: vscode.SecretStorage;
 
 /**
+ * Registers the command to set the bearer token for the completion endpoint.
+ *
+ * @param extContext - The extension context.
+ */
+export function registerSetBearerCompletionCommand(extContext: vscode.ExtensionContext): void {
+    const disposable = vscode.commands.registerCommand("collama.setBearerCompletion", commandSetBearerCompletion);
+    extContext.subscriptions.push(disposable);
+}
+
+/**
+ * Registers the command to set the bearer token for the instruct endpoint.
+ *
+ * @param extContext - The extension context.
+ */
+export function registerSetBearerInstructCommand(extContext: vscode.ExtensionContext): void {
+    const disposable = vscode.commands.registerCommand("collama.setBearerInstruct", commandSetBearerInstruct);
+    extContext.subscriptions.push(disposable);
+}
+
+/**
  * Initializes the secrets manager with the extension context.
  * Must be called during extension activation.
  *

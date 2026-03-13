@@ -1,5 +1,3 @@
-import { Ollama } from "ollama";
-
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { EditorContext, OpenFilesContext } from "./context-editor";
@@ -78,25 +76,6 @@ export function normalizeModelName(name: string): string {
         normalized = normalized.slice(0, -7);
     }
     return normalized;
-}
-
-/**
- * Retrieves a list of all models available on the Ollama server.
- *
- * @returns An array of model names, or an empty array if an error occurs.
- * @throws Will not throw; network errors are handled internally by displaying a connection error.
- */
-export async function getAvailableModels(): Promise<string[]> {
-    const ollama = new Ollama({ host: userConfig.apiEndpointCompletion });
-
-    try {
-        const response = await ollama.list();
-        const modelNames = response.models.map((m: { name: string }) => m.name);
-        return modelNames;
-    } catch (error: unknown) {
-        logMsg(`Error retrieving available models: ${(error as Error).message}`);
-        return [];
-    }
 }
 
 /**

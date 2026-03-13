@@ -31,6 +31,9 @@ export class ChatInput extends LitElement {
                 this.shadowRoot?.querySelector("textarea")?.focus();
             });
         }
+        if (changedProperties.has("userInput")) {
+            this._adjustRows();
+        }
     }
 
     private _handleInput(e: Event) {

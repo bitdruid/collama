@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
 import { registerChatProvider, registerSendToChatCommand } from "./chat/subscriptions";
 import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
-import { updateVSConfig } from "./config";
+import { registerConfigAutoUpdateCommand, updateVSConfig } from "./config";
 import {
     registerEditManualCommand,
     registerExtractFunctionsCommand,
@@ -12,7 +12,7 @@ import {
     registerWriteDocstringsCommand,
 } from "./context/subscriptions";
 import { logMsg } from "./logging";
-import { commandSetBearerCompletion, commandSetBearerInstruct, initSecrets } from "./secrets";
+import { initSecrets, registerSetBearerCompletionCommand, registerSetBearerInstructCommand } from "./secrets";
 import { setStatusbar } from "./statusbar";
 
 /**
@@ -20,26 +20,13 @@ import { setStatusbar } from "./statusbar";
  * ENTRYPOINT for the extension
  */
 export async function activate(extContext: vscode.ExtensionContext) {
-    let initialized = false;
-
     // init secrets and bearer commands
     initSecrets(extContext);
-    extContext.subscriptions.push(
-        vscode.commands.registerCommand("collama.setBearerCompletion", commandSetBearerCompletion),
-    );
-    extContext.subscriptions.push(vscode.commands.registerCommand("collama.setBearerInstruct", commandSetBearerInstruct));
+    registerSetBearerCompletionCommand(extContext);
+    registerSetBearerInstructCommand(extContext);
 
     await updateVSConfig();
-    // live reload config if changed
-    vscode.workspace.onDidChangeConfiguration(async (event) => {
-        if (!initialized) {
-            return;
-        }
-        logMsg("Config auto-update...");
-        if (event.affectsConfiguration("collama")) {
-            await updateVSConfig();
-        }
-    });
+    registerConfigAutoUpdateCommand(extContext);
 
     setStatusbar(extContext);
 
@@ -57,7 +44,6 @@ export async function activate(extContext: vscode.ExtensionContext) {
     registerRequestCommitMessageCommand(extContext);
 
     logMsg("----- collama initialized -----");
-    initialized = true;
 }
 
 export function deactivate() {

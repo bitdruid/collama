@@ -36,15 +36,41 @@ export function mapSessionsToSummaries<T extends SessionSummary>(sessions: T[]):
     return sessions.map(mapSessionToSummary);
 }
 
+/** Cache of token counts keyed by message content (avoids re-tokenizing unchanged messages). */
+const tokenCache = new Map<string, number>();
+
+/** Max content length to use as a direct cache key. Longer content uses a truncated key. */
+const CACHE_KEY_MAX_LEN = 4096;
+
+function tokenCacheKey(content: string): string {
+    if (content.length <= CACHE_KEY_MAX_LEN) {
+        return content;
+    }
+    // For very long messages, use length + head + tail as key
+    return `${content.length}:${content.slice(0, 512)}…${content.slice(-512)}`;
+}
+
 /**
  * Calculates the total token usage for a chat session's messages.
+ * Uses a per-content cache to avoid re-tokenizing unchanged messages.
  *
  * @param messages - The array of chat history messages.
  * @returns The total token count.
  */
 export async function calculateContextUsage(messages: ChatHistory[]): Promise<number> {
-    const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(msg.content)));
-    return tokenCounts.reduce((total, count) => total + count, 0);
+    let total = 0;
+    for (const msg of messages) {
+        const key = tokenCacheKey(msg.content);
+        const cached = tokenCache.get(key);
+        if (cached !== undefined) {
+            total += cached;
+        } else {
+            const count = await Tokenizer.calcTokens(msg.content);
+            tokenCache.set(key, count);
+            total += count;
+        }
+    }
+    return total;
 }
 
 /**

@@ -3,21 +3,31 @@ import { css } from "lit";
 export const agentTokenCounterStyles = css`
     :host {
         display: block;
+        position: relative;
     }
 
     .box {
         display: none;
         flex-direction: column;
+        position: absolute;
+        bottom: 0;
+        left: 0;
         padding: 4px 8px;
         border-radius: 8px;
         border: 2px solid var(--vscode-commandCenter-activeBorder);
         background: var(--vscode-input-background);
-        width: 13ch;
-        margin-bottom: -2px;
+        width: 10ch;
+        transition: opacity 0.2s;
+    }
+
+    .box.visible:hover {
+        opacity: 0.2;
     }
 
     .box.visible {
         display: flex;
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .label {

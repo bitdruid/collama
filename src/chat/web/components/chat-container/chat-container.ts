@@ -3,6 +3,7 @@ import { LitElement, html } from "lit";
 import { estimateTokenCount } from "../../../utils-web";
 import "../chat-agent-counter/agent-token-counter";
 import "../chat-output/output";
+import "../chat-scroll-button/scroll-down-button";
 import "../chat-session/chat-sessions";
 
 import { ChatSessionStore } from "../chat-session/chat-session-store";
@@ -29,10 +30,12 @@ export function logWebview(message: string) {
 }
 
 export interface ChatMessage {
-    role: "user" | "assistant" | "system";
+    role: "user" | "assistant" | "system" | "tool";
     content: string;
     loading?: boolean;
     contexts?: ChatContext[];
+    toolName?: string;
+    toolArgs?: string;
 }
 
 export interface ChatContext {
@@ -53,6 +56,7 @@ export class ChatContainer extends LitElement {
         contextMax: { state: true },
         contextStartIndex: { state: true },
         _toastMessage: { state: true },
+        _showScrollButton: { state: true },
         isLoading: { state: true },
         agent_token: { state: true },
         hasTokenData: { state: true },
@@ -68,6 +72,7 @@ export class ChatContainer extends LitElement {
     contextMax: number = 0;
     contextStartIndex: number = 0;
     _toastMessage: string = "";
+    _showScrollButton: boolean = false;
     isLoading: boolean = false;
     private _updateTimer: number | null = null;
     private _toastTimer: number | null = null;
@@ -141,6 +146,11 @@ export class ChatContainer extends LitElement {
             type: "chat-request",
             messages: messagesToSend,
             sessionId: this.activeSessionId,
+        });
+
+        // Scroll to bottom after submitting a new message
+        this.updateComplete.then(() => {
+            this._onScrollDown();
         });
     }
 
@@ -252,15 +262,21 @@ export class ChatContainer extends LitElement {
             return;
         }
 
-        // Estimate tokens freed from the user message + its assistant response
-        const deletedContent = [this.messages[messageIndex], this.messages[messageIndex + 1]]
-            .filter(Boolean)
+        // Find end of this turn (everything until the next user message)
+        let turnEnd = messageIndex + 1;
+        while (turnEnd < this.messages.length && this.messages[turnEnd].role !== "user") {
+            turnEnd++;
+        }
+
+        // Estimate tokens freed from the entire turn
+        const deletedContent = this.messages
+            .slice(messageIndex, turnEnd)
             .map((m) => m.content)
             .join("");
         const approxTokensFreed = estimateTokenCount(deletedContent);
 
-        // Remove the user message and its following assistant response
-        this.messages = [...this.messages.slice(0, messageIndex), ...this.messages.slice(messageIndex + 2)];
+        // Remove the entire turn
+        this.messages = [...this.messages.slice(0, messageIndex), ...this.messages.slice(turnEnd)];
 
         this._showToast(`~${approxTokensFreed} tokens freed`);
         logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);
@@ -355,14 +371,27 @@ export class ChatContainer extends LitElement {
                 this.contextUsed = msg.contextUsed || 0;
                 this.contextMax = msg.contextMax || 0;
                 this.contextStartIndex = msg.contextStartIndex || 0;
+
+                ChatSessionStore.instance.loadFromBackend({
+                    sessions: this.sessions,
+                    activeSessionId: this.activeSessionId,
+                    contextUsed: this.contextUsed,
+                    contextMax: this.contextMax,
+                });
             }
 
-            ChatSessionStore.instance.loadFromBackend({
-                sessions: this.sessions,
-                activeSessionId: this.activeSessionId,
-                contextUsed: this.contextUsed,
-                contextMax: this.contextMax,
-            });
+            // async token count update (sent after session data)
+            if (msg.type === "context-usage-update") {
+                this.contextUsed = msg.contextUsed || 0;
+                this.contextMax = msg.contextMax || 0;
+                ChatSessionStore.instance.setContextUsage(this.contextUsed, this.contextMax);
+            }
+
+            // receives a new tool or assistant message from the agent loop
+            if (msg.type === "agent-add-message") {
+                this.messages = [...this.messages, msg.message];
+            }
+
             // receives new chunk of assistant response
             if (msg.type === "agent-chunk") {
                 // Update content directly without creating new array (mutate in place)
@@ -437,6 +466,15 @@ export class ChatContainer extends LitElement {
         }
     }
 
+    private _onNearBottomChanged(e: CustomEvent) {
+        this._showScrollButton = !e.detail.nearBottom;
+    }
+
+    private _onScrollDown() {
+        const output = this.shadowRoot?.querySelector("collama-chatoutput") as any;
+        output?.scrollDown();
+    }
+
     render() {
         return html`
             <collama-chatsessions
@@ -451,17 +489,24 @@ export class ChatContainer extends LitElement {
                 @copy-session=${this._onCopySession}
             ></collama-chatsessions>
             <div class="chat-area">
-                <collama-chatoutput
-                    .messages=${this.messages}
-                    .contextStartIndex=${this.contextStartIndex}
-                    @resend-message=${this._onResendMessage}
-                    @edit-message=${this._onEditMessage}
-                    @delete-message=${this._onDeleteMessage}
-                ></collama-chatoutput>
-                <collama-token-counter
-                    .agentToken=${this.agent_token}
-                    .visible=${this.isLoading && this.hasTokenData}
-                ></collama-token-counter>
+                <div class="output-wrapper">
+                    <collama-chatoutput
+                        .messages=${this.messages}
+                        .contextStartIndex=${this.contextStartIndex}
+                        @resend-message=${this._onResendMessage}
+                        @edit-message=${this._onEditMessage}
+                        @delete-message=${this._onDeleteMessage}
+                        @near-bottom-changed=${this._onNearBottomChanged}
+                    ></collama-chatoutput>
+                    <collama-token-counter
+                        .agentToken=${this.agent_token}
+                        .visible=${this.isLoading && this.hasTokenData}
+                    ></collama-token-counter>
+                    <collama-scroll-down
+                        .visible=${this._showScrollButton}
+                        @scroll-down=${this._onScrollDown}
+                    ></collama-scroll-down>
+                </div>
                 <collama-chatinput
                     @submit=${this._onSubmit}
                     @cancel=${this._onCancel}

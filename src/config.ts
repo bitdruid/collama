@@ -10,6 +10,22 @@ const allowedKeys = ["autoComplete", "suggestMode", "suggestDelay"];
 export type RequestType = "completion" | "instruction";
 
 /**
+ * Registers a configuration change listener that automatically updates the in-memory config
+ * when the collama configuration changes.
+ *
+ * @param extContext - The extension context.
+ */
+export function registerConfigAutoUpdateCommand(extContext: vscode.ExtensionContext): void {
+    const disposable = vscode.workspace.onDidChangeConfiguration(async (event) => {
+        if (event.affectsConfiguration("collama")) {
+            logMsg("Config auto-update...");
+            await updateVSConfig();
+        }
+    });
+    extContext.subscriptions.push(disposable);
+}
+
+/**
  * Default configuration values that can be overridden by the user.
  * These values are used to initialize the extension and are updated
  * when the workspace configuration changes.

@@ -1,6 +1,6 @@
 import path from "path";
 import * as vscode from "vscode";
-import { logMsg } from "../../logging";
+import { logAgent, logMsg } from "../../logging";
 import { getWorkspaceRoot, isWithinRoot } from "../tools";
 
 /**
@@ -26,6 +26,7 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
 
     const root = getWorkspaceRoot();
     if (!root) {
+        logAgent(`[getDiagnostics] No workspace root`);
         return JSON.stringify({ error: "No workspace root" });
     }
 
@@ -37,6 +38,7 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
             // Single file diagnostics
             const fullPath = path.resolve(root, args.filePath);
             if (!isWithinRoot(root, fullPath)) {
+                logAgent(`[getDiagnostics] Path must not escape the workspace root: ${args.filePath}`);
                 return JSON.stringify({ error: "Path must not escape the workspace root" });
             }
 
@@ -109,6 +111,7 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
+        logAgent(`[getDiagnostics] Failed to get diagnostics: ${msg}`);
         logMsg(`Agent - getDiagnostics error: ${msg}`);
         return JSON.stringify({ error: `Failed to get diagnostics: ${msg}` });
     }

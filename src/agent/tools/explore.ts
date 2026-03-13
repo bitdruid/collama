@@ -1,7 +1,7 @@
 import fg from "fast-glob";
 import fs from "fs";
 import path from "path";
-import { logMsg } from "../../logging";
+import { logAgent, logMsg } from "../../logging";
 import { getWorkspaceRoot, isWithinRoot } from "../tools";
 
 /**
@@ -47,46 +47,76 @@ export function buildIgnorePatterns(root: string): string[] {
  * @param args.endLine - Optional. The ending line number (1-based). Defaults to the end of the file.
  * @returns A JSON string containing the file content and path, or an error object if the operation fails.
  */
+const CHUNK_SIZE = 100;
+
+function snapToChunkStart(line: number): number {
+    return Math.floor((line - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
+}
+
+function snapToChunkEnd(line: number): number {
+    return Math.ceil(line / CHUNK_SIZE) * CHUNK_SIZE;
+}
+
 export async function readFile_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
+    const snappedStart = args.startLine !== undefined ? snapToChunkStart(args.startLine) : undefined;
+    const snappedEnd = args.endLine !== undefined ? snapToChunkEnd(args.endLine) : undefined;
+
+    logMsg(
+        `Agent - tool use readFile file=${args.filePath}${snappedStart !== undefined ? ` startLine=${snappedStart}` : ""}${snappedEnd !== undefined ? ` endLine=${snappedEnd}` : ""}`,
+    );
     const root = getWorkspaceRoot();
     if (!root) {
+        logAgent(`[readFile] No workspace root`);
         throw new Error("No workspace root");
     }
 
     const fullPath = path.resolve(root, args.filePath);
     if (!isWithinRoot(root, fullPath)) {
+        logAgent(`[readFile] Path must not escape the workspace root: ${args.filePath}`);
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
     if (!fs.existsSync(fullPath)) {
+        logAgent(`[readFile] File not found: ${args.filePath}`);
         return JSON.stringify({ error: `File not found: ${args.filePath}` });
     }
 
     const content = fs.readFileSync(fullPath, "utf-8");
 
-    if (args.startLine === undefined && args.endLine === undefined) {
+    if (snappedStart === undefined && snappedEnd === undefined) {
         return JSON.stringify({ content, filePath: args.filePath });
     }
 
     const lines = content.split("\n");
-    const start = (args.startLine ?? 1) - 1;
-    const end = args.endLine ?? lines.length;
+    const start = (snappedStart ?? 1) - 1;
+    const end = snappedEnd ?? lines.length;
 
     return JSON.stringify({
         content: lines.slice(start, end).join("\n"),
         filePath: args.filePath,
+        startLine: snappedStart ?? 1,
+        endLine: Math.min(end, lines.length),
     });
 }
 export const readFile_def = {
     type: "function" as const,
     function: {
         name: "readFile",
-        description: "Read the contents of a file in the workspace",
+        description:
+            "Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a specific range. Line ranges are automatically snapped to 100-line chunks (1-100, 101-200, 201-300, etc.). If no range is provided, reads the entire file.",
         parameters: {
             type: "object",
             properties: {
                 filePath: { type: "string", description: "Path to the file" },
-                startLine: { type: "number", description: "Starting line (optional)" },
-                endLine: { type: "number", description: "Ending line (optional)" },
+                startLine: {
+                    type: "number",
+                    description:
+                        "Starting line (optional). Use chunk boundaries: 1, 101, 201, … Will be snapped to the nearest chunk start.",
+                },
+                endLine: {
+                    type: "number",
+                    description:
+                        "Ending line (optional). Use chunk boundaries: 100, 200, 300, … Will be snapped to the nearest chunk end.",
+                },
             },
             required: ["filePath"],
         },
@@ -106,6 +136,7 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
     logMsg(`Agent - tool use searchFiles pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
     const root = getWorkspaceRoot();
     if (!root) {
+        logAgent(`[searchFiles] No workspace root`);
         return JSON.stringify({ error: "No workspace root" });
     }
 
@@ -117,6 +148,7 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
     }
 
     if (args.glob !== undefined && hasPathTraversal(args.glob)) {
+        logAgent(`[searchFiles] Glob must not contain path traversal (..): ${args.glob}`);
         return JSON.stringify({ error: "Glob must not contain path traversal (..)" });
     }
 
@@ -191,20 +223,25 @@ export async function lsPath_exec(args: { dirPath: string; depth?: number; patte
     );
     const root = getWorkspaceRoot();
     if (!root) {
+        logAgent(`[lsPath] No workspace root`);
         return JSON.stringify({ error: "No workspace root" });
     }
     if (hasPathTraversal(args.dirPath)) {
+        logAgent(`[lsPath] Path must not contain path traversal (..): ${args.dirPath}`);
         return JSON.stringify({ error: "Path must not contain path traversal (..)" });
     }
     if (args.pattern && hasPathTraversal(args.pattern)) {
+        logAgent(`[lsPath] Pattern must not contain path traversal (..): ${args.pattern}`);
         return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
     }
 
     const fullPath = path.resolve(root, args.dirPath);
     if (!isWithinRoot(root, fullPath)) {
+        logAgent(`[lsPath] Path must not escape the workspace root: ${args.dirPath}`);
         return JSON.stringify({ error: "Path must not escape the workspace root" });
     }
     if (!fs.existsSync(fullPath)) {
+        logAgent(`[lsPath] Path not found: ${args.dirPath}`);
         return JSON.stringify({ error: `Path not found: ${args.dirPath}` });
     }
 

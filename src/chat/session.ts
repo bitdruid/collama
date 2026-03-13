@@ -155,20 +155,38 @@ export class Session {
     }
 
     /**
-     * Sends the current session state, including history and context usage, to the webview.
+     * Sends the current session state to the webview.
+     * Posts session data immediately (non-blocking), then calculates token usage
+     * in the background and sends a follow-up `context-usage-update` message.
+     *
+     * @param knownContextUsed - If provided, skips background token calculation and uses this value.
      */
-    async sendSessionsUpdate() {
+    sendSessionsUpdate(knownContextUsed?: number) {
         const activeSession = this.getActiveSession();
-        const contextUsed = await calculateContextUsage(activeSession?.messages || []);
         const contextMax = userConfig.apiTokenContextLenInstruct;
+        const messages = activeSession?.messages || [];
+
+        // Send session data immediately so the UI updates without waiting for tokenization
         this.webviewView.webview.postMessage({
             type: "sessions-update",
             sessions: mapSessionsToSummaries(this.sessions),
             activeSessionId: this.activeSessionId,
-            history: sanitizeMessages(activeSession?.messages || []),
-            contextUsed,
+            history: sanitizeMessages(messages),
+            contextUsed: knownContextUsed ?? 0,
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
+        });
+
+        // If caller already knows the token count, send it right away; otherwise calculate in background
+        if (knownContextUsed !== undefined) {
+            return;
+        }
+        calculateContextUsage(messages).then((contextUsed) => {
+            this.webviewView.webview.postMessage({
+                type: "context-usage-update",
+                contextUsed,
+                contextMax,
+            });
         });
     }
 }

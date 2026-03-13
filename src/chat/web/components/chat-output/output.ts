@@ -1,12 +1,13 @@
 import { LitElement, html } from "lit";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import MarkdownIt from "markdown-it";
-import { estimateTokenCount, highlightAllCodeBlocks, icons } from "../../../utils-web";
+import { highlightAllCodeBlocks, icons } from "../../../utils-web";
 import "../chat-accordion/chat-accordion";
-import { ChatContext, ChatMessage } from "../chat-container/chat-container";
+import { ChatMessage } from "../chat-container/chat-container";
 import "../chat-session/components/popup/chat-empty-state";
-import "./edit";
-import { outputStyles } from "./styles";
+import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
+import { renderToolMessage } from "./message-tool/message-tool";
+import { renderUserMessage } from "./message-user/message-user";
+import { outputStyles } from "./styles-shared";
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.
@@ -24,14 +25,10 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         const code = token.content;
         const escapedCode = code.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-        // defines accordion type
         let accordionType = "code";
         let expandedAttr = "expanded";
 
-        if (lang.startsWith("Tool:")) {
-            accordionType = "tool";
-            expandedAttr = "";
-        } else if (lang.startsWith("Think:")) {
+        if (lang.startsWith("Think:")) {
             accordionType = "think";
             expandedAttr = "";
         } else if (lang.startsWith("Summary:")) {
@@ -66,80 +63,86 @@ export class ChatOutput extends LitElement {
     private highlightDebounceTimer: number | null = null;
 
     private _autoScroll = true;
-    private _isUserScrolling = false;
-    private _scrollDebounce?: number;
-    private _showScrollButton = false;
 
-    /**
-     * Determines if the chat output is scrolled near its bottom.
-     * If true, we allow automatic scrolling when new messages arrive.
-     */
-    private _isNearBottom(): boolean {
-        const threshold = 50;
-        return this.scrollHeight - (this.clientHeight + this.scrollTop) < threshold;
+    private _hasScrollbar(): boolean {
+        return this.scrollHeight > this.clientHeight;
     }
 
-    private _getCachedMarkdown(content: string, isStreaming: boolean): string {
-        // Don't cache streaming content as it changes frequently
+    private _isNearBottom(): boolean {
+        const threshold = 15;
+        return !this._hasScrollbar() || this.scrollHeight - (this.clientHeight + this.scrollTop) < threshold;
+    }
+
+    private _getCachedMarkdown = (content: string, isStreaming: boolean): string => {
         if (isStreaming) {
             return md.render(content);
         }
-        // Use cached version for completed messages
         let cached = this.renderedMarkdownCache.get(content);
         if (!cached) {
             cached = md.render(content);
             this.renderedMarkdownCache.set(content, cached);
         }
         return cached;
-    }
-    private _scrollToBottom(smooth = false) {
+    };
+
+    private _scrollToBottom() {
         if (!this._autoScroll) {
             return;
         }
-
-        if (smooth) {
-            this.scrollTo({
-                top: this.scrollHeight,
-                behavior: "smooth",
-            });
-        } else {
-            this.scrollTop = this.scrollHeight;
-        }
+        this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
     }
 
-    private _handleScrollToBottom() {
+    public scrollDown() {
         this._autoScroll = true;
-        this.scrollTo({
-            top: this.scrollHeight,
-            behavior: "smooth",
-        });
+        this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
     }
+
     firstUpdated() {
-        this.addEventListener("scroll", () => {
-            this._isUserScrolling = true;
+        let wasNearBottom = true;
+        let showButtonTimer: number | undefined;
 
-            if (this._scrollDebounce) {
-                clearTimeout(this._scrollDebounce);
-            }
-
-            this._scrollDebounce = window.setTimeout(() => {
-                this._isUserScrolling = false;
-            }, 50);
-
-            const nearBottom = this._isNearBottom();
-
-            if (!nearBottom) {
+        this.addEventListener("wheel", (e: WheelEvent) => {
+            if (e.deltaY < 0) {
                 this._autoScroll = false;
             }
+        });
 
-            if (nearBottom) {
+        this.addEventListener("scroll", () => {
+            const nearBottom = this._isNearBottom();
+            if (nearBottom && !this._autoScroll) {
                 this._autoScroll = true;
+            }
+            if (nearBottom !== wasNearBottom) {
+                wasNearBottom = nearBottom;
+                if (nearBottom) {
+                    clearTimeout(showButtonTimer);
+                    this.dispatchEvent(
+                        new CustomEvent("near-bottom-changed", {
+                            detail: { nearBottom: true },
+                            bubbles: true,
+                            composed: true,
+                        }),
+                    );
+                } else if (this._hasScrollbar()) {
+                    clearTimeout(showButtonTimer);
+                    showButtonTimer = window.setTimeout(() => {
+                        if (this._hasScrollbar() && !this._isNearBottom()) {
+                            this.dispatchEvent(
+                                new CustomEvent("near-bottom-changed", {
+                                    detail: { nearBottom: false },
+                                    bubbles: true,
+                                    composed: true,
+                                }),
+                            );
+                        }
+                    }, 300);
+                }
             }
         });
     }
+
     updated(changed: Map<string, unknown>) {
         if (changed.has("messages")) {
-            // Code highlighting debounce
             if (this.highlightDebounceTimer !== null) {
                 window.clearTimeout(this.highlightDebounceTimer);
             }
@@ -147,115 +150,25 @@ export class ChatOutput extends LitElement {
             this.highlightDebounceTimer = window.setTimeout(() => {
                 this.highlightDebounceTimer = null;
                 highlightAllCodeBlocks(this.shadowRoot, this.highlightedBlocks);
-
-                // Highlight kann Layout verändern → danach scroll korrigieren
                 this._scrollToBottom();
             }, 250);
 
-            // scroll nach DOM update
             requestAnimationFrame(() => {
-                if (this._isNearBottom()) {
-                    this._autoScroll = true;
-                }
-
                 this._scrollToBottom();
             });
 
-            // dein Loading Timeout
             this.messages.forEach((msg) => {
                 if (msg.loading && !this.loadingTimeouts.has(msg)) {
                     const timeout = window.setTimeout(() => {
                         msg.loading = false;
                         msg.content = msg.content || "No response received.";
-
                         this.loadingTimeouts.delete(msg);
                         this.requestUpdate();
                     }, 60000);
-
                     this.loadingTimeouts.set(msg, timeout);
                 }
             });
         }
-    }
-    private _getContextLabel(context: ChatContext): string {
-        return context.hasSelection
-            ? `${context.fileName} (${context.startLine}-${context.endLine})`
-            : context.fileName;
-    }
-
-    private _handleResend(index: number) {
-        this.dispatchEvent(
-            new CustomEvent("resend-message", {
-                detail: { messageIndex: index },
-                bubbles: true,
-                composed: true,
-            }),
-        );
-    }
-
-    private _estimateTokensFreed(index: number): number {
-        const content = [this.messages[index], this.messages[index + 1]]
-            .filter(Boolean)
-            .map((m) => m.content)
-            .join("");
-        return estimateTokenCount(content);
-    }
-
-    private _handleDelete(index: number) {
-        this.dispatchEvent(
-            new CustomEvent("delete-message", {
-                detail: { messageIndex: index },
-                bubbles: true,
-                composed: true,
-            }),
-        );
-    }
-
-    private _handleEdit(index: number) {
-        this.editingIndex = index;
-    }
-
-    private _handleEditCancel() {
-        this.editingIndex = null;
-    }
-
-    private _handleEditSend(e: CustomEvent) {
-        this.editingIndex = null;
-        this.dispatchEvent(
-            new CustomEvent("edit-message", {
-                detail: e.detail,
-                bubbles: true,
-                composed: true,
-            }),
-        );
-    }
-
-    private _getMessageWithoutContext(msg: ChatMessage): string {
-        // If message has contexts, extract just the user's text (after all code blocks)
-        if (msg.contexts && msg.contexts.length > 0) {
-            const content = msg.content;
-            // Find the end of the last context block (``` followed by newlines and actual message)
-            const codeBlockEnd = content.lastIndexOf("```\n\n");
-            if (codeBlockEnd !== -1) {
-                return content.substring(codeBlockEnd + 5);
-            }
-        }
-        return msg.content;
-    }
-
-    private _renderContexts(contexts: ChatContext[]) {
-        return contexts.map((context) => {
-            const label = this._getContextLabel(context);
-            const escapedCode = context.content.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-            return html`
-                <collama-accordion
-                    type="code"
-                    label="${label}"
-                    .code="${context.content}"
-                    copyCode="${escapedCode}"
-                ></collama-accordion>
-            `;
-        });
     }
 
     render() {
@@ -268,72 +181,56 @@ export class ChatOutput extends LitElement {
                 </div>
             `;
         }
-        const lastIndex = this.messages.length - 1;
+
+        let lastAssistantIndex = -1;
+        for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === "assistant") {
+                lastAssistantIndex = i;
+                break;
+            }
+        }
+
         return html`
             <div class="output-container">
-                ${this.messages.map((msg, index) => {
-                    const isStreamingMessage = index === lastIndex && msg.role === "assistant" && !msg.loading;
-                    const displayContent = this._getMessageWithoutContext(msg);
+                ${messages.map((msg, index) => {
                     const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
-                    return html`
-                        <div class="message ${msg.role} ${isOutOfContext ? "out-of-context" : ""}">
-                            <div class="bubble ${msg.role === "user" ? "bubble-user" : ""}">
-                                <div class="role-header ${msg.role === "user" ? "role-user" : "role-assistant"}">
-                                    <span class="role-label"
-                                        >${isOutOfContext
-                                            ? html`<span class="warning-icon" title="Not in context"
-                                                  >${icons.alertTriangle}</span
-                                              >`
-                                            : ""}${msg.role === "user" ? "User" : "Assistant"}</span
-                                    >
-                                    ${msg.role === "user"
-                                        ? html`
-                                              <div class="message-actions">
-                                                  <button
-                                                      class="edit-button"
-                                                      @click=${() => this._handleEdit(index)}
-                                                      title="Edit and resend"
-                                                  >
-                                                      ✎ Edit
-                                                  </button>
-                                                  <button
-                                                      class="resend-button"
-                                                      @click=${() => this._handleResend(index)}
-                                                      title="Resend from here"
-                                                  >
-                                                      ↻ Resend
-                                                  </button>
-                                                  <button
-                                                      class="delete-button"
-                                                      @click=${() => this._handleDelete(index)}
-                                                      title="Delete this message pair (~${this._estimateTokensFreed(
-                                                          index,
-                                                      )} tokens freed)"
-                                                  >
-                                                      ✕ Delete
-                                                  </button>
-                                              </div>
-                                          `
-                                        : ""}
-                                </div>
-                                ${msg.contexts && msg.contexts.length > 0 ? this._renderContexts(msg.contexts) : ""}
-                                ${this.editingIndex === index
-                                    ? html`
-                                          <collama-chatedit
-                                              .content=${displayContent}
-                                              .messageIndex=${index}
-                                              @edit-send=${(e: CustomEvent) => this._handleEditSend(e)}
-                                              @edit-cancel=${() => this._handleEditCancel()}
-                                          ></collama-chatedit>
-                                      `
-                                    : msg.loading
-                                      ? html`<span class="loading"
-                                            >Generating response<span class="dots">...</span></span
-                                        >`
-                                      : unsafeHTML(this._getCachedMarkdown(displayContent, isStreamingMessage))}
-                            </div>
-                        </div>
-                    `;
+                    const outOfContextClass = isOutOfContext ? "out-of-context" : "";
+                    const warningIcon = isOutOfContext
+                        ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>`
+                        : "";
+
+                    if (msg.role === "tool") {
+                        return renderToolMessage({ msg, outOfContextClass, warningIcon });
+                    }
+
+                    if (msg.role === "user") {
+                        return renderUserMessage({
+                            host: this,
+                            messages,
+                            msg,
+                            index,
+                            outOfContextClass,
+                            warningIcon,
+                            getCachedMarkdown: this._getCachedMarkdown,
+                        });
+                    }
+
+                    if (msg.role === "assistant") {
+                        return renderAssistantMessage({
+                            msg,
+                            outOfContextClass,
+                            warningIcon,
+                            isStreaming: index === lastAssistantIndex && !msg.loading,
+                            getCachedMarkdown: this._getCachedMarkdown,
+                        });
+                    }
+
+                    return renderSystemMessage({
+                        msg,
+                        outOfContextClass,
+                        warningIcon,
+                        getCachedMarkdown: this._getCachedMarkdown,
+                    });
                 })}
             </div>
         `;

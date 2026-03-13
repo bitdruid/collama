@@ -44,7 +44,7 @@ export class ChatPanel {
 
         webview.onDidReceiveMessage(async (msg) => {
             if (msg.type === "chat-ready") {
-                await this.handleChatReady(webview);
+                this.handleChatReady(webview);
                 return;
             }
 
@@ -125,20 +125,30 @@ export class ChatPanel {
 
     /**
      * Handles the chat-ready message by sending initial state to the webview.
+     * Sends data immediately with contextUsed: 0, then follows up with the real token count.
      */
-    private async handleChatReady(webview: vscode.Webview) {
+    private handleChatReady(webview: vscode.Webview) {
         const activeSession = this.session.getActiveSession();
-        const contextUsed = await calculateContextUsage(activeSession?.messages || []);
+        const messages = activeSession?.messages || [];
         const contextMax = userConfig.apiTokenContextLenInstruct;
 
         webview.postMessage({
             type: "init",
             sessions: mapSessionsToSummaries(this.session.sessions),
             activeSessionId: this.session.activeSessionId,
-            history: sanitizeMessages(activeSession?.messages || []),
-            contextUsed,
+            history: sanitizeMessages(messages),
+            contextUsed: 0,
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
+        });
+
+        // Calculate token usage in background and send follow-up
+        calculateContextUsage(messages).then((contextUsed) => {
+            webview.postMessage({
+                type: "context-usage-update",
+                contextUsed,
+                contextMax,
+            });
         });
     }
 
@@ -286,8 +296,8 @@ export class ChatPanel {
     private async handleChatRequest(msg: { messages: ChatHistory[]; sessionId: string }, webview: vscode.Webview) {
         const { messages, sessionId } = msg;
 
-        // Derive assistantIndex — the slot right after the last received message
-        const assistantIndex = messages.length;
+        // Mutable index tracking the current message being streamed/added
+        let currentIndex = messages.length;
 
         // Update the active session's messages (full history + empty assistant slot)
         const session = this.session.sessions.find((s) => s.id === sessionId);
@@ -301,7 +311,7 @@ export class ChatPanel {
         const options = buildInstructionOptions();
 
         // Trim old message pairs if context limit is exceeded
-        const { trimmedMessages, pairsRemoved, tokensFreed } = await trimMessagesForContext(
+        const { trimmedMessages, pairsRemoved, tokensFreed, totalTokens } = await trimMessagesForContext(
             messages,
             options.num_predict,
             userConfig.apiTokenContextLenInstruct,
@@ -314,6 +324,13 @@ export class ChatPanel {
         });
         webview.postMessage({ type: "context-trimmed", pairsRemoved, tokensFreed, contextStartIndex });
 
+        // Send known token count so the UI can update the context bar immediately
+        webview.postMessage({
+            type: "context-usage-update",
+            contextUsed: totalTokens,
+            contextMax: userConfig.apiTokenContextLenInstruct,
+        });
+
         if (pairsRemoved > 0) {
             logMsg(`Context limit exceeded: removed ${pairsRemoved} pair(s) (~${tokensFreed} tokens) from LLM context`);
         }
@@ -324,13 +341,49 @@ export class ChatPanel {
             trimmedMessages,
             async (chunk) => {
                 this.session.updateSession(session, (s) => {
-                    s.messages[assistantIndex].content += chunk;
+                    s.messages[currentIndex].content += chunk;
                 });
-                webview.postMessage({ type: "agent-chunk", index: assistantIndex, chunk });
+                webview.postMessage({ type: "agent-chunk", index: currentIndex, chunk });
             },
             async (event) => {
                 if (event.type === "agent-tokens") {
                     webview.postMessage({ type: "agent-tokens", tokens: event.tokens });
+                }
+
+                if (event.type === "agent-tool-done") {
+                    currentIndex++;
+                    this.session.updateSession(session, (s) => {
+                        s.messages.splice(currentIndex, 0, {
+                            role: "tool" as const,
+                            content: event.toolResult as string,
+                            tool_call_id: "",
+                            toolName: event.toolName as string,
+                            toolArgs: event.toolArgs as string,
+                        });
+                    });
+                    webview.postMessage({
+                        type: "agent-add-message",
+                        message: {
+                            role: "tool",
+                            content: event.toolResult as string,
+                            toolName: event.toolName as string,
+                            toolArgs: event.toolArgs as string,
+                        },
+                    });
+                }
+
+                if (event.type === "agent-assistant-new") {
+                    currentIndex++;
+                    this.session.updateSession(session, (s) => {
+                        s.messages.splice(currentIndex, 0, {
+                            role: "assistant" as const,
+                            content: "",
+                        });
+                    });
+                    webview.postMessage({
+                        type: "agent-add-message",
+                        message: { role: "assistant", content: "" },
+                    });
                 }
             },
         );
@@ -339,7 +392,7 @@ export class ChatPanel {
         // Notify webview that chat is complete
         webview.postMessage({ type: "chat-complete" });
 
-        // Update sessions list after response completes
+        // Update sessions list after response completes (recalculate tokens since content changed)
         this.session.sendSessionsUpdate();
     }
 }
@@ -359,12 +412,12 @@ async function trimMessagesForContext(
     messages: ChatHistory[],
     numPredict: number,
     contextMax: number,
-): Promise<{ trimmedMessages: ChatHistory[]; pairsRemoved: number; tokensFreed: number }> {
+): Promise<{ trimmedMessages: ChatHistory[]; pairsRemoved: number; tokensFreed: number; totalTokens: number }> {
     const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(msg.content)));
     let totalTokens = tokenCounts.reduce((sum, count) => sum + count, 0);
 
     if (checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
-        return { trimmedMessages: messages, pairsRemoved: 0, tokensFreed: 0 };
+        return { trimmedMessages: messages, pairsRemoved: 0, tokensFreed: 0, totalTokens };
     }
 
     let pairsRemoved = 0;
@@ -384,5 +437,6 @@ async function trimMessagesForContext(
         trimmedMessages: messages.slice(startIndex),
         pairsRemoved,
         tokensFreed,
+        totalTokens,
     };
 }
