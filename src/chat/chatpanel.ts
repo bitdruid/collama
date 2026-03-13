@@ -355,7 +355,7 @@ export class ChatPanel {
                     this.session.updateSession(session, (s) => {
                         s.messages.splice(currentIndex, 0, {
                             role: "tool" as const,
-                            content: event.toolResult as string,
+                            content: "",
                             tool_call_id: "",
                             toolName: event.toolName as string,
                             toolArgs: event.toolArgs as string,
@@ -365,7 +365,7 @@ export class ChatPanel {
                         type: "agent-add-message",
                         message: {
                             role: "tool",
-                            content: event.toolResult as string,
+                            content: "",
                             toolName: event.toolName as string,
                             toolArgs: event.toolArgs as string,
                         },

@@ -160,6 +160,10 @@ export class Agent {
  *
  * Wraps a ChatContext instance to handle message storage, retrieval,
  * and specific optimization logic.
+ * TODO: readFile content is currently set to empty in the session
+ * Agent needs to re-read on each request (save tokens in history).
+ * Possible Solution:
+ * Session does deduplication of the whole chat by itself
  */
 class AgentContext {
     private context: ChatContext;
