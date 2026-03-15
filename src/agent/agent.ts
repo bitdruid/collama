@@ -99,6 +99,11 @@ export class Agent {
                         tool_calls: result.toolCalls,
                     });
 
+                    onEvent?.({
+                        type: "agent-tool-calls",
+                        toolCalls: result.toolCalls,
+                    });
+
                     for (const toolCall of result.toolCalls) {
                         if (signal.aborted) {
                             break;
@@ -125,6 +130,7 @@ export class Agent {
 
                         onEvent?.({
                             type: "agent-tool-done",
+                            toolCallId: toolCall.id,
                             toolName: toolCall.function.name,
                             toolArgs: argsBody,
                             toolResult: toolResult,

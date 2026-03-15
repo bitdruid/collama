@@ -1,3 +1,4 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { createByModelName } from "@microsoft/tiktokenizer";
 import nodeFetch from "node-fetch";
 import { Readable } from "node:stream";
@@ -133,4 +134,19 @@ export function requestOpenAI(url: string, bearer?: string): OpenAI {
         fetch: proxyFetch as typeof fetch,
     });
     return openai;
+}
+
+/**
+ * Creates and configures an Anthropic client instance.
+ *
+ * @param url - The base URL of the Anthropic API (defaults to https://api.anthropic.com).
+ * @param apiKey - The Anthropic API key.
+ * @returns A configured Anthropic client.
+ */
+export function requestAnthropic(url: string, apiKey: string): Anthropic {
+    return new Anthropic({
+        apiKey: apiKey,
+        baseURL: url,
+        fetch: proxyFetch as typeof fetch,
+    });
 }

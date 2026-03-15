@@ -3,10 +3,10 @@ import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
 import { RequestType, sysConfig } from "../config";
 import { logMsg } from "../logging";
-import { ToolCallAccumulator } from "./litellmfix";
+import { ToolCallAccumulator, nextToolId } from "./litellmfix";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
-import Tokenizer, { requestOllama, requestOpenAI } from "./utils-common";
+import Tokenizer, { requestAnthropic, requestOllama, requestOpenAI } from "./utils-common";
 
 /**
  * Factory that creates and delegates to the appropriate LLM client implementation
@@ -15,14 +15,19 @@ import Tokenizer, { requestOllama, requestOpenAI } from "./utils-common";
  * @implements {LlmClient}
  */
 export class LlmClientFactory implements LlmClient {
-    private factoryClient?: OllamaClient | OpenAiClient;
+    private factoryClient?: OllamaClient | OpenAiClient | AnthropicClient;
+    private requestType: RequestType;
 
     constructor(requestType: RequestType) {
+        this.requestType = requestType;
+
         if (requestType === "completion") {
             if (sysConfig.backendCompletion === "ollama") {
                 this.factoryClient = new OllamaClient();
             } else if (sysConfig.backendCompletion === "openai") {
                 this.factoryClient = new OpenAiClient();
+            } else if (sysConfig.backendCompletion === "anthropic") {
+                this.factoryClient = new AnthropicClient();
             }
         }
         if (requestType === "instruction") {
@@ -30,6 +35,8 @@ export class LlmClientFactory implements LlmClient {
                 this.factoryClient = new OllamaClient();
             } else if (sysConfig.backendInstruct === "openai") {
                 this.factoryClient = new OpenAiClient();
+            } else if (sysConfig.backendInstruct === "anthropic") {
+                this.factoryClient = new AnthropicClient();
             }
         }
     }
@@ -186,7 +193,7 @@ class OllamaClient implements LlmClient {
                 if (part.message.tool_calls) {
                     for (const tc of part.message.tool_calls) {
                         toolCalls.push({
-                            id: `call_${toolCalls.length}`,
+                            id: nextToolId(),
                             type: "function",
                             function: { name: tc.function.name, arguments: JSON.stringify(tc.function.arguments) },
                         });
@@ -347,6 +354,165 @@ class OpenAiClient implements LlmClient {
         }
     }
 }
+/**
+ * Converts internal OpenAI-compatible messages to the format expected by the Anthropic API.
+ * - System messages are excluded here (extracted separately as the `system` param).
+ * - Assistant messages with tool_calls become content blocks.
+ * - Tool result messages (role: "tool") become user messages with tool_result content blocks,
+ *   merged with adjacent tool results into a single user turn.
+ */
+function toAnthropicMessages(messages: any[]): any[] {
+    const result: any[] = [];
+    for (const msg of messages) {
+        if (msg.role === "assistant") {
+            const content: any[] = [];
+            if (msg.content) {
+                content.push({ type: "text", text: msg.content });
+            }
+            if (msg.tool_calls) {
+                for (const tc of msg.tool_calls as ToolCall[]) {
+                    content.push({
+                        type: "tool_use",
+                        id: tc.id,
+                        name: tc.function.name,
+                        input:
+                            typeof tc.function.arguments === "string"
+                                ? JSON.parse(tc.function.arguments)
+                                : tc.function.arguments,
+                    });
+                }
+            }
+            result.push({ role: "assistant", content });
+        } else if (msg.role === "tool") {
+            // Merge consecutive tool results into a single user turn
+            const toolResultBlock = { type: "tool_result", tool_use_id: msg.tool_call_id, content: msg.content };
+            const prev = result[result.length - 1];
+            if (prev && prev.role === "user" && Array.isArray(prev.content)) {
+                prev.content.push(toolResultBlock);
+            } else {
+                result.push({ role: "user", content: [toolResultBlock] });
+            }
+        } else {
+            result.push({ role: msg.role, content: msg.content });
+        }
+    }
+    return result;
+}
+
+/**
+ * Converts internal OpenAI-style tool definitions to the format expected by the Anthropic API.
+ */
+function toAnthropicTools(tools: any[]): any[] {
+    return tools.map((t) => ({
+        name: t.function.name,
+        description: t.function.description ?? "",
+        input_schema: t.function.parameters ?? { type: "object", properties: {} },
+    }));
+}
+
+/**
+ * Client implementation for interacting with the Anthropic API (Claude models).
+ * Handles chat completions and prompt generation using the `requestAnthropic` utility.
+ */
+class AnthropicClient implements LlmClient {
+    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+        try {
+            const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
+
+            const anthropic = requestAnthropic(apiEndpoint.url, apiEndpoint.bearer);
+
+            const systemMsg = messages.find((m) => m.role === "system");
+            const anthropicMessages = toAnthropicMessages(messages.filter((m) => m.role !== "system"));
+            const anthropicTools = toAnthropicTools(tools);
+            const stopSequences = buildStopTokens(stop);
+
+            const startTime = process.hrtime.bigint();
+            const stream = anthropic.messages.stream({
+                model,
+                max_tokens: options.num_predict,
+                ...(systemMsg ? { system: systemMsg.content } : {}),
+                messages: anthropicMessages,
+                ...(anthropicTools.length > 0 ? { tools: anthropicTools } : {}),
+                ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+                ...(stopSequences.length > 0 ? { stop_sequences: stopSequences } : {}),
+            });
+
+            let result = "";
+            let resultTokens = 0;
+            const toolUseBlocks = new Map<number, { id: string; name: string; inputStr: string }>();
+
+            for await (const event of stream) {
+                if (signal?.aborted) {
+                    break;
+                }
+                if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+                    toolUseBlocks.set(event.index, {
+                        id: event.content_block.id,
+                        name: event.content_block.name,
+                        inputStr: "",
+                    });
+                }
+                if (event.type === "content_block_delta") {
+                    if (event.delta.type === "text_delta") {
+                        result += event.delta.text;
+                        onChunk?.(event.delta.text);
+                    } else if (event.delta.type === "input_json_delta") {
+                        const block = toolUseBlocks.get(event.index);
+                        if (block) {
+                            block.inputStr += event.delta.partial_json;
+                        }
+                    }
+                }
+                if (event.type === "message_delta" && event.usage) {
+                    const endTime = process.hrtime.bigint();
+                    resultTokens = event.usage.output_tokens ?? 0;
+                    logPerformance(options.num_predict, resultTokens, Number(endTime - startTime), result);
+                }
+            }
+
+            const toolCalls: ToolCall[] = Array.from(toolUseBlocks.values()).map((b) => ({
+                id: nextToolId(),
+                type: "function",
+                function: { name: b.name, arguments: b.inputStr || "{}" },
+            }));
+
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
+        } catch (err) {
+            return handleError(err);
+        }
+    }
+
+    async generate(settings: LlmGenerateSettings): Promise<string> {
+        try {
+            const { apiEndpoint, model, prompt, options, stop } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, prompt);
+
+            const anthropic = requestAnthropic(apiEndpoint.url, apiEndpoint.bearer);
+            const stopSequences = buildStopTokens(stop);
+
+            const startTime = process.hrtime.bigint();
+            const response = await anthropic.messages.create({
+                model,
+                max_tokens: options.num_predict,
+                messages: [{ role: "user", content: prompt }],
+                ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+                ...(stopSequences.length > 0 ? { stop_sequences: stopSequences } : {}),
+                stream: false,
+            });
+            const endTime = process.hrtime.bigint();
+
+            const result = response.content.find((b) => b.type === "text")?.text ?? "";
+            const resultTokens = response.usage.output_tokens ?? 0;
+            logPerformance(options.num_predict, resultTokens, Number(endTime - startTime), result);
+
+            return cleanupResult(result, resultTokens, options);
+        } catch (err) {
+            return handleError(err);
+        }
+    }
+}
+
 // Shared logging
 
 function logRequest(url: string, model: string, options: Options, stop: Stop, input: string): void {

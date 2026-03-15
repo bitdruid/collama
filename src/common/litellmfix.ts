@@ -1,6 +1,11 @@
 import { logAgent } from "../logging";
 import { ToolCall } from "./llmoptions";
 
+let _toolIdSeq = 0;
+export function nextToolId(): string {
+    return `t${Date.now().toString(36)}${(_toolIdSeq++).toString(36)}`;
+}
+
 /**
  * Accumulates streamed tool-call deltas into complete tool calls.
  * Handles LiteLLM issue: duplicate id on every chunk, and
@@ -46,7 +51,7 @@ export class ToolCallAccumulator {
      */
     build(): ToolCall[] {
         const toolCalls: ToolCall[] = Array.from(this.pending.values()).map((tc) => ({
-            id: tc.id || `call_${crypto.randomUUID()}`,
+            id: nextToolId(),
             type: "function" as const,
             function: { name: tc.name, arguments: this.sanitizeArgs(tc.args) },
         }));

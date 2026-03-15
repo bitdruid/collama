@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 import { Agent } from "../agent/agent";
 import { ChatHistory } from "../common/context-chat";
+import { ToolCall } from "../common/llmoptions";
 import { EditorContext } from "../common/context-editor";
 import { buildInstructionOptions } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
@@ -356,7 +357,7 @@ export class ChatPanel {
                         s.messages.splice(currentIndex, 0, {
                             role: "tool" as const,
                             content: "",
-                            tool_call_id: "",
+                            tool_call_id: event.toolCallId as string,
                             toolName: event.toolName as string,
                             toolArgs: event.toolArgs as string,
                         });
@@ -369,6 +370,15 @@ export class ChatPanel {
                             toolName: event.toolName as string,
                             toolArgs: event.toolArgs as string,
                         },
+                    });
+                }
+
+                if (event.type === "agent-tool-calls") {
+                    this.session.updateSession(session, (s) => {
+                        const msg = s.messages[currentIndex];
+                        if (msg.role === "assistant") {
+                            msg.tool_calls = event.toolCalls as ToolCall[];
+                        }
                     });
                 }
 
