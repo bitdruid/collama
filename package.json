@@ -251,6 +251,7 @@
         "typescript-eslint": "^8.56.1"
     },
     "dependencies": {
+        "@anthropic-ai/sdk": "^0.78.0",
         "@microsoft/tiktokenizer": "^1.0.10",
         "fast-glob": "^3.3.3",
         "highlight.js": "^11.11.1",

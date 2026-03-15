@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { requestOllama, requestOpenAI, setTlsRejectUnauthorized } from "./common/utils-common";
+import { requestAnthropic, requestOllama, requestOpenAI, setTlsRejectUnauthorized } from "./common/utils-common";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 
@@ -77,6 +77,10 @@ export function getConfig() {
  * @returns {void}
  */
 export async function updateVSConfig() {
+    if (isFirstDetection) {
+        isFirstDetection = false;
+        await new Promise((r) => setTimeout(r, INITIAL_DELAY));
+    }
     const cfg = getConfig();
 
     const updateConfig = {
@@ -171,33 +175,17 @@ export async function updateVSConfig() {
         }
     }
 
-    // Retry if any backend is still undetected, reset counter on success
-    if (!sysConfig.backendCompletion || !sysConfig.backendInstruct) {
+    if (!sysConfig.backendCompletion && !sysConfig.backendInstruct) {
         scheduleRetry();
     } else {
         retryCount = 0;
     }
-
-    // // detect the models max context length if endpoint or model changes
-    // if ((endpointCompletionChanged || modelCompletionChanged) && updateConfig.apiEndpointCompletion) {
-    //     const contextLen = await getModelContextLength("completion");
-    //     if (contextLen > 0) {
-    //         logMsg(`ℹ️ Detected model context length (completion): ${contextLen}`);
-    //         sysConfig.contextLenCompletion = contextLen;
-    //     }
-    // }
-
-    // if ((endpointInstructChanged || modelInstructChanged) && updateConfig.apiEndpointInstruct) {
-    //     const contextLen = await getModelContextLength("instruction");
-    //     if (contextLen > 0) {
-    //         logMsg(`ℹ️ Detected model context length (instruct): ${contextLen}`);
-    //         sysConfig.contextLenInstruct = contextLen;
-    //     }
-    // }
 }
 
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let retryCount = 0;
+let isFirstDetection = true;
+const INITIAL_DELAY = 5000;
 const MAX_RETRIES = 60;
 const DELAY = 30000;
 
@@ -217,7 +205,7 @@ function scheduleRetry() {
     }, DELAY);
 }
 
-type LlmBackendType = "ollama" | "openai" | "";
+type LlmBackendType = "ollama" | "openai" | "anthropic" | "";
 const DETECTION_TIMEOUT_MS = 5000;
 
 async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBackendType> {
@@ -242,60 +230,14 @@ async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBacke
         errors.push(`OpenAI: ${err instanceof Error ? err.message : String(err)}`);
     }
 
+    try {
+        const anthropic = requestAnthropic(apiBase, bearer ?? "");
+        await Promise.race([anthropic.models.list(), createTimeout(DETECTION_TIMEOUT_MS)]);
+        return "anthropic";
+    } catch (err) {
+        errors.push(`Anthropic: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
     logMsg(`Backend detection failed for ${apiBase}:\n  ${errors.join("\n  ")}`);
     return "";
 }
-
-// /**
-//  * Retrieves the maximum context length supported by the configured model
-//  * for the specified request type.
-//  *
-//  * This function inspects the backend ("ollama" or "openai") to fetch model details.
-//  * - For Ollama, it queries the model info for a context length field.
-//  * - For OpenAI, it queries the model list for the specific model's max length.
-//  *
-//  * @param requestType - The type of request ("completion" or "instruction").
-//  * @returns The detected context length as a number. Returns 0 if the backend
-//  *          is unknown, the model is not found, or an error occurs.
-//  */
-// async function getModelContextLength(requestType: RequestType): Promise<number> {
-//     try {
-//         const isCompletion = requestType === "completion";
-//         const endpoint = isCompletion ? userConfig.apiEndpointCompletion : userConfig.apiEndpointInstruct;
-//         const bearer = isCompletion ? await getBearerCompletion() : await getBearerInstruct();
-//         const backend = isCompletion ? sysConfig.backendCompletion : sysConfig.backendInstruct;
-//         const model = isCompletion ? userConfig.apiModelCompletion : userConfig.apiModelInstruct;
-
-//         if (!endpoint || !backend || !model) {
-//             return 0;
-//         }
-
-//         if (backend === "ollama") {
-//             const ollama = requestOllama(endpoint, bearer);
-//             const info = await ollama.show({ model });
-
-//             if (info.model_info && typeof info.model_info === "object") {
-//                 for (const key in info.model_info) {
-//                     if (key.toLowerCase().endsWith("context_length")) {
-//                         const contextLength = (info.model_info as any)[key];
-//                         if (typeof contextLength === "number") {
-//                             return contextLength;
-//                         }
-//                     }
-//                 }
-//             }
-//         } else if (backend === "openai") {
-//             const openai = requestOpenAI(endpoint, bearer);
-//             const info = await openai.models.list();
-//             const modelData = info.data.find((m) => m.id === model);
-
-//             if (modelData && typeof (modelData as any).max_model_len === "number") {
-//                 return (modelData as any).max_model_len;
-//             }
-//         }
-//         return 0;
-//     } catch (error: unknown) {
-//         logMsg(`Error checking context length: ${(error as Error).message}`);
-//         return 0;
-//     }
-// }

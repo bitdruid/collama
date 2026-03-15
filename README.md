@@ -12,83 +12,87 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![VS Code Version](https://img.shields.io/badge/VS%20Code-%5E1.109.0-blue)](https://code.visualstudio.com/)
 
-[Features](#features) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Contributing](#contributing)
+[Overview](#overview) • [Features](#features) • [Infos](#infos) • [Quick Start](#quick-start) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Usage](#usage) • [Contributing](#contributing)
 
 </div>
 
-<p align="center">
-  <img src="media/collama.gif" alt="collama" width="500px"/>
-</p>
-
----
+___
 
 ## Overview
 
-Collama is a VS Code extension that uses local LLM backends to get code completions, refactoring suggestions, and documentation generation — all running privately on your machine with no external API calls. Supports [Ollama](https://ollama.com) and OpenAI-compatible API (verified only [vLLM](https://docs.vllm.ai/)).
+Collama is a VS Code extension that provides code completions, refactoring suggestions, and documentation generation. It supports multiple backends:
+
+- **[Ollama](https://ollama.com)** - local
+- **[OpenAI compatible](https://ai-sdk.dev/providers/openai-compatible-providers)** — local / cloud
+- **[Anthropic](https://www.anthropic.com)** — cloud (this feature was only added as poc testing / better use claude ext)
 
 > **Status:** This project is in heavy active development. Please note that the output may sometimes be unexpected or unusual. If you have any ideas to improve the quality just let me know and contribute!
 
 ## Features
 
 **Code Completion**
-
-- Inline, multiline, and multiblock (more a "fun" feature) suggestions
+- Inline, multiline, and multiblock suggestions
 - Uses currently opened tabs as context
+<p align="left">
+  <img src="media/collama.gif" alt="collama" width="500px"/>
+</p>
 
 **Code Edits**
-
-- Generate docstrings and documentation
-- Extract functions and refactor code
-- Simplify complex code
-- Fix syntax errors
-- Manual instructions
+- Generate docstrings, extract functions, refactor code
+- Simplify complex code, fix syntax errors
+- Manual instructions for custom edits
 
 **Chat Interface**
-
-- Chat with multiple sessions - organize conversations by topic
-- Send selected code or files to chat as context
-- Context is automatically attached to messages with file reference and line numbers
-- Real-time context usage bar showing token consumption vs model's context window
-- Automatic context trimming — when conversations exceed the context window, older messages are removed from the LLM context while remaining visible in the chat
-- Visual indicators for messages no longer included in the LLM context
+- Multiple chat sessions with custom titles
+- Send selected code/files as context with file references
+- Real-time context usage bar with automatic trimming
+- Edit messages, copy sessions, scroll navigation
 
 **AI Agent with Tool Calling**
-
-- LLM can interact with your workspace through function calling
-- **File System Tools**: Read files, list directories, search contents with regex, create files and folders, edit files with diff preview
-- **Git Tools**: List commits or branches, view diffs (working tree or compare commits/branches)
-- **Code Analysis Tools**: Get diagnostics (errors, warnings, hints) from the language server
-- **Security**: Path traversal protection, workspace boundary enforcement, .gitignore integration
-- **Real-time Feedback**: Tool calls streamed to chat as they execute
-- The agent can autonomously explore your codebase to provide context-aware assistance
-- **Read-Only Mode**: Toggle edit tools to run the agent in safe, read-only mode
+- File system tools: read, list, search, create, edit files
+- Git tools: list commits/branches, view diffs
+- Code analysis: get diagnostics from language server
+- Security: path protection, workspace boundaries, .gitignore integration
+- Real-time tool execution feedback
+- Read-only mode for safe exploration
 
 **Commit Messages**
-
-- AI-generated conventional commit messages from staged changes
-- Analyzes git diff to create meaningful commit descriptions
+- AI-generated conventional commits from staged changes
 - Accessible via command palette or Source Control view
 
-**Context Management**
+**Current Context Management**
+- Smart pruning of editor tabs in autocomplete to fit context
+- Chat history optimization (tool results removed)
+- Token counter visualization in agent-loop / total usage
 
-- Automatic detection of the model's context window size (Ollama and OpenAI)
-- Prompts that exceed the context window are blocked with a clear notification
-- Open editor tabs are used as additional context for completions, with smart pruning to fit the context window
+## Infos
+
+- The agentic mode (tool-calling) has been tested on vLLM (nvidia h200) with the following models:
+  - gpt-oss:120b
+  - glm-4.7-fp8
+  - minimax2.5
+> [!NOTE]
+> For smaller models (like gpt-oss:20b), it's recommended to use chat-only mode instead of agentic mode for better performance.
+
 
 ## Quick Start
 
 ### Prerequisites
 
 - **VS Code** 1.109.0 or higher
-- **Ollama** running locally (or accessible on your network), or any OpenAI-compatible API
+- **Ollama** or **OpenAI compatible** running locally (or accessible on your network)
 - A supported code model (see [Models](#models))
 
 ## Installation
 
-Use the marketplace to install the extension or build the vsix yourself. Additionally, you need an Ollama instance running on your local network.<br>
-See [this link for Ollama installation instructions](https://docs.ollama.com/quickstart) or [this link for the Docker image](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image).
+Install the extension from the marketplace or build the vsix yourself, then configure an endpoint in settings.
+For authentication, set your API key as a bearer token — see [Bearer Tokens](#bearer-tokens-api-key).
 
-Alternatively, you can use [vLLM](https://docs.vllm.ai/) (tested). Point the endpoint settings to your server and the backend is auto-detected. If authentication is required, see [Bearer Tokens](#bearer-tokens-optional).
+**Ollama (local, remote)**<br>
+See [Ollama installation instructions](https://docs.ollama.com/quickstart) or the [Docker image](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image). Point `apiEndpointCompletion` / `apiEndpointInstruct` to your Ollama host (default: `http://127.0.0.1:11434`).
+
+**OpenAI / OpenAI-compatible (local, remote, cloud)**<br>
+Point the endpoint settings to your server (e.g. [vLLM](https://docs.vllm.ai/), LiteLLM) or to `https://api.openai.com` for the OpenAI cloud API.
 
 ## Configuration
 
@@ -157,12 +161,12 @@ Collama is tested primarily with the **Qwen Coder** for Completion and **gpt-oss
 
 | Model         | Tested Sizes | FIM Support | Status   | Notes                                    |
 | ------------- | ------------ | ----------- | -------- | ---------------------------------------- |
+| codeqwen      | —            | ⚠️           | Untested | May work; contributions welcome          |
 | qwen2.5-coder | 1.5B, 3B, 7B | ✅           | Stable   | Recommended for most use cases           |
 | qwen3-coder   | 30B          | ✅           | Stable   | Excellent quality, higher resource usage |
 | starcoder     | —            | ⚠️           | Untested | May work; contributions welcome          |
-| starcoder2    | 3B           | ✅           | Stable   | Improved over v1                         |
+| starcoder2    | 3B           | ✅           | Stable   | Like qwen2.5-coder                       |
 | codellama     | 7B, 13B      | ⚠️           | Limited  | Limited file context support; FIM is ok  |
-| codeqwen      | —            | ⚠️           | Untested | May work; contributions welcome          |
 
 Note: Models are tested primarily with quantization level q4. Results may vary with other quantization levels.
 
@@ -195,8 +199,9 @@ Note: ChatML format is not supported - that means only true FIM models will work
     - File name and path
     - Line number references
     - Selected code or full file content
-4. Monitor token usage with the real-time context bar (shows usage vs. model's max context)
+4. Monitor token usage with the real-time context bar and agent-token counter
 5. Create multiple chat sessions to organize conversations by topic
+6. Session ManagementCopy / rename / delete sessions
 
 ### Commit Message Generation
 
@@ -210,12 +215,6 @@ Note: ChatML format is not supported - that means only true FIM models will work
 
 > [!IMPORTANT]
 > It is recommended to turn off agentic-mode for small local/home models (like gpt-oss:20b) and use them in chat-only mode instead.
-
-#### Agentic mode was tested on locally hosted vLLM (OpenAI SDK) with
-
-- gpt-oss:120b
-- glm-4.7-fp8
-- minimax2.5
 
 **Available Tools:**
 
