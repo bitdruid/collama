@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { icons } from "../../../../../utils-web";
+import { icons } from "../../../../../utils-front";
 import { inputButtonsStyles } from "./styles";
 
 export class ChatInputButtons extends LitElement {

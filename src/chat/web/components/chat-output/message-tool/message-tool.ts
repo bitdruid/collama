@@ -1,8 +1,8 @@
 import { html, TemplateResult } from "lit";
-import { ChatMessage } from "../../chat-container/chat-container";
+import { ToolMessage } from "../../../../../common/context-chat";
 
 export interface ToolRenderOptions {
-    msg: ChatMessage;
+    msg: ToolMessage;
     outOfContextClass: string;
     warningIcon: TemplateResult | string;
 }

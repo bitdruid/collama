@@ -3,6 +3,17 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.7] - 2026-03-16
+
+### Added
+- Anthropic client support (POC) for expanded model compatibility
+
+### Changed
+- Refactored chat container logic into modular components for better maintainability
+- Improved edit cancel behavior with custom user feedback messages
+- Code cleanup: removed commented code and simplified chat header structure
+- Added a hidden llm-info tag to give the llm additional informations to chat-content
+
 ## [1.4.6] - 2026-03-13
 
 ### Added

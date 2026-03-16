@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
-import { icons } from "../../../../../utils-web";
+import { icons } from "../../../../../utils-front";
 import { galleryButtonStyles } from "./styles";
 
 export class PromptGalleryButtons extends LitElement {

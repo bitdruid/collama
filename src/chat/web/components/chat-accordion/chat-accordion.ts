@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 
-import { highlightCodeBlock, icons } from "../../../utils-web";
+import { highlightCodeBlock, icons } from "../../../utils-front";
 import { accordionStyles } from "./styles";
 
 export type AccordionType = "think" | "summary" | "code" | "tool";

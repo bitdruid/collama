@@ -9,6 +9,10 @@ export function logWebview(message: string) {
     });
 }
 
+export function llmInfoTag(tagContent: string): string {
+    return `<llm-info>${tagContent}</llm-info>`;
+}
+
 /**
  * Estimate token count from text using a ~4 chars per token approximation.
  */

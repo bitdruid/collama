@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ChatHistory } from "../common/context-chat";
 import { userConfig } from "../config";
-import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-host";
+import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
 
 /**
  * Represents a single chat session, including its messages and metadata.

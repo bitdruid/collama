@@ -1,7 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { estimateTokenCount } from "../../../../utils-web";
-import { ChatContext, ChatMessage } from "../../chat-container/chat-container";
+import { AttachedContext, ChatContext, ChatHistory } from "../../../../../common/context-chat";
+import { estimateTokenCount } from "../../../../utils-front";
 import "./edit";
 
 export interface UserMessageHost {
@@ -12,21 +12,23 @@ export interface UserMessageHost {
 
 export interface UserRenderOptions {
     host: UserMessageHost;
-    messages: ChatMessage[];
-    msg: ChatMessage;
+    messages: ChatHistory[];
+    msg: ChatHistory;
     index: number;
     outOfContextClass: string;
     warningIcon: TemplateResult | string;
     getCachedMarkdown: (content: string, isStreaming: boolean) => string;
 }
 
-function getContextLabel(context: ChatContext): string {
-    return context.hasSelection
-        ? `${context.fileName} (${context.startLine}-${context.endLine})`
-        : context.fileName;
+function getContexts(msg: ChatHistory): AttachedContext[] {
+    return (msg as { contexts?: AttachedContext[] }).contexts ?? [];
 }
 
-function renderContexts(contexts: ChatContext[]) {
+function getContextLabel(context: AttachedContext): string {
+    return context.hasSelection ? `${context.fileName} (${context.startLine}-${context.endLine})` : context.fileName;
+}
+
+function renderContexts(contexts: AttachedContext[]) {
     return contexts.map((context) => {
         const label = getContextLabel(context);
         const escapedCode = context.content.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -41,8 +43,9 @@ function renderContexts(contexts: ChatContext[]) {
     });
 }
 
-function getMessageWithoutContext(msg: ChatMessage): string {
-    if (msg.contexts && msg.contexts.length > 0) {
+function getMessageWithoutContext(msg: ChatHistory): string {
+    const contexts = getContexts(msg);
+    if (contexts.length > 0) {
         const content = msg.content;
         const codeBlockEnd = content.lastIndexOf("```\n\n");
         if (codeBlockEnd !== -1) {
@@ -52,16 +55,10 @@ function getMessageWithoutContext(msg: ChatMessage): string {
     return msg.content;
 }
 
-function findTurnEnd(messages: ChatMessage[], index: number): number {
-    let end = index + 1;
-    while (end < messages.length && messages[end].role !== "user") {
-        end++;
-    }
-    return end;
-}
-
-function estimateTokensFreed(messages: ChatMessage[], index: number): number {
-    const end = findTurnEnd(messages, index);
+function estimateTokensFreed(messages: ChatHistory[], index: number): number {
+    const wvChatContext = new ChatContext();
+    wvChatContext.setMessages(messages);
+    const end = wvChatContext.getTurnEnd(index);
     const content = messages
         .slice(index, end)
         .map((m) => m.content)
@@ -113,6 +110,7 @@ function handleEditSend(host: UserMessageHost, e: CustomEvent) {
 
 export function renderUserMessage(opts: UserRenderOptions) {
     const { host, messages, msg, index, outOfContextClass, warningIcon } = opts;
+    const contexts = getContexts(msg);
     const displayContent = getMessageWithoutContext(msg);
     return html`
         <div class="message user ${outOfContextClass}">
@@ -120,11 +118,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                 <div class="role-header role-user">
                     <span class="role-label">${warningIcon}User</span>
                     <div class="message-actions">
-                        <button
-                            class="edit-button"
-                            @click=${() => handleEdit(host, index)}
-                            title="Edit and resend"
-                        >
+                        <button class="edit-button" @click=${() => handleEdit(host, index)} title="Edit and resend">
                             ✎ Edit
                         </button>
                         <button
@@ -143,7 +137,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                         </button>
                     </div>
                 </div>
-                ${msg.contexts && msg.contexts.length > 0 ? renderContexts(msg.contexts) : ""}
+                ${contexts.length > 0 ? renderContexts(contexts) : ""}
                 ${host.editingIndex === index
                     ? html`
                           <collama-chatedit

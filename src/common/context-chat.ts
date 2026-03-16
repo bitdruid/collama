@@ -1,9 +1,19 @@
 import { ToolCall } from "./llmoptions";
 
+export interface AttachedContext {
+    fileName: string;
+    filePath: string;
+    hasSelection: boolean;
+    startLine: number;
+    endLine: number;
+    content: string;
+}
+
 export type ChatHistory =
     | {
           role: "system" | "user";
           content: string;
+          contexts?: AttachedContext[];
       }
     | {
           role: "assistant";
@@ -18,6 +28,16 @@ export type ChatHistory =
           toolArgs?: string;
       };
 
+export type UserMessage = Extract<ChatHistory, { role: "user" | "system" }>;
+export type AssistantMessage = Extract<ChatHistory, { role: "assistant" }>;
+export type ToolMessage = Extract<ChatHistory, { role: "tool" }>;
+
+/**
+ * Message history container shared between host and webview.
+ *
+ * Note: the tool-call methods (`findToolCall`, `findToolResponse`, `setToolResponse`,
+ * `getToolCallId`) are host-only and only meaningful with `ChatHistory` messages.
+ */
 export class ChatContext {
     private messages: ChatHistory[];
 
@@ -47,13 +67,6 @@ export class ChatContext {
     }
 
     /**
-     * Returns the message at the given index, or undefined if out of bounds.
-     */
-    public getMessage(index: number): ChatHistory | undefined {
-        return this.messages[index];
-    }
-
-    /**
      * Appends a message to the end of the history.
      */
     public push(message: ChatHistory): void {
@@ -61,51 +74,75 @@ export class ChatContext {
     }
 
     /**
-     * Inserts a message at the given index (shifts existing messages right).
-     * If index is out of bounds, the message is appended.
+     * Appends a text chunk to the content of the message at the given index.
+     * Mutates in-place for streaming performance.
      */
-    public insert(index: number, message: ChatHistory): void {
-        if (index >= this.messages.length) {
-            this.messages.push(message);
-        } else {
-            this.messages.splice(index < 0 ? 0 : index, 0, message);
-        }
-    }
-
-    /**
-     * Deletes the message at the given index. Returns the removed message, or undefined if out of bounds.
-     */
-    public delete(index: number): ChatHistory | undefined {
-        if (index < 0 || index >= this.messages.length) {
-            return undefined;
-        }
-        return this.messages.splice(index, 1)[0];
-    }
-
-    /**
-     * Returns the role of the message at the given index, or undefined if out of bounds.
-     */
-    public getRole(index: number): ChatHistory["role"] | undefined {
-        return this.messages[index]?.role;
-    }
-
-    /**
-     * Returns the content of the message at the given index, or undefined if out of bounds.
-     */
-    public getContent(index: number): string | undefined {
-        return this.messages[index]?.content;
-    }
-
-    /**
-     * Returns the tool_calls array of an assistant message at the given index, or undefined.
-     */
-    public getToolCalls(index: number): ToolCall[] | undefined {
+    public appendContent(index: number, chunk: string): void {
         const msg = this.messages[index];
-        if (msg && msg.role === "assistant") {
-            return msg.tool_calls;
+        if (msg) {
+            msg.content += chunk;
         }
-        return undefined;
     }
+
+    /**
+     * Replaces the content of the message at the given index.
+     */
+    public setContent(index: number, content: string): void {
+        const msg = this.messages[index];
+        if (msg) {
+            msg.content = content;
+        }
+    }
+
+    /**
+     * Keeps only messages before the given index (exclusive).
+     * truncate(3) keeps messages[0..2].
+     */
+    public truncate(index: number): void {
+        this.messages = this.messages.slice(0, Math.max(0, index));
+    }
+
+    /**
+     * Removes messages in the range [start, end).
+     */
+    public removeRange(start: number, end: number): void {
+        if (start < 0 || end > this.messages.length || start >= end) {
+            return;
+        }
+        this.messages.splice(start, end - start);
+    }
+
+    /**
+     * Replaces messages in the range [start, end) with the given messages.
+     * Can be used to insert, delete, or replace a range.
+     */
+    public replaceRange(start: number, end: number, messages: ChatHistory[]): void {
+        if (start < 0 || end > this.messages.length || start > end) {
+            return;
+        }
+        this.messages.splice(start, end - start, ...messages);
+    }
+
+    /**
+     * Returns the exclusive end index of the turn starting at the given user message index.
+     * A turn = the user message + all following non-user messages until the next user message.
+     * Returns index+1 if the message at index is not a user message.
+     */
+    public getTurnEnd(index: number): number {
+        if (index < 0 || index >= this.messages.length) {
+            return index;
+        }
+        if (this.messages[index].role !== "user") {
+            return index + 1;
+        }
+        let end = index + 1;
+        while (end < this.messages.length && this.messages[end].role !== "user") {
+            end++;
+        }
+        return end;
+    }
+
+    // -- ToolCall accessors (host-side only) --
 
     /**
      * Returns the tool_call_id of a tool message at the given index, or undefined.
@@ -117,8 +154,6 @@ export class ChatContext {
         }
         return undefined;
     }
-
-    // -- ToolCall accessors (by tool_call_id) --
 
     /**
      * Finds a ToolCall in the history by its id.
@@ -141,38 +176,10 @@ export class ChatContext {
     public findToolResponse(toolCallId: string): (ChatHistory & { role: "tool" }) | undefined {
         for (const msg of this.messages) {
             if (msg.role === "tool" && msg.tool_call_id === toolCallId) {
-                return msg;
+                return msg as ChatHistory & { role: "tool" };
             }
         }
         return undefined;
-    }
-
-    /**
-     * Partially updates a tool call by its id.
-     * Only provided fields are overwritten.
-     *
-     * Example: setToolCall("call_123", { function: { name: "foo", arguments: "{}" } })
-     */
-    public setToolCall(toolCallId: string, fields: Partial<ToolCall>): boolean {
-        const tc = this.findToolCall(toolCallId);
-        if (!tc) {
-            return false;
-        }
-        if (fields.id !== undefined) {
-            tc.id = fields.id;
-        }
-        if (fields.type !== undefined) {
-            tc.type = fields.type;
-        }
-        if (fields.function !== undefined) {
-            if (fields.function.name !== undefined) {
-                tc.function.name = fields.function.name;
-            }
-            if (fields.function.arguments !== undefined) {
-                tc.function.arguments = fields.function.arguments;
-            }
-        }
-        return true;
     }
 
     /**

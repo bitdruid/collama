@@ -1,6 +1,6 @@
 import { html, LitElement, PropertyValues } from "lit";
 import { state } from "lit/decorators.js";
-import { ChatContext } from "../chat-container/chat-container";
+import { AttachedContext } from "../../../../common/context-chat";
 import "./components/input-buttons/input-buttons"; // Import
 import "./components/prompt-gallery/prompt-gallery";
 import { chatInputStyles } from "./styles-chat-input";
@@ -22,7 +22,7 @@ export class ChatInput extends LitElement {
 
     userInput = "";
     rows = 1;
-    contexts: ChatContext[] = [];
+    contexts: AttachedContext[] = [];
     isLoading = false;
 
     updated(changedProperties: PropertyValues) {

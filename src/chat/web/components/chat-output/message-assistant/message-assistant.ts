@@ -1,20 +1,21 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { ChatMessage } from "../../chat-container/chat-container";
+import { ChatHistory } from "../../../../../common/context-chat";
 
 export interface AssistantRenderOptions {
-    msg: ChatMessage;
+    msg: ChatHistory;
     outOfContextClass: string;
     warningIcon: TemplateResult | string;
     isStreaming: boolean;
+    isLoading: boolean;
     getCachedMarkdown: (content: string, isStreaming: boolean) => string;
 }
 
 export function renderAssistantMessage(opts: AssistantRenderOptions) {
-    const { msg, outOfContextClass, warningIcon, isStreaming } = opts;
+    const { msg, outOfContextClass, warningIcon, isStreaming, isLoading } = opts;
 
     // Hide empty assistant messages (e.g. LLM returned only tool calls)
-    if (!msg.content && !msg.loading && !isStreaming) {
+    if (!msg.content && !isLoading && !isStreaming) {
         return html``;
     }
 
@@ -24,7 +25,7 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
                 <!-- <div class="role-header role-assistant">
                     <span class="role-label">${warningIcon}Assistant</span>
                 </div> -->
-                ${msg.loading
+                ${isLoading
                     ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
                     : unsafeHTML(opts.getCachedMarkdown(msg.content, isStreaming))}
             </div>
@@ -33,7 +34,7 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
 }
 
 export function renderSystemMessage(opts: {
-    msg: ChatMessage;
+    msg: ChatHistory;
     outOfContextClass: string;
     warningIcon: TemplateResult | string;
     getCachedMarkdown: (content: string, isStreaming: boolean) => string;

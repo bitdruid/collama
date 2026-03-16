@@ -93,12 +93,14 @@ export class Agent {
                         break;
                     }
 
+                    // agent internal history
                     history.push({
                         role: "assistant",
                         content: result.content,
                         tool_calls: result.toolCalls,
                     });
 
+                    // push to webview history
                     onEvent?.({
                         type: "agent-tool-calls",
                         toolCalls: result.toolCalls,

@@ -1,8 +1,8 @@
 import { LitElement, html } from "lit";
 import MarkdownIt from "markdown-it";
-import { highlightAllCodeBlocks, icons } from "../../../utils-web";
+import { ChatHistory } from "../../../../common/context-chat";
+import { highlightAllCodeBlocks, icons } from "../../../utils-front";
 import "../chat-accordion/chat-accordion";
-import { ChatMessage } from "../chat-container/chat-container";
 import "../chat-session/components/popup/chat-empty-state";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
@@ -48,16 +48,17 @@ export class ChatOutput extends LitElement {
     static properties = {
         messages: { state: true },
         contextStartIndex: { type: Number },
+        isGenerating: { type: Boolean },
         editingIndex: { state: true },
     };
 
     static styles = outputStyles;
 
-    messages: ChatMessage[] = [];
+    messages: ChatHistory[] = [];
     contextStartIndex: number = 0;
+    isGenerating: boolean = false;
     editingIndex: number | null = null;
 
-    private loadingTimeouts = new Map<ChatMessage, number>();
     private highlightedBlocks = new WeakSet<Element>();
     private renderedMarkdownCache = new Map<string, string>();
     private highlightDebounceTimer: number | null = null;
@@ -156,18 +157,6 @@ export class ChatOutput extends LitElement {
             requestAnimationFrame(() => {
                 this._scrollToBottom();
             });
-
-            this.messages.forEach((msg) => {
-                if (msg.loading && !this.loadingTimeouts.has(msg)) {
-                    const timeout = window.setTimeout(() => {
-                        msg.loading = false;
-                        msg.content = msg.content || "No response received.";
-                        this.loadingTimeouts.delete(msg);
-                        this.requestUpdate();
-                    }, 60000);
-                    this.loadingTimeouts.set(msg, timeout);
-                }
-            });
         }
     }
 
@@ -216,11 +205,13 @@ export class ChatOutput extends LitElement {
                     }
 
                     if (msg.role === "assistant") {
+                        const isGeneratingThis = this.isGenerating && index === lastAssistantIndex;
                         return renderAssistantMessage({
                             msg,
                             outOfContextClass,
                             warningIcon,
-                            isStreaming: index === lastAssistantIndex && !msg.loading,
+                            isLoading: isGeneratingThis && !msg.content,
+                            isStreaming: isGeneratingThis && !!msg.content,
                             getCachedMarkdown: this._getCachedMarkdown,
                         });
                     }

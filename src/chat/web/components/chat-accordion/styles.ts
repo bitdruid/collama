@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { hljsStyles } from "../../../utils-web";
+import { hljsStyles } from "../../../utils-front";
 
 export const accordionStyles = [
     ...hljsStyles,

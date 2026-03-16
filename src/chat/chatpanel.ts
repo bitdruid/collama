@@ -2,16 +2,15 @@ import * as vscode from "vscode";
 
 import { Agent } from "../agent/agent";
 import { ChatHistory } from "../common/context-chat";
-import { ToolCall } from "../common/llmoptions";
 import { EditorContext } from "../common/context-editor";
-import { buildInstructionOptions } from "../common/llmoptions";
+import { buildInstructionOptions, ToolCall } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
 import { chatCompress_Template } from "../common/prompt";
 import Tokenizer from "../common/utils-common";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { Session } from "./session";
-import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-host";
+import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
 import { StartPage } from "./web/components/chat-start";
 
 /**
@@ -108,6 +107,7 @@ export class ChatPanel {
     receiveCurrentContext(currentContext: EditorContext) {
         const document = currentContext.textEditor.document;
         const fileName = document.fileName.split("/").pop() || document.fileName;
+        const filePath = document.fileName;
         const hasSelection = currentContext.selectionText.length > 0;
         const startLine = currentContext.selectionStartLine + 1; // 1-based
         const endLine = currentContext.selectionEndLine + 1;
@@ -116,6 +116,7 @@ export class ChatPanel {
             type: "context-update",
             context: {
                 fileName,
+                filePath,
                 hasSelection,
                 startLine,
                 endLine,
