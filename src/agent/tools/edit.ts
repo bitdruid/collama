@@ -2,7 +2,7 @@ import path from "path";
 import * as vscode from "vscode";
 import { withProgressNotification } from "../../common/utils-common";
 import { logAgent, logMsg } from "../../logging";
-import { confirmAction, getWorkspaceRoot, isWithinRoot } from "../tools";
+import { secureWorkspace } from "../tools";
 
 /**
  * When true, editFile applies changes without showing a diff preview.
@@ -11,10 +11,24 @@ import { confirmAction, getWorkspaceRoot, isWithinRoot } from "../tools";
 let autoAcceptEdits = false;
 
 /**
- * Resets the auto-accept flag. Call at the start of each agent session.
+ * When true, create_exec creates files without showing a preview.
+ * Set by the "Create All" quick-pick option; reset per agent session.
+ */
+let autoAcceptCreates = false;
+
+/**
+ * When true, deleteFile_exec deletes files without confirmation.
+ * Set by the "Delete All" quick-pick option; reset per agent session.
+ */
+let autoAcceptDeletes = false;
+
+/**
+ * Resets the auto-accept flags. Call at the start of each agent session.
  */
 export function resetAutoAcceptEdits(): void {
     autoAcceptEdits = false;
+    autoAcceptCreates = false;
+    autoAcceptDeletes = false;
 }
 
 /**
@@ -45,6 +59,32 @@ function getFileExtension(filePath: string): string {
 }
 
 /**
+ * Shows a QuickPick with the given action items plus a Cancel option.
+ * On cancel (or dismiss), prompts for an optional rejection reason.
+ * Returns the chosen value, or null with an optional reason on cancel.
+ */
+async function showActionQuickPick(
+    actionPicks: (vscode.QuickPickItem & { value: string })[],
+    placeHolder: string,
+): Promise<{ value: string | null; reason?: string }> {
+    const picks = [...actionPicks, { label: "$(close) Cancel", value: "cancel" }];
+    const choice = await vscode.window.showQuickPick(picks, {
+        placeHolder,
+        canPickMany: false,
+        ignoreFocusOut: true,
+    });
+    if (!choice || choice.value === "cancel") {
+        const reason = await vscode.window.showInputBox({
+            prompt: "What should the agent do instead? (Sends response to LLM)",
+            placeHolder: "Type your instructions here...",
+            ignoreFocusOut: true,
+        });
+        return { value: null, reason: reason || "The user canceled this action." };
+    }
+    return { value: choice.value };
+}
+
+/**
  * Helper function to apply file changes
  */
 async function applyFileChanges(uri: vscode.Uri, newContent: string): Promise<void> {
@@ -64,174 +104,100 @@ async function applyFileChanges(uri: vscode.Uri, newContent: string): Promise<vo
 }
 
 /**
- * Generic function to preview and apply file changes with diff view.
- * Always shows the diff preview before applying changes.
- *
- * @param filePath The path to the original file
- * @param newContent The new content to apply
- * @param options Optional configuration
- * @returns Promise that resolves to true if changes were applied, false otherwise
+ * Shows a preview of file changes and asks for user confirmation.
+ * Edit mode (originalContent provided): opens a diff view with Accept/Accept All.
+ * Create mode (no originalContent): opens a single preview with Create/Create All.
  */
-async function handleFileChangesWithDiff(
+async function handleChanges(
     filePath: string,
     newContent: string,
     options: {
-        diffTitle?: string;
+        /** Present → edit/diff mode. Absent → create mode. */
+        originalContent?: string;
+        title?: string;
         progressMessage?: string;
-        /** When true, offer an "Accept All" choice that sets autoAcceptEdits. */
-        showAcceptAll?: boolean;
+        showBulkAction?: boolean;
     } = {},
 ): Promise<{ success: boolean; message: string }> {
+    const isEdit = options.originalContent !== undefined;
     const {
-        diffTitle = "collama – Preview Changes",
-        progressMessage = "collama: Processing changes…",
-        showAcceptAll = false,
+        title = isEdit ? "collama – Preview Changes" : "collama – Preview New File",
+        progressMessage = isEdit ? "collama: Processing changes…" : "collama: Creating file…",
+        showBulkAction = false,
     } = options;
 
     return await withProgressNotification(progressMessage, async () => {
-        // Read the original file content (prefer in-memory buffer for unsaved changes)
-        const uri = vscode.Uri.file(filePath);
-        const openDoc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
-        const originalText = openDoc
-            ? openDoc.getText()
-            : Buffer.from(await vscode.workspace.fs.readFile(uri)).toString("utf8");
-
-        // Check if there are actual changes
-        if (newContent === originalText) {
+        if (isEdit && newContent === options.originalContent) {
             return { success: false, message: "No changes to apply." };
         }
 
-        // Create virtual URIs for the diff view
         const id = Date.now();
-        const leftUri = vscode.Uri.parse(`collama-diff:${id}-original${getFileExtension(filePath)}`);
-        const rightUri = vscode.Uri.parse(`collama-diff:${id}-modified${getFileExtension(filePath)}`);
-
-        // Set up content provider
+        const ext = getFileExtension(filePath);
+        const uri = vscode.Uri.file(filePath);
+        const scheme = isEdit ? "collama-diff" : "collama-preview";
         const provider = new DiffContentProvider();
-        const registration = vscode.workspace.registerTextDocumentContentProvider("collama-diff", provider);
+        const registration = vscode.workspace.registerTextDocumentContentProvider(scheme, provider);
 
-        provider.set(leftUri, originalText);
-        provider.set(rightUri, newContent);
+        const previewUri = vscode.Uri.parse(`${scheme}:${id}-modified${ext}`);
+        const originalUri = isEdit ? vscode.Uri.parse(`${scheme}:${id}-original${ext}`) : undefined;
 
-        // Open diff view
-        await vscode.commands.executeCommand("vscode.diff", leftUri, rightUri, diffTitle);
+        try {
+            provider.set(previewUri, newContent);
 
-        // QuickPick menu
-        const picks: (vscode.QuickPickItem & { value?: string })[] = [
-            {
-                label: "$(check) Accept",
-                value: "accept",
-            },
-            ...(showAcceptAll
-                ? [
-                      {
-                          label: "$(check-all) Accept All",
-                          value: "acceptAll",
-                      },
-                  ]
-                : []),
-            {
-                label: "$(close) Cancel",
-                value: "cancel",
-            },
-        ];
-
-        // Calculate relative path from workspace root for display
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
-        const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, filePath) : filePath;
-
-        const choice = await vscode.window.showQuickPick(picks, {
-            placeHolder: `Apply to: ${relativePath}`,
-            canPickMany: false,
-            ignoreFocusOut: true,
-        });
-
-        let applied = false;
-        let resultMessage = "Edit rejected by user.";
-
-        if (choice?.value === "accept" || choice?.value === "acceptAll") {
-            await applyFileChanges(uri, newContent);
-            applied = true;
-            resultMessage = "Changes applied.";
-
-            if (choice.value === "acceptAll") {
-                autoAcceptEdits = true;
-                resultMessage = "Changes applied. Auto-accepting future edits.";
+            if (isEdit && originalUri) {
+                provider.set(originalUri, options.originalContent!);
+                await vscode.commands.executeCommand("vscode.diff", originalUri, previewUri, title);
+            } else {
+                await vscode.commands.executeCommand("vscode.openWith", previewUri, "default");
             }
+
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+            const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, filePath) : filePath;
+
+            const acceptValue = isEdit ? "accept" : "create";
+            const bulkValue = isEdit ? "acceptAll" : "createAll";
+            const { value, reason } = await showActionQuickPick(
+                [
+                    { label: isEdit ? "$(check) Accept" : "$(check) Create", value: acceptValue },
+                    ...(showBulkAction
+                        ? [{ label: isEdit ? "$(check-all) Accept All" : "$(check-all) Create All", value: bulkValue }]
+                        : []),
+                ],
+                isEdit ? `Apply to: ${relativePath}` : `Create: ${relativePath}`,
+            );
+
+            let success = false;
+            const action = isEdit ? "Edit" : "File creation";
+            let message = `${action} rejected by user. ${reason}`;
+
+            if (value === acceptValue || value === bulkValue) {
+                if (isEdit) {
+                    await applyFileChanges(uri, newContent);
+                    message = "Changes applied.";
+                    if (value === bulkValue) {
+                        autoAcceptEdits = true;
+                        message = "Changes applied. Auto-accepting future edits.";
+                    }
+                } else {
+                    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(newContent));
+                    message = "File created.";
+                    if (value === bulkValue) {
+                        autoAcceptCreates = true;
+                        message = "File created. Auto-creating future files.";
+                    }
+                }
+                success = true;
+            }
+
+            const activeUri = vscode.window.activeTextEditor?.document.uri.toString();
+            if (activeUri === previewUri.toString() || activeUri === originalUri?.toString()) {
+                await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+            }
+
+            return { success, message };
+        } finally {
+            registration.dispose();
         }
-
-        // Close the diff preview if it's still active
-        const activeEditor = vscode.window.activeTextEditor;
-        if (
-            activeEditor &&
-            (activeEditor.document.uri.toString() === leftUri.toString() ||
-                activeEditor.document.uri.toString() === rightUri.toString())
-        ) {
-            await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-        }
-
-        registration.dispose();
-
-        return { success: applied, message: resultMessage };
-    });
-}
-
-/**
- * Generic function to preview and create a new file.
- * Shows a preview of the new file content before creating it.
- *
- * @param filePath The path where the new file will be created
- * @param content The content to write to the new file
- * @param options Optional configuration
- * @returns Promise that resolves to true if file was created, false otherwise
- */
-async function handleNewFileCreation(
-    filePath: string,
-    content: string,
-    options: {
-        /** Title for the preview view */
-        previewTitle?: string;
-        /** Progress message during processing */
-        progressMessage?: string;
-    } = {},
-): Promise<{ success: boolean; message: string }> {
-    const { previewTitle = "collama – Preview New File", progressMessage = "collama: Creating file…" } = options;
-
-    return await withProgressNotification(progressMessage, async () => {
-        // Create virtual URI for the preview
-        const id = Date.now();
-        const previewUri = vscode.Uri.parse(`collama-preview:${id}${getFileExtension(filePath)}`);
-
-        // Set up content provider
-        const provider = new DiffContentProvider();
-        const registration = vscode.workspace.registerTextDocumentContentProvider("collama-preview", provider);
-
-        provider.set(previewUri, content);
-
-        // Open preview
-        await vscode.commands.executeCommand("vscode.openWith", previewUri, "default");
-
-        const shouldCreate = await confirmAction("Create File", `Create new file: ${filePath}?`);
-        let resultMessage = "";
-
-        if (shouldCreate) {
-            const uri = vscode.Uri.file(filePath);
-            const encoder = new TextEncoder();
-            await vscode.workspace.fs.writeFile(uri, encoder.encode(content));
-            resultMessage = "File created.";
-        } else {
-            resultMessage = "File creation rejected by user.";
-        }
-
-        // Close the preview if it's still active
-        const activeEditor = vscode.window.activeTextEditor;
-        if (activeEditor && activeEditor.document.uri.toString() === previewUri.toString()) {
-            await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-        }
-
-        registration.dispose();
-
-        return { success: shouldCreate, message: resultMessage };
     });
 }
 
@@ -246,20 +212,11 @@ async function handleNewFileCreation(
 export async function editFile_exec(args: { filePath: string; oldString: string; newString: string }): Promise<string> {
     logMsg(`Agent - tool use editFile file=${args.filePath}`);
 
-    const root = getWorkspaceRoot();
-    if (!root) {
-        logAgent(`[editFile] No workspace root`);
-        return JSON.stringify({ error: "No workspace root" });
-    }
-
-    const fullPath = path.resolve(root, args.filePath);
-    if (!isWithinRoot(root, fullPath)) {
-        logAgent(`[editFile] Path must not escape the workspace root: ${args.filePath}`);
-        return JSON.stringify({ error: "Path must not escape the workspace root" });
-    }
+    const ws = secureWorkspace(args.filePath, "editFile");
+    if (ws.error) { return ws.error; }
 
     try {
-        const content = await readFileContent(fullPath);
+        const content = await readFileContent(ws.fullPath);
         let newContent: string;
 
         if (content === "" && args.oldString === "") {
@@ -299,7 +256,7 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
 
         // Auto-accept: apply without diff preview
         if (autoAcceptEdits) {
-            await applyFileChanges(vscode.Uri.file(fullPath), newContent);
+            await applyFileChanges(vscode.Uri.file(ws.fullPath), newContent);
             return JSON.stringify({
                 success: true,
                 message: "Changes applied (auto-accepted).",
@@ -307,10 +264,11 @@ export async function editFile_exec(args: { filePath: string; oldString: string;
             });
         }
 
-        const result = await handleFileChangesWithDiff(fullPath, newContent, {
-            diffTitle: `collama – Edit: ${args.filePath}`,
+        const result = await handleChanges(ws.fullPath, newContent, {
+            originalContent: content,
+            title: `collama – Edit: ${args.filePath}`,
             progressMessage: `collama: Editing ${args.filePath}…`,
-            showAcceptAll: true,
+            showBulkAction: true,
         });
 
         return JSON.stringify({
@@ -365,22 +323,13 @@ export async function create_exec(args: { filePath: string; content?: string }):
     const isFolder = args.content === undefined;
     logMsg(`Agent - tool use create ${isFolder ? "folder" : "file"}=${args.filePath}`);
 
-    const root = getWorkspaceRoot();
-    if (!root) {
-        logAgent(`[create] No workspace root`);
-        return JSON.stringify({ error: "No workspace root" });
-    }
-
-    const fullPath = path.resolve(root, args.filePath);
-    if (!isWithinRoot(root, fullPath)) {
-        logAgent(`[create] Path must not escape the workspace root: ${args.filePath}`);
-        return JSON.stringify({ error: "Path must not escape the workspace root" });
-    }
+    const ws = secureWorkspace(args.filePath, "create");
+    if (ws.error) { return ws.error; }
 
     try {
         // Check if path already exists
         try {
-            const stat = await vscode.workspace.fs.stat(vscode.Uri.file(fullPath));
+            const stat = await vscode.workspace.fs.stat(vscode.Uri.file(ws.fullPath));
             if (stat.type === vscode.FileType.Directory) {
                 logAgent(`[create] Folder already exists: ${args.filePath}`);
                 return JSON.stringify({ error: `Folder already exists: ${args.filePath}` });
@@ -392,23 +341,36 @@ export async function create_exec(args: { filePath: string; content?: string }):
         }
 
         if (isFolder) {
-            if (!(await confirmAction("Create Folder", `Create new folder: ${args.filePath}?`))) {
-                return JSON.stringify({
-                    success: false,
-                    message: "Folder creation rejected by user.",
-                    filePath: args.filePath,
-                });
+            const { value, reason } = await showActionQuickPick(
+                [{ label: "$(folder-opened) Create", value: "create" }],
+                `Create folder: ${args.filePath}`,
+            );
+
+            if (!value) {
+                return JSON.stringify({ success: false, message: reason, filePath: args.filePath });
             }
 
-            await vscode.workspace.fs.createDirectory(vscode.Uri.file(fullPath));
+            await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
 
             return JSON.stringify({ success: true, message: "Folder created.", filePath: args.filePath });
         }
 
+        // Auto-accept: create without preview
+        if (autoAcceptCreates) {
+            const encoder = new TextEncoder();
+            await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), encoder.encode(args.content!));
+            return JSON.stringify({
+                success: true,
+                message: "File created (auto-created).",
+                filePath: args.filePath,
+            });
+        }
+
         // Create file with preview
-        const result = await handleNewFileCreation(fullPath, args.content!, {
-            previewTitle: `collama – New File: ${args.filePath}`,
+        const result = await handleChanges(ws.fullPath, args.content!, {
+            title: `collama – New File: ${args.filePath}`,
             progressMessage: `collama: Creating ${args.filePath}…`,
+            showBulkAction: true,
         });
 
         return JSON.stringify({
@@ -455,20 +417,11 @@ export const create_def = {
 export async function deleteFile_exec(args: { filePath: string }): Promise<string> {
     logMsg(`Agent - tool use deleteFile file=${args.filePath}`);
 
-    const root = getWorkspaceRoot();
-    if (!root) {
-        logAgent(`[deleteFile] No workspace root`);
-        return JSON.stringify({ error: "No workspace root" });
-    }
-
-    const fullPath = path.resolve(root, args.filePath);
-    if (!isWithinRoot(root, fullPath)) {
-        logAgent(`[deleteFile] Path must not escape the workspace root: ${args.filePath}`);
-        return JSON.stringify({ error: "Path must not escape the workspace root" });
-    }
+    const ws = secureWorkspace(args.filePath, "deleteFile");
+    if (ws.error) { return ws.error; }
 
     try {
-        const uri = vscode.Uri.file(fullPath);
+        const uri = vscode.Uri.file(ws.fullPath);
 
         // Verify the file exists
         try {
@@ -482,13 +435,43 @@ export async function deleteFile_exec(args: { filePath: string }): Promise<strin
             return JSON.stringify({ error: `File not found: ${args.filePath}` });
         }
 
-        if (!(await confirmAction("Delete", `Delete file: ${args.filePath}?`))) {
-            return JSON.stringify({ success: false, message: "Deletion rejected by user.", filePath: args.filePath });
+        // Auto-accept: delete without confirmation
+        if (autoAcceptDeletes) {
+            await vscode.workspace.fs.delete(uri);
+            return JSON.stringify({
+                success: true,
+                message: "File deleted (auto-deleted).",
+                filePath: args.filePath,
+            });
         }
 
-        await vscode.workspace.fs.delete(uri);
+        // Calculate relative path from workspace root for display
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, ws.fullPath) : ws.fullPath;
 
-        return JSON.stringify({ success: true, message: "File deleted.", filePath: args.filePath });
+        const { value, reason } = await showActionQuickPick(
+            [
+                { label: "$(trash) Delete", value: "delete" },
+                { label: "$(warning) Delete All", value: "deleteAll" },
+            ],
+            `Delete: ${relativePath}`,
+        );
+
+        let deleted = false;
+        let resultMessage = reason!;
+
+        if (value === "delete" || value === "deleteAll") {
+            await vscode.workspace.fs.delete(uri);
+            deleted = true;
+            resultMessage = "File deleted.";
+
+            if (value === "deleteAll") {
+                autoAcceptDeletes = true;
+                resultMessage = "File deleted. Auto-deleting future files.";
+            }
+        }
+
+        return JSON.stringify({ success: deleted, message: resultMessage, filePath: args.filePath });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         logAgent(`[deleteFile] Failed to delete file: ${args.filePath} - ${msg}`);

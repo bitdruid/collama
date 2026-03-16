@@ -1,7 +1,7 @@
 import path from "path";
 import * as vscode from "vscode";
 import { userConfig } from "../config";
-import { logMsg } from "../logging";
+import { logAgent, logMsg } from "../logging";
 import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
 import {
     create_def,
@@ -115,6 +115,27 @@ export function isWithinRoot(root: string, resolvedPath: string): boolean {
     const normalizedRoot = path.resolve(root);
     const normalizedPath = path.resolve(resolvedPath);
     return normalizedPath === normalizedRoot || normalizedPath.startsWith(normalizedRoot + path.sep);
+}
+
+/**
+ * Resolves a relative path against the workspace root and validates it doesn't escape.
+ * Returns { root, fullPath } on success, or { error } (a ready-to-return JSON string) on failure.
+ */
+export function secureWorkspace(
+    relPath: string,
+    toolName: string,
+): { root: string; fullPath: string; error: string } {
+    const root = getWorkspaceRoot();
+    if (!root) {
+        logAgent(`[${toolName}] No workspace root`);
+        return { root: "", fullPath: "", error: JSON.stringify({ error: "No workspace root" }) };
+    }
+    const fullPath = path.resolve(root, relPath);
+    if (!isWithinRoot(root, fullPath)) {
+        logAgent(`[${toolName}] Path must not escape the workspace root: ${relPath}`);
+        return { root: "", fullPath: "", error: JSON.stringify({ error: "Path must not escape the workspace root" }) };
+    }
+    return { root, fullPath, error: "" };
 }
 
 /**

@@ -4,9 +4,6 @@ import { requestAnthropic, requestOllama, requestOpenAI, setTlsRejectUnauthorize
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 
-const lock = false;
-const allowedKeys = ["autoComplete", "suggestMode", "suggestDelay"];
-
 export type RequestType = "completion" | "instruction";
 
 /**
@@ -111,12 +108,6 @@ export async function updateVSConfig() {
         const newValue = updateConfig[key];
 
         if (oldValue !== newValue) {
-            if (lock && !allowedKeys.includes(key)) {
-                logMsg(`🔒 Config lock active – key "${key}" is not changeable`);
-                cfg.update(key, oldValue, vscode.ConfigurationTarget.Global);
-                continue;
-            }
-
             changed[key] = { from: oldValue, to: newValue };
             (userConfig as any)[key] = newValue;
 

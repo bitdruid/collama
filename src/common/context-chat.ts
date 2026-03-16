@@ -127,7 +127,9 @@ export class ChatContext {
         for (const msg of this.messages) {
             if (msg.role === "assistant" && msg.tool_calls) {
                 const tc = msg.tool_calls.find((tc) => tc.id === toolCallId);
-                if (tc) { return tc; }
+                if (tc) {
+                    return tc;
+                }
             }
         }
         return undefined;
@@ -153,12 +155,22 @@ export class ChatContext {
      */
     public setToolCall(toolCallId: string, fields: Partial<ToolCall>): boolean {
         const tc = this.findToolCall(toolCallId);
-        if (!tc) { return false; }
-        if (fields.id !== undefined) { tc.id = fields.id; }
-        if (fields.type !== undefined) { tc.type = fields.type; }
+        if (!tc) {
+            return false;
+        }
+        if (fields.id !== undefined) {
+            tc.id = fields.id;
+        }
+        if (fields.type !== undefined) {
+            tc.type = fields.type;
+        }
         if (fields.function !== undefined) {
-            if (fields.function.name !== undefined) { tc.function.name = fields.function.name; }
-            if (fields.function.arguments !== undefined) { tc.function.arguments = fields.function.arguments; }
+            if (fields.function.name !== undefined) {
+                tc.function.name = fields.function.name;
+            }
+            if (fields.function.arguments !== undefined) {
+                tc.function.arguments = fields.function.arguments;
+            }
         }
         return true;
     }
@@ -171,9 +183,15 @@ export class ChatContext {
      */
     public setToolResponse(toolCallId: string, fields: Partial<{ content: string; tool_call_id: string }>): boolean {
         const msg = this.findToolResponse(toolCallId);
-        if (!msg) { return false; }
-        if (fields.content !== undefined) { msg.content = fields.content; }
-        if (fields.tool_call_id !== undefined) { msg.tool_call_id = fields.tool_call_id; }
+        if (!msg) {
+            return false;
+        }
+        if (fields.content !== undefined) {
+            msg.content = fields.content;
+        }
+        if (fields.tool_call_id !== undefined) {
+            msg.tool_call_id = fields.tool_call_id;
+        }
         return true;
     }
 }

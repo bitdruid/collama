@@ -2,7 +2,7 @@ import fg from "fast-glob";
 import fs from "fs";
 import path from "path";
 import { logAgent, logMsg } from "../../logging";
-import { getWorkspaceRoot, isWithinRoot } from "../tools";
+import { isWithinRoot, secureWorkspace } from "../tools";
 
 /**
  * Returns true if the pattern contains path traversal segments (`..`).
@@ -64,23 +64,17 @@ export async function readFile_exec(args: { filePath: string; startLine?: number
     logMsg(
         `Agent - tool use readFile file=${args.filePath}${snappedStart !== undefined ? ` startLine=${snappedStart}` : ""}${snappedEnd !== undefined ? ` endLine=${snappedEnd}` : ""}`,
     );
-    const root = getWorkspaceRoot();
-    if (!root) {
-        logAgent(`[readFile] No workspace root`);
-        throw new Error("No workspace root");
+    const ws = secureWorkspace(args.filePath, "readFile");
+    if (ws.error) {
+        return ws.error;
     }
 
-    const fullPath = path.resolve(root, args.filePath);
-    if (!isWithinRoot(root, fullPath)) {
-        logAgent(`[readFile] Path must not escape the workspace root: ${args.filePath}`);
-        return JSON.stringify({ error: "Path must not escape the workspace root" });
-    }
-    if (!fs.existsSync(fullPath)) {
+    if (!fs.existsSync(ws.fullPath)) {
         logAgent(`[readFile] File not found: ${args.filePath}`);
         return JSON.stringify({ error: `File not found: ${args.filePath}` });
     }
 
-    const content = fs.readFileSync(fullPath, "utf-8");
+    const content = fs.readFileSync(ws.fullPath, "utf-8");
 
     if (snappedStart === undefined && snappedEnd === undefined) {
         return JSON.stringify({ content, filePath: args.filePath });
@@ -134,10 +128,10 @@ export const readFile_def = {
  */
 export async function searchFiles_exec(args: { pattern: string; glob?: string }): Promise<string> {
     logMsg(`Agent - tool use searchFiles pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
-    const root = getWorkspaceRoot();
-    if (!root) {
-        logAgent(`[searchFiles] No workspace root`);
-        return JSON.stringify({ error: "No workspace root" });
+
+    const ws = secureWorkspace(".", "searchFiles");
+    if (ws.error) {
+        return ws.error;
     }
 
     let regex: RegExp;
@@ -154,15 +148,15 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
 
     const files = (
         await fg(args.glob ?? "**/*", {
-            cwd: root,
+            cwd: ws.root,
             dot: false,
-            ignore: buildIgnorePatterns(root),
+            ignore: buildIgnorePatterns(ws.root),
         })
-    ).filter((f) => isWithinRoot(root, path.join(root, f)));
+    ).filter((f) => isWithinRoot(ws.root, path.join(ws.root, f)));
 
     const matches: { file: string; line: number; text: string }[] = [];
     for (const file of files) {
-        const fullPath = path.join(root, file);
+        const fullPath = path.join(ws.root, file);
         let content: string;
         try {
             content = fs.readFileSync(fullPath, "utf-8");
@@ -221,26 +215,22 @@ export async function lsPath_exec(args: { dirPath: string; depth?: number; patte
     logMsg(
         `Agent - tool use lsPath dirPath=${args.dirPath}${args.depth ? ` depth=${args.depth}` : ""}${args.pattern ? ` pattern=${args.pattern}` : ""}`,
     );
-    const root = getWorkspaceRoot();
-    if (!root) {
-        logAgent(`[lsPath] No workspace root`);
-        return JSON.stringify({ error: "No workspace root" });
+    const ws = secureWorkspace(args.dirPath, "lsPath");
+    if (ws.error) {
+        return ws.error;
     }
+
     if (hasPathTraversal(args.dirPath)) {
         logAgent(`[lsPath] Path must not contain path traversal (..): ${args.dirPath}`);
         return JSON.stringify({ error: "Path must not contain path traversal (..)" });
     }
+
     if (args.pattern && hasPathTraversal(args.pattern)) {
         logAgent(`[lsPath] Pattern must not contain path traversal (..): ${args.pattern}`);
         return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
     }
 
-    const fullPath = path.resolve(root, args.dirPath);
-    if (!isWithinRoot(root, fullPath)) {
-        logAgent(`[lsPath] Path must not escape the workspace root: ${args.dirPath}`);
-        return JSON.stringify({ error: "Path must not escape the workspace root" });
-    }
-    if (!fs.existsSync(fullPath)) {
+    if (!fs.existsSync(ws.fullPath)) {
         logAgent(`[lsPath] Path not found: ${args.dirPath}`);
         return JSON.stringify({ error: `Path not found: ${args.dirPath}` });
     }
@@ -248,12 +238,12 @@ export async function lsPath_exec(args: { dirPath: string; depth?: number; patte
     const maxDepth = Math.min(args.depth ?? 2, 5);
     const entries = (
         await fg(args.pattern ?? "**/*", {
-            cwd: fullPath,
+            cwd: ws.fullPath,
             deep: maxDepth,
             onlyFiles: false,
             markDirectories: true,
             dot: false,
-            ignore: buildIgnorePatterns(root),
+            ignore: buildIgnorePatterns(ws.root),
         })
     ).sort();
 
