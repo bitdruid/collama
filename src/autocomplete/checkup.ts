@@ -65,11 +65,6 @@ export async function checkupModel(): Promise<boolean> {
         lastCheckResult = false;
         return lastCheckResult;
     }
-    // extension should proceed but user gets info about model not running
-    // if (!(await checkModelRunning())) {
-    //     lastCheckResult = true;
-    //     return lastCheckResult;
-    // }
     lastCheckResult = true;
     return lastCheckResult;
 }
@@ -141,32 +136,3 @@ async function checkModelExists(): Promise<boolean> {
         return false;
     }
 }
-
-// /**
-//  * Checks whether the selected model is currently running on the server.
-//  *
-//  * @returns `true` if the model is running; otherwise `false` with an informational message.
-//  * @throws Will not throw; network errors are handled internally by displaying a connection error.
-//  */
-// async function checkModelRunning(): Promise<boolean> {
-//     const ollama = new Ollama({ host: userConfig.apiEndpointCompletion });
-
-//     try {
-//         const response = await ollama.ps();
-//         const runningModels = response.models.map((m: { name: string }) => m.name);
-
-//         const isRunning = runningModels.some((name: string) => modelsMatch(name, userConfig.apiModelCompletion));
-//         if (!isRunning) {
-//             postMessage(
-//                 `Model ${userConfig.apiModelCompletion} is not running on the ollama server - first request may take a while`,
-//                 "info",
-//             );
-//             return false;
-//         }
-
-//         return true;
-//     } catch (error: unknown) {
-//         connError();
-//         return false;
-//     }
-// }

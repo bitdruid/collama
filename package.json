@@ -115,7 +115,7 @@
                 {
                     "id": "collama_chat",
                     "title": "collama",
-                    "icon": "media/collama.svg"
+                    "icon": "media/collama_chat.svg"
                 }
             ]
         },
@@ -125,7 +125,7 @@
                     "id": "collama_chatview",
                     "name": "Chat",
                     "type": "webview",
-                    "icon": "media/collama.svg"
+                    "icon": "media/collama_chat.svg"
                 }
             ]
         },

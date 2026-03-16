@@ -1,18 +1,15 @@
 import * as vscode from "vscode";
 
 export class StartPage {
-    private webviewView: vscode.WebviewView;
     private webview: vscode.Webview;
-    private logoUri: vscode.Uri;
     private bundleUri: vscode.Uri;
 
     constructor(extContext: vscode.ExtensionContext, webviewView: vscode.WebviewView) {
-        this.webviewView = webviewView;
-
         this.webview = webviewView.webview;
 
-        this.logoUri = this.webview.asWebviewUri(vscode.Uri.joinPath(extContext.extensionUri, "media", "collama.svg"));
-        this.bundleUri = this.webview.asWebviewUri(vscode.Uri.joinPath(extContext.extensionUri, "dist", "chatpanel.js"));
+        this.bundleUri = this.webview.asWebviewUri(
+            vscode.Uri.joinPath(extContext.extensionUri, "dist", "chatpanel.js"),
+        );
     }
 
     generate(): string {
@@ -40,24 +37,6 @@ export class StartPage {
                         box-sizing: border-box;
                     }
 
-                    .header {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                        margin-bottom: 8px;
-                    }
-
-                    .header img {
-                        width: 32px;
-                        height: 32px;
-                    }
-
-                    .header-title {
-                        font-size: 14px;
-                        font-weight: bold;
-                        color: var(--vscode-foreground);
-                    }
-
                     collama-chatcontainer {
                         flex: 1 1 auto;
                         display: flex;
@@ -69,10 +48,6 @@ export class StartPage {
             </head>
             <body>
                 <div class="container">
-                    <div class="header">
-                        <img src="${this.logoUri.toString()}" />
-                        <span class="header-title">collama chat</span>
-                    </div>
                     <collama-chatcontainer></collama-chatcontainer>
                 </div>
             </body>
