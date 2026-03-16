@@ -3,6 +3,11 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.8] - 2026-03-17
+
+### Added
+- Tool message grouping in chat UI for cleaner display of consecutive tool calls
+
 ## [1.4.7] - 2026-03-16
 
 ### Added

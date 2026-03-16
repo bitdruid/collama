@@ -138,6 +138,29 @@ export const accordionStyles = [
             border-left: 3px solid #d87979;
         }
 
+        .accordion.type-tool-group .accordion-header {
+            border-left: 9px solid #d87979;
+        }
+
+        .accordion.type-tool-group .accordion-content-inner {
+            max-height: min(500px, 60vh);
+            padding: 0;
+        }
+
+        .accordion.type-tool-group .accordion-content-inner collama-accordion {
+            margin: 0;
+        }
+
+        .accordion.type-tool-group .accordion-content-inner collama-accordion .accordion {
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+
+        .accordion.type-tool-group .accordion-content-inner collama-accordion:first-child .accordion {
+            border-top: none;
+        }
+
         .accordion.type-code .accordion-header {
             border-left: none;
         }

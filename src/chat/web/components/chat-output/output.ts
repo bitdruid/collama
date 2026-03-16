@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import MarkdownIt from "markdown-it";
-import { ChatHistory } from "../../../../common/context-chat";
+import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
 import { highlightAllCodeBlocks, icons } from "../../../utils-front";
 import "../chat-accordion/chat-accordion";
 import "../chat-session/components/popup/chat-empty-state";
@@ -43,6 +43,52 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
 }
 
 const md = createMarkdownWithCodeHeader();
+
+type MessageGroup =
+    | { type: "tool-group"; tools: ToolMessage[]; startIndex: number }
+    | { type: "single"; msg: ChatHistory; index: number };
+
+/**
+ * Groups consecutive tool messages (and intermediate assistant messages that
+ * only contain tool_calls) into a single tool-group for accordion rendering.
+ * Assistant messages that bridge two tool calls are absorbed into the group
+ * so the UI shows one "Tools used: N" accordion per uninterrupted tool chain.
+ */
+function groupMessages(messages: ChatHistory[]): MessageGroup[] {
+    const groups: MessageGroup[] = [];
+    let toolBuffer: ToolMessage[] = [];
+    let toolStartIndex = 0;
+
+    const flushTools = () => {
+        if (toolBuffer.length > 0) {
+            groups.push({ type: "tool-group", tools: toolBuffer, startIndex: toolStartIndex });
+            toolBuffer = [];
+        }
+    };
+
+    for (const [i, msg] of messages.entries()) {
+        const isToolBridge =
+            msg.role === "assistant" &&
+            !msg.content &&
+            ((msg.tool_calls?.length ?? 0) > 0 || messages[i + 1]?.role === "tool");
+
+        if (msg.role === "tool" || isToolBridge) {
+            if (toolBuffer.length === 0) {
+                toolStartIndex = i;
+            }
+            if (msg.role === "tool") {
+                toolBuffer.push(msg);
+            }
+            continue;
+        }
+
+        flushTools();
+        groups.push({ type: "single", msg, index: i });
+    }
+
+    flushTools();
+    return groups;
+}
 
 export class ChatOutput extends LitElement {
     static properties = {
@@ -179,18 +225,40 @@ export class ChatOutput extends LitElement {
             }
         }
 
+        const groups = groupMessages(messages);
+
         return html`
             <div class="output-container">
-                ${messages.map((msg, index) => {
+                ${groups.map((group) => {
+                    if (group.type === "tool-group") {
+                        const isOutOfContext = this.contextStartIndex > 0 && group.startIndex < this.contextStartIndex;
+                        const outOfContextClass = isOutOfContext ? "out-of-context" : "";
+                        const label = `Tools used: ${group.tools.length}`;
+
+                        return html`
+                            <div class="message tool ${outOfContextClass}">
+                                <div class="bubble-tool">
+                                    <collama-accordion type="tool-group" label="${label}">
+                                        ${group.tools.map((tool) =>
+                                            renderToolMessage({
+                                                msg: tool,
+                                                outOfContextClass: "",
+                                                warningIcon: "",
+                                                bare: true,
+                                            }),
+                                        )}
+                                    </collama-accordion>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    const { msg, index } = group;
                     const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
                     const outOfContextClass = isOutOfContext ? "out-of-context" : "";
                     const warningIcon = isOutOfContext
                         ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>`
                         : "";
-
-                    if (msg.role === "tool") {
-                        return renderToolMessage({ msg, outOfContextClass, warningIcon });
-                    }
 
                     if (msg.role === "user") {
                         return renderUserMessage({
