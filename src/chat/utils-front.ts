@@ -1,6 +1,16 @@
 import hljs from "highlight.js";
 import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import { css, html, unsafeCSS } from "lit";
+import { ChatHistory } from "../common/context-chat";
+
+/**
+ * Estimate token count for an array of messages using ~4 chars per token.
+ * Serializes full message objects to account for tool args, tool_calls, etc.
+ */
+export function estimateTokens(messages: ChatHistory[]): number {
+    const len = messages.reduce((sum, m) => sum + JSON.stringify(m).length, 0);
+    return Math.round(len / 4);
+}
 
 export function logWebview(message: string) {
     window.vscode.postMessage({
@@ -11,13 +21,6 @@ export function logWebview(message: string) {
 
 export function llmInfoTag(tagContent: string): string {
     return `<llm-info>${tagContent}</llm-info>`;
-}
-
-/**
- * Estimate token count from text using a ~4 chars per token approximation.
- */
-export function estimateTokenCount(text: string): number {
-    return Math.round(text.length / 4);
 }
 
 /**
@@ -286,6 +289,21 @@ export const icons = {
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
         <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>`,
+
+    /** Check circle - used for auto accept button */
+    checkCircle: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
     </svg>`,
 
     pencil: html`<svg
