@@ -1,8 +1,8 @@
 // src/chat/web/components/chat_session/components/popup/chat_session_popup.ts
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { ChatSession } from "../../chat-sessions";
-import "./chat-empty-state";
+import { ChatSession } from "../../chat-session";
+import "./chat-session-empty";
 import "./chat-session-item";
 import { popupStyles } from "./styles";
 

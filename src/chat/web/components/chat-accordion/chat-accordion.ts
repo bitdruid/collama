@@ -3,7 +3,7 @@ import { LitElement, html } from "lit";
 import { highlightCodeBlock, icons } from "../../../utils-front";
 import { accordionStyles } from "./styles";
 
-export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group";
+export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group" | "context";
 
 export class ChatAccordion extends LitElement {
     static get properties() {
@@ -80,6 +80,8 @@ export class ChatAccordion extends LitElement {
             case "tool":
             case "tool-group":
                 return icons.tool;
+            case "context":
+                return icons.paperclip;
             case "code":
                 return icons.code;
             default:

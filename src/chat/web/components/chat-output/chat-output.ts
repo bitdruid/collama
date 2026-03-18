@@ -3,7 +3,7 @@ import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
 import { highlightAllCodeBlocks, icons } from "../../../utils-front";
 import "../chat-accordion/chat-accordion";
-import "../chat-session/components/popup/chat-empty-state";
+import "../chat-session/components/popup/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";
@@ -24,7 +24,9 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         if (!line.startsWith("<llm-info>") || !line.endsWith("</llm-info>")) {
             return false;
         }
-        if (silent) { return true; }
+        if (silent) {
+            return true;
+        }
         const token = state.push("llm_info", "", 0);
         token.content = line;
         state.line = startLine + 1;

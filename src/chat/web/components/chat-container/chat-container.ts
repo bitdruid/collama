@@ -2,11 +2,11 @@ import { html, LitElement } from "lit";
 import { state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
-import "../chat-agent-counter/agent-token-counter";
-import "../chat-output/output";
-import "../chat-scroll-button/scroll-down-button";
-import "../chat-session/chat-sessions";
-import { ChatSession } from "../chat-session/chat-sessions";
+import "../chat-agent-counter/chat-agent-counter.ts";
+import "../chat-output/chat-output";
+import "../chat-scroll-button/chat-scroll-button.ts";
+import "../chat-session/chat-session";
+import { ChatSession } from "../chat-session/chat-session";
 
 import { createInboundDispatcher } from "./handlers-inbound";
 import {

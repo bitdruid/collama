@@ -3,7 +3,7 @@ import { state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
 import "./components/input-buttons/input-buttons"; // Import
 import "./components/prompt-gallery/prompt-gallery";
-import { chatInputStyles } from "./styles-chat-input";
+import { chatInputStyles } from "./styles";
 
 export class ChatInput extends LitElement {
     @state()
