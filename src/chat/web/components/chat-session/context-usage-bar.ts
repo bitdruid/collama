@@ -1,6 +1,7 @@
 // src/components/context-usage-bar.ts
 import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { themeColors } from "../../styles/theme-colors";
 
 @customElement("collama-context-usage-bar")
 export class ContextUsageBar extends LitElement {
@@ -8,17 +9,17 @@ export class ContextUsageBar extends LitElement {
     @property({ type: Number }) max = 0;
 
     static styles = css`
+        ${themeColors}
         :host {
             --bar-bg: rgba(255, 255, 255, 0.15);
-            --bar-fill: #4ec9b0;
-            --danger-color: #f14c4c;
-            --warning-color: #cca700;
+            --bar-fill: var(--color-usage-primary);
+            --danger-color: var(--color-usage-danger);
+            --warning-color: var(--color-usage-warning);
             display: block;
         }
         .context-usage {
             display: flex;
             align-items: center;
-            gap: 8px;
             min-width: 120px;
         }
         .context-bar-container {
@@ -46,10 +47,9 @@ export class ContextUsageBar extends LitElement {
         }
         .context-text {
             font-size: 11px;
-            color: var(--vscode-descriptionForeground, #cccccc);
+            color: var(--color-ui-font);
             white-space: nowrap;
-            min-width: 35px;
-            text-align: right;
+            margin-left: 8px;
         }
     `;
 
@@ -60,7 +60,7 @@ export class ContextUsageBar extends LitElement {
         const pct = Math.min((this.used / this.max) * 100, 100);
         const barClass = pct >= 90 ? "danger" : pct >= 70 ? "warning" : "";
         return html`
-            <div class="context-usage" title="Context usage: ${this.used} / ${this.max} tokens">
+            <div class="context-usage" title="~ Context usage: ${this.used} / ${this.max} tokens">
                 <div class="context-bar-container">
                     <div class="context-bar ${barClass}" style="width: ${pct}%"></div>
                 </div>

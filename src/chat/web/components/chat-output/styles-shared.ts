@@ -1,5 +1,6 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../utils-front";
+import { themeColors } from "../../styles/theme-colors";
 import { assistantStyles } from "./message-assistant/styles";
 import { toolStyles } from "./message-tool/styles";
 import { userStyles } from "./message-user/styles";
@@ -10,6 +11,12 @@ export const outputStyles = [
     userStyles,
     toolStyles,
     css`
+        llm-info {
+            display: none;
+        }
+    `,
+    css`
+        ${themeColors}
         .role-header {
             display: flex;
             justify-content: space-between;
@@ -19,7 +26,7 @@ export const outputStyles = [
             margin-bottom: 6px;
             padding: 2px 6px;
             border-radius: 4px;
-            color: #fff;
+            color: var(--color-text-white);
         }
 
         .role-label {

@@ -1,7 +1,9 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../utils-front";
+import { themeColors } from "../../styles/theme-colors";
 
 export const accordionStyles = [
+    themeColors,
     ...hljsStyles,
     css`
         :host {
@@ -127,19 +129,19 @@ export const accordionStyles = [
 
         /* Type-specific styling */
         .accordion.type-think .accordion-header {
-            border-left: 3px solid #2277a8;
+            border-left: 3px solid var(--color-submit);
         }
 
         .accordion.type-summary .accordion-header {
-            border-left: 3px solid #e9a849;
+            border-left: 3px solid var(--color-compress);
         }
 
         .accordion.type-tool .accordion-header {
-            border-left: 3px solid #d87979;
+            border-left: 3px solid var(--color-auto-accept);
         }
 
         .accordion.type-tool-group .accordion-header {
-            border-left: 9px solid #d87979;
+            border-left: 3px solid var(--color-auto-accept);
         }
 
         .accordion.type-tool-group .accordion-content-inner {
@@ -163,6 +165,10 @@ export const accordionStyles = [
 
         .accordion.type-code .accordion-header {
             border-left: none;
+        }
+
+        .accordion.type-context .accordion-header {
+            border-left: 3px solid var(--color-context);
         }
 
         .accordion-actions {
@@ -189,7 +195,7 @@ export const accordionStyles = [
 
         .copy-btn:hover {
             background: var(--vscode-toolbar-hoverBackground);
-            color: var(--vscode-foreground);
+            color: var(--color-ui-font);
         }
 
         .copy-btn:active {

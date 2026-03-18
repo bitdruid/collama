@@ -1,8 +1,14 @@
 import { css } from "lit";
+import { themeColors } from "../../../styles/theme-colors";
 
 export const assistantStyles = css`
+    ${themeColors}
     .role-assistant {
-        background-color: #4aaf50;
+        background-color: var(--color-assistant);
+    }
+
+    .role-system {
+        background-color: var(--color-system);
     }
 
     .bubble-assistant {
