@@ -1,10 +1,9 @@
 import { AttachedContext } from "../../../../common/context-chat";
-import { embedContexts } from "../../../message-utils";
-import { estimateTokenCount, logWebview } from "../../../utils-front";
+import { estimateTokens, logWebview } from "../../../utils-front";
 import type { ChatContainer } from "./chat-container";
-import { backendApi } from "./utils";
+import { backendApi, buildUserContent } from "./utils";
 
-/** Embeds attached contexts into the user text, sends the request, and adds a placeholder assistant message. */
+/** Builds user content with embedded contexts, sends the request, and adds a placeholder assistant message. */
 export function onSubmit(host: ChatContainer, e: CustomEvent) {
     const content = e.detail.value?.trim();
     const contexts: AttachedContext[] = e.detail.contexts || [];
@@ -15,10 +14,9 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
     if (contexts.length > 0) {
         host.currentContexts = [];
     }
-    const userContent = embedContexts(contexts, content);
     host.wvChatContext.push({
         role: "user",
-        content: userContent,
+        content: buildUserContent(contexts, content),
         contexts: contexts.length > 0 ? contexts : undefined,
     });
     const messagesToSend = [...host.wvChatContext.getMessages()];
@@ -86,7 +84,7 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
 
     const userMessage = msgs[messageIndex] as { contexts?: AttachedContext[] };
     const userContexts = userMessage.contexts ?? [];
-    const updatedContent = embedContexts(userContexts, newContent);
+    const updatedContent = buildUserContent(userContexts, newContent);
 
     host.wvChatContext.truncate(messageIndex);
     host.wvChatContext.push({
@@ -113,18 +111,23 @@ export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
     }
 
     const turnEnd = host.wvChatContext.getTurnEnd(messageIndex);
-    const deletedContent = msgs
-        .slice(messageIndex, turnEnd)
-        .map((m) => m.content)
-        .join("");
-    const approxTokensFreed = estimateTokenCount(deletedContent);
+    const approxTokensFreed = estimateTokens(msgs.slice(messageIndex, turnEnd));
 
     host.wvChatContext.removeRange(messageIndex, turnEnd);
     host.syncMessages();
 
+    host.contextUsed = estimateTokens(host.wvChatContext.getMessages());
+
     host.showToast(`~${approxTokensFreed} tokens freed`);
     logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);
     backendApi.updateMessages(host.messages, host.activeSessionId, approxTokensFreed);
+}
+
+/** Exports a session's chat history as raw JSON to a preview window. */
+export function onExportChat(host: ChatContainer, e: CustomEvent) {
+    const sessionId = e.detail?.id || host.activeSessionId;
+    logWebview(`Exporting chat history for session ${sessionId}`);
+    backendApi.exportChat(sessionId);
 }
 
 /** Creates a new chat session. */
@@ -155,6 +158,11 @@ export function onRenameSession(e: CustomEvent) {
 export function onCopySession(e: CustomEvent) {
     logWebview(`Copying session ${e.detail.id}`);
     backendApi.copySession(e.detail.id);
+}
+
+/** Toggles the auto-accept-all flag on the backend. */
+export function onAutoAccept(e: CustomEvent) {
+    backendApi.autoAcceptAll(e.detail.enabled);
 }
 
 /** Removes a single attached context by index, or clears all if no index is provided. */

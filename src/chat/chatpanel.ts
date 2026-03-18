@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
 
 import { Agent } from "../agent/agent";
-import { ChatHistory } from "../common/context-chat";
+import { ChatContext, ChatHistory } from "../common/context-chat";
 import { EditorContext } from "../common/context-editor";
+import { setAutoAcceptAll } from "../agent/tools/edit";
 import { buildInstructionOptions, ToolCall } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
 import { chatCompress_Template } from "../common/prompt";
@@ -10,7 +11,7 @@ import Tokenizer from "../common/utils-common";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { Session } from "./session";
-import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
+import { mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
 import { StartPage } from "./web/components/chat-start";
 
 /**
@@ -78,6 +79,16 @@ export class ChatPanel {
                 return;
             }
 
+            if (msg.type === "auto-accept-all") {
+                setAutoAcceptAll(msg.enabled);
+                return;
+            }
+
+            if (msg.type === "export-chat") {
+                this.handleExportChat(msg);
+                return;
+            }
+
             if (msg.type === "chat-cancel") {
                 this.handleChatCancel(webview);
                 return;
@@ -127,7 +138,6 @@ export class ChatPanel {
 
     /**
      * Handles the chat-ready message by sending initial state to the webview.
-     * Sends data immediately with contextUsed: 0, then follows up with the real token count.
      */
     private handleChatReady(webview: vscode.Webview) {
         const activeSession = this.session.getActiveSession();
@@ -139,18 +149,8 @@ export class ChatPanel {
             sessions: mapSessionsToSummaries(this.session.sessions),
             activeSessionId: this.session.activeSessionId,
             history: sanitizeMessages(messages),
-            contextUsed: 0,
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
-        });
-
-        // Calculate token usage in background and send follow-up
-        calculateContextUsage(messages).then((contextUsed) => {
-            webview.postMessage({
-                type: "context-usage-update",
-                contextUsed,
-                contextMax,
-            });
         });
     }
 
@@ -254,6 +254,23 @@ export class ChatPanel {
     }
 
     /**
+     * Opens a read-only preview of a session's chat history as raw JSON.
+     */
+    private handleExportChat(msg: { sessionId: string }) {
+        const session = this.session.sessions.find((s) => s.id === msg.sessionId);
+        const messages = session?.messages || [];
+        const json = JSON.stringify(messages, null, 2);
+        const uri = vscode.Uri.parse(`untitled:chat-export-${msg.sessionId}.json`);
+        vscode.workspace.openTextDocument(uri).then((doc) => {
+            vscode.window.showTextDocument(doc, { preview: true }).then((editor) => {
+                editor.edit((editBuilder) => {
+                    editBuilder.insert(new vscode.Position(0, 0), json);
+                });
+            });
+        });
+    }
+
+    /**
      * Handles compressing the chat history into a summary.
      */
     private async handleCompressRequest(
@@ -312,29 +329,22 @@ export class ChatPanel {
 
         const options = buildInstructionOptions();
 
-        // Trim old message pairs if context limit is exceeded
-        const { trimmedMessages, pairsRemoved, tokensFreed, totalTokens } = await trimMessagesForContext(
+        // Trim old turns if context limit is exceeded
+        const { trimmedMessages, turnsRemoved, tokensFreed, messagesRemoved } = await trimMessagesForContext(
             messages,
             options.num_predict,
             userConfig.apiTokenContextLenInstruct,
         );
 
         // Persist and notify webview of current context boundary
-        const contextStartIndex = pairsRemoved * 2;
+        const contextStartIndex = messagesRemoved;
         this.session.updateSession(session, (s) => {
             s.contextStartIndex = contextStartIndex;
         });
-        webview.postMessage({ type: "context-trimmed", pairsRemoved, tokensFreed, contextStartIndex });
+        webview.postMessage({ type: "context-trimmed", turnsRemoved, tokensFreed, contextStartIndex });
 
-        // Send known token count so the UI can update the context bar immediately
-        webview.postMessage({
-            type: "context-usage-update",
-            contextUsed: totalTokens,
-            contextMax: userConfig.apiTokenContextLenInstruct,
-        });
-
-        if (pairsRemoved > 0) {
-            logMsg(`Context limit exceeded: removed ${pairsRemoved} pair(s) (~${tokensFreed} tokens) from LLM context`);
+        if (turnsRemoved > 0) {
+            logMsg(`Context limit exceeded: removed ${turnsRemoved} turn(s) (~${tokensFreed} tokens) from LLM context`);
         }
 
         const agent = new Agent();
@@ -403,7 +413,7 @@ export class ChatPanel {
         // Notify webview that chat is complete
         webview.postMessage({ type: "chat-complete" });
 
-        // Update sessions list after response completes (recalculate tokens since content changed)
+        // Update sessions list after response completes
         this.session.sendSessionsUpdate();
     }
 }
@@ -423,31 +433,40 @@ async function trimMessagesForContext(
     messages: ChatHistory[],
     numPredict: number,
     contextMax: number,
-): Promise<{ trimmedMessages: ChatHistory[]; pairsRemoved: number; tokensFreed: number; totalTokens: number }> {
-    const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(msg.content)));
-    let totalTokens = tokenCounts.reduce((sum, count) => sum + count, 0);
+): Promise<{ trimmedMessages: ChatHistory[]; turnsRemoved: number; tokensFreed: number; messagesRemoved: number }> {
+    const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(JSON.stringify(msg))));
+    let totalTokens = tokenCounts.reduce((sum: number, count: number) => sum + count, 0);
 
     if (checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
-        return { trimmedMessages: messages, pairsRemoved: 0, tokensFreed: 0, totalTokens };
+        return { trimmedMessages: messages, turnsRemoved: 0, tokensFreed: 0, messagesRemoved: 0 };
     }
 
-    let pairsRemoved = 0;
+    const ctx = new ChatContext();
+    ctx.setMessages(messages);
+
+    let turnsRemoved = 0;
     let tokensFreed = 0;
     let startIndex = 0;
 
-    // Remove pairs from the beginning, but keep at least the last pair
-    while (!checkPredictFitsContextLength(numPredict, totalTokens, contextMax) && startIndex + 2 < messages.length) {
-        const pairTokens = tokenCounts[startIndex] + tokenCounts[startIndex + 1];
-        totalTokens -= pairTokens;
-        tokensFreed += pairTokens;
-        startIndex += 2;
-        pairsRemoved++;
+    // Remove full turns from the beginning, keeping at least the last turn.
+    while (!checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
+        const turnEnd = ctx.getTurnEnd(startIndex);
+        // Keep at least the last turn
+        if (turnEnd >= messages.length) {
+            break;
+        }
+        for (let i = startIndex; i < turnEnd; i++) {
+            totalTokens -= tokenCounts[i];
+            tokensFreed += tokenCounts[i];
+        }
+        startIndex = turnEnd;
+        turnsRemoved++;
     }
 
     return {
         trimmedMessages: messages.slice(startIndex),
-        pairsRemoved,
+        turnsRemoved,
         tokensFreed,
-        totalTokens,
+        messagesRemoved: startIndex,
     };
 }

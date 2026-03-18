@@ -9,6 +9,9 @@ export class ChatInput extends LitElement {
     @state()
     private showGallery = false;
 
+    @state()
+    private autoAccept = false;
+
     static get properties() {
         return {
             userInput: { type: String },
@@ -85,6 +88,17 @@ export class ChatInput extends LitElement {
         );
     }
 
+    private _handleAutoAccept() {
+        this.autoAccept = !this.autoAccept;
+        this.dispatchEvent(
+            new CustomEvent("auto-accept", {
+                detail: { enabled: this.autoAccept },
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    }
+
     private _adjustRows() {
         const ta = this.shadowRoot?.querySelector("textarea") as HTMLTextAreaElement | null;
         if (!ta) {
@@ -146,9 +160,11 @@ export class ChatInput extends LitElement {
             <collama-chatinput-buttons
                 .contexts=${this.contexts}
                 .isLoading=${this.isLoading}
+                .autoAccept=${this.autoAccept}
                 @gallery-click=${this._openGallery}
                 @cancel=${this._handleCancel}
                 @compress=${this._handleCompress}
+                @auto-accept=${this._handleAutoAccept}
                 @submit=${this._handleSubmit}
                 @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
             ></collama-chatinput-buttons>

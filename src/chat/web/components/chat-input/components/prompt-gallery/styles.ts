@@ -1,6 +1,8 @@
 import { css } from "lit";
+import { themeColors } from "../../../../styles/theme-colors";
 
 export const galleryStyles = css`
+    ${themeColors}
     .modal {
         position: fixed;
         inset: 0;
@@ -117,6 +119,7 @@ export const galleryStyles = css`
 `;
 
 export const galleryButtonStyles = css`
+    ${themeColors}
     .button-container {
         display: flex;
         gap: 8px;
@@ -127,12 +130,12 @@ export const galleryButtonStyles = css`
         padding: 4px 8px;
         cursor: pointer;
         border: none;
-        background: #2277a8;
+        background: var(--color-submit);
         color: var(--vscode-button-foreground);
         border-radius: 4px;
     }
     button:hover {
-        background: #185d86;
+        background: var(--color-submit-hover);
     }
     .delete-btn {
         flex: none;
