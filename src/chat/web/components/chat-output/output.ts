@@ -19,6 +19,20 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         breaks: true,
     });
 
+    md.block.ruler.before("html_block", "llm_info", (state, startLine, _endLine, silent) => {
+        const line = state.src.slice(state.bMarks[startLine], state.eMarks[startLine]);
+        if (!line.startsWith("<llm-info>") || !line.endsWith("</llm-info>")) {
+            return false;
+        }
+        if (silent) { return true; }
+        const token = state.push("llm_info", "", 0);
+        token.content = line;
+        state.line = startLine + 1;
+        return true;
+    });
+
+    md.renderer.rules["llm_info"] = (tokens, idx) => `${tokens[idx].content}\n`;
+
     md.renderer.rules.fence = (tokens, idx) => {
         const token = tokens[idx];
         const lang = token.info.trim() || "code";
@@ -26,6 +40,7 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         const escapedCode = code.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
         let accordionType = "code";
+
         let expandedAttr = "expanded";
 
         if (lang.startsWith("Think:")) {
@@ -33,6 +48,9 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
             expandedAttr = "";
         } else if (lang.startsWith("Summary:")) {
             accordionType = "summary";
+            expandedAttr = "";
+        } else if (lang.startsWith("Context:")) {
+            accordionType = "context";
             expandedAttr = "";
         }
 
