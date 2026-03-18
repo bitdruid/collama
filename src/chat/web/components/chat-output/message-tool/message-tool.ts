@@ -1,5 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { ToolMessage } from "../../../../../common/context-chat";
+import { escapeAttr } from "../../../../utils-front";
 
 export interface ToolRenderOptions {
     msg: ToolMessage;
@@ -10,8 +11,8 @@ export interface ToolRenderOptions {
 
 export function renderToolMessage(opts: ToolRenderOptions) {
     const { msg, outOfContextClass, warningIcon, bare } = opts;
-    const toolLabel = `${msg.toolName || "unknown"}`;
-    const escapedArgs = (msg.toolArgs || "").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const toolLabel = msg.toolName || "unknown";
+    const escapedArgs = escapeAttr(msg.toolArgs || "");
 
     const accordion = html`
         <collama-accordion

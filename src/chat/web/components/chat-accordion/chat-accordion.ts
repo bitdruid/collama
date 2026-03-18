@@ -13,6 +13,7 @@ export class ChatAccordion extends LitElement {
             expanded: { type: Boolean },
             code: { type: String },
             copyCode: { type: String },
+            language: { type: String },
         };
     }
 
@@ -23,6 +24,7 @@ export class ChatAccordion extends LitElement {
     expanded: boolean = false;
     code: string = "";
     copyCode: string = "";
+    language: string = "";
 
     private _highlighted = false;
     private _copyText = "Copy";
@@ -66,7 +68,7 @@ export class ChatAccordion extends LitElement {
     private _highlightCode() {
         requestAnimationFrame(() => {
             if (!this._highlighted) {
-                this._highlighted = highlightCodeBlock(this.shadowRoot);
+                this._highlighted = highlightCodeBlock(this.shadowRoot, "pre code", this.language || undefined);
             }
         });
     }

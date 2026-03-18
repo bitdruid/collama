@@ -1,7 +1,7 @@
 import { LitElement, html } from "lit";
 import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import { highlightAllCodeBlocks, icons } from "../../../utils-front";
+import { escapeAttr, highlightAllCodeBlocks, icons } from "../../../utils-front";
 import "../chat-accordion/chat-accordion";
 import "../chat-session/components/popup/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
@@ -39,11 +39,11 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         const token = tokens[idx];
         const lang = token.info.trim() || "code";
         const code = token.content;
-        const escapedCode = code.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        const escapedCode = escapeAttr(code);
 
         let accordionType = "code";
-
         let expandedAttr = "expanded";
+        let languageAttr = "";
 
         if (lang.startsWith("Think:")) {
             accordionType = "think";
@@ -51,12 +51,13 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         } else if (lang.startsWith("Summary:")) {
             accordionType = "summary";
             expandedAttr = "";
+            languageAttr = 'language="markdown"';
         } else if (lang.startsWith("Context:")) {
             accordionType = "context";
             expandedAttr = "";
         }
 
-        return `<collama-accordion type="${accordionType}" label="${lang}" code="${escapedCode}" copyCode="${escapedCode}" ${expandedAttr}></collama-accordion>`;
+        return `<collama-accordion type="${accordionType}" label="${lang}" code="${escapedCode}" copyCode="${escapedCode}" ${languageAttr} ${expandedAttr}></collama-accordion>`;
     };
 
     return md;

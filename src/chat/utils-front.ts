@@ -23,6 +23,11 @@ export function llmInfoTag(tagContent: string): string {
     return `<llm-info>${tagContent}</llm-info>`;
 }
 
+/** Escape a string for safe use inside HTML attributes. */
+export function escapeAttr(s: string): string {
+    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 /**
  * Shared hljs CSS styles for code blocks.
  * Import and spread into your component's static styles array.
@@ -57,16 +62,18 @@ export const hljsStyles = [
  * Highlight a code element using hljs auto-detection.
  * Returns true if highlighting was applied, false if element not found.
  */
-export function highlightCodeBlock(container: ShadowRoot | null, selector = "pre code"): boolean {
+export function highlightCodeBlock(container: ShadowRoot | null, selector = "pre code", language?: string): boolean {
     if (!container) {
         return false;
     }
     const codeBlock = container.querySelector(selector) as HTMLElement | null;
     if (codeBlock) {
         const code = codeBlock.textContent || "";
-        const highlighted = hljs.highlightAuto(code);
+        const highlighted = language
+            ? hljs.highlight(code, { language })
+            : hljs.highlightAuto(code);
         codeBlock.innerHTML = highlighted.value;
-        codeBlock.className = `hljs ${highlighted.language || ""}`;
+        codeBlock.className = `hljs ${highlighted.language || language || ""}`;
         return true;
     }
     return false;
