@@ -10,7 +10,7 @@ export interface ToolRenderOptions {
 
 export function renderToolMessage(opts: ToolRenderOptions) {
     const { msg, outOfContextClass, warningIcon, bare } = opts;
-    const toolLabel = `Tool: ${msg.toolName || "unknown"}`;
+    const toolLabel = `${msg.toolName || "unknown"}`;
     const escapedArgs = (msg.toolArgs || "").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
     const accordion = html`
@@ -28,9 +28,7 @@ export function renderToolMessage(opts: ToolRenderOptions) {
 
     return html`
         <div class="message tool ${outOfContextClass}">
-            <div class="bubble-tool">
-                ${accordion}
-            </div>
+            <div class="bubble-tool">${accordion}</div>
         </div>
     `;
 }

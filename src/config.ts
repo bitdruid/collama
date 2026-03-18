@@ -222,7 +222,7 @@ async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBacke
     }
 
     try {
-        const anthropic = requestAnthropic(apiBase, bearer ?? "");
+        const anthropic = requestAnthropic(apiBase, bearer);
         await Promise.race([anthropic.models.list(), createTimeout(DETECTION_TIMEOUT_MS)]);
         return "anthropic";
     } catch (err) {

@@ -160,7 +160,6 @@ export const agent_Template: string = [
     "- Prefer reading files over searching patterns.",
     "- Explain your actions and why before making changes.",
     "- After you finished editing, use getDiagnostics to validate the changes.",
-    '- Tool arguments are JSON. Always escape quotes as \\" and newlines as \\n inside string values.',
     "- Never repeat yourself. Instead move on to the next step.",
     "- Do not re-check conditions you have already confirmed.",
     "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",
