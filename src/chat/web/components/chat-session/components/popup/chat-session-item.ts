@@ -52,14 +52,17 @@ export class ChatSessionItem extends LitElement {
                     <div class="session-date">${formatDate(this.session.updatedAt)}</div>
                 </div>
                 <div class="session-actions">
+                    <button class="action-button export-button" @click=${this._handleExport} title="Export chat (JSON)">
+                        <!--  -->E
+                    </button>
                     <button class="action-button rename-button" @click=${this._startRename} title="Rename chat">
-                        R
+                        <!--  -->R
                     </button>
                     <button class="action-button copy-button" @click=${this._handleCopy} title="Copy chat">
-                        C
+                        <!--  -->C
                     </button>
                     <button class="action-button delete-button" @click=${this._handleDelete} title="Delete chat">
-                        X
+                        <!--  -->X
                     </button>
                 </div>
             </div>
@@ -87,6 +90,11 @@ export class ChatSessionItem extends LitElement {
     private _handleCopy(e: Event) {
         e.stopPropagation();
         this.dispatchEvent(new CustomEvent("copy", { bubbles: true, composed: true }));
+    }
+
+    private _handleExport(e: Event) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent("export", { bubbles: true, composed: true }));
     }
 
     private _handleDelete(e: Event) {

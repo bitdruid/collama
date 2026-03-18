@@ -58,6 +58,14 @@ export class ChatSessionsPopup extends LitElement {
                                               composed: true,
                                           }),
                                       )}
+                                  @export=${() =>
+                                      this.dispatchEvent(
+                                          new CustomEvent("export-chat", {
+                                              detail: { id: session.id },
+                                              bubbles: true,
+                                              composed: true,
+                                          }),
+                                      )}
                               ></collama-chat-session-item>
                           `,
                       )}

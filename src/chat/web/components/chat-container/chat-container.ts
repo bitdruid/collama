@@ -10,6 +10,7 @@ import { ChatSession } from "../chat-session/chat-sessions";
 
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
+    onAutoAccept,
     onCancel,
     onCompress,
     onContextCleared,
@@ -17,6 +18,7 @@ import {
     onDeleteMessage,
     onDeleteSession,
     onEditMessage,
+    onExportChat,
     onNearBottomChanged,
     onNewChat,
     onRenameSession,
@@ -127,6 +129,7 @@ export class ChatContainer extends LitElement {
                 .activeSessionId=${this.activeSessionId}
                 .contextUsed=${this.contextUsed}
                 .contextMax=${this.contextMax}
+                @export-chat=${(e: CustomEvent) => onExportChat(this, e)}
                 @new-chat=${onNewChat}
                 @select-session=${(e: CustomEvent) => onSelectSession(e)}
                 @delete-session=${(e: CustomEvent) => onDeleteSession(e)}
@@ -157,6 +160,7 @@ export class ChatContainer extends LitElement {
                     @submit=${(e: CustomEvent) => onSubmit(this, e)}
                     @cancel=${() => onCancel(this)}
                     @compress=${() => onCompress(this)}
+                    @auto-accept=${(e: CustomEvent) => onAutoAccept(e)}
                     @context-cleared=${(e: CustomEvent) => onContextCleared(this, e)}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
