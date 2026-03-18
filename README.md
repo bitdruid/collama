@@ -47,6 +47,8 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Send selected code/files as context with file references
 - Real-time context usage bar with automatic trimming
 - Edit messages, copy sessions, scroll navigation
+- Export chat history to JSON for backup and sharing
+- Auto-accept all toggle for edits and creates to streamline workflow
 
 **AI Agent with Tool Calling**
 - File system tools: read, list, search, create, edit files
@@ -201,7 +203,9 @@ Note: ChatML format is not supported - that means only true FIM models will work
     - Selected code or full file content
 4. Monitor token usage with the real-time context bar and agent-token counter
 5. Create multiple chat sessions to organize conversations by topic
-6. Session ManagementCopy / rename / delete sessions
+6. Session Management: Copy / rename / delete sessions
+7. Export chat history to JSON for backup and sharing
+8. Use auto-accept all toggle for faster workflow when making multiple edits
 
 ### Commit Message Generation
 

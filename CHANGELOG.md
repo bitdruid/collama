@@ -3,6 +3,19 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.4.9] - 2026-03-18
+
+### Added
+- Export chat history to JSON for backup and sharing
+- Auto-accept all toggle for edits and creates to streamline workflow
+
+### Changed
+- Minor changes in ui colors / gaps
+- Moved context usage calculation from backend to frontend for improved performance
+
+### Fixed
+- Minor bug fixes and improvements
+
 ## [1.4.8] - 2026-03-17
 
 ### Added
