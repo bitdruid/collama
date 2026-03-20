@@ -18,6 +18,8 @@ export class ChatInput extends LitElement {
             rows: { type: Number },
             contexts: { type: Array },
             isLoading: { type: Boolean },
+            agentToken: { type: Number },
+            hasTokenData: { type: Boolean },
         };
     }
 
@@ -27,6 +29,8 @@ export class ChatInput extends LitElement {
     rows = 1;
     contexts: AttachedContext[] = [];
     isLoading = false;
+    agentToken = 0;
+    hasTokenData = false;
 
     updated(changedProperties: PropertyValues) {
         if (changedProperties.has("isLoading") && !this.isLoading) {
@@ -79,9 +83,9 @@ export class ChatInput extends LitElement {
         );
     }
 
-    private _handleCompress() {
+    private _handleSummarizeConversation() {
         this.dispatchEvent(
-            new CustomEvent("compress", {
+            new CustomEvent("summarize-conversation", {
                 bubbles: true,
                 composed: true,
             }),
@@ -161,9 +165,11 @@ export class ChatInput extends LitElement {
                 .contexts=${this.contexts}
                 .isLoading=${this.isLoading}
                 .autoAccept=${this.autoAccept}
+                .agentToken=${this.agentToken}
+                .hasTokenData=${this.hasTokenData}
                 @gallery-click=${this._openGallery}
                 @cancel=${this._handleCancel}
-                @compress=${this._handleCompress}
+                @summarize-conversation=${this._handleSummarizeConversation}
                 @auto-accept=${this._handleAutoAccept}
                 @submit=${this._handleSubmit}
                 @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}

@@ -9,12 +9,16 @@ export class ChatInputButtons extends LitElement {
             contexts: { type: Array },
             isLoading: { type: Boolean },
             autoAccept: { type: Boolean },
+            agentToken: { type: Number },
+            hasTokenData: { type: Boolean },
         };
     }
 
     contexts: any[] = [];
     isLoading = false;
     autoAccept = false;
+    agentToken = 0;
+    hasTokenData = false;
 
     // Event Handlers
     private _handleCancel() {
@@ -26,9 +30,9 @@ export class ChatInputButtons extends LitElement {
         );
     }
 
-    private _handleCompress() {
+    private _handleSummarizeConversation() {
         this.dispatchEvent(
-            new CustomEvent("compress", {
+            new CustomEvent("summarize-conversation", {
                 bubbles: true,
                 composed: true,
             }),
@@ -100,7 +104,7 @@ export class ChatInputButtons extends LitElement {
     }
 
     private _renderCompressButton() {
-        return html`<button-compress title="Compress chat" @click=${this._handleCompress}>
+        return html`<button-compress title="Summarize conversation" @click=${this._handleSummarizeConversation}>
             ${icons.compress}
         </button-compress>`;
     }
@@ -125,11 +129,25 @@ export class ChatInputButtons extends LitElement {
         return html`<button-cancel title="Cancel" @click=${this._handleCancel}> ${icons.cancel} </button-cancel>`;
     }
 
+    private _formatTokens(n: number): string {
+        return n >= 1000 ? n.toLocaleString("de-DE") : String(n);
+    }
+
+    private _renderTokenCounter() {
+        if (!this.hasTokenData) {
+            return "";
+        }
+        return html`<button-token-counter title="Agent token usage">
+            ${this._formatTokens(this.agentToken)}
+        </button-token-counter>`;
+    }
+
     render() {
         if (this.isLoading) {
             return html`
                 <button-row>
-                    ${this._renderAutoAcceptButton()}<!--
+                    ${this._renderTokenCounter()}<!--
+                    -->${this._renderAutoAcceptButton()}<!--
                     -->${this._renderCancelButton()}
                 </button-row>
             `;
