@@ -2,7 +2,6 @@ import { html, LitElement } from "lit";
 import { state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
-import "../chat-agent-counter/chat-agent-counter.ts";
 import "../chat-output/chat-output";
 import "../chat-scroll-button/chat-scroll-button.ts";
 import "../chat-session/chat-session";
@@ -12,7 +11,7 @@ import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
     onCancel,
-    onCompress,
+    onSummarizeConversation,
     onContextCleared,
     onCopySession,
     onDeleteMessage,
@@ -25,7 +24,9 @@ import {
     onResendMessage,
     onSelectSession,
     onSubmit,
+    onSummarizeTurn,
 } from "./handlers-outbound";
+import "./chat-container-loading";
 import { chatContainerStyles } from "./styles";
 import { backendApi } from "./utils";
 
@@ -145,12 +146,9 @@ export class ChatContainer extends LitElement {
                         @resend-message=${(e: CustomEvent) => onResendMessage(this, e)}
                         @edit-message=${(e: CustomEvent) => onEditMessage(this, e)}
                         @delete-message=${(e: CustomEvent) => onDeleteMessage(this, e)}
+                        @summarize-turn=${(e: CustomEvent) => onSummarizeTurn(this, e)}
                         @near-bottom-changed=${(e: CustomEvent) => onNearBottomChanged(this, e)}
                     ></collama-chatoutput>
-                    <collama-token-counter
-                        .agentToken=${this.agent_token}
-                        .visible=${this.isLoading && this.hasTokenData}
-                    ></collama-token-counter>
                     <collama-scroll-down
                         .visible=${this.showScrollButton}
                         @scroll-down=${() => this.scrollDown()}
@@ -159,14 +157,17 @@ export class ChatContainer extends LitElement {
                 <collama-chatinput
                     @submit=${(e: CustomEvent) => onSubmit(this, e)}
                     @cancel=${() => onCancel(this)}
-                    @compress=${() => onCompress(this)}
+                    @summarize-conversation=${() => onSummarizeConversation(this)}
                     @auto-accept=${(e: CustomEvent) => onAutoAccept(e)}
                     @context-cleared=${(e: CustomEvent) => onContextCleared(this, e)}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
+                    .agentToken=${this.agent_token}
+                    .hasTokenData=${this.hasTokenData}
                 ></collama-chatinput>
             </div>
             <div class="toast ${this.toastMessage ? "visible" : ""}">${this.toastMessage}</div>
+            <collama-loading-snake .active=${this.isLoading}></collama-loading-snake>
         `;
     }
 }
