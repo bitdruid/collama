@@ -9,7 +9,8 @@ export const inputButtonsStyles = css`
     button-cancel,
     button-compress,
     button-gallery,
-    button-auto-accept {
+    button-auto-accept,
+    button-token-counter {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -47,9 +48,27 @@ export const inputButtonsStyles = css`
     }
     button-cancel {
         background-color: var(--color-cancel);
+        box-shadow:
+            0 0 0 2px var(--color-text-white),
+            0 0 0 4px var(--color-cancel);
+        animation: cancel-spin 2s infinite;
     }
     button-cancel:hover {
         background-color: var(--color-cancel-hover);
+    }
+    @keyframes cancel-spin {
+        0%,
+        100% {
+            box-shadow:
+                0 0 0 2px var(--color-text-white),
+                0 0 0 4px var(--color-cancel);
+        }
+        50% {
+            box-shadow:
+                0 0 0 2px var(--color-text-white),
+                0 0 0 8px var(--color-cancel),
+                0 0 15px rgba(168, 34, 34, 0.5);
+        }
     }
     button-compress {
         background-color: var(--color-compress);
@@ -68,6 +87,16 @@ export const inputButtonsStyles = css`
     }
     button-auto-accept:hover {
         background-color: var(--color-auto-accept-hover);
+    }
+    button-token-counter {
+        background-color: var(--color-submit);
+        width: auto;
+        aspect-ratio: auto;
+        padding: 0 10px;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: default;
     }
     button-auto-accept[active] {
         background-color: var(--color-auto-accept-active);

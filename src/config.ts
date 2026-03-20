@@ -39,7 +39,7 @@ export const userConfig = {
     suggestMode: "inline",
     suggestDelay: 1500,
     enableEditTools: true,
-    tlsRejectUnauthorized: true,
+    tlsRejectUnauthorized: false,
     apiTokenContextLenCompletion: 4096,
     apiTokenContextLenInstruct: 4096,
     apiTokenPredictCompletion: 400,
