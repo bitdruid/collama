@@ -56,6 +56,16 @@ function handleDelete(host: UserMessageHost, index: number) {
     );
 }
 
+function handleSummarize(host: UserMessageHost, index: number) {
+    host.dispatchEvent(
+        new CustomEvent("summarize-turn", {
+            detail: { messageIndex: index },
+            bubbles: true,
+            composed: true,
+        }),
+    );
+}
+
 function handleEdit(host: UserMessageHost, index: number) {
     host.editingIndex = index;
     host.requestUpdate();
@@ -86,6 +96,13 @@ export function renderUserMessage(opts: UserRenderOptions) {
                 <div class="role-header role-user">
                     <span class="role-label">${warningIcon}User</span>
                     <div class="message-actions">
+                        <button
+                            class="summarize-button"
+                            @click=${() => handleSummarize(host, index)}
+                            title="Summarize this turn"
+                        >
+                            ⊟ Summarize
+                        </button>
                         <button class="edit-button" @click=${() => handleEdit(host, index)} title="Edit and resend">
                             ✎ Edit
                         </button>
@@ -99,7 +116,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                         <button
                             class="delete-button"
                             @click=${() => handleDelete(host, index)}
-                            title="Delete this message pair (~${getTurnTokens(messages, index)} tokens freed)"
+                            title="Delete this turn (~${getTurnTokens(messages, index)} tokens freed)"
                         >
                             ✕ Delete
                         </button>

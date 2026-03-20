@@ -11,7 +11,8 @@ export function createInboundDispatcher(host: ChatContainer) {
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
         "chat-complete": () => handleChatComplete(host),
-        compressed: (m) => handleCompressed(host, m),
+        "conversation-summarized": (m) => handleConversationSummarized(host, m),
+        "turn-summarized": (m) => handleTurnSummarized(host, m),
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
     };
@@ -76,12 +77,21 @@ function handleChatComplete(host: ChatContainer) {
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
 }
 
-/** Replaces message history with the compressed version returned by the host. */
-function handleCompressed(host: ChatContainer, msg: any) {
+/** Replaces message history with the summarized conversation returned by the host. */
+function handleConversationSummarized(host: ChatContainer, msg: any) {
     host.wvChatContext.setMessages(msg.messages || []);
     host.syncMessages();
     host.contextStartIndex = 0;
-    host.showToast("Chat compressed");
+    host.showToast("Conversation summarized");
+}
+
+/** Replaces message history with the version containing the summarized turn. */
+function handleTurnSummarized(host: ChatContainer, msg: any) {
+    host.wvChatContext.setMessages(msg.messages || []);
+    host.syncMessages();
+    host.contextUsed = estimateTokens(msg.messages || []);
+    ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
+    host.showToast("Turn summarized");
 }
 
 /** Adjusts `contextStartIndex` when the host trims old messages to stay within the context window. */

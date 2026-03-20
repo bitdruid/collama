@@ -23,10 +23,14 @@ export const userStyles = css`
 
     .message-actions {
         display: flex;
+        align-items: center;
         gap: 4px;
     }
 
-    .resend-button {
+    .resend-button,
+    .delete-button,
+    .edit-button,
+    .summarize-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -41,46 +45,17 @@ export const userStyles = css`
         transition: background 0.15s;
     }
 
-    .resend-button:hover {
-        background: rgba(255, 255, 255, 0.4);
-    }
-
-    .delete-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2px 6px;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
-        color: var(--color-text-white);
-        font-size: 11px;
-        cursor: pointer;
-        opacity: 1;
-        transition: background 0.15s;
+    .resend-button:hover,
+    .edit-button:hover {
+        background: var(--color-submit-hover);
     }
 
     .delete-button:hover {
-        background: rgba(255, 80, 80, 0.5);
+        background: var(--color-cancel-hover);
     }
 
-    .edit-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2px 6px;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
-        color: var(--color-text-white);
-        font-size: 11px;
-        cursor: pointer;
-        opacity: 1;
-        transition: background 0.15s;
-    }
-
-    .edit-button:hover {
-        background: rgba(255, 255, 255, 0.4);
+    .summarize-button:hover {
+        background: var(--color-compress-hover);
     }
 `;
 

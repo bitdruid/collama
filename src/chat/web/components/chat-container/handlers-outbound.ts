@@ -37,8 +37,8 @@ export function onCancel(host: ChatContainer) {
     backendApi.cancel();
 }
 
-/** Appends a summarization prompt and sends the full history for compression. */
-export function onCompress(host: ChatContainer) {
+/** Appends a summarization prompt and sends the full history for conversation summarization. */
+export function onSummarizeConversation(host: ChatContainer) {
     if (host.isLoading || host.wvChatContext.length() === 0) {
         return;
     }
@@ -46,13 +46,14 @@ export function onCompress(host: ChatContainer) {
     const originalMessages = [...host.wvChatContext.getMessages()];
     const assistantIndex = originalMessages.length + 1;
 
-    host.wvChatContext.push({ role: "user", content: "Summarize our conversation." });
+    host.wvChatContext.push({ role: "user", content: "Context summary:" });
     host.wvChatContext.push({ role: "assistant", content: "" });
     host.syncMessages();
 
     host.isLoading = true;
     host.startLoadingTimeout();
-    backendApi.compress(originalMessages, assistantIndex, host.activeSessionId);
+    host.showToast("Summarizing conversation...");
+    backendApi.summarizeConversation(originalMessages, assistantIndex, host.activeSessionId);
 }
 
 /** Truncates history after the selected user message and re-sends from that point. */
@@ -121,6 +122,27 @@ export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
     host.showToast(`~${approxTokensFreed} tokens freed`);
     logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);
     backendApi.updateMessages(host.messages, host.activeSessionId, approxTokensFreed);
+}
+
+/** Sends a single turn (user message + responses) to the backend for summarization. */
+export function onSummarizeTurn(host: ChatContainer, e: CustomEvent) {
+    if (host.isLoading) {
+        return;
+    }
+    const messageIndex = e.detail.messageIndex;
+    const msgs = host.wvChatContext.getMessages();
+    if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
+        return;
+    }
+
+    const turnEnd = host.wvChatContext.getTurnEnd(messageIndex);
+    const turnMessages = msgs.slice(messageIndex, turnEnd);
+
+    host.isLoading = true;
+    host.startLoadingTimeout();
+    host.showToast("Summarizing turn...");
+    logWebview(`Summarizing turn at index ${messageIndex}`);
+    backendApi.summarizeTurn(turnMessages, messageIndex, turnEnd, host.activeSessionId);
 }
 
 /** Exports a session's chat history as raw JSON to a preview window. */

@@ -31,8 +31,8 @@ export const backendApi = {
     sendChatRequest: (messages: ChatHistory[], sessionId: string) =>
         window.vscode.postMessage({ type: "chat-request", messages, sessionId }),
     cancel: () => window.vscode.postMessage({ type: "chat-cancel" }),
-    compress: (messages: ChatHistory[], assistantIndex: number, sessionId: string) =>
-        window.vscode.postMessage({ type: "compress-request", messages, assistantIndex, sessionId }),
+    summarizeConversation: (messages: ChatHistory[], assistantIndex: number, sessionId: string) =>
+        window.vscode.postMessage({ type: "summarize-conversation-request", messages, assistantIndex, sessionId }),
     updateMessages: (messages: ChatHistory[], sessionId: string, approxTokensFreed: number) =>
         window.vscode.postMessage({ type: "update-messages", messages, sessionId, approxTokensFreed }),
     newSession: () => window.vscode.postMessage({ type: "new-session" }),
@@ -43,4 +43,6 @@ export const backendApi = {
     copySession: (sessionId: string) => window.vscode.postMessage({ type: "copy-session", sessionId }),
     autoAcceptAll: (enabled: boolean) => window.vscode.postMessage({ type: "auto-accept-all", enabled }),
     exportChat: (sessionId: string) => window.vscode.postMessage({ type: "export-chat", sessionId }),
+    summarizeTurn: (turnMessages: ChatHistory[], turnStart: number, turnEnd: number, sessionId: string) =>
+        window.vscode.postMessage({ type: "summarize-turn-request", turnMessages, turnStart, turnEnd, sessionId }),
 };
