@@ -9,6 +9,7 @@ export class ChatAccordion extends LitElement {
     static get properties() {
         return {
             label: { type: String },
+            description: { type: String },
             type: { type: String },
             expanded: { type: Boolean },
             code: { type: String },
@@ -20,6 +21,7 @@ export class ChatAccordion extends LitElement {
     static styles = accordionStyles;
 
     label: string = "";
+    description: string = "";
     type: AccordionType = "code";
     expanded: boolean = false;
     code: string = "";
@@ -108,7 +110,7 @@ export class ChatAccordion extends LitElement {
             <div class="accordion type-${this.type}">
                 <button class="accordion-header" @click=${this._toggle}>
                     <span class="accordion-icon">${this._renderIcon()}</span>
-                    <span class="accordion-label">${this.label}</span>
+                    <span class="accordion-label">${this.label}${this.description ? html`<span class="accordion-description">${this.description}</span>` : ""}</span>
                     <span class="accordion-actions">
                         ${this._renderCopyButton()}
                         <span class="accordion-arrow ${this.expanded ? "expanded" : ""}"> ${icons.chevronDown} </span>

@@ -15,7 +15,7 @@ import { outputStyles } from "./styles-shared";
 function createMarkdownWithCodeHeader(): MarkdownIt {
     const md = new MarkdownIt({
         html: false,
-        linkify: true,
+        linkify: false,
         breaks: true,
     });
 
@@ -45,6 +45,9 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         let expandedAttr = "expanded";
         let languageAttr = "";
 
+        let label = lang;
+        let description = "";
+
         if (lang.startsWith("Think:")) {
             accordionType = "think";
             expandedAttr = "";
@@ -57,7 +60,13 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
             expandedAttr = "";
         }
 
-        return `<collama-accordion type="${accordionType}" label="${lang}" code="${escapedCode}" copyCode="${escapedCode}" ${languageAttr} ${expandedAttr}></collama-accordion>`;
+        if (accordionType !== "code") {
+            const [prefix, ...rest] = lang.split(":");
+            label = prefix + ":";
+            description = rest.join(":").trim();
+        }
+
+        return `<collama-accordion type="${accordionType}" label="${label}" description="${escapeAttr(description)}" code="${escapedCode}" copyCode="${escapedCode}" ${languageAttr} ${expandedAttr}></collama-accordion>`;
     };
 
     return md;

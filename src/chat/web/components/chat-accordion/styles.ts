@@ -66,6 +66,14 @@ export const accordionStyles = [
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-weight: 600;
+        }
+
+        .accordion-description {
+            font-weight: 400;
+            font-style: italic;
+            opacity: 0.85;
+            margin-left: 4px;
         }
 
         /* Smooth animation using CSS grid trick */
