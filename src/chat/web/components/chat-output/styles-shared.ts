@@ -97,5 +97,15 @@ export const outputStyles = [
             margin-right: 4px;
             font-size: 0.9em;
         }
+
+        a {
+            color: var(--vscode-textLink-foreground, #3794ff);
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: var(--vscode-textLink-activeForeground, #3794ff);
+            text-decoration: underline;
+        }
     `,
 ];

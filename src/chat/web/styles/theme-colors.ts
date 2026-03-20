@@ -13,16 +13,16 @@ export const themeColors = css`
         --color-submit-active: #145a75;
 
         /* Context Button Colors */
-        --color-context: #4aaf50;
-        --color-context-hover: #3c9641;
+        --color-context: #3a9a40;
+        --color-context-hover: #2c8232;
 
         /* Cancel Button Colors */
         --color-cancel: #a82222;
         --color-cancel-hover: #861818;
 
         /* Compress Button Colors */
-        --color-compress: #e9a849;
-        --color-compress-hover: #c98a3d;
+        --color-compress: #d99839;
+        --color-compress-hover: #b98a2d;
 
         /* Gallery Button Colors */
         --color-gallery: #9b59b6;
@@ -34,9 +34,9 @@ export const themeColors = css`
         --color-auto-accept-active: #ff6b6b;
 
         /* Role Colors */
-        --color-system: #4aaf50;
+        --color-system: #9b59b6;
         --color-user: #2277a8;
-        --color-assistant: #4aaf50;
+        --color-assistant: #3a9a40;
         --color-tool: #d87979;
 
         /* Usage Bar Colors */
