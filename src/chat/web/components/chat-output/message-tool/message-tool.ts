@@ -11,13 +11,15 @@ export interface ToolRenderOptions {
 
 export function renderToolMessage(opts: ToolRenderOptions) {
     const { msg, outOfContextClass, warningIcon, bare } = opts;
-    const toolLabel = msg.toolName || "unknown";
+    const toolName = msg.toolName || "unknown";
+    const toolTarget = msg.toolTarget || "";
     const escapedArgs = escapeAttr(msg.toolArgs || "");
 
     const accordion = html`
         <collama-accordion
             type="tool"
-            label="${toolLabel}"
+            label="${toolName}"
+            description="${toolTarget}"
             code="${escapedArgs}"
             copyCode="${escapedArgs}"
         ></collama-accordion>

@@ -26,6 +26,7 @@ export type ChatHistory =
           tool_call_id: string;
           toolName?: string;
           toolArgs?: string;
+          toolTarget?: string;
       };
 
 export type UserMessage = Extract<ChatHistory, { role: "user" | "system" }>;

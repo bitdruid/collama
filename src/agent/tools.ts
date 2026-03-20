@@ -24,6 +24,31 @@ import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git"
 export { resetAutoAcceptEdits };
 
 /**
+ * Extracts the primary target value from tool args for UI display.
+ * Uses the tool's `targetKey` to pick the right arg, then truncates file paths.
+ */
+export function getToolTarget(toolName: string, args: Record<string, any>): string {
+    const tool = toolRegistry[toolName];
+    const key = tool?.targetKey;
+    if (!key) {
+        return "";
+    }
+    const raw = args[key];
+    if (!raw) {
+        return "";
+    }
+    const value = String(raw);
+    // Truncate file paths: .../<parent>/<file>
+    if (key !== "pattern" && key !== "branch") {
+        const parts = value.split("/");
+        if (parts.length > 2) {
+            return ".../" + parts.slice(-2).join("/");
+        }
+    }
+    return value;
+}
+
+/**
  * Represents a tool that can be executed by the agent.
  * @template TInput The type of input arguments the tool accepts.
  * @template TOutput The type of output the tool returns (usually a JSON string).
@@ -37,6 +62,8 @@ export interface Tool<TInput = any, TOutput = any> {
             parameters?: Record<string, any>;
         };
     };
+    /** The args key whose value identifies this tool's primary target (shown in UI). */
+    targetKey?: string;
     execute: (input: TInput) => Promise<TOutput>;
 }
 
@@ -159,38 +186,47 @@ export async function confirmAction(action: string, placeHolder: string): Promis
 export const toolRegistry: Record<string, Tool<any, any>> = {
     readFile: {
         definition: readFile_def,
+        targetKey: "filePath",
         execute: readFile_exec,
     },
     searchFiles: {
         definition: searchFiles_def,
+        targetKey: "pattern",
         execute: searchFiles_exec,
     },
     lsPath: {
         definition: lsPath_def,
+        targetKey: "dirPath",
         execute: lsPath_exec,
     },
     gitLog: {
         definition: gitLog_def,
+        targetKey: "branch",
         execute: gitLog_exec,
     },
     gitDiff: {
         definition: gitDiff_def,
+        targetKey: "filePath",
         execute: gitDiff_exec,
     },
     editFile: {
         definition: editFile_def,
+        targetKey: "filePath",
         execute: editFile_exec,
     },
     create: {
         definition: create_def,
+        targetKey: "filePath",
         execute: create_exec,
     },
     deleteFile: {
         definition: deleteFile_def,
+        targetKey: "filePath",
         execute: deleteFile_exec,
     },
     getDiagnostics: {
         definition: getDiagnostics_def,
+        targetKey: "filePath",
         execute: getDiagnostics_exec,
     },
 };

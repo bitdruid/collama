@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 
 import { Agent } from "../agent/agent";
+import { setAutoAcceptAll } from "../agent/tools/edit";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { EditorContext } from "../common/context-editor";
-import { setAutoAcceptAll } from "../agent/tools/edit";
 import { buildInstructionOptions, ToolCall } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
-import { chatCompress_Template } from "../common/prompt";
+import { chatCompress_Template, chatSummarizeTurn_Template } from "../common/prompt";
 import Tokenizer from "../common/utils-common";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
@@ -94,8 +94,13 @@ export class ChatPanel {
                 return;
             }
 
-            if (msg.type === "compress-request") {
-                await this.handleCompressRequest(msg, webview);
+            if (msg.type === "summarize-conversation-request") {
+                await this.handleSummarizeConversationRequest(msg, webview);
+                return;
+            }
+
+            if (msg.type === "summarize-turn-request") {
+                await this.handleSummarizeTurnRequest(msg, webview);
                 return;
             }
 
@@ -273,7 +278,7 @@ export class ChatPanel {
     /**
      * Handles compressing the chat history into a summary.
      */
-    private async handleCompressRequest(
+    private async handleSummarizeConversationRequest(
         msg: { messages: ChatHistory[]; assistantIndex: number; sessionId: string },
         webview: vscode.Webview,
     ) {
@@ -294,7 +299,7 @@ export class ChatPanel {
 
         const fenced = `\`\`\`Summary: Conversation\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
         const compressedMessages: ChatHistory[] = [
-            { role: "user" as const, content: "Summarize our conversation." },
+            { role: "user" as const, content: "Context summary:" },
             { role: "assistant" as const, content: fenced },
         ];
 
@@ -303,10 +308,50 @@ export class ChatPanel {
             s.contextStartIndex = 0;
         });
 
-        webview.postMessage({ type: "compressed", messages: compressedMessages });
+        webview.postMessage({ type: "conversation-summarized", messages: compressedMessages });
         webview.postMessage({ type: "chat-complete" });
         this.session.sendSessionsUpdate();
         logMsg(`Compressed chat for session ${sessionId}`);
+    }
+
+    /**
+     * Handles summarizing a single turn (user message + assistant/tool responses).
+     * Replaces the turn with the original user message and a fenced Summary accordion.
+     */
+    private async handleSummarizeTurnRequest(
+        msg: { turnMessages: ChatHistory[]; turnStart: number; turnEnd: number; sessionId: string },
+        webview: vscode.Webview,
+    ) {
+        const { turnMessages, turnStart, turnEnd, sessionId } = msg;
+        const session = this.session.sessions.find((s) => s.id === sessionId);
+
+        const summaryPrompt = [...turnMessages, { role: "user" as const, content: chatSummarizeTurn_Template }];
+
+        const agent = new Agent();
+        this.currentAgent = agent;
+        let summaryContent = "";
+
+        await agent.work(summaryPrompt, async (chunk) => {
+            summaryContent += chunk;
+        });
+        this.currentAgent = null;
+
+        const fenced = `\`\`\`Summary: Turn\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
+        const replacementMessages: ChatHistory[] = [
+            { role: "user" as const, content: "Context summary:" },
+            { role: "assistant" as const, content: fenced },
+        ];
+
+        // Replace the turn range in the session messages
+        this.session.updateSession(session, (s) => {
+            s.messages.splice(turnStart, turnEnd - turnStart, ...replacementMessages);
+        });
+
+        const allMessages = session?.messages || [];
+        webview.postMessage({ type: "turn-summarized", messages: allMessages });
+        webview.postMessage({ type: "chat-complete" });
+        this.session.sendSessionsUpdate();
+        logMsg(`Summarized turn at ${turnStart}-${turnEnd} for session ${sessionId}`);
     }
 
     /**
@@ -371,6 +416,7 @@ export class ChatPanel {
                             tool_call_id: event.toolCallId as string,
                             toolName: event.toolName as string,
                             toolArgs: event.toolArgs as string,
+                            toolTarget: event.toolTarget as string,
                         });
                     });
                     webview.postMessage({
@@ -380,6 +426,7 @@ export class ChatPanel {
                             content: "",
                             toolName: event.toolName as string,
                             toolArgs: event.toolArgs as string,
+                            toolTarget: event.toolTarget as string,
                         },
                     });
                 }
