@@ -6,10 +6,14 @@ https://keepachangelog.com/
 ## [1.4.9] - 2026-03-18
 
 ### Added
+- Turn summarization - summarize individual user turns to reduce context
+- Loading snake animation during agent operations
 - Export chat history to JSON for backup and sharing
 - Auto-accept all toggle for edits and creates to streamline workflow
 
 ### Changed
+- Moved token counter display from sidebar to input buttons during loading
+- Updated theme colors and improved link styling
 - Minor changes in ui colors / gaps
 - Moved context usage calculation from backend to frontend for improved performance
 
