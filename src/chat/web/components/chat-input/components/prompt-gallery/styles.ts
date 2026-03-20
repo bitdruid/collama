@@ -77,7 +77,7 @@ export const galleryStyles = css`
     .prompt-list {
         display: flex;
         flex-direction: column;
-        gap: 10px; /* Abstand zwischen den Items */
+        gap: 10px;
     }
 
     .prompt-text {
@@ -125,25 +125,41 @@ export const galleryButtonStyles = css`
         gap: 8px;
         margin-top: 6px;
     }
-    button {
-        flex: 1;
+
+    .gallery-btn {
+        display: inline-flex;
         padding: 4px 8px;
         cursor: pointer;
         border: none;
-        background: var(--color-submit);
-        color: var(--vscode-button-foreground);
         border-radius: 4px;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-white);
     }
-    button:hover {
+
+    .edit-btn,
+    .delete-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .prompt-btn,
+    .edit-btn {
+        background: var(--color-submit);
+    }
+
+    .prompt-btn:hover,
+    .edit-btn:hover {
         background: var(--color-submit-hover);
     }
-    .delete-btn {
-        flex: none;
-        background: red;
-        color: var(--vscode-button-foreground);
+
+    .delete-btn,
+    .cancel-btn {
+        background: var(--color-cancel);
     }
-    .delete-btn:hover {
-        background: rgba(255, 80, 80, 0.25);
-        box-shadow: 0 0 6px rgba(255, 80, 80, 0.6);
+
+    .delete-btn:hover,
+    .cancel-btn:hover {
+        background: var(--color-cancel-hover);
     }
 `;

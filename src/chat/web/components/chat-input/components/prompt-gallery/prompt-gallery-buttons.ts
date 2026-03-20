@@ -17,7 +17,7 @@ export class PromptGalleryButtons extends LitElement {
         if (this.index !== undefined) {
             return html`
                 <button
-                    class="edit-btn"
+                    class="gallery-btn edit-btn"
                     title="Edit prompt"
                     @click=${() =>
                         this.dispatchEvent(
@@ -32,7 +32,7 @@ export class PromptGalleryButtons extends LitElement {
                 </button>
 
                 <button
-                    class="delete-btn"
+                    class="gallery-btn delete-btn"
                     title="Delete prompt"
                     @click=${() =>
                         this.dispatchEvent(
@@ -43,7 +43,7 @@ export class PromptGalleryButtons extends LitElement {
                             }),
                         )}
                 >
-                    🗑
+                    ${icons.trash}
                 </button>
             `;
         }
@@ -52,12 +52,14 @@ export class PromptGalleryButtons extends LitElement {
             return html`
                 <div class="button-container">
                     <button
+                        class="gallery-btn prompt-btn"
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("save-new-prompt", { bubbles: true, composed: true }))}
                     >
                         Save
                     </button>
                     <button
+                        class="gallery-btn cancel-btn"
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("cancel-new-prompt", { bubbles: true, composed: true }))}
                     >
@@ -69,6 +71,7 @@ export class PromptGalleryButtons extends LitElement {
 
         return html`
             <button
+                class="gallery-btn prompt-btn"
                 @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
             >
                 + Add Prompt
