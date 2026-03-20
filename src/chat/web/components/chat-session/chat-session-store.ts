@@ -1,6 +1,6 @@
 // src/services/chat-session-store.ts
 
-import { ChatSession } from "./chat-sessions";
+import { ChatSession } from "./chat-session";
 
 export class ChatSessionStore extends EventTarget {
     static instance = new ChatSessionStore();

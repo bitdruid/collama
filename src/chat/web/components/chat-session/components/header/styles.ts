@@ -1,7 +1,9 @@
 // src/chat/web/components/chat_session/components/header/styles.ts
 import { css } from "lit";
+import { themeColors } from "../../../../styles/theme-colors";
 
 export const headerStyles = css`
+    ${themeColors}
     .session-header {
         display: flex;
         justify-content: space-between;
@@ -25,13 +27,13 @@ export const headerStyles = css`
         font-weight: bold;
         font-size: 12px;
         text-transform: uppercase;
-        color: var(--vscode-foreground);
+        color: var(--color-ui-font);
         opacity: 0.8;
     }
 
     .toggle-icon {
         font-size: 10px;
-        color: var(--vscode-foreground);
+        color: var(--color-ui-font);
         opacity: 0.6;
     }
 
@@ -45,15 +47,15 @@ export const headerStyles = css`
         width: 24px;
         height: 24px;
         font-size: 16px;
-        background-color: #9b59b6;
-        color: #fff;
+        background-color: var(--color-submit);
+        color: var(--color-text-white);
     }
 
     .new-chat-button:hover {
-        background-color: #8e44ad;
+        background-color: var(--color-submit-hover);
     }
 
     .new-chat-button:active {
-        background-color: #7d3c98;
+        background-color: var(--color-submit-active);
     }
 `;

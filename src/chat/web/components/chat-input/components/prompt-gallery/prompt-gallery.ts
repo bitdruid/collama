@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { property, state } from "lit/decorators.js";
+import { state } from "lit/decorators.js";
 
 import "./prompt-gallery-buttons";
 import { galleryStyles } from "./styles";
@@ -7,60 +7,56 @@ import { galleryStyles } from "./styles";
 export class PromptGallery extends LitElement {
     static styles = galleryStyles;
 
-    @property({ type: Boolean })
-    visible = false;
+    @state() visible = false;
+    @state() private _customPrompts: string[] = [];
+    @state() private _adding = false;
+    @state() private _newPrompt = "";
+    private _editingIndex?: number;
 
-    @property({ type: Array })
-    private customPrompts: string[] = [];
-
-    @state()
-    private _adding = false;
-
-    @state()
-    private _newPrompt = "";
-
-    //##### Gallery Handling #####
     private _close() {
+        this._adding = false;
+        this._newPrompt = "";
+        this._editingIndex = undefined;
         this.dispatchEvent(new CustomEvent("close-gallery"));
     }
 
     private _selectPrompt(prompt: string) {
-        this.dispatchEvent(
-            new CustomEvent("submit-prompt", {
-                detail: { value: prompt },
-            }),
-        );
+        this.dispatchEvent(new CustomEvent("submit-prompt", { detail: { value: prompt } }));
     }
-    //##### Prompt Handling #####
+
     connectedCallback() {
         super.connectedCallback();
         this._loadPrompts();
         window.addEventListener("keydown", this._handleKeyDown);
     }
 
+    disconnectedCallback() {
+        window.removeEventListener("keydown", this._handleKeyDown);
+        super.disconnectedCallback();
+    }
+
     private _loadPrompts() {
         const saved = localStorage.getItem("collama-custom-prompts");
         if (saved) {
-            this.customPrompts = JSON.parse(saved);
+            this._customPrompts = JSON.parse(saved);
         }
     }
 
     private _savePrompts() {
-        localStorage.setItem("collama-custom-prompts", JSON.stringify(this.customPrompts));
+        localStorage.setItem("collama-custom-prompts", JSON.stringify(this._customPrompts));
     }
 
     private _saveNewPrompt() {
-        if (!this._newPrompt.trim()) {
+        const trimmed = this._newPrompt.trim();
+        if (!trimmed) {
             return;
         }
 
         if (this._editingIndex !== undefined) {
-            //edit existing prompt
-            this.customPrompts[this._editingIndex] = this._newPrompt.trim();
+            this._customPrompts = this._customPrompts.map((p, i) => (i === this._editingIndex ? trimmed : p));
             this._editingIndex = undefined;
         } else {
-            // new prompt
-            this.customPrompts = [...this.customPrompts, this._newPrompt.trim()];
+            this._customPrompts = [...this._customPrompts, trimmed];
         }
 
         this._savePrompts();
@@ -69,21 +65,25 @@ export class PromptGallery extends LitElement {
     }
 
     private _deletePrompt(index: number) {
-        this.customPrompts = this.customPrompts.filter((_, i) => i !== index);
+        this._customPrompts = this._customPrompts.filter((_, i) => i !== index);
         this._savePrompts();
     }
 
     private _editPrompt(index: number) {
-        this._newPrompt = this.customPrompts[index];
-        this._adding = true;
+        this._newPrompt = this._customPrompts[index];
         this._editingIndex = index;
+        this._adding = true;
     }
 
-    private _editingIndex?: number;
+    private _startAdding() {
+        this._newPrompt = "";
+        this._adding = true;
+    }
 
-    disconnectedCallback() {
-        window.removeEventListener("keydown", this._handleKeyDown);
-        super.disconnectedCallback();
+    private _cancelAdding() {
+        this._newPrompt = "";
+        this._adding = false;
+        this._editingIndex = undefined;
     }
 
     private _handleKeyDown = (e: KeyboardEvent) => {
@@ -103,11 +103,10 @@ export class PromptGallery extends LitElement {
                     <h3>Prompt Gallery</h3>
 
                     <div class="prompt-list">
-                        ${this.customPrompts.map(
+                        ${this._customPrompts.map(
                             (p, index) => html`
                                 <div class="prompt-item">
                                     <div class="prompt-text" @click=${() => this._selectPrompt(p)}>${p}</div>
-
                                     <div class="prompt-actions">
                                         <prompt-gallery-buttons
                                             .index=${index}
@@ -135,9 +134,9 @@ export class PromptGallery extends LitElement {
 
                         <prompt-gallery-buttons
                             .adding=${this._adding}
-                            @add-prompt=${() => (this._adding = true)}
+                            @add-prompt=${this._startAdding}
                             @save-new-prompt=${this._saveNewPrompt}
-                            @cancel-new-prompt=${() => (this._adding = false)}
+                            @cancel-new-prompt=${this._cancelAdding}
                         ></prompt-gallery-buttons>
                     </div>
                 </div>

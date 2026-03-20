@@ -1,6 +1,16 @@
 import hljs from "highlight.js";
 import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import { css, html, unsafeCSS } from "lit";
+import { ChatHistory } from "../common/context-chat";
+
+/**
+ * Estimate token count for an array of messages using ~4 chars per token.
+ * Serializes full message objects to account for tool args, tool_calls, etc.
+ */
+export function estimateTokens(messages: ChatHistory[]): number {
+    const len = messages.reduce((sum, m) => sum + JSON.stringify(m).length, 0);
+    return Math.round(len / 4);
+}
 
 export function logWebview(message: string) {
     window.vscode.postMessage({
@@ -13,11 +23,14 @@ export function llmInfoTag(tagContent: string): string {
     return `<llm-info>${tagContent}</llm-info>`;
 }
 
-/**
- * Estimate token count from text using a ~4 chars per token approximation.
- */
-export function estimateTokenCount(text: string): number {
-    return Math.round(text.length / 4);
+/** Escape a string for safe use inside HTML attributes. */
+export function escapeAttr(s: string): string {
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 }
 
 /**
@@ -54,16 +67,16 @@ export const hljsStyles = [
  * Highlight a code element using hljs auto-detection.
  * Returns true if highlighting was applied, false if element not found.
  */
-export function highlightCodeBlock(container: ShadowRoot | null, selector = "pre code"): boolean {
+export function highlightCodeBlock(container: ShadowRoot | null, selector = "pre code", language?: string): boolean {
     if (!container) {
         return false;
     }
     const codeBlock = container.querySelector(selector) as HTMLElement | null;
     if (codeBlock) {
         const code = codeBlock.textContent || "";
-        const highlighted = hljs.highlightAuto(code);
+        const highlighted = language ? hljs.highlight(code, { language }) : hljs.highlightAuto(code);
         codeBlock.innerHTML = highlighted.value;
-        codeBlock.className = `hljs ${highlighted.language || ""}`;
+        codeBlock.className = `hljs ${highlighted.language || language || ""}`;
         return true;
     }
     return false;
@@ -288,6 +301,21 @@ export const icons = {
         <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>`,
 
+    /** Check circle - used for auto accept button */
+    checkCircle: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>`,
+
     pencil: html`<svg
         width="14"
         height="14"
@@ -302,5 +330,22 @@ export const icons = {
         <!-- Bodenlinie -->
         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
         <!-- Bleistift -->
+    </svg>`,
+
+    /** Trash-2 - used for delete button */
+    trash: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
     </svg>`,
 };

@@ -43,7 +43,7 @@ export function renderSystemMessage(opts: {
     return html`
         <div class="message system ${outOfContextClass}">
             <div class="bubble">
-                <div class="role-header role-assistant">
+                <div class="role-header role-system">
                     <span class="role-label">${warningIcon}System</span>
                 </div>
                 ${unsafeHTML(opts.getCachedMarkdown(msg.content, false))}

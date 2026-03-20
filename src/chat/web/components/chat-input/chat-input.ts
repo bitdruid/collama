@@ -3,11 +3,14 @@ import { state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
 import "./components/input-buttons/input-buttons"; // Import
 import "./components/prompt-gallery/prompt-gallery";
-import { chatInputStyles } from "./styles-chat-input";
+import { chatInputStyles } from "./styles";
 
 export class ChatInput extends LitElement {
     @state()
     private showGallery = false;
+
+    @state()
+    private autoAccept = false;
 
     static get properties() {
         return {
@@ -15,6 +18,8 @@ export class ChatInput extends LitElement {
             rows: { type: Number },
             contexts: { type: Array },
             isLoading: { type: Boolean },
+            agentToken: { type: Number },
+            hasTokenData: { type: Boolean },
         };
     }
 
@@ -24,6 +29,8 @@ export class ChatInput extends LitElement {
     rows = 1;
     contexts: AttachedContext[] = [];
     isLoading = false;
+    agentToken = 0;
+    hasTokenData = false;
 
     updated(changedProperties: PropertyValues) {
         if (changedProperties.has("isLoading") && !this.isLoading) {
@@ -76,9 +83,20 @@ export class ChatInput extends LitElement {
         );
     }
 
-    private _handleCompress() {
+    private _handleSummarizeConversation() {
         this.dispatchEvent(
-            new CustomEvent("compress", {
+            new CustomEvent("summarize-conversation", {
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    }
+
+    private _handleAutoAccept() {
+        this.autoAccept = !this.autoAccept;
+        this.dispatchEvent(
+            new CustomEvent("auto-accept", {
+                detail: { enabled: this.autoAccept },
                 bubbles: true,
                 composed: true,
             }),
@@ -146,9 +164,13 @@ export class ChatInput extends LitElement {
             <collama-chatinput-buttons
                 .contexts=${this.contexts}
                 .isLoading=${this.isLoading}
+                .autoAccept=${this.autoAccept}
+                .agentToken=${this.agentToken}
+                .hasTokenData=${this.hasTokenData}
                 @gallery-click=${this._openGallery}
                 @cancel=${this._handleCancel}
-                @compress=${this._handleCompress}
+                @summarize-conversation=${this._handleSummarizeConversation}
+                @auto-accept=${this._handleAutoAccept}
                 @submit=${this._handleSubmit}
                 @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
             ></collama-chatinput-buttons>

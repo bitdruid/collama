@@ -1,8 +1,8 @@
 // src/chat/web/components/chat_session/components/popup/chat_session_popup.ts
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { ChatSession } from "../../chat-sessions";
-import "./chat-empty-state";
+import { ChatSession } from "../../chat-session";
+import "./chat-session-empty";
 import "./chat-session-item";
 import { popupStyles } from "./styles";
 
@@ -53,6 +53,14 @@ export class ChatSessionsPopup extends LitElement {
                                   @copy=${() =>
                                       this.dispatchEvent(
                                           new CustomEvent("copy-session", {
+                                              detail: { id: session.id },
+                                              bubbles: true,
+                                              composed: true,
+                                          }),
+                                      )}
+                                  @export=${() =>
+                                      this.dispatchEvent(
+                                          new CustomEvent("export-chat", {
                                               detail: { id: session.id },
                                               bubbles: true,
                                               composed: true,

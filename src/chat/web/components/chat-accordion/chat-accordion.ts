@@ -3,26 +3,30 @@ import { LitElement, html } from "lit";
 import { highlightCodeBlock, icons } from "../../../utils-front";
 import { accordionStyles } from "./styles";
 
-export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group";
+export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group" | "context";
 
 export class ChatAccordion extends LitElement {
     static get properties() {
         return {
             label: { type: String },
+            description: { type: String },
             type: { type: String },
             expanded: { type: Boolean },
             code: { type: String },
             copyCode: { type: String },
+            language: { type: String },
         };
     }
 
     static styles = accordionStyles;
 
     label: string = "";
+    description: string = "";
     type: AccordionType = "code";
     expanded: boolean = false;
     code: string = "";
     copyCode: string = "";
+    language: string = "";
 
     private _highlighted = false;
     private _copyText = "Copy";
@@ -66,7 +70,7 @@ export class ChatAccordion extends LitElement {
     private _highlightCode() {
         requestAnimationFrame(() => {
             if (!this._highlighted) {
-                this._highlighted = highlightCodeBlock(this.shadowRoot);
+                this._highlighted = highlightCodeBlock(this.shadowRoot, "pre code", this.language || undefined);
             }
         });
     }
@@ -80,6 +84,8 @@ export class ChatAccordion extends LitElement {
             case "tool":
             case "tool-group":
                 return icons.tool;
+            case "context":
+                return icons.paperclip;
             case "code":
                 return icons.code;
             default:
@@ -104,7 +110,7 @@ export class ChatAccordion extends LitElement {
             <div class="accordion type-${this.type}">
                 <button class="accordion-header" @click=${this._toggle}>
                     <span class="accordion-icon">${this._renderIcon()}</span>
-                    <span class="accordion-label">${this.label}</span>
+                    <span class="accordion-label">${this.label}${this.description ? html`<span class="accordion-description">${this.description}</span>` : ""}</span>
                     <span class="accordion-actions">
                         ${this._renderCopyButton()}
                         <span class="accordion-arrow ${this.expanded ? "expanded" : ""}"> ${icons.chevronDown} </span>

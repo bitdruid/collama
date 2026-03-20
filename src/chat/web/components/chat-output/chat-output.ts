@@ -1,9 +1,9 @@
 import { LitElement, html } from "lit";
 import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import { highlightAllCodeBlocks, icons } from "../../../utils-front";
+import { escapeAttr, highlightAllCodeBlocks, icons } from "../../../utils-front";
 import "../chat-accordion/chat-accordion";
-import "../chat-session/components/popup/chat-empty-state";
+import "../chat-session/components/popup/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";
@@ -15,18 +15,38 @@ import { outputStyles } from "./styles-shared";
 function createMarkdownWithCodeHeader(): MarkdownIt {
     const md = new MarkdownIt({
         html: false,
-        linkify: true,
+        linkify: false,
         breaks: true,
     });
+
+    md.block.ruler.before("html_block", "llm_info", (state, startLine, _endLine, silent) => {
+        const line = state.src.slice(state.bMarks[startLine], state.eMarks[startLine]);
+        if (!line.startsWith("<llm-info>") || !line.endsWith("</llm-info>")) {
+            return false;
+        }
+        if (silent) {
+            return true;
+        }
+        const token = state.push("llm_info", "", 0);
+        token.content = line;
+        state.line = startLine + 1;
+        return true;
+    });
+
+    md.renderer.rules["llm_info"] = (tokens, idx) => `${tokens[idx].content}\n`;
 
     md.renderer.rules.fence = (tokens, idx) => {
         const token = tokens[idx];
         const lang = token.info.trim() || "code";
         const code = token.content;
-        const escapedCode = code.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        const escapedCode = escapeAttr(code);
 
         let accordionType = "code";
         let expandedAttr = "expanded";
+        let languageAttr = "";
+
+        let label = lang;
+        let description = "";
 
         if (lang.startsWith("Think:")) {
             accordionType = "think";
@@ -34,9 +54,19 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
         } else if (lang.startsWith("Summary:")) {
             accordionType = "summary";
             expandedAttr = "";
+            languageAttr = 'language="markdown"';
+        } else if (lang.startsWith("Context:")) {
+            accordionType = "context";
+            expandedAttr = "";
         }
 
-        return `<collama-accordion type="${accordionType}" label="${lang}" code="${escapedCode}" copyCode="${escapedCode}" ${expandedAttr}></collama-accordion>`;
+        if (accordionType !== "code") {
+            const [prefix, ...rest] = lang.split(":");
+            label = prefix + ":";
+            description = rest.join(":").trim();
+        }
+
+        return `<collama-accordion type="${accordionType}" label="${label}" description="${escapeAttr(description)}" code="${escapedCode}" copyCode="${escapedCode}" ${languageAttr} ${expandedAttr}></collama-accordion>`;
     };
 
     return md;

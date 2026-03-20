@@ -20,7 +20,7 @@ export class ChatSessionHeader extends LitElement {
                     <span class="toggle-icon">${this.isOpen ? "▲" : "▼"}</span>
                 </div>
                 <div class="header-buttons">
-                    <span class="header-title">Context Usage</span>
+                    <span class="header-title">~ Context Usage</span>
                     <collama-context-usage-bar
                         .used=${this.contextUsed}
                         .max=${this.contextMax}

@@ -6,9 +6,10 @@ import Tokenizer, { withProgressNotification } from "../common/utils-common";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import { executeTool, getToolDefinitions, resetAutoAcceptEdits } from "./tools";
+import { executeTool, getToolDefinitions, getToolTarget, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
+
 
 /**
  * This class manages the lifecycle of an agent task, including initializing the client,
@@ -135,6 +136,7 @@ export class Agent {
                             toolCallId: toolCall.id,
                             toolName: toolCall.function.name,
                             toolArgs: argsBody,
+                            toolTarget: getToolTarget(toolCall.function.name, args),
                             toolResult: toolResult,
                         });
                     }

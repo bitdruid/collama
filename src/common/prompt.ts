@@ -143,11 +143,21 @@ export const chatCompress_Template: string = [
     "- Write in past tense, third-person neutral",
 ].join("\n");
 
-/**
- * The user message appended to the conversation history to request a summary.
- * Used by the chat compress feature to condense a long conversation into a
- * single Summary accordion message pair.
- */
+export const chatSummarizeTurn_Template: string = [
+    "Summarize the above user question and the assistant's complete response (including any tool usage and results).",
+    "",
+    "RULES:",
+    "- Capture the user's intent and the key outcome or answer",
+    "- Preserve important technical details, file names, code snippets, and decisions",
+    "- Keep it concise but complete — do not lose actionable information",
+    "- Do not add new information or opinions",
+    "- Do not mention that this is a summary",
+    "",
+    "OUTPUT FORMAT:",
+    "Use markdown structure to keep the summary scannable:",
+    "- Use bullet points for lists of items, decisions, or findings",
+    "- Write in past tense, third-person neutral",
+].join("\n");
 /**
  * System prompt prepended to the agent's conversation history.
  * Guides the LLM on how to use tools effectively and when to stop.
@@ -160,7 +170,6 @@ export const agent_Template: string = [
     "- Prefer reading files over searching patterns.",
     "- Explain your actions and why before making changes.",
     "- After you finished editing, use getDiagnostics to validate the changes.",
-    '- Tool arguments are JSON. Always escape quotes as \\" and newlines as \\n inside string values.',
     "- Never repeat yourself. Instead move on to the next step.",
     "- Do not re-check conditions you have already confirmed.",
     "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",

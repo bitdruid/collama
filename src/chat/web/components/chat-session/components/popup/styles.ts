@@ -1,7 +1,9 @@
 // src/chat/web/components/chat_session/components/popup/styles.ts
 import { css } from "lit";
+import { themeColors } from "../../../../styles/theme-colors";
 
 export const popupStyles = css`
+    ${themeColors}
     .popup-overlay {
         display: none;
         position: absolute;
@@ -10,7 +12,7 @@ export const popupStyles = css`
         right: 0;
         bottom: 0;
         z-index: 1000;
-        background: rgba(0, 0, 0, 0.5);
+        background: var(--vscode-widget-shadow);
     }
 
     .popup-overlay.open {
@@ -27,7 +29,7 @@ export const popupStyles = css`
         background: var(--vscode-dropdown-background);
         border: 1px solid var(--vscode-dropdown-border);
         border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 1);
+        box-shadow: 0 4px 12px var(--vscode-widget-shadow);
         max-height: 300px;
         overflow-y: auto;
     }
@@ -52,8 +54,13 @@ export const sessionItemStyles = css`
     }
 
     .session-item.active {
-        background: var(--vscode-list-activeSelectionBackground);
-        border-left-color: var(--vscode-focusBorder);
+        background: var(--vscode-focusBorder);
+        color: var(--vscode-list-activeSelectionForeground);
+        border-left-color: var(--vscode-list-activeSelectionForeground);
+    }
+
+    .session-item.active:hover {
+        background: var(--vscode-focusBorder);
     }
 
     .session-info {
@@ -67,7 +74,7 @@ export const sessionItemStyles = css`
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        color: var(--vscode-foreground);
+        color: var(--color-ui-font);
     }
 
     .session-title-input {
@@ -98,11 +105,15 @@ export const sessionItemStyles = css`
     }
 
     .rename-button {
-        color: var(--vscode-foreground);
+        color: var(--color-ui-font);
     }
 
     .copy-button {
-        color: var(--vscode-foreground);
+        color: var(--color-ui-font);
+    }
+
+    .export-button {
+        color: var(--color-ui-font);
     }
 
     .delete-button {

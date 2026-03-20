@@ -1,4 +1,4 @@
-import { logWebview } from "../../../utils-front";
+import { estimateTokens, logWebview } from "../../../utils-front";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import type { ChatContainer } from "./chat-container";
 
@@ -7,12 +7,12 @@ export function createInboundDispatcher(host: ChatContainer) {
     const handlers: Record<string, (m: any) => void> = {
         init: (m) => handleInit(host, m),
         "sessions-update": (m) => handleSessionsUpdate(host, m),
-        "context-usage-update": (m) => handleContextUsageUpdate(host, m),
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
         "chat-complete": () => handleChatComplete(host),
-        compressed: (m) => handleCompressed(host, m),
+        "conversation-summarized": (m) => handleConversationSummarized(host, m),
+        "turn-summarized": (m) => handleTurnSummarized(host, m),
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
     };
@@ -25,7 +25,7 @@ function applySessionState(host: ChatContainer, msg: any) {
     host.syncMessages();
     host.sessions = msg.sessions || [];
     host.activeSessionId = msg.activeSessionId || "";
-    host.contextUsed = msg.contextUsed || 0;
+    host.contextUsed = estimateTokens(msg.history || []);
     host.contextMax = msg.contextMax || 0;
     host.contextStartIndex = msg.contextStartIndex || 0;
 
@@ -48,13 +48,6 @@ function handleSessionsUpdate(host: ChatContainer, msg: any) {
     applySessionState(host, msg);
 }
 
-/** Updates the context-window usage counters shown in the session sidebar. */
-function handleContextUsageUpdate(host: ChatContainer, msg: any) {
-    host.contextUsed = msg.contextUsed || 0;
-    host.contextMax = msg.contextMax || 0;
-    ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
-}
-
 /** Appends a complete message (e.g. tool call/response) pushed by the agent. */
 function handleAgentAddMessage(host: ChatContainer, msg: any) {
     host.wvChatContext.push(msg.message);
@@ -74,29 +67,40 @@ function handleAgentTokens(host: ChatContainer, msg: any) {
     host.hasTokenData = true;
 }
 
-/** Marks the LLM response as finished and resets loading/token state. */
+/** Marks the LLM response as finished, resets loading/token state, and recalculates context usage. */
 function handleChatComplete(host: ChatContainer) {
     host.isLoading = false;
     host.clearLoadingTimeout();
     host.agent_token = 0;
     host.hasTokenData = false;
+    host.contextUsed = estimateTokens(host.wvChatContext.getMessages());
+    ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
 }
 
-/** Replaces message history with the compressed version returned by the host. */
-function handleCompressed(host: ChatContainer, msg: any) {
+/** Replaces message history with the summarized conversation returned by the host. */
+function handleConversationSummarized(host: ChatContainer, msg: any) {
     host.wvChatContext.setMessages(msg.messages || []);
     host.syncMessages();
     host.contextStartIndex = 0;
-    host.showToast("Chat compressed");
+    host.showToast("Conversation summarized");
+}
+
+/** Replaces message history with the version containing the summarized turn. */
+function handleTurnSummarized(host: ChatContainer, msg: any) {
+    host.wvChatContext.setMessages(msg.messages || []);
+    host.syncMessages();
+    host.contextUsed = estimateTokens(msg.messages || []);
+    ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
+    host.showToast("Turn summarized");
 }
 
 /** Adjusts `contextStartIndex` when the host trims old messages to stay within the context window. */
 function handleContextTrimmed(host: ChatContainer, msg: any) {
     host.contextStartIndex = msg.contextStartIndex || 0;
-    if (msg.pairsRemoved > 0) {
-        const pairs = msg.pairsRemoved;
+    if (msg.turnsRemoved > 0) {
+        const turns = msg.turnsRemoved;
         host.showToast(
-            `Context exceeded — ${pairs} old pair${pairs > 1 ? "s" : ""} removed (~${msg.tokensFreed} tokens)`,
+            `Context exceeded — ${turns} old turn${turns > 1 ? "s" : ""} removed (~${msg.tokensFreed} tokens)`,
         );
     }
 }

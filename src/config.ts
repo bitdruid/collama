@@ -39,7 +39,7 @@ export const userConfig = {
     suggestMode: "inline",
     suggestDelay: 1500,
     enableEditTools: true,
-    tlsRejectUnauthorized: true,
+    tlsRejectUnauthorized: false,
     apiTokenContextLenCompletion: 4096,
     apiTokenContextLenInstruct: 4096,
     apiTokenPredictCompletion: 400,
@@ -222,7 +222,7 @@ async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBacke
     }
 
     try {
-        const anthropic = requestAnthropic(apiBase, bearer ?? "");
+        const anthropic = requestAnthropic(apiBase, bearer);
         await Promise.race([anthropic.models.list(), createTimeout(DETECTION_TIMEOUT_MS)]);
         return "anthropic";
     } catch (err) {

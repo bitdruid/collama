@@ -1,12 +1,14 @@
 import { css } from "lit";
+import { themeColors } from "../../../styles/theme-colors";
 
 export const userStyles = css`
+    ${themeColors}
     .message.user {
         margin: 24px 0;
     }
 
     .role-user {
-        background-color: #2277a8;
+        background-color: var(--color-user);
     }
 
     .bubble-user {
@@ -21,10 +23,14 @@ export const userStyles = css`
 
     .message-actions {
         display: flex;
+        align-items: center;
         gap: 4px;
     }
 
-    .resend-button {
+    .resend-button,
+    .delete-button,
+    .edit-button,
+    .summarize-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -32,57 +38,29 @@ export const userStyles = css`
         border: none;
         border-radius: 4px;
         background: transparent;
-        color: #fff;
+        color: var(--color-text-white);
         font-size: 11px;
         cursor: pointer;
         opacity: 1;
         transition: background 0.15s;
     }
 
-    .resend-button:hover {
-        background: rgba(255, 255, 255, 0.4);
-    }
-
-    .delete-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2px 6px;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
-        color: #fff;
-        font-size: 11px;
-        cursor: pointer;
-        opacity: 1;
-        transition: background 0.15s;
+    .resend-button:hover,
+    .edit-button:hover {
+        background: var(--color-submit-hover);
     }
 
     .delete-button:hover {
-        background: rgba(255, 80, 80, 0.5);
+        background: var(--color-cancel-hover);
     }
 
-    .edit-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2px 6px;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
-        color: #fff;
-        font-size: 11px;
-        cursor: pointer;
-        opacity: 1;
-        transition: background 0.15s;
-    }
-
-    .edit-button:hover {
-        background: rgba(255, 255, 255, 0.4);
+    .summarize-button:hover {
+        background: var(--color-compress-hover);
     }
 `;
 
 export const editStyles = css`
+    ${themeColors}
     :host {
         display: block;
     }
@@ -117,14 +95,14 @@ export const editStyles = css`
         padding: 4px 12px;
         border: none;
         border-radius: 4px;
-        background: #2277a8;
-        color: #fff;
+        background: var(--color-submit);
+        color: var(--color-text-white);
         font-size: 12px;
         cursor: pointer;
     }
 
     .edit-send:hover {
-        background: #1b6090;
+        background: var(--color-submit-hover);
     }
 
     .edit-cancel {
@@ -132,7 +110,7 @@ export const editStyles = css`
         border: 1px solid var(--vscode-input-border, #3c3c3c);
         border-radius: 4px;
         background: transparent;
-        color: var(--vscode-foreground, #ccc);
+        color: var(--color-ui-font);
         font-size: 12px;
         cursor: pointer;
     }

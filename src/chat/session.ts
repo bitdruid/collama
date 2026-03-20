@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ChatHistory } from "../common/context-chat";
 import { userConfig } from "../config";
-import { calculateContextUsage, mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
+import { mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
 
 /**
  * Represents a single chat session, including its messages and metadata.
@@ -155,37 +155,19 @@ export class Session {
 
     /**
      * Sends the current session state to the webview.
-     * Posts session data immediately (non-blocking), then calculates token usage
-     * in the background and sends a follow-up `context-usage-update` message.
-     *
-     * @param knownContextUsed - If provided, skips background token calculation and uses this value.
+     * Token estimation is handled entirely by the frontend.
      */
-    sendSessionsUpdate(knownContextUsed?: number) {
+    sendSessionsUpdate() {
         const activeSession = this.getActiveSession();
-        const contextMax = userConfig.apiTokenContextLenInstruct;
         const messages = activeSession?.messages || [];
 
-        // Send session data immediately so the UI updates without waiting for tokenization
         this.webviewView.webview.postMessage({
             type: "sessions-update",
             sessions: mapSessionsToSummaries(this.sessions),
             activeSessionId: this.activeSessionId,
             history: sanitizeMessages(messages),
-            contextUsed: knownContextUsed ?? 0,
-            contextMax,
+            contextMax: userConfig.apiTokenContextLenInstruct,
             contextStartIndex: activeSession?.contextStartIndex || 0,
-        });
-
-        // If caller already knows the token count, send it right away; otherwise calculate in background
-        if (knownContextUsed !== undefined) {
-            return;
-        }
-        calculateContextUsage(messages).then((contextUsed) => {
-            this.webviewView.webview.postMessage({
-                type: "context-usage-update",
-                contextUsed,
-                contextMax,
-            });
         });
     }
 }

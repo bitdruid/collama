@@ -14,7 +14,13 @@ let autoAcceptEdits = false;
  * When true, create_exec creates files without showing a preview.
  * Set by the "Create All" quick-pick option; reset per agent session.
  */
-let autoAcceptCreates = false;
+let autoAcceptFileCreates = false;
+
+/**
+ * When true, create_exec creates folders without confirmation.
+ * Set by the "Create All" quick-pick option; reset per agent session.
+ */
+let autoAcceptFolderCreates = false;
 
 /**
  * When true, deleteFile_exec deletes files without confirmation.
@@ -23,11 +29,34 @@ let autoAcceptCreates = false;
 let autoAcceptDeletes = false;
 
 /**
- * Resets the auto-accept flags. Call at the start of each agent session.
+ * When true, the frontend toggle is active and resetAutoAcceptEdits
+ * should not clear the flags.
+ */
+let frontendAutoAcceptActive = false;
+
+/**
+ * Sets all auto-accept flags at once. Called by the frontend
+ * "auto-accept all" toggle button.
+ */
+export function setAutoAcceptAll(enabled: boolean): void {
+    frontendAutoAcceptActive = enabled;
+    autoAcceptEdits = enabled;
+    autoAcceptFileCreates = enabled;
+    autoAcceptFolderCreates = enabled;
+    autoAcceptDeletes = enabled;
+}
+
+/**
+ * Resets the per-session auto-accept flags (from quick-pick bulk actions).
+ * Skips reset when the frontend toggle is active.
  */
 export function resetAutoAcceptEdits(): void {
+    if (frontendAutoAcceptActive) {
+        return;
+    }
     autoAcceptEdits = false;
-    autoAcceptCreates = false;
+    autoAcceptFileCreates = false;
+    autoAcceptFolderCreates = false;
     autoAcceptDeletes = false;
 }
 
@@ -182,7 +211,7 @@ async function handleChanges(
                     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(newContent));
                     message = "File created.";
                     if (value === bulkValue) {
-                        autoAcceptCreates = true;
+                        autoAcceptFileCreates = true;
                         message = "File created. Auto-creating future files.";
                     }
                 }
@@ -341,8 +370,21 @@ export async function create_exec(args: { filePath: string; content?: string }):
         }
 
         if (isFolder) {
+            // Auto-accept: create folder without confirmation
+            if (autoAcceptFolderCreates) {
+                await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
+                return JSON.stringify({
+                    success: true,
+                    message: "Folder created (auto-created).",
+                    filePath: args.filePath,
+                });
+            }
+
             const { value, reason } = await showActionQuickPick(
-                [{ label: "$(folder-opened) Create", value: "create" }],
+                [
+                    { label: "$(folder-opened) Create", value: "create" },
+                    { label: "$(check-all) Create All", value: "createAll" },
+                ],
                 `Create folder: ${args.filePath}`,
             );
 
@@ -352,11 +394,16 @@ export async function create_exec(args: { filePath: string; content?: string }):
 
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
 
+            if (value === "createAll") {
+                autoAcceptFolderCreates = true;
+                return JSON.stringify({ success: true, message: "Folder created. Auto-creating future folders.", filePath: args.filePath });
+            }
+
             return JSON.stringify({ success: true, message: "Folder created.", filePath: args.filePath });
         }
 
         // Auto-accept: create without preview
-        if (autoAcceptCreates) {
+        if (autoAcceptFileCreates) {
             const encoder = new TextEncoder();
             await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), encoder.encode(args.content!));
             return JSON.stringify({

@@ -143,9 +143,9 @@ export function requestOpenAI(url: string, bearer?: string): OpenAI {
  * @param apiKey - The Anthropic API key.
  * @returns A configured Anthropic client.
  */
-export function requestAnthropic(url: string, apiKey: string): Anthropic {
+export function requestAnthropic(url: string, bearer?: string): Anthropic {
     return new Anthropic({
-        apiKey: apiKey,
+        apiKey: bearer ?? "",
         baseURL: url,
         fetch: proxyFetch as typeof fetch,
     });
