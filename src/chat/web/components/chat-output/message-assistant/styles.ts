@@ -24,6 +24,8 @@ export const assistantStyles = css`
     .loading {
         font-style: italic;
         opacity: 0.7;
+        padding-bottom: 12px;
+        display: block;
     }
 
     .loading .dots::after {

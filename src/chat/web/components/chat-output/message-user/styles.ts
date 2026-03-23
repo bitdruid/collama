@@ -12,8 +12,8 @@ export const userStyles = css`
     }
 
     .bubble-user {
-        border: 2px solid var(--vscode-commandCenter-activeBorder);
-        background: var(--vscode-input-background);
+        border: 2px solid var(--color-ui-border);
+        background: var(--color-ui-background);
     }
 
     .out-of-context .bubble.bubble-user {
@@ -38,7 +38,7 @@ export const userStyles = css`
         border: none;
         border-radius: 4px;
         background: transparent;
-        color: var(--color-text-white);
+        color: var(--color-ui-element-font);
         font-size: 11px;
         cursor: pointer;
         opacity: 1;
@@ -67,21 +67,22 @@ export const editStyles = css`
 
     .edit-textarea {
         width: 100%;
-        min-height: 60px;
+        min-height: auto;
         padding: 8px;
         margin-top: 4px;
-        border: 1px solid var(--vscode-input-border, #3c3c3c);
+        border: 1px solid var(--color-ui-border);
         border-radius: 4px;
-        background: var(--vscode-input-background, #1e1e1e);
-        color: var(--vscode-input-foreground, #ccc);
+        background: var(--color-ui-background);
+        color: var(--color-ui-font);
         font-family: inherit;
         font-size: 13px;
         resize: vertical;
         box-sizing: border-box;
+        line-height: 1.4;
     }
 
     .edit-textarea:focus {
-        outline: 1px solid var(--vscode-focusBorder, #007fd4);
+        outline: 1px solid var(--color-ui-border);
     }
 
     .edit-actions {
@@ -91,14 +92,18 @@ export const editStyles = css`
         justify-content: flex-end;
     }
 
-    .edit-send {
+    .edit-send,
+    .edit-cancel {
         padding: 4px 12px;
         border: none;
         border-radius: 4px;
-        background: var(--color-submit);
-        color: var(--color-text-white);
         font-size: 12px;
         cursor: pointer;
+        color: var(--color-ui-element-font);
+    }
+
+    .edit-send {
+        background: var(--color-submit);
     }
 
     .edit-send:hover {
@@ -106,16 +111,10 @@ export const editStyles = css`
     }
 
     .edit-cancel {
-        padding: 4px 12px;
-        border: 1px solid var(--vscode-input-border, #3c3c3c);
-        border-radius: 4px;
-        background: transparent;
-        color: var(--color-ui-font);
-        font-size: 12px;
-        cursor: pointer;
+        background: var(--color-cancel);
     }
 
     .edit-cancel:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--color-cancel-hover);
     }
 `;

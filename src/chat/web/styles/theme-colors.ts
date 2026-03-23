@@ -47,10 +47,15 @@ export const themeColors = css`
         /* Shadow Colors */
         --color-shadow: rgba(0, 0, 0, 0.8);
 
-        /* Neutral Colors */
-        --color-ui-font: var(--vscode-foreground);
+        /* User interactive element Colors */
         --color-disabled: #555;
-        --color-text-white: #fff;
+        --color-ui-element-font: #fff;
+
+        /* System element Colors */
+        --color-ui-font: var(--vscode-foreground);
+        --color-ui-font-dimm: var(--vscode-descriptionForeground);
+        --color-ui-border: var(--vscode-commandCenter-activeBorder);
+        --color-ui-background: var(--vscode-input-background);
     }
 `;
 
@@ -90,7 +95,11 @@ export const colorVars = {
 
     shadow: "var(--color-shadow)",
 
-    uiFont: "var(--color-ui-font)",
     disabled: "var(--color-disabled)",
-    textWhite: "var(--color-text-white)",
+    textWhite: "var(--color-ui-element-font)",
+
+    uiFont: "var(--color-ui-font)",
+    uiFontDimm: "var(--color-ui-font-dimm)",
+    uiBorder: "var(--color-ui-border)",
+    uiBackground: "var(--color-ui-background)",
 } as const;

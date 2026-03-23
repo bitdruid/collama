@@ -2,9 +2,20 @@ import { css } from "lit";
 
 export const chatInputStyles = css`
     :host {
+        position: relative;
+        overflow: visible;
         border-radius: 8px;
-        border: 2px solid var(--vscode-commandCenter-activeBorder);
-        background: var(--vscode-input-background);
+        border: 2px solid var(--color-ui-border);
+        background: var(--color-ui-background);
+    }
+
+    collama-prompt-gallery,
+    collama-tool-confirm {
+        position: absolute;
+        bottom: 100%;
+        left: -2px;
+        right: -2px;
+        margin-bottom: 8px;
     }
     textarea {
         flex: 1;
@@ -13,7 +24,7 @@ export const chatInputStyles = css`
         padding: 8px;
         border-radius: 8px;
         border: none;
-        color: var(--vscode-editor-foreground);
+        color: var(--color-ui-font);
         background: transparent;
         resize: none;
         overflow: hidden;

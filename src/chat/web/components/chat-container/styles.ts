@@ -7,6 +7,7 @@ export const chatContainerStyles = css`
         display: flex;
         flex-direction: column;
         height: 100%;
+        overflow: hidden;
     }
 
     collama-chatsessions {
@@ -30,7 +31,6 @@ export const chatContainerStyles = css`
         position: absolute;
         inset: 0;
         overflow-y: auto;
-        margin-top: 12px;
     }
 
     collama-token-counter {
@@ -40,41 +40,11 @@ export const chatContainerStyles = css`
         z-index: 10;
     }
 
-    collama-scroll-down {
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10;
-        pointer-events: none;
-    }
-
     collama-chatinput {
         flex: 0 0 auto;
         display: flex;
         flex-direction: column;
-        margin-top: 12px;
+        overflow: visible;
         padding: 8px;
-    }
-
-    .toast {
-        position: fixed;
-        bottom: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: var(--vscode-editorWidget-background, #1e1e1e);
-        border: 1px solid var(--vscode-editorWidget-border, #454545);
-        color: var(--vscode-editorWidget-foreground, #ccc);
-        padding: 6px 14px;
-        border-radius: 6px;
-        font-size: 12px;
-        opacity: 0;
-        transition: opacity 0.3s;
-        pointer-events: none;
-        z-index: 100;
-    }
-
-    .toast.visible {
-        opacity: 1;
     }
 `;

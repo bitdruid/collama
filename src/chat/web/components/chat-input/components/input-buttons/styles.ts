@@ -24,7 +24,7 @@ export const inputButtonsStyles = css`
 
         line-height: 1;
 
-        color: var(--color-text-white);
+        color: var(--color-ui-element-font);
         border: none;
         cursor: pointer;
         box-sizing: border-box;
@@ -49,7 +49,7 @@ export const inputButtonsStyles = css`
     button-cancel {
         background-color: var(--color-cancel);
         box-shadow:
-            0 0 0 2px var(--color-text-white),
+            0 0 0 2px var(--color-ui-element-font),
             0 0 0 4px var(--color-cancel);
         animation: cancel-spin 2s infinite;
     }
@@ -60,12 +60,12 @@ export const inputButtonsStyles = css`
         0%,
         100% {
             box-shadow:
-                0 0 0 2px var(--color-text-white),
+                0 0 0 2px var(--color-ui-element-font),
                 0 0 0 4px var(--color-cancel);
         }
         50% {
             box-shadow:
-                0 0 0 2px var(--color-text-white),
+                0 0 0 2px var(--color-ui-element-font),
                 0 0 0 8px var(--color-cancel),
                 0 0 15px rgba(168, 34, 34, 0.5);
         }
@@ -101,7 +101,7 @@ export const inputButtonsStyles = css`
     button-auto-accept[active] {
         background-color: var(--color-auto-accept-active);
         box-shadow:
-            0 0 0 2px var(--color-text-white),
+            0 0 0 2px var(--color-ui-element-font),
             0 0 0 4px var(--color-auto-accept-active);
         animation: pulse 2s infinite;
     }
@@ -110,12 +110,12 @@ export const inputButtonsStyles = css`
         0%,
         100% {
             box-shadow:
-                0 0 0 2px var(--color-text-white),
+                0 0 0 2px var(--color-ui-element-font),
                 0 0 0 4px var(--color-auto-accept-active);
         }
         50% {
             box-shadow:
-                0 0 0 2px var(--color-text-white),
+                0 0 0 2px var(--color-ui-element-font),
                 0 0 0 8px var(--color-auto-accept-active),
                 0 0 15px rgba(255, 107, 107, 0.5);
         }
@@ -127,7 +127,7 @@ export const inputButtonsStyles = css`
         padding: 4px 8px;
         border-radius: 12px;
         background-color: var(--color-context);
-        color: var(--color-text-white);
+        color: var(--color-ui-element-font);
         font-size: 12px;
         white-space: nowrap;
     }
@@ -141,7 +141,7 @@ export const inputButtonsStyles = css`
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.2);
         border: none;
-        color: var(--color-text-white);
+        color: var(--color-ui-element-font);
         font-size: 10px;
         line-height: 1;
         cursor: pointer;
