@@ -11,11 +11,8 @@ export const chatInputStyles = css`
 
     collama-prompt-gallery,
     collama-tool-confirm {
-        position: absolute;
-        bottom: 100%;
-        left: -2px;
-        right: -2px;
-        margin-bottom: 8px;
+        display: block;
+        width: 100%;
     }
     textarea {
         flex: 1;

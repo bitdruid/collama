@@ -33,7 +33,7 @@ export class ChatModal extends LitElement {
         const modal = this.shadowRoot?.querySelector(".modal") as HTMLElement | null;
         if (modal) {
             modal.addEventListener(
-                "animationend",
+                "transitionend",
                 () => {
                     this._closing = false;
                     this.dispatchEvent(new CustomEvent("modal-close", { bubbles: true, composed: true }));

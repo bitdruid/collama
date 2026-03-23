@@ -136,6 +136,12 @@ export class ChatInput extends LitElement {
 
     private _openGallery() {
         this.showGallery = true;
+        this.dispatchEvent(
+            new CustomEvent("modal-opened", {
+                bubbles: true,
+                composed: true,
+            }),
+        );
     }
 
     private _closeGallery() {
@@ -148,38 +154,44 @@ export class ChatInput extends LitElement {
     }
 
     render() {
+        const hasModalOpen = this.showGallery || this.toolConfirmRequest !== null;
+
         return html`
-            <collama-tool-confirm .request=${this.toolConfirmRequest}></collama-tool-confirm>
+            ${hasModalOpen
+                ? html`
+                      <collama-tool-confirm .request=${this.toolConfirmRequest}></collama-tool-confirm>
 
-            <collama-prompt-gallery
-                .visible=${this.showGallery}
-                @submit-prompt=${this._handlePrompt}
-                @close-gallery=${this._closeGallery}
-            >
-            </collama-prompt-gallery>
+                      <collama-prompt-gallery
+                          .visible=${this.showGallery}
+                          @submit-prompt=${this._handlePrompt}
+                          @close-gallery=${this._closeGallery}
+                      >
+                      </collama-prompt-gallery>
+                  `
+                : html`
+                      <textarea
+                          .value=${this.userInput}
+                          rows=${this.rows}
+                          @input=${this._handleInput}
+                          @keydown=${this._handleKeyDown}
+                          placeholder="Chat with AI..."
+                          ?disabled=${this.isLoading}
+                      ></textarea>
 
-            <textarea
-                .value=${this.userInput}
-                rows=${this.rows}
-                @input=${this._handleInput}
-                @keydown=${this._handleKeyDown}
-                placeholder="Chat with AI..."
-                ?disabled=${this.isLoading}
-            ></textarea>
-
-            <collama-chatinput-buttons
-                .contexts=${this.contexts}
-                .isLoading=${this.isLoading}
-                .autoAccept=${this.autoAccept}
-                .agentToken=${this.agentToken}
-                .hasTokenData=${this.hasTokenData}
-                @gallery-click=${this._openGallery}
-                @cancel=${this._handleCancel}
-                @summarize-conversation=${this._handleSummarizeConversation}
-                @auto-accept=${this._handleAutoAccept}
-                @submit=${this._handleSubmit}
-                @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
-            ></collama-chatinput-buttons>
+                      <collama-chatinput-buttons
+                          .contexts=${this.contexts}
+                          .isLoading=${this.isLoading}
+                          .autoAccept=${this.autoAccept}
+                          .agentToken=${this.agentToken}
+                          .hasTokenData=${this.hasTokenData}
+                          @gallery-click=${this._openGallery}
+                          @cancel=${this._handleCancel}
+                          @summarize-conversation=${this._handleSummarizeConversation}
+                          @auto-accept=${this._handleAutoAccept}
+                          @submit=${this._handleSubmit}
+                          @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
+                      ></collama-chatinput-buttons>
+                  `}
         `;
     }
 }

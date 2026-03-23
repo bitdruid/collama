@@ -57,6 +57,8 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Code analysis: get diagnostics from language server
 - Security: path protection, workspace boundaries, .gitignore integration
 - Real-time tool execution feedback
+- Tool confirmation modal with Accept/Accept All/Cancel options
+- Cancel with reason: provide feedback to guide the agent
 - Read-only mode for safe exploration
 
 **Commit Messages**
@@ -246,6 +248,10 @@ When `enableEditTools` is disabled (toggle via status bar), the following tools 
 - `editFile`, `create`, `deleteFile`
 
 The agent can still use read-only tools to explore and analyze your codebase safely.
+
+**Tool Confirmation:**
+
+When the agent attempts to modify files, a confirmation modal appears with Accept/Accept All/Cancel options. Cancel reveals an input to provide feedback to guide the agent.
 
 ## Contributing
 

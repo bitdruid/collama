@@ -4,6 +4,10 @@ import { themeColors } from "../../../../styles/theme-colors";
 export const galleryStyles = css`
     ${themeColors}
 
+    :host {
+        display: block;
+    }
+
     .prompt-item {
         display: flex;
         justify-content: space-between;

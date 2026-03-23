@@ -3,6 +3,18 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-03-23
+
+### Added
+- Tool confirmation modal with Accept/Accept All/Cancel buttons for agent operations
+- Cancel with reason: provide feedback to the agent when rejecting tool actions
+- Reusable slide-up modal component for better UI consistency
+- Improved tokenizer initialization with background loading and caching
+
+### Changed
+- Enhanced UI styling across chat components for better visual consistency
+- Optimized token counting performance with lazy initialization
+
 ## [1.4.9] - 2026-03-18
 
 ### Added

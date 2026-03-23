@@ -1,4 +1,4 @@
-import { sumMsgTokens, logWebview, showToast } from "../../../utils-front";
+import { logWebview, showToast, sumMsgTokens } from "../../../utils-front";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import type { ChatContainer } from "./chat-container";
 
@@ -100,9 +100,7 @@ function handleContextTrimmed(host: ChatContainer, msg: any) {
     host.contextStartIndex = msg.contextStartIndex || 0;
     if (msg.turnsRemoved > 0) {
         const turns = msg.turnsRemoved;
-        showToast(
-            `Context exceeded — ${turns} old turn${turns > 1 ? "s" : ""} removed (~${msg.tokensFreed} tokens)`,
-        );
+        showToast(`Context exceeded — ${turns} old turn${turns > 1 ? "s" : ""} removed (~${msg.tokensFreed} tokens)`);
     }
 }
 
@@ -110,6 +108,11 @@ function handleContextTrimmed(host: ChatContainer, msg: any) {
 function handleToolConfirmRequest(host: ChatContainer, msg: any) {
     host.toolConfirmRequest = { id: msg.id, action: msg.action, filePath: msg.filePath };
     logWebview(`Tool confirm request: ${msg.action} ${msg.filePath}`);
+    host.updateComplete.then(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => host.scrollDown());
+        });
+    });
 }
 
 /** Adds a file/selection context sent from the editor (e.g. via "Add to Chat" command). */

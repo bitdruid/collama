@@ -8,29 +8,30 @@ import "../chat-scroll-button/chat-scroll-button.ts";
 import "../chat-session/chat-session";
 import { ChatSession } from "../chat-session/chat-session";
 
+import "./chat-container-loading";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
     onCancel,
-    onSummarizeConversation,
     onContextCleared,
     onCopySession,
     onDeleteMessage,
     onDeleteSession,
     onEditMessage,
     onExportSession,
+    onModalOpened,
     onNearBottomChanged,
     onNewChat,
     onRenameSession,
     onResendMessage,
     onSelectSession,
     onSubmit,
+    onSummarizeConversation,
     onSummarizeTurn,
     onToolConfirmAccept,
     onToolConfirmAcceptAll,
     onToolConfirmCancel,
 } from "./handlers-outbound";
-import "./chat-container-loading";
 import { chatContainerStyles } from "./styles";
 import { backendApi } from "./utils";
 
@@ -69,7 +70,6 @@ export class ChatContainer extends LitElement {
     syncMessages() {
         this.messages = [...this.wvChatContext.getMessages()];
     }
-
 
     /**
      * Debounces UI updates during streaming to avoid excessive re-renders.
@@ -155,6 +155,7 @@ export class ChatContainer extends LitElement {
                     @tool-confirm-accept=${(e: CustomEvent) => onToolConfirmAccept(this, e)}
                     @tool-confirm-accept-all=${(e: CustomEvent) => onToolConfirmAcceptAll(this, e)}
                     @tool-confirm-cancel=${(e: CustomEvent) => onToolConfirmCancel(this, e)}
+                    @modal-opened=${() => onModalOpened(this)}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agent_token}

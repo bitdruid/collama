@@ -4,6 +4,10 @@ import { themeColors } from "../../../../styles/theme-colors";
 export const toolConfirmStyles = css`
     ${themeColors}
 
+    :host {
+        display: block;
+    }
+
     .confirm-header {
         display: flex;
         align-items: center;

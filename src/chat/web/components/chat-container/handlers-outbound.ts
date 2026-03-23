@@ -1,5 +1,5 @@
 import { AttachedContext } from "../../../../common/context-chat";
-import { sumMsgTokens, logWebview, showToast } from "../../../utils-front";
+import { logWebview, showToast, sumMsgTokens } from "../../../utils-front";
 import type { ChatContainer } from "./chat-container";
 import { backendApi, buildUserContent } from "./utils";
 
@@ -223,4 +223,13 @@ export function onToolConfirmCancel(host: ChatContainer, e: CustomEvent) {
 /** Updates the scroll button visibility based on near-bottom state. */
 export function onNearBottomChanged(host: ChatContainer, e: CustomEvent) {
     host.showScrollButton = !e.detail.nearBottom;
+}
+
+/** Scrolls the chat output to the bottom when a modal opens. */
+export function onModalOpened(host: ChatContainer) {
+    host.updateComplete.then(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => host.scrollDown());
+        });
+    });
 }
