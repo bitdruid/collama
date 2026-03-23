@@ -58,7 +58,7 @@ function handleAgentAddMessage(host: ChatContainer, msg: any) {
 /** Appends a streaming text chunk to the message at the given index. */
 function handleAgentChunk(host: ChatContainer, msg: any) {
     host.wvChatContext.appendContent(msg.index, msg.chunk);
-    host.clearLoadingTimeout();
+    host.startLoadingTimeout();
     host.debounceSyncMessages();
 }
 
