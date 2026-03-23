@@ -3,49 +3,9 @@ import { themeColors } from "../../../../styles/theme-colors";
 
 export const galleryStyles = css`
     ${themeColors}
-    .modal {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.18s ease-out;
-    }
 
-    .modal-content {
-        background: var(--vscode-editor-background);
-        padding: 16px;
-        border-radius: 8px;
-        max-width: 400px;
-        width: 90%;
-        max-height: 80%;
-        overflow-y: auto;
-
-        border: 1px solid rgba(101, 141, 187, 0.6);
-        box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-
-        animation: scaleIn 0.18s ease-out;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-
-    @keyframes scaleIn {
-        from {
-            opacity: 0;
-            transform: scale(0.95) translateY(8px);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
+    :host {
+        display: block;
     }
 
     .prompt-item {
@@ -57,21 +17,17 @@ export const galleryStyles = css`
         cursor: pointer;
         border-radius: 8px;
 
-        border: 1px solid rgba(101, 141, 187, 0.6);
+        border: 1px solid var(--color-ui-border);
         background: rgba(255, 255, 255, 0.03);
 
         transition:
             border 0.2s ease,
-            box-shadow 0.2s ease,
-            background 0.2s ease,
-            transform 0.15s ease;
+            background 0.2s ease;
     }
 
     .prompt-item:hover {
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        border: 1px solid var(--vscode-focusBorder);
         background: rgba(255, 255, 255, 0.06);
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
-        transform: translateY(-1px);
     }
 
     .prompt-list {
@@ -100,7 +56,7 @@ export const galleryStyles = css`
         padding: 8px 12px;
         border-radius: 6px;
         border: 1px solid var(--vscode-editorLineHighlightBorder);
-        background: var(--vscode-input-background);
+        background: var(--color-ui-background);
         color: var(--vscode-input-foreground);
         font-family: var(--vscode-editor-font-family);
         font-size: 13px;
@@ -134,7 +90,7 @@ export const galleryButtonStyles = css`
         border-radius: 4px;
         align-items: center;
         justify-content: center;
-        color: var(--color-text-white);
+        color: var(--color-ui-element-font);
     }
 
     .edit-btn,

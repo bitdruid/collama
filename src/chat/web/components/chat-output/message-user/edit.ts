@@ -1,7 +1,11 @@
 import { LitElement, html } from "lit";
+import { state } from "lit/decorators.js";
 import { editStyles } from "./styles";
 
 export class ChatEditMessage extends LitElement {
+    @state()
+    private rows = 1;
+
     firstUpdated() {
         const textarea = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement;
         if (textarea) {
@@ -9,6 +13,8 @@ export class ChatEditMessage extends LitElement {
             textarea.focus();
             // Close edit view when focus is lost
             textarea.addEventListener("blur", () => this._handleCancel());
+            // Adjust initial rows based on content
+            this._adjustRows();
         }
     }
     static properties = {
@@ -20,6 +26,27 @@ export class ChatEditMessage extends LitElement {
 
     content: string = "";
     messageIndex: number = 0;
+
+    private _handleInput(e: Event) {
+        this._adjustRows();
+    }
+
+    private _adjustRows() {
+        const ta = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement | null;
+        if (!ta) {
+            return;
+        }
+        ta.rows = 1;
+        const style = getComputedStyle(ta);
+        const lineHeight = parseFloat(style.lineHeight);
+        const paddingTop = parseFloat(style.paddingTop);
+        const paddingBottom = parseFloat(style.paddingBottom);
+        const verticalPadding = paddingTop + paddingBottom;
+        const contentHeight = ta.scrollHeight - verticalPadding;
+        const newRows = Math.max(1, Math.round(contentHeight / lineHeight));
+        ta.rows = newRows;
+        this.rows = newRows;
+    }
 
     private _handleSend() {
         const textarea = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement;
@@ -50,7 +77,7 @@ export class ChatEditMessage extends LitElement {
 
     render() {
         return html`
-            <textarea class="edit-textarea">${this.content}</textarea>
+            <textarea class="edit-textarea" rows=${this.rows} @input=${this._handleInput}>${this.content}</textarea>
             <div class="edit-actions">
                 <button
                     class="edit-cancel"

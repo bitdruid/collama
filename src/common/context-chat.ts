@@ -9,24 +9,33 @@ export interface AttachedContext {
     content: string;
 }
 
+/** Custom keys attached to messages for UI/internal use (not sent to LLM). */
+export interface CustomMessageKeys {
+    toolName?: string;
+    toolArgs?: string;
+    toolTarget?: string;
+    contexts?: AttachedContext[];
+    loading?: boolean;
+    msgTokens?: number;
+}
+
 export type ChatHistory =
     | {
           role: "system" | "user";
           content: string;
-          contexts?: AttachedContext[];
+          customKeys?: CustomMessageKeys;
       }
     | {
           role: "assistant";
           content: string;
           tool_calls?: ToolCall[];
+          customKeys?: CustomMessageKeys;
       }
     | {
           role: "tool";
           content: string;
           tool_call_id: string;
-          toolName?: string;
-          toolArgs?: string;
-          toolTarget?: string;
+          customKeys?: CustomMessageKeys;
       };
 
 export type UserMessage = Extract<ChatHistory, { role: "user" | "system" }>;

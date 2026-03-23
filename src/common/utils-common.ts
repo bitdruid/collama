@@ -6,6 +6,7 @@ import { Ollama } from "ollama";
 import OpenAI from "openai";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
+import { ChatHistory } from "./context-chat";
 
 /**
  * Wraps an async operation with a VS Code progress notification.
@@ -35,6 +36,21 @@ export async function withProgressNotification<T>(title: string, task: () => Pro
 class Tokenizer {
     /** Cached tokenizer instance, initialized lazily. */
     private static tokenizer: Awaited<ReturnType<typeof createByModelName>> | null = null;
+    /** Promise that resolves when tokenizer is initialized. */
+    private static initPromise: Promise<void> | null = null;
+
+    /**
+     * Initialize the tokenizer in the background.
+     * Call this during extension activation to avoid delays on first use.
+     */
+    static async init(): Promise<void> {
+        if (!this.initPromise) {
+            this.initPromise = (async () => {
+                this.tokenizer = await createByModelName("gpt-4o");
+            })();
+        }
+        return this.initPromise;
+    }
 
     /**
      * Retrieves the singleton tokenizer instance.
@@ -60,7 +76,37 @@ class Tokenizer {
     }
 }
 
+/**
+ * Initialize the tokenizer in the background.
+ * Call this during extension activation to avoid delays on first use.
+ */
+export async function initTokenizer(): Promise<void> {
+    return Tokenizer.init();
+}
+
 export default Tokenizer;
+
+/**
+ * Ensures every message in the array has `customKeys.msgTokens` populated.
+ * Only tokenizes messages that are missing the value — mutates in place.
+ */
+export async function populateMsgTokens(messages: ChatHistory[]): Promise<void> {
+    await Promise.all(
+        messages.map(async (msg) => {
+            if (msg.customKeys?.msgTokens !== undefined) {
+                return;
+            }
+            const { customKeys: _, ...llmFields } = msg;
+            const tokens = await Tokenizer.calcTokens(JSON.stringify(llmFields));
+            msg.customKeys = { ...msg.customKeys, msgTokens: tokens };
+        }),
+    );
+}
+
+/** Sums up cached `msgTokens` across all messages. Returns 0 for messages without a cached value. */
+export function sumMsgTokens(messages: ChatHistory[]): number {
+    return messages.reduce((sum, msg) => sum + (msg.customKeys?.msgTokens ?? 0), 0);
+}
 
 let tlsRejectUnauthorized = true;
 

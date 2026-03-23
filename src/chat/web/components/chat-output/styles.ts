@@ -26,7 +26,7 @@ export const outputStyles = [
             margin-bottom: 6px;
             padding: 2px 6px;
             border-radius: 4px;
-            color: var(--color-text-white);
+            color: var(--color-ui-element-font);
         }
 
         .role-label {
@@ -65,7 +65,7 @@ export const outputStyles = [
 
         th,
         td {
-            border: 1px solid var(--vscode-editorWidget-border, #444);
+            border: 1px solid var(--vscode-editorWidget-border);
             padding: 6px 10px;
             text-align: left;
         }
@@ -99,12 +99,12 @@ export const outputStyles = [
         }
 
         a {
-            color: var(--vscode-textLink-foreground, #3794ff);
+            color: var(--vscode-textLink-foreground);
             text-decoration: none;
         }
 
         a:hover {
-            color: var(--vscode-textLink-activeForeground, #3794ff);
+            color: var(--vscode-textLink-activeForeground);
             text-decoration: underline;
         }
     `,

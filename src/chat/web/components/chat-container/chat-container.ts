@@ -2,31 +2,36 @@ import { html, LitElement } from "lit";
 import { state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
+import type { ToolConfirmRequest } from "../chat-input/components/tool-confirm/tool-confirm";
 import "../chat-output/chat-output";
 import "../chat-scroll-button/chat-scroll-button.ts";
 import "../chat-session/chat-session";
 import { ChatSession } from "../chat-session/chat-session";
 
+import "./chat-container-loading";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
     onCancel,
-    onSummarizeConversation,
     onContextCleared,
     onCopySession,
     onDeleteMessage,
     onDeleteSession,
     onEditMessage,
-    onExportChat,
+    onExportSession,
+    onModalOpened,
     onNearBottomChanged,
     onNewChat,
     onRenameSession,
     onResendMessage,
     onSelectSession,
     onSubmit,
+    onSummarizeConversation,
     onSummarizeTurn,
+    onToolConfirmAccept,
+    onToolConfirmAcceptAll,
+    onToolConfirmCancel,
 } from "./handlers-outbound";
-import "./chat-container-loading";
 import { chatContainerStyles } from "./styles";
 import { backendApi } from "./utils";
 
@@ -51,13 +56,12 @@ export class ChatContainer extends LitElement {
     @state() isLoading: boolean = false;
     @state() agent_token: number = 0;
     @state() hasTokenData: boolean = false;
-    @state() toastMessage: string = "";
     @state() showScrollButton: boolean = false;
+    @state() toolConfirmRequest: ToolConfirmRequest | null = null;
 
     // -- Internal state --
     wvChatContext = new ChatContext();
     private _updateTimer: number | null = null;
-    private _toastTimer: number | null = null;
     private _loadingTimeout: number | null = null;
 
     // -- Methods used by handler modules --
@@ -65,18 +69,6 @@ export class ChatContainer extends LitElement {
     /** Creates a fresh array snapshot from `wvChatContext` to trigger a Lit re-render. */
     syncMessages() {
         this.messages = [...this.wvChatContext.getMessages()];
-    }
-
-    /** Displays a toast message for 2.5 s, resetting the timer if called again before it clears. */
-    showToast(message: string) {
-        this.toastMessage = message;
-        if (this._toastTimer !== null) {
-            window.clearTimeout(this._toastTimer);
-        }
-        this._toastTimer = window.setTimeout(() => {
-            this.toastMessage = "";
-            this._toastTimer = null;
-        }, 2500);
     }
 
     /**
@@ -130,7 +122,7 @@ export class ChatContainer extends LitElement {
                 .activeSessionId=${this.activeSessionId}
                 .contextUsed=${this.contextUsed}
                 .contextMax=${this.contextMax}
-                @export-chat=${(e: CustomEvent) => onExportChat(this, e)}
+                @export-session=${(e: CustomEvent) => onExportSession(this, e)}
                 @new-chat=${onNewChat}
                 @select-session=${(e: CustomEvent) => onSelectSession(e)}
                 @delete-session=${(e: CustomEvent) => onDeleteSession(e)}
@@ -160,13 +152,17 @@ export class ChatContainer extends LitElement {
                     @summarize-conversation=${() => onSummarizeConversation(this)}
                     @auto-accept=${(e: CustomEvent) => onAutoAccept(e)}
                     @context-cleared=${(e: CustomEvent) => onContextCleared(this, e)}
+                    @tool-confirm-accept=${(e: CustomEvent) => onToolConfirmAccept(this, e)}
+                    @tool-confirm-accept-all=${(e: CustomEvent) => onToolConfirmAcceptAll(this, e)}
+                    @tool-confirm-cancel=${(e: CustomEvent) => onToolConfirmCancel(this, e)}
+                    @modal-opened=${() => onModalOpened(this)}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agent_token}
                     .hasTokenData=${this.hasTokenData}
+                    .toolConfirmRequest=${this.toolConfirmRequest}
                 ></collama-chatinput>
             </div>
-            <div class="toast ${this.toastMessage ? "visible" : ""}">${this.toastMessage}</div>
             <collama-loading-snake .active=${this.isLoading}></collama-loading-snake>
         `;
     }

@@ -7,7 +7,7 @@ import "../chat-session/components/popup/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";
-import { outputStyles } from "./styles-shared";
+import { outputStyles } from "./styles";
 
 /**
  * Create a MarkdownIt instance configured with code-fence headers and copy buttons.

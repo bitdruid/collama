@@ -60,7 +60,7 @@ export class ChatSessionsPopup extends LitElement {
                                       )}
                                   @export=${() =>
                                       this.dispatchEvent(
-                                          new CustomEvent("export-chat", {
+                                          new CustomEvent("export-session", {
                                               detail: { id: session.id },
                                               bubbles: true,
                                               composed: true,

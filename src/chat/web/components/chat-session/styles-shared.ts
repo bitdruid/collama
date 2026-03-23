@@ -8,7 +8,7 @@ import { themeColors } from "../../styles/theme-colors";
 export const commonStyles = css`
     ${themeColors}
     /* Icon Buttons */
-  .icon-button {
+    .icon-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -55,7 +55,7 @@ export const commonStyles = css`
     /* Primary Button */
     .primary-button {
         background-color: var(--color-submit);
-        color: var(--color-text-white);
+        color: var(--color-ui-element-font);
         border: none;
         padding: 6px 12px;
         border-radius: 4px;
@@ -70,7 +70,7 @@ export const commonStyles = css`
 
     /* Text Utilities */
     .text-muted {
-        color: var(--vscode-descriptionForeground);
+        color: var(--color-ui-font-dimm);
     }
 
     .text-bold {

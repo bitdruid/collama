@@ -83,14 +83,14 @@ export const sessionItemStyles = css`
         padding: 2px 4px;
         border: 1px solid var(--vscode-focusBorder);
         border-radius: 2px;
-        background: var(--vscode-input-background);
+        background: var(--color-ui-background);
         color: var(--vscode-input-foreground);
         outline: none;
     }
 
     .session-date {
         font-size: 11px;
-        color: var(--vscode-descriptionForeground);
+        color: var(--color-ui-font-dimm);
         margin-top: 2px;
     }
 
@@ -125,6 +125,6 @@ export const emptyStateStyles = css`
     .empty-state {
         padding: 1rem;
         text-align: center;
-        color: var(--vscode-descriptionForeground);
+        color: var(--color-ui-font-dimm);
     }
 `;

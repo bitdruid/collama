@@ -26,7 +26,7 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
                     <span class="role-label">${warningIcon}Assistant</span>
                 </div> -->
                 ${isLoading
-                    ? html`<span class="loading">Generating response<span class="dots">...</span></span>`
+                    ? html`<span class="loading">Generating response<span class="dots">...</span>&nbsp</span>`
                     : unsafeHTML(opts.getCachedMarkdown(msg.content, isStreaming))}
             </div>
         </div>

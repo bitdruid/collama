@@ -48,7 +48,7 @@ export const headerStyles = css`
         height: 24px;
         font-size: 16px;
         background-color: var(--color-submit);
-        color: var(--color-text-white);
+        color: var(--color-ui-element-font);
     }
 
     .new-chat-button:hover {

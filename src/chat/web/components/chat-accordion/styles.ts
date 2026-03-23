@@ -14,7 +14,7 @@ export const accordionStyles = [
         }
 
         .accordion {
-            border: 1px solid var(--vscode-commandCenter-activeBorder);
+            border: 1px solid var(--color-ui-border);
             border-radius: 6px;
             overflow: hidden;
             position: relative;
@@ -26,7 +26,7 @@ export const accordionStyles = [
             gap: 6px;
             padding: 6px 10px;
             background: var(--vscode-textCodeBlock-background);
-            color: var(--vscode-descriptionForeground);
+            color: var(--color-ui-font-dimm);
             cursor: pointer;
             user-select: none;
             font-size: 0.9em;
@@ -93,9 +93,10 @@ export const accordionStyles = [
 
         .accordion-content-inner {
             background: var(--vscode-editor-background);
-            border-top: 1px solid var(--vscode-commandCenter-activeBorder);
+            border-top: 1px solid var(--color-ui-border);
             max-height: min(300px, 40vh);
-            overflow: auto;
+            overflow-y: scroll;
+            overflow-x: auto;
         }
 
         .accordion-content-wrapper:not(.expanded) .accordion-content-inner {
@@ -105,6 +106,7 @@ export const accordionStyles = [
         .accordion-content pre {
             margin: 0;
             min-width: max-content;
+            overflow-x: auto;
         }
 
         .accordion-content pre code {
@@ -191,7 +193,7 @@ export const accordionStyles = [
             gap: 4px;
             background: transparent;
             border: none;
-            color: var(--vscode-descriptionForeground);
+            color: var(--color-ui-font-dimm);
             cursor: pointer;
             padding: 2px 6px;
             border-radius: 4px;

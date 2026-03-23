@@ -1,9 +1,11 @@
 import { html, LitElement, PropertyValues } from "lit";
 import { state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
-import "./components/input-buttons/input-buttons"; // Import
+import "./components/input-buttons/input-buttons";
 import "./components/prompt-gallery/prompt-gallery";
-import { chatInputStyles } from "./styles";
+import "./components/tool-confirm/tool-confirm";
+import type { ToolConfirmRequest } from "./components/tool-confirm/tool-confirm";
+import { chatInputStyles } from "./styles-shared";
 
 export class ChatInput extends LitElement {
     @state()
@@ -20,6 +22,7 @@ export class ChatInput extends LitElement {
             isLoading: { type: Boolean },
             agentToken: { type: Number },
             hasTokenData: { type: Boolean },
+            toolConfirmRequest: { type: Object },
         };
     }
 
@@ -31,6 +34,7 @@ export class ChatInput extends LitElement {
     isLoading = false;
     agentToken = 0;
     hasTokenData = false;
+    toolConfirmRequest: ToolConfirmRequest | null = null;
 
     updated(changedProperties: PropertyValues) {
         if (changedProperties.has("isLoading") && !this.isLoading) {
@@ -132,6 +136,12 @@ export class ChatInput extends LitElement {
 
     private _openGallery() {
         this.showGallery = true;
+        this.dispatchEvent(
+            new CustomEvent("modal-opened", {
+                bubbles: true,
+                composed: true,
+            }),
+        );
     }
 
     private _closeGallery() {
@@ -144,36 +154,44 @@ export class ChatInput extends LitElement {
     }
 
     render() {
+        const hasModalOpen = this.showGallery || this.toolConfirmRequest !== null;
+
         return html`
-            <collama-prompt-gallery
-                .visible=${this.showGallery}
-                @submit-prompt=${this._handlePrompt}
-                @close-gallery=${this._closeGallery}
-            >
-            </collama-prompt-gallery>
+            ${hasModalOpen
+                ? html`
+                      <collama-tool-confirm .request=${this.toolConfirmRequest}></collama-tool-confirm>
 
-            <textarea
-                .value=${this.userInput}
-                rows=${this.rows}
-                @input=${this._handleInput}
-                @keydown=${this._handleKeyDown}
-                placeholder="Chat with AI..."
-                ?disabled=${this.isLoading}
-            ></textarea>
+                      <collama-prompt-gallery
+                          .visible=${this.showGallery}
+                          @submit-prompt=${this._handlePrompt}
+                          @close-gallery=${this._closeGallery}
+                      >
+                      </collama-prompt-gallery>
+                  `
+                : html`
+                      <textarea
+                          .value=${this.userInput}
+                          rows=${this.rows}
+                          @input=${this._handleInput}
+                          @keydown=${this._handleKeyDown}
+                          placeholder="Chat with AI..."
+                          ?disabled=${this.isLoading}
+                      ></textarea>
 
-            <collama-chatinput-buttons
-                .contexts=${this.contexts}
-                .isLoading=${this.isLoading}
-                .autoAccept=${this.autoAccept}
-                .agentToken=${this.agentToken}
-                .hasTokenData=${this.hasTokenData}
-                @gallery-click=${this._openGallery}
-                @cancel=${this._handleCancel}
-                @summarize-conversation=${this._handleSummarizeConversation}
-                @auto-accept=${this._handleAutoAccept}
-                @submit=${this._handleSubmit}
-                @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
-            ></collama-chatinput-buttons>
+                      <collama-chatinput-buttons
+                          .contexts=${this.contexts}
+                          .isLoading=${this.isLoading}
+                          .autoAccept=${this.autoAccept}
+                          .agentToken=${this.agentToken}
+                          .hasTokenData=${this.hasTokenData}
+                          @gallery-click=${this._openGallery}
+                          @cancel=${this._handleCancel}
+                          @summarize-conversation=${this._handleSummarizeConversation}
+                          @auto-accept=${this._handleAutoAccept}
+                          @submit=${this._handleSubmit}
+                          @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
+                      ></collama-chatinput-buttons>
+                  `}
         `;
     }
 }

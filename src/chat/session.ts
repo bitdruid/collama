@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ChatHistory } from "../common/context-chat";
+import { sumMsgTokens } from "../common/utils-common";
 import { userConfig } from "../config";
 import { mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
 
@@ -155,7 +156,7 @@ export class Session {
 
     /**
      * Sends the current session state to the webview.
-     * Token estimation is handled entirely by the frontend.
+     * Token counts are pre-computed on the backend via msgTokens.
      */
     sendSessionsUpdate() {
         const activeSession = this.getActiveSession();
@@ -166,6 +167,7 @@ export class Session {
             sessions: mapSessionsToSummaries(this.sessions),
             activeSessionId: this.activeSessionId,
             history: sanitizeMessages(messages),
+            contextUsed: sumMsgTokens(messages),
             contextMax: userConfig.apiTokenContextLenInstruct,
             contextStartIndex: activeSession?.contextStartIndex || 0,
         });
