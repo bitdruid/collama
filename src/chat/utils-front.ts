@@ -3,13 +3,9 @@ import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import { css, html, unsafeCSS } from "lit";
 import { ChatHistory } from "../common/context-chat";
 
-/**
- * Estimate token count for an array of messages using ~4 chars per token.
- * Serializes full message objects to account for tool args, tool_calls, etc.
- */
-export function estimateTokens(messages: ChatHistory[]): number {
-    const len = messages.reduce((sum, m) => sum + JSON.stringify(m).length, 0);
-    return Math.round(len / 4);
+/** Sums up cached msgTokens across all messages. Returns 0 for messages without a cached value. */
+export function sumMsgTokens(messages: ChatHistory[]): number {
+    return messages.reduce((sum, m) => sum + (m.customKeys?.msgTokens ?? 0), 0);
 }
 
 export function logWebview(message: string) {
@@ -17,6 +13,44 @@ export function logWebview(message: string) {
         type: "log",
         message,
     });
+}
+
+let _toastTimer: number | null = null;
+
+/** Displays a toast message for 2.5 s. Resets the timer if called again before it clears. */
+export function showToast(message: string) {
+    let el = document.getElementById("collama-toast");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "collama-toast";
+        Object.assign(el.style, {
+            position: "fixed",
+            bottom: "80px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "var(--vscode-editorWidget-background)",
+            border: "1px solid var(--vscode-editorWidget-border)",
+            color: "var(--vscode-editorWidget-foreground)",
+            padding: "6px 14px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            opacity: "0",
+            transition: "opacity 0.3s",
+            pointerEvents: "none",
+            zIndex: "100",
+        });
+        document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.style.opacity = "1";
+
+    if (_toastTimer !== null) {
+        window.clearTimeout(_toastTimer);
+    }
+    _toastTimer = window.setTimeout(() => {
+        el!.style.opacity = "0";
+        _toastTimer = null;
+    }, 2500);
 }
 
 export function llmInfoTag(tagContent: string): string {

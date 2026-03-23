@@ -1,4 +1,19 @@
+import * as vscode from "vscode";
 import { ChatHistory } from "../common/context-chat";
+
+// -- Shared webview reference --
+
+let _webview: vscode.Webview | null = null;
+
+/** Registers the chat webview for backend modules that need to post messages. */
+export function setWebview(webview: vscode.Webview): void {
+    _webview = webview;
+}
+
+/** Returns the current chat webview, or null if not yet registered. */
+export function getWebview(): vscode.Webview | null {
+    return _webview;
+}
 
 /**
  * Session summary for UI display (excludes full message history).
@@ -46,11 +61,16 @@ export function mapSessionsToSummaries<T extends SessionSummary>(sessions: T[]):
  */
 export function sanitizeMessages(messages: ChatHistory[]): ChatHistory[] {
     return messages.map((m) => {
-        const { loading, ...rest } = m as ChatHistory & { loading?: boolean };
+        const loading = m.customKeys?.loading;
         // If assistant message is empty and was loading, show fallback
-        if (rest.role === "assistant" && !rest.content && loading) {
-            return { ...rest, content: "No response received." };
+        if (m.role === "assistant" && !m.content && loading) {
+            const { loading: _, ...restKeys } = m.customKeys!;
+            return { ...m, content: "No response received.", customKeys: Object.keys(restKeys).length > 0 ? restKeys : undefined };
         }
-        return rest;
+        if (loading) {
+            const { loading: _, ...restKeys } = m.customKeys!;
+            return { ...m, customKeys: Object.keys(restKeys).length > 0 ? restKeys : undefined };
+        }
+        return m;
     });
 }

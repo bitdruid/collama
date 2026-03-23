@@ -1,17 +1,17 @@
 import * as vscode from "vscode";
 
 import { Agent } from "../agent/agent";
-import { setAutoAcceptAll } from "../agent/tools/edit";
+import { resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { EditorContext } from "../common/context-editor";
 import { buildInstructionOptions, ToolCall } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
 import { chatCompress_Template, chatSummarizeTurn_Template } from "../common/prompt";
-import Tokenizer from "../common/utils-common";
+import { populateMsgTokens, sumMsgTokens } from "../common/utils-common";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { Session } from "./session";
-import { mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
+import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils-back";
 import { StartPage } from "./web/components/chat-start";
 
 /**
@@ -42,8 +42,13 @@ export class ChatPanel {
         const webview = this.webviewView.webview;
 
         webview.html = page.generate();
+        setWebview(webview);
 
         webview.onDidReceiveMessage(async (msg) => {
+            if (msg.type === "tool-confirm-response") {
+                resolveToolConfirm(msg.id, msg.value, msg.reason);
+                return;
+            }
             if (msg.type === "chat-ready") {
                 this.handleChatReady(webview);
                 return;
@@ -59,8 +64,8 @@ export class ChatPanel {
                 return;
             }
 
-            if (msg.type === "delete-session") {
-                this.handleDeleteSession(msg);
+            if (msg.type === "export-session") {
+                this.handleExportSession(msg);
                 return;
             }
 
@@ -74,6 +79,11 @@ export class ChatPanel {
                 return;
             }
 
+            if (msg.type === "delete-session") {
+                this.handleDeleteSession(msg);
+                return;
+            }
+
             if (msg.type === "update-messages") {
                 this.handleUpdateMessages(msg);
                 return;
@@ -81,11 +91,6 @@ export class ChatPanel {
 
             if (msg.type === "auto-accept-all") {
                 setAutoAcceptAll(msg.enabled);
-                return;
-            }
-
-            if (msg.type === "export-chat") {
-                this.handleExportChat(msg);
                 return;
             }
 
@@ -182,6 +187,53 @@ export class ChatPanel {
     }
 
     /**
+     * Opens a read-only preview of a session's chat history as raw JSON.
+     */
+    private handleExportSession(msg: { sessionId: string }) {
+        const session = this.session.sessions.find((s) => s.id === msg.sessionId);
+        const messages = session?.messages || [];
+        const { name, version } = this.extContext.extension.packageJSON;
+        const exportData = [{ extension: name, version: version }, ...messages];
+        const json = JSON.stringify(exportData, null, 2);
+        const uri = vscode.Uri.parse(`untitled:session-export-${msg.sessionId}.json`);
+        vscode.workspace.openTextDocument(uri).then((doc) => {
+            vscode.window.showTextDocument(doc, { preview: true }).then((editor) => {
+                editor.edit((editBuilder) => {
+                    editBuilder.insert(new vscode.Position(0, 0), json);
+                });
+            });
+        });
+    }
+
+    /**
+     * Handles renaming a session.
+     */
+    private handleRenameSession(msg: { sessionId: string; newTitle: string }) {
+        const { sessionId, newTitle } = msg;
+        const session = this.session.sessions.find((s) => s.id === sessionId);
+        if (session && newTitle && newTitle.trim() !== "") {
+            this.session.updateSession(session, (s) => {
+                s.title = newTitle.trim();
+                s.customTitle = true;
+            });
+            this.session.sendSessionsUpdate();
+            logMsg(`Renamed session ${sessionId} to "${newTitle}"`);
+        }
+    }
+
+    /**
+     * Handles copying a session.
+     */
+    private handleCopySession(msg: { sessionId: string }) {
+        const { sessionId } = msg;
+        const newSession = this.session.copySession(sessionId);
+        if (newSession) {
+            this.session.sendSessionsUpdate();
+            logMsg(`Copied session ${sessionId} → ${newSession.id}`);
+        }
+    }
+
+    /**
      * Handles deleting a session.
      */
     private handleDeleteSession(msg: { sessionId: string }) {
@@ -200,34 +252,6 @@ export class ChatPanel {
         this.session.saveSessions();
         this.session.sendSessionsUpdate();
         logMsg(`Deleted session: ${sessionId}`);
-    }
-
-    /**
-     * Handles copying a session.
-     */
-    private handleCopySession(msg: { sessionId: string }) {
-        const { sessionId } = msg;
-        const newSession = this.session.copySession(sessionId);
-        if (newSession) {
-            this.session.sendSessionsUpdate();
-            logMsg(`Copied session ${sessionId} → ${newSession.id}`);
-        }
-    }
-
-    /**
-     * Handles renaming a session.
-     */
-    private handleRenameSession(msg: { sessionId: string; newTitle: string }) {
-        const { sessionId, newTitle } = msg;
-        const session = this.session.sessions.find((s) => s.id === sessionId);
-        if (session && newTitle && newTitle.trim() !== "") {
-            this.session.updateSession(session, (s) => {
-                s.title = newTitle.trim();
-                s.customTitle = true;
-            });
-            this.session.sendSessionsUpdate();
-            logMsg(`Renamed session ${sessionId} to "${newTitle}"`);
-        }
     }
 
     /**
@@ -259,23 +283,6 @@ export class ChatPanel {
     }
 
     /**
-     * Opens a read-only preview of a session's chat history as raw JSON.
-     */
-    private handleExportChat(msg: { sessionId: string }) {
-        const session = this.session.sessions.find((s) => s.id === msg.sessionId);
-        const messages = session?.messages || [];
-        const json = JSON.stringify(messages, null, 2);
-        const uri = vscode.Uri.parse(`untitled:chat-export-${msg.sessionId}.json`);
-        vscode.workspace.openTextDocument(uri).then((doc) => {
-            vscode.window.showTextDocument(doc, { preview: true }).then((editor) => {
-                editor.edit((editBuilder) => {
-                    editBuilder.insert(new vscode.Position(0, 0), json);
-                });
-            });
-        });
-    }
-
-    /**
      * Handles compressing the chat history into a summary.
      */
     private async handleSummarizeConversationRequest(
@@ -303,13 +310,14 @@ export class ChatPanel {
             { role: "assistant" as const, content: fenced },
         ];
 
+        await populateMsgTokens(compressedMessages);
         this.session.updateSession(session, (s) => {
             s.messages = compressedMessages;
             s.contextStartIndex = 0;
         });
 
         webview.postMessage({ type: "conversation-summarized", messages: compressedMessages });
-        webview.postMessage({ type: "chat-complete" });
+        webview.postMessage({ type: "chat-complete", contextUsed: sumMsgTokens(compressedMessages) });
         this.session.sendSessionsUpdate();
         logMsg(`Compressed chat for session ${sessionId}`);
     }
@@ -342,6 +350,7 @@ export class ChatPanel {
             { role: "assistant" as const, content: fenced },
         ];
 
+        await populateMsgTokens(replacementMessages);
         // Replace the turn range in the session messages
         this.session.updateSession(session, (s) => {
             s.messages.splice(turnStart, turnEnd - turnStart, ...replacementMessages);
@@ -349,7 +358,7 @@ export class ChatPanel {
 
         const allMessages = session?.messages || [];
         webview.postMessage({ type: "turn-summarized", messages: allMessages });
-        webview.postMessage({ type: "chat-complete" });
+        webview.postMessage({ type: "chat-complete", contextUsed: sumMsgTokens(allMessages) });
         this.session.sendSessionsUpdate();
         logMsg(`Summarized turn at ${turnStart}-${turnEnd} for session ${sessionId}`);
     }
@@ -409,24 +418,25 @@ export class ChatPanel {
 
                 if (event.type === "agent-tool-done") {
                     currentIndex++;
+                    const customKeys = {
+                        toolName: event.toolName as string,
+                        toolArgs: event.toolArgs as string,
+                        toolTarget: event.toolTarget as string,
+                    };
                     this.session.updateSession(session, (s) => {
                         s.messages.splice(currentIndex, 0, {
                             role: "tool" as const,
-                            content: "",
+                            content: "[tool result has been stripped after agent answered]",
                             tool_call_id: event.toolCallId as string,
-                            toolName: event.toolName as string,
-                            toolArgs: event.toolArgs as string,
-                            toolTarget: event.toolTarget as string,
+                            customKeys,
                         });
                     });
                     webview.postMessage({
                         type: "agent-add-message",
                         message: {
                             role: "tool",
-                            content: "",
-                            toolName: event.toolName as string,
-                            toolArgs: event.toolArgs as string,
-                            toolTarget: event.toolTarget as string,
+                            content: "[tool result has been stripped after agent answered]",
+                            customKeys,
                         },
                     });
                 }
@@ -457,8 +467,12 @@ export class ChatPanel {
         );
         this.currentAgent = null;
 
+        // Tokenize any new messages (assistant + tool) that don't have msgTokens yet
+        await populateMsgTokens(session!.messages);
+        this.session.saveSessions();
+
         // Notify webview that chat is complete
-        webview.postMessage({ type: "chat-complete" });
+        webview.postMessage({ type: "chat-complete", contextUsed: sumMsgTokens(session!.messages) });
 
         // Update sessions list after response completes
         this.session.sendSessionsUpdate();
@@ -481,8 +495,9 @@ async function trimMessagesForContext(
     numPredict: number,
     contextMax: number,
 ): Promise<{ trimmedMessages: ChatHistory[]; turnsRemoved: number; tokensFreed: number; messagesRemoved: number }> {
-    const tokenCounts = await Promise.all(messages.map((msg) => Tokenizer.calcTokens(JSON.stringify(msg))));
-    let totalTokens = tokenCounts.reduce((sum: number, count: number) => sum + count, 0);
+    await populateMsgTokens(messages);
+    const tokenCounts = messages.map((msg) => msg.customKeys!.msgTokens!);
+    let totalTokens = tokenCounts.reduce((sum, count) => sum + count, 0);
 
     if (checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
         return { trimmedMessages: messages, turnsRemoved: 0, tokensFreed: 0, messagesRemoved: 0 };

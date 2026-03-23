@@ -1,9 +1,11 @@
 import { html, LitElement, PropertyValues } from "lit";
 import { state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
-import "./components/input-buttons/input-buttons"; // Import
+import "./components/input-buttons/input-buttons";
 import "./components/prompt-gallery/prompt-gallery";
-import { chatInputStyles } from "./styles";
+import "./components/tool-confirm/tool-confirm";
+import type { ToolConfirmRequest } from "./components/tool-confirm/tool-confirm";
+import { chatInputStyles } from "./styles-shared";
 
 export class ChatInput extends LitElement {
     @state()
@@ -20,6 +22,7 @@ export class ChatInput extends LitElement {
             isLoading: { type: Boolean },
             agentToken: { type: Number },
             hasTokenData: { type: Boolean },
+            toolConfirmRequest: { type: Object },
         };
     }
 
@@ -31,6 +34,7 @@ export class ChatInput extends LitElement {
     isLoading = false;
     agentToken = 0;
     hasTokenData = false;
+    toolConfirmRequest: ToolConfirmRequest | null = null;
 
     updated(changedProperties: PropertyValues) {
         if (changedProperties.has("isLoading") && !this.isLoading) {
@@ -145,6 +149,8 @@ export class ChatInput extends LitElement {
 
     render() {
         return html`
+            <collama-tool-confirm .request=${this.toolConfirmRequest}></collama-tool-confirm>
+
             <collama-prompt-gallery
                 .visible=${this.showGallery}
                 @submit-prompt=${this._handlePrompt}

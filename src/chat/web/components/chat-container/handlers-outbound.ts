@@ -1,5 +1,5 @@
 import { AttachedContext } from "../../../../common/context-chat";
-import { estimateTokens, logWebview } from "../../../utils-front";
+import { sumMsgTokens, logWebview, showToast } from "../../../utils-front";
 import type { ChatContainer } from "./chat-container";
 import { backendApi, buildUserContent } from "./utils";
 
@@ -17,7 +17,7 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
     host.wvChatContext.push({
         role: "user",
         content: buildUserContent(contexts, content),
-        contexts: contexts.length > 0 ? contexts : undefined,
+        customKeys: contexts.length > 0 ? { contexts } : undefined,
     });
     const messagesToSend = [...host.wvChatContext.getMessages()];
     host.wvChatContext.push({ role: "assistant", content: "" });
@@ -52,7 +52,7 @@ export function onSummarizeConversation(host: ChatContainer) {
 
     host.isLoading = true;
     host.startLoadingTimeout();
-    host.showToast("Summarizing conversation...");
+    showToast("Summarizing conversation...");
     backendApi.summarizeConversation(originalMessages, assistantIndex, host.activeSessionId);
 }
 
@@ -83,15 +83,14 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
         return;
     }
 
-    const userMessage = msgs[messageIndex] as { contexts?: AttachedContext[] };
-    const userContexts = userMessage.contexts ?? [];
+    const userContexts = msgs[messageIndex].customKeys?.contexts ?? [];
     const updatedContent = buildUserContent(userContexts, newContent);
 
     host.wvChatContext.truncate(messageIndex);
     host.wvChatContext.push({
         role: "user",
         content: updatedContent,
-        contexts: userContexts.length > 0 ? userContexts : undefined,
+        customKeys: userContexts.length > 0 ? { contexts: userContexts } : undefined,
     });
     const messagesToSend = [...host.wvChatContext.getMessages()];
     host.wvChatContext.push({ role: "assistant", content: "" });
@@ -112,14 +111,14 @@ export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
     }
 
     const turnEnd = host.wvChatContext.getTurnEnd(messageIndex);
-    const approxTokensFreed = estimateTokens(msgs.slice(messageIndex, turnEnd));
+    const approxTokensFreed = sumMsgTokens(msgs.slice(messageIndex, turnEnd));
 
     host.wvChatContext.removeRange(messageIndex, turnEnd);
     host.syncMessages();
 
-    host.contextUsed = estimateTokens(host.wvChatContext.getMessages());
+    host.contextUsed = sumMsgTokens(host.wvChatContext.getMessages());
 
-    host.showToast(`~${approxTokensFreed} tokens freed`);
+    showToast(`~${approxTokensFreed} tokens freed`);
     logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);
     backendApi.updateMessages(host.messages, host.activeSessionId, approxTokensFreed);
 }
@@ -140,16 +139,16 @@ export function onSummarizeTurn(host: ChatContainer, e: CustomEvent) {
 
     host.isLoading = true;
     host.startLoadingTimeout();
-    host.showToast("Summarizing turn...");
+    showToast("Summarizing turn...");
     logWebview(`Summarizing turn at index ${messageIndex}`);
     backendApi.summarizeTurn(turnMessages, messageIndex, turnEnd, host.activeSessionId);
 }
 
 /** Exports a session's chat history as raw JSON to a preview window. */
-export function onExportChat(host: ChatContainer, e: CustomEvent) {
+export function onExportSession(host: ChatContainer, e: CustomEvent) {
     const sessionId = e.detail?.id || host.activeSessionId;
-    logWebview(`Exporting chat history for session ${sessionId}`);
-    backendApi.exportChat(sessionId);
+    logWebview(`Exporting session ${sessionId}`);
+    backendApi.exportSession(sessionId);
 }
 
 /** Creates a new chat session. */
@@ -195,6 +194,30 @@ export function onContextCleared(host: ChatContainer, e: CustomEvent) {
     } else {
         host.currentContexts = [];
     }
+}
+
+/** Responds to a tool confirmation with "accept". */
+export function onToolConfirmAccept(host: ChatContainer, e: CustomEvent) {
+    const id = e.detail.id;
+    host.toolConfirmRequest = null;
+    logWebview(`Tool confirm accept: ${id}`);
+    backendApi.toolConfirmResponse(id, "accept", "User accepted the action");
+}
+
+/** Responds to a tool confirmation with "acceptAll". */
+export function onToolConfirmAcceptAll(host: ChatContainer, e: CustomEvent) {
+    const id = e.detail.id;
+    host.toolConfirmRequest = null;
+    logWebview(`Tool confirm accept-all: ${id}`);
+    backendApi.toolConfirmResponse(id, "acceptAll", "User accepted all actions");
+}
+
+/** Responds to a tool confirmation with cancel + optional reason. */
+export function onToolConfirmCancel(host: ChatContainer, e: CustomEvent) {
+    const { id, reason } = e.detail;
+    host.toolConfirmRequest = null;
+    logWebview(`Tool confirm cancel: ${id}`);
+    backendApi.toolConfirmResponse(id, "cancel", reason);
 }
 
 /** Updates the scroll button visibility based on near-bottom state. */

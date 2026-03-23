@@ -1,4 +1,4 @@
-import { estimateTokens, logWebview } from "../../../utils-front";
+import { sumMsgTokens, logWebview, showToast } from "../../../utils-front";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import type { ChatContainer } from "./chat-container";
 
@@ -10,11 +10,12 @@ export function createInboundDispatcher(host: ChatContainer) {
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
-        "chat-complete": () => handleChatComplete(host),
+        "chat-complete": (m) => handleChatComplete(host, m),
         "conversation-summarized": (m) => handleConversationSummarized(host, m),
         "turn-summarized": (m) => handleTurnSummarized(host, m),
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
+        "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
     };
     return (msg: any) => handlers[msg.type]?.(msg);
 }
@@ -25,7 +26,7 @@ function applySessionState(host: ChatContainer, msg: any) {
     host.syncMessages();
     host.sessions = msg.sessions || [];
     host.activeSessionId = msg.activeSessionId || "";
-    host.contextUsed = estimateTokens(msg.history || []);
+    host.contextUsed = msg.contextUsed || sumMsgTokens(msg.history || []);
     host.contextMax = msg.contextMax || 0;
     host.contextStartIndex = msg.contextStartIndex || 0;
 
@@ -67,13 +68,13 @@ function handleAgentTokens(host: ChatContainer, msg: any) {
     host.hasTokenData = true;
 }
 
-/** Marks the LLM response as finished, resets loading/token state, and recalculates context usage. */
-function handleChatComplete(host: ChatContainer) {
+/** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
+function handleChatComplete(host: ChatContainer, msg: any) {
     host.isLoading = false;
     host.clearLoadingTimeout();
     host.agent_token = 0;
     host.hasTokenData = false;
-    host.contextUsed = estimateTokens(host.wvChatContext.getMessages());
+    host.contextUsed = msg.contextUsed ?? sumMsgTokens(host.wvChatContext.getMessages());
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
 }
 
@@ -82,16 +83,16 @@ function handleConversationSummarized(host: ChatContainer, msg: any) {
     host.wvChatContext.setMessages(msg.messages || []);
     host.syncMessages();
     host.contextStartIndex = 0;
-    host.showToast("Conversation summarized");
+    showToast("Conversation summarized");
 }
 
 /** Replaces message history with the version containing the summarized turn. */
 function handleTurnSummarized(host: ChatContainer, msg: any) {
     host.wvChatContext.setMessages(msg.messages || []);
     host.syncMessages();
-    host.contextUsed = estimateTokens(msg.messages || []);
+    host.contextUsed = sumMsgTokens(msg.messages || []);
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
-    host.showToast("Turn summarized");
+    showToast("Turn summarized");
 }
 
 /** Adjusts `contextStartIndex` when the host trims old messages to stay within the context window. */
@@ -99,10 +100,16 @@ function handleContextTrimmed(host: ChatContainer, msg: any) {
     host.contextStartIndex = msg.contextStartIndex || 0;
     if (msg.turnsRemoved > 0) {
         const turns = msg.turnsRemoved;
-        host.showToast(
+        showToast(
             `Context exceeded — ${turns} old turn${turns > 1 ? "s" : ""} removed (~${msg.tokensFreed} tokens)`,
         );
     }
+}
+
+/** Shows the tool confirmation modal when the backend requests user approval. */
+function handleToolConfirmRequest(host: ChatContainer, msg: any) {
+    host.toolConfirmRequest = { id: msg.id, action: msg.action, filePath: msg.filePath };
+    logWebview(`Tool confirm request: ${msg.action} ${msg.filePath}`);
 }
 
 /** Adds a file/selection context sent from the editor (e.g. via "Add to Chat" command). */

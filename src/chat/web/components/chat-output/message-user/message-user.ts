@@ -1,7 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory } from "../../../../../common/context-chat";
-import { estimateTokens } from "../../../../utils-front";
+import { sumMsgTokens } from "../../../../utils-front";
 import "./edit";
 
 export interface UserMessageHost {
@@ -11,7 +11,7 @@ export interface UserMessageHost {
 }
 
 function getEditableText(msg: ChatHistory): string {
-    const contexts = (msg as { contexts?: unknown[] }).contexts;
+    const contexts = msg.customKeys?.contexts;
     if (!contexts?.length) {
         return msg.content;
     }
@@ -33,7 +33,7 @@ function getTurnTokens(messages: ChatHistory[], index: number): number {
     const ctx = new ChatContext();
     ctx.setMessages(messages);
     const end = ctx.getTurnEnd(index);
-    return estimateTokens(messages.slice(index, end));
+    return sumMsgTokens(messages.slice(index, end));
 }
 
 function handleResend(host: UserMessageHost, index: number) {

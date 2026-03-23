@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
 import { registerChatProvider, registerSendToChatCommand } from "./chat/subscriptions";
 import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
+import { initTokenizer } from "./common/utils-common";
 import { registerConfigAutoUpdateCommand, updateVSConfig } from "./config";
 import {
     registerEditManualCommand,
@@ -20,6 +21,9 @@ import { setStatusbar } from "./statusbar";
  * ENTRYPOINT for the extension
  */
 export async function activate(extContext: vscode.ExtensionContext) {
+    // init tokenizer at startup to prevent delays in chat
+    initTokenizer();
+
     // init secrets and bearer commands
     initSecrets(extContext);
     registerSetBearerCompletionCommand(extContext);

@@ -94,7 +94,7 @@ export class ChatAccordion extends LitElement {
     }
 
     private _renderCopyButton() {
-        if (this.type !== "code" || (!this.code && !this.copyCode)) {
+        if ((this.type !== "code" && this.type !== "summary") || (!this.code && !this.copyCode)) {
             return null;
         }
         return html`
@@ -110,7 +110,11 @@ export class ChatAccordion extends LitElement {
             <div class="accordion type-${this.type}">
                 <button class="accordion-header" @click=${this._toggle}>
                     <span class="accordion-icon">${this._renderIcon()}</span>
-                    <span class="accordion-label">${this.label}${this.description ? html`<span class="accordion-description">${this.description}</span>` : ""}</span>
+                    <span class="accordion-label"
+                        >${this.label}${this.description
+                            ? html`<span class="accordion-description">${this.description}</span>`
+                            : ""}</span
+                    >
                     <span class="accordion-actions">
                         ${this._renderCopyButton()}
                         <span class="accordion-arrow ${this.expanded ? "expanded" : ""}"> ${icons.chevronDown} </span>

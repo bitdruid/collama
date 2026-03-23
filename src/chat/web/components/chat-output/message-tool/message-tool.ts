@@ -11,9 +11,9 @@ export interface ToolRenderOptions {
 
 export function renderToolMessage(opts: ToolRenderOptions) {
     const { msg, outOfContextClass, warningIcon, bare } = opts;
-    const toolName = msg.toolName || "unknown";
-    const toolTarget = msg.toolTarget || "";
-    const escapedArgs = escapeAttr(msg.toolArgs || "");
+    const toolName = msg.customKeys?.toolName || "unknown";
+    const toolTarget = msg.customKeys?.toolTarget || "";
+    const escapedArgs = escapeAttr(msg.customKeys?.toolArgs || "");
 
     const accordion = html`
         <collama-accordion
