@@ -41,6 +41,8 @@ export const userStyles = css`
         background: transparent;
         color: ${themeColors.textWhite};
         font-size: ${themeFonts.small};
+        line-height: 1;
+        vertical-align: middle;
         cursor: pointer;
         opacity: 1;
         transition: background 0.15s;
