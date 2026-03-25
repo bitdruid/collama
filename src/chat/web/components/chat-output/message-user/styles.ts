@@ -1,19 +1,20 @@
 import { css } from "lit";
 import { themeColors } from "../../../styles/theme-colors";
+import { themeFonts } from "../../../styles/theme-fonts";
+import { themeStyles } from "../../../styles/theme-styles";
 
 export const userStyles = css`
-    ${themeColors}
     .message.user {
         margin: 24px 0;
     }
 
     .role-user {
-        background-color: var(--color-user);
+        background-color: ${themeColors.user};
     }
 
     .bubble-user {
-        border: 2px solid var(--color-ui-border);
-        background: var(--color-ui-background);
+        border: 2px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackground};
     }
 
     .out-of-context .bubble.bubble-user {
@@ -38,8 +39,8 @@ export const userStyles = css`
         border: none;
         border-radius: 4px;
         background: transparent;
-        color: var(--color-ui-element-font);
-        font-size: 11px;
+        color: ${themeColors.textWhite};
+        font-size: ${themeFonts.small};
         cursor: pointer;
         opacity: 1;
         transition: background 0.15s;
@@ -47,20 +48,19 @@ export const userStyles = css`
 
     .resend-button:hover,
     .edit-button:hover {
-        background: var(--color-submit-hover);
+        background: ${themeColors.submitHover};
     }
 
     .delete-button:hover {
-        background: var(--color-cancel-hover);
+        background: ${themeColors.cancelHover};
     }
 
     .summarize-button:hover {
-        background: var(--color-compress-hover);
+        background: ${themeColors.compressHover};
     }
 `;
 
 export const editStyles = css`
-    ${themeColors}
     :host {
         display: block;
     }
@@ -70,19 +70,19 @@ export const editStyles = css`
         min-height: auto;
         padding: 8px;
         margin-top: 4px;
-        border: 1px solid var(--color-ui-border);
-        border-radius: 4px;
-        background: var(--color-ui-background);
-        color: var(--color-ui-font);
+        border: 1px solid ${themeColors.uiBorder};
+        border-radius: 8px;
+        background: ${themeColors.uiBackground};
+        color: ${themeColors.uiFont};
         font-family: inherit;
-        font-size: 13px;
+        font-size: ${themeFonts.user};
         resize: vertical;
         box-sizing: border-box;
         line-height: 1.4;
     }
 
     .edit-textarea:focus {
-        outline: 1px solid var(--color-ui-border);
+        ${themeStyles.focus}
     }
 
     .edit-actions {
@@ -97,24 +97,24 @@ export const editStyles = css`
         padding: 4px 12px;
         border: none;
         border-radius: 4px;
-        font-size: 12px;
+        font-size: ${themeFonts.medium};
         cursor: pointer;
-        color: var(--color-ui-element-font);
+        color: ${themeColors.textWhite};
     }
 
     .edit-send {
-        background: var(--color-submit);
+        background: ${themeColors.submit};
     }
 
     .edit-send:hover {
-        background: var(--color-submit-hover);
+        background: ${themeColors.submitHover};
     }
 
     .edit-cancel {
-        background: var(--color-cancel);
+        background: ${themeColors.cancel};
     }
 
     .edit-cancel:hover {
-        background: var(--color-cancel-hover);
+        background: ${themeColors.cancelHover};
     }
 `;

@@ -58,7 +58,6 @@ function handleAgentAddMessage(host: ChatContainer, msg: any) {
 /** Appends a streaming text chunk to the message at the given index. */
 function handleAgentChunk(host: ChatContainer, msg: any) {
     host.wvChatContext.appendContent(msg.index, msg.chunk);
-    host.startLoadingTimeout();
     host.debounceSyncMessages();
 }
 
@@ -71,7 +70,6 @@ function handleAgentTokens(host: ChatContainer, msg: any) {
 /** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
 function handleChatComplete(host: ChatContainer, msg: any) {
     host.isLoading = false;
-    host.clearLoadingTimeout();
     host.agent_token = 0;
     host.hasTokenData = false;
     host.contextUsed = msg.contextUsed ?? sumMsgTokens(host.wvChatContext.getMessages());

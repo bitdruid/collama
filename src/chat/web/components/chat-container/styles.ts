@@ -1,8 +1,6 @@
 import { css } from "lit";
-import { themeColors } from "../../styles/theme-colors";
 
 export const chatContainerStyles = css`
-    ${themeColors}
     :host {
         display: flex;
         flex-direction: column;

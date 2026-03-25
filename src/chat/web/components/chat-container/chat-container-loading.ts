@@ -4,7 +4,6 @@ import { themeColors } from "../../styles/theme-colors";
 
 export class ChatContainerLoading extends LitElement {
     static styles = css`
-        ${themeColors}
         :host {
             position: fixed;
             inset: 0;
@@ -27,7 +26,7 @@ export class ChatContainerLoading extends LitElement {
             width: calc(100% - 4px);
             height: calc(100% - 4px);
             fill: none;
-            stroke: var(--color-submit);
+            stroke: ${themeColors.submit};
             stroke-width: 4;
             animation: snake-dash var(--snake-duration, 2s) linear infinite;
         }

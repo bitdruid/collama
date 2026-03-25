@@ -1,42 +1,18 @@
 import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
+import { themeFonts } from "../../../../styles/theme-fonts";
+import { themeStyles } from "../../../../styles/theme-styles";
+import { panelStyles } from "../../styles-shared";
 
 export const toolConfirmStyles = css`
-    ${themeColors}
-
-    :host {
-        display: block;
-    }
-
-    .confirm-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-
-    .confirm-header h3 {
-        margin: 0;
-    }
-
+    ${panelStyles}
     .confirm-action {
-        font-size: 12px;
+        font-size: ${themeFonts.medium};
         padding: 2px 8px;
         border-radius: 4px;
-        background: var(--color-submit);
-        color: var(--color-ui-element-font);
+        background: ${themeColors.submit};
+        color: ${themeColors.textWhite};
         text-transform: capitalize;
-    }
-
-    .confirm-filepath {
-        font-family: var(--vscode-editor-font-family), monospace;
-        font-size: 13px;
-        color: var(--color-ui-font);
-        padding: 8px 12px;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--color-ui-border);
-        word-break: break-all;
     }
 
     .confirm-buttons {
@@ -53,32 +29,53 @@ export const toolConfirmStyles = css`
         cursor: pointer;
         border: none;
         border-radius: 4px;
-        font-size: 13px;
-        color: var(--color-ui-element-font);
+        font-size: ${themeFonts.medium};
+        color: ${themeColors.textWhite};
     }
 
     .btn-accept {
-        background: var(--color-submit);
+        background: ${themeColors.submit};
     }
-
     .btn-accept:hover {
-        background: var(--color-submit-hover);
+        background: ${themeColors.submitHover};
     }
 
     .btn-accept-all {
-        background: var(--color-context);
+        background: ${themeColors.context};
     }
-
     .btn-accept-all:hover {
-        background: var(--color-context-hover);
+        background: ${themeColors.contextHover};
     }
 
     .btn-cancel {
-        background: var(--color-cancel);
+        background: ${themeColors.cancel};
+    }
+    .btn-cancel:hover {
+        background: ${themeColors.cancelHover};
     }
 
-    .btn-cancel:hover {
-        background: var(--color-cancel-hover);
+    .btn-send {
+        background: ${themeColors.cancel};
+        padding: 6px 12px;
+        cursor: pointer;
+        border: none;
+        border-radius: 4px;
+        font-size: ${themeFonts.medium};
+        color: ${themeColors.textWhite};
+    }
+    .btn-send:hover {
+        background: ${themeColors.cancelHover};
+    }
+
+    .confirm-filepath {
+        font-family: var(--vscode-editor-font-family), monospace;
+        font-size: ${themeFonts.medium};
+        color: ${themeColors.uiFont};
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid ${themeColors.uiBorder};
+        word-break: break-all;
     }
 
     .cancel-input-row {
@@ -92,34 +89,20 @@ export const toolConfirmStyles = css`
         flex: 1;
         padding: 6px 10px;
         border-radius: 6px;
-        border: 1px solid var(--color-ui-border);
-        background: var(--color-ui-background);
+        border: 1px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackground};
         color: var(--vscode-input-foreground);
         font-family: var(--vscode-editor-font-family);
-        font-size: 13px;
+        font-size: ${themeFonts.medium};
         outline: none;
     }
 
     .cancel-input:focus {
-        border-color: var(--vscode-focusBorder);
+        ${themeStyles.focus}
     }
 
     .cancel-input::placeholder {
-        color: var(--color-disabled);
-    }
-
-    .btn-send {
-        background: var(--color-cancel);
-        padding: 6px 12px;
-        cursor: pointer;
-        border: none;
-        border-radius: 4px;
-        font-size: 13px;
-        color: var(--color-ui-element-font);
-    }
-
-    .btn-send:hover {
-        background: var(--color-cancel-hover);
+        color: ${themeColors.disabled};
     }
 
     @keyframes fadeIn {

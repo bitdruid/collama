@@ -1,7 +1,7 @@
-import { html, LitElement, PropertyValues } from "lit";
+import { html, LitElement } from "lit";
 import { state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
-import "./components/input-buttons/input-buttons";
+import "./components/control-panel/control-panel";
 import "./components/prompt-gallery/prompt-gallery";
 import "./components/tool-confirm/tool-confirm";
 import type { ToolConfirmRequest } from "./components/tool-confirm/tool-confirm";
@@ -11,13 +11,8 @@ export class ChatInput extends LitElement {
     @state()
     private showGallery = false;
 
-    @state()
-    private autoAccept = false;
-
     static get properties() {
         return {
-            userInput: { type: String },
-            rows: { type: Number },
             contexts: { type: Array },
             isLoading: { type: Boolean },
             agentToken: { type: Number },
@@ -28,120 +23,24 @@ export class ChatInput extends LitElement {
 
     static styles = chatInputStyles;
 
-    userInput = "";
-    rows = 1;
     contexts: AttachedContext[] = [];
     isLoading = false;
     agentToken = 0;
     hasTokenData = false;
     toolConfirmRequest: ToolConfirmRequest | null = null;
 
-    updated(changedProperties: PropertyValues) {
-        if (changedProperties.has("isLoading") && !this.isLoading) {
-            this.updateComplete.then(() => {
-                this.shadowRoot?.querySelector("textarea")?.focus();
-            });
+    private get _activePanel(): string {
+        if (this.toolConfirmRequest !== null) {
+            return "tool-confirm";
         }
-        if (changedProperties.has("userInput")) {
-            this._adjustRows();
+        if (this.showGallery) {
+            return "gallery";
         }
-    }
-
-    private _handleInput(e: Event) {
-        this.userInput = (e.target as HTMLTextAreaElement).value;
-        this._adjustRows();
-    }
-
-    private _handleKeyDown(e: KeyboardEvent) {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            this._handleSubmit();
-        }
-    }
-
-    private _handleSubmit() {
-        if (this.isLoading) {
-            return;
-        }
-        this.dispatchEvent(
-            new CustomEvent("submit", {
-                detail: { value: this.userInput, contexts: this.contexts },
-                bubbles: true,
-                composed: true,
-            }),
-        );
-        this.userInput = "";
-        this.rows = 1;
-        this.contexts = [];
-        this.updateComplete.then(() => {
-            this.shadowRoot?.querySelector("textarea")?.focus();
-        });
-    }
-
-    private _handleCancel() {
-        this.dispatchEvent(
-            new CustomEvent("cancel", {
-                bubbles: true,
-                composed: true,
-            }),
-        );
-    }
-
-    private _handleSummarizeConversation() {
-        this.dispatchEvent(
-            new CustomEvent("summarize-conversation", {
-                bubbles: true,
-                composed: true,
-            }),
-        );
-    }
-
-    private _handleAutoAccept() {
-        this.autoAccept = !this.autoAccept;
-        this.dispatchEvent(
-            new CustomEvent("auto-accept", {
-                detail: { enabled: this.autoAccept },
-                bubbles: true,
-                composed: true,
-            }),
-        );
-    }
-
-    private _adjustRows() {
-        const ta = this.shadowRoot?.querySelector("textarea") as HTMLTextAreaElement | null;
-        if (!ta) {
-            return;
-        }
-        ta.rows = 1;
-        const style = getComputedStyle(ta);
-        const lineHeight = parseFloat(style.lineHeight);
-        const paddingTop = parseFloat(style.paddingTop);
-        const paddingBottom = parseFloat(style.paddingBottom);
-        const verticalPadding = paddingTop + paddingBottom;
-        const contentHeight = ta.scrollHeight - verticalPadding;
-        const newRows = Math.max(1, Math.round(contentHeight / lineHeight));
-        ta.rows = newRows;
-        this.rows = newRows;
-    }
-
-    private _clearContext(index: number) {
-        this.dispatchEvent(
-            new CustomEvent("context-cleared", {
-                detail: { index },
-                bubbles: true,
-                composed: true,
-            }),
-        );
+        return "control-panel";
     }
 
     private _openGallery() {
         this.showGallery = true;
-        this.dispatchEvent(
-            new CustomEvent("modal-opened", {
-                bubbles: true,
-                composed: true,
-            }),
-        );
     }
 
     private _closeGallery() {
@@ -149,49 +48,44 @@ export class ChatInput extends LitElement {
     }
 
     private _handlePrompt(e: CustomEvent) {
-        this.userInput = e.detail.value;
+        const value = e.detail.value;
+        // Close gallery first so control-panel becomes visible (display: block),
+        // then set userInput after render — otherwise _adjustRows measures a hidden textarea.
         this.showGallery = false;
+        this.updateComplete.then(() => {
+            const cp = this.shadowRoot?.querySelector("collama-control-panel") as any;
+            if (cp) {
+                cp.userInput = value;
+            }
+        });
     }
 
     render() {
-        const hasModalOpen = this.showGallery || this.toolConfirmRequest !== null;
+        const active = this._activePanel;
 
         return html`
-            ${hasModalOpen
-                ? html`
-                      <collama-tool-confirm .request=${this.toolConfirmRequest}></collama-tool-confirm>
+            <collama-control-panel
+                class="panel ${active === "control-panel" ? "active" : ""}"
+                .contexts=${this.contexts}
+                .isLoading=${this.isLoading}
+                .agentToken=${this.agentToken}
+                .hasTokenData=${this.hasTokenData}
+                @gallery-click=${this._openGallery}
+            ></collama-control-panel>
 
-                      <collama-prompt-gallery
-                          .visible=${this.showGallery}
-                          @submit-prompt=${this._handlePrompt}
-                          @close-gallery=${this._closeGallery}
-                      >
-                      </collama-prompt-gallery>
-                  `
-                : html`
-                      <textarea
-                          .value=${this.userInput}
-                          rows=${this.rows}
-                          @input=${this._handleInput}
-                          @keydown=${this._handleKeyDown}
-                          placeholder="Chat with AI..."
-                          ?disabled=${this.isLoading}
-                      ></textarea>
+            <collama-prompt-gallery
+                class="panel ${active === "gallery" ? "active" : ""}"
+                .visible=${this.showGallery}
+                @submit-prompt=${this._handlePrompt}
+                @close-gallery=${this._closeGallery}
+            >
+            </collama-prompt-gallery>
 
-                      <collama-chatinput-buttons
-                          .contexts=${this.contexts}
-                          .isLoading=${this.isLoading}
-                          .autoAccept=${this.autoAccept}
-                          .agentToken=${this.agentToken}
-                          .hasTokenData=${this.hasTokenData}
-                          @gallery-click=${this._openGallery}
-                          @cancel=${this._handleCancel}
-                          @summarize-conversation=${this._handleSummarizeConversation}
-                          @auto-accept=${this._handleAutoAccept}
-                          @submit=${this._handleSubmit}
-                          @context-cleared=${(e: CustomEvent) => this._clearContext(e.detail.index)}
-                      ></collama-chatinput-buttons>
-                  `}
+            <collama-tool-confirm
+                class="panel ${active === "tool-confirm" ? "active" : ""}"
+                .request=${this.toolConfirmRequest}
+            >
+            </collama-tool-confirm>
         `;
     }
 }

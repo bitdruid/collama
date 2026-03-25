@@ -2,9 +2,8 @@ import { css } from "lit";
 import { themeColors } from "../../../styles/theme-colors";
 
 export const toolStyles = css`
-    ${themeColors}
     .role-tool {
-        background-color: var(--color-tool);
+        background-color: ${themeColors.tool};
     }
 
     .bubble-tool {

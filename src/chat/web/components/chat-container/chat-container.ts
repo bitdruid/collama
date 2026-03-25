@@ -19,7 +19,6 @@ import {
     onDeleteSession,
     onEditMessage,
     onExportSession,
-    onModalOpened,
     onNearBottomChanged,
     onNewChat,
     onRenameSession,
@@ -62,7 +61,8 @@ export class ChatContainer extends LitElement {
     // -- Internal state --
     wvChatContext = new ChatContext();
     private _updateTimer: number | null = null;
-    private _loadingTimeout: number | null = null;
+    private _inputResizeObserver: ResizeObserver | null = null;
+    private _lastInputHeight = 0;
 
     // -- Methods used by handler modules --
 
@@ -84,23 +84,6 @@ export class ChatContainer extends LitElement {
         }
     }
 
-    /** Starts a 60 s fallback timer that clears `isLoading` if no `chat-complete` arrives. */
-    startLoadingTimeout() {
-        this.clearLoadingTimeout();
-        this._loadingTimeout = window.setTimeout(() => {
-            this.isLoading = false;
-            this._loadingTimeout = null;
-        }, 60000);
-    }
-
-    /** Cancels the pending loading fallback timer, if any. */
-    clearLoadingTimeout() {
-        if (this._loadingTimeout !== null) {
-            window.clearTimeout(this._loadingTimeout);
-            this._loadingTimeout = null;
-        }
-    }
-
     /** Scrolls the chat output to the bottom. */
     scrollDown() {
         const output = this.shadowRoot?.querySelector("collama-chatoutput") as any;
@@ -113,6 +96,30 @@ export class ChatContainer extends LitElement {
         backendApi.ready();
         const dispatch = createInboundDispatcher(this);
         window.addEventListener("message", (e) => dispatch(e.data));
+    }
+
+    firstUpdated() {
+        const chatInput = this.shadowRoot?.querySelector("collama-chatinput") as HTMLElement | null;
+        const chatOutput = this.shadowRoot?.querySelector("collama-chatoutput") as HTMLElement | null;
+        if (!chatInput || !chatOutput) {
+            return;
+        }
+
+        this._lastInputHeight = chatInput.getBoundingClientRect().height;
+        this._inputResizeObserver = new ResizeObserver(() => {
+            const newHeight = chatInput.getBoundingClientRect().height;
+            const delta = newHeight - this._lastInputHeight;
+            this._lastInputHeight = newHeight;
+            if (Math.abs(delta) > 1) {
+                chatOutput.scrollTop += delta;
+            }
+        });
+        this._inputResizeObserver.observe(chatInput);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._inputResizeObserver?.disconnect();
     }
 
     render() {
@@ -155,7 +162,6 @@ export class ChatContainer extends LitElement {
                     @tool-confirm-accept=${(e: CustomEvent) => onToolConfirmAccept(this, e)}
                     @tool-confirm-accept-all=${(e: CustomEvent) => onToolConfirmAcceptAll(this, e)}
                     @tool-confirm-cancel=${(e: CustomEvent) => onToolConfirmCancel(this, e)}
-                    @modal-opened=${() => onModalOpened(this)}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agent_token}

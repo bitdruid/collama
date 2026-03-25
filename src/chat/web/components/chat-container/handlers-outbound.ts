@@ -24,7 +24,7 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
     host.syncMessages();
 
     host.isLoading = true;
-    host.startLoadingTimeout();
+
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
     host.updateComplete.then(() => host.scrollDown());
 }
@@ -51,7 +51,7 @@ export function onSummarizeConversation(host: ChatContainer) {
     host.syncMessages();
 
     host.isLoading = true;
-    host.startLoadingTimeout();
+
     showToast("Summarizing conversation...");
     backendApi.summarizeConversation(originalMessages, assistantIndex, host.activeSessionId);
 }
@@ -70,7 +70,7 @@ export function onResendMessage(host: ChatContainer, e: CustomEvent) {
     host.syncMessages();
 
     host.isLoading = true;
-    host.startLoadingTimeout();
+
     logWebview(`Resending from message ${messageIndex}`);
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
 }
@@ -97,7 +97,7 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
     host.syncMessages();
 
     host.isLoading = true;
-    host.startLoadingTimeout();
+
     logWebview(`Editing and resending message ${messageIndex}`);
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
 }
@@ -138,7 +138,7 @@ export function onSummarizeTurn(host: ChatContainer, e: CustomEvent) {
     const turnMessages = msgs.slice(messageIndex, turnEnd);
 
     host.isLoading = true;
-    host.startLoadingTimeout();
+
     showToast("Summarizing turn...");
     logWebview(`Summarizing turn at index ${messageIndex}`);
     backendApi.summarizeTurn(turnMessages, messageIndex, turnEnd, host.activeSessionId);
@@ -223,13 +223,4 @@ export function onToolConfirmCancel(host: ChatContainer, e: CustomEvent) {
 /** Updates the scroll button visibility based on near-bottom state. */
 export function onNearBottomChanged(host: ChatContainer, e: CustomEvent) {
     host.showScrollButton = !e.detail.nearBottom;
-}
-
-/** Scrolls the chat output to the bottom when a modal opens. */
-export function onModalOpened(host: ChatContainer) {
-    host.updateComplete.then(() => {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => host.scrollDown());
-        });
-    });
 }

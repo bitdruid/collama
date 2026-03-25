@@ -70,12 +70,21 @@ export class PromptGalleryButtons extends LitElement {
         }
 
         return html`
-            <button
-                class="gallery-btn prompt-btn"
-                @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
-            >
-                + Add Prompt
-            </button>
+            <div class="button-container">
+                <button
+                    class="gallery-btn prompt-btn"
+                    @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
+                >
+                    + Add Prompt
+                </button>
+                <button
+                    class="gallery-btn cancel-btn"
+                    @click=${() =>
+                        this.dispatchEvent(new CustomEvent("close-gallery", { bubbles: true, composed: true }))}
+                >
+                    Cancel
+                </button>
+            </div>
         `;
     }
 }
