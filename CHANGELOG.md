@@ -3,6 +3,21 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-03-25
+
+### Fixed
+- Fixed response timeout issue with centralized chat-agent
+- Fixed escaping characters issue in exploration-tools
+- Fixed alignment of user message actions
+
+### Changed
+- Refactored styles by centralized definitions and chat-input splitting
+- Optimized LLM options for reduced tool hallucinations
+- Reset loading timeout on chunk receipt for better streaming reliability
+
+### Added
+- Errors are thrown into the chat with a dedicated modal
+
 ## [1.5.0] - 2026-03-23
 
 ### Added

@@ -40,29 +40,10 @@ export function buildIgnorePatterns(root: string): string[] {
  * Executes the readFile operation.
  * Reads the content of a file from the workspace. Supports reading specific line ranges
  * via startLine and endLine arguments (1-based indexing).
- *
- * @param args - The arguments for the operation.
- * @param args.filePath - The relative path to the file within the workspace.
- * @param args.startLine - Optional. The starting line number (1-based). Defaults to 1.
- * @param args.endLine - Optional. The ending line number (1-based). Defaults to the end of the file.
- * @returns A JSON string containing the file content and path, or an error object if the operation fails.
  */
-const CHUNK_SIZE = 100;
-
-function snapToChunkStart(line: number): number {
-    return Math.floor((line - 1) / CHUNK_SIZE) * CHUNK_SIZE + 1;
-}
-
-function snapToChunkEnd(line: number): number {
-    return Math.ceil(line / CHUNK_SIZE) * CHUNK_SIZE;
-}
-
 export async function readFile_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
-    const snappedStart = args.startLine !== undefined ? snapToChunkStart(args.startLine) : undefined;
-    const snappedEnd = args.endLine !== undefined ? snapToChunkEnd(args.endLine) : undefined;
-
     logMsg(
-        `Agent - tool use readFile file=${args.filePath}${snappedStart !== undefined ? ` startLine=${snappedStart}` : ""}${snappedEnd !== undefined ? ` endLine=${snappedEnd}` : ""}`,
+        `Agent - tool use readFile file=${args.filePath}${args.startLine !== undefined ? ` startLine=${args.startLine}` : ""}${args.endLine !== undefined ? ` endLine=${args.endLine}` : ""}`,
     );
     const ws = secureWorkspace(args.filePath, "readFile");
     if (ws.error) {
@@ -76,40 +57,33 @@ export async function readFile_exec(args: { filePath: string; startLine?: number
 
     const content = fs.readFileSync(ws.fullPath, "utf-8");
 
-    if (snappedStart === undefined && snappedEnd === undefined) {
-        return JSON.stringify({ content, filePath: args.filePath });
+    if (args.startLine === undefined && args.endLine === undefined) {
+        return content;
     }
 
     const lines = content.split("\n");
-    const start = (snappedStart ?? 1) - 1;
-    const end = snappedEnd ?? lines.length;
+    const start = (args.startLine ?? 1) - 1;
+    const end = args.endLine ?? lines.length;
 
-    return JSON.stringify({
-        content: lines.slice(start, end).join("\n"),
-        filePath: args.filePath,
-        startLine: snappedStart ?? 1,
-        endLine: Math.min(end, lines.length),
-    });
+    return lines.slice(start, end).join("\n");
 }
 export const readFile_def = {
     type: "function" as const,
     function: {
         name: "readFile",
         description:
-            "Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a specific range. Line ranges are automatically snapped to 100-line chunks (1-100, 101-200, 201-300, etc.). If no range is provided, reads the entire file.",
+            "Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a specific range (1-based). Prefer reading in 100-line chunks (1-100, 101-200, 201-300, etc.) to keep responses manageable. If no range is provided, reads the entire file.",
         parameters: {
             type: "object",
             properties: {
                 filePath: { type: "string", description: "Path to the file" },
                 startLine: {
                     type: "number",
-                    description:
-                        "Starting line (optional). Use chunk boundaries: 1, 101, 201, … Will be snapped to the nearest chunk start.",
+                    description: "Starting line (optional, 1-based). Prefer chunk boundaries: 1, 101, 201, …",
                 },
                 endLine: {
                     type: "number",
-                    description:
-                        "Ending line (optional). Use chunk boundaries: 100, 200, 300, … Will be snapped to the nearest chunk end.",
+                    description: "Ending line (optional, 1-based). Prefer chunk boundaries: 100, 200, 300, …",
                 },
             },
             required: ["filePath"],
@@ -154,7 +128,7 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
         })
     ).filter((f) => isWithinRoot(ws.root, path.join(ws.root, f)));
 
-    const matches: { file: string; line: number; text: string }[] = [];
+    const results: string[] = [];
     for (const file of files) {
         const fullPath = path.join(ws.root, file);
         let content: string;
@@ -166,12 +140,12 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
         const lines = content.split("\n");
         for (let i = 0; i < lines.length; i++) {
             if (regex.test(lines[i])) {
-                matches.push({ file, line: i + 1, text: lines[i].trim() });
+                results.push(`${file}:${i + 1}:${lines[i].trim()}`);
             }
         }
     }
 
-    return JSON.stringify({ matches, pattern: args.pattern });
+    return results.length > 0 ? results.join("\n") : "No matches found.";
 }
 export const searchFiles_def = {
     type: "function" as const,

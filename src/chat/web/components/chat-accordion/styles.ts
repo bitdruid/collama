@@ -3,7 +3,6 @@ import { hljsStyles } from "../../../utils-front";
 import { themeColors } from "../../styles/theme-colors";
 
 export const accordionStyles = [
-    themeColors,
     ...hljsStyles,
     css`
         :host {
@@ -14,7 +13,7 @@ export const accordionStyles = [
         }
 
         .accordion {
-            border: 1px solid var(--color-ui-border);
+            border: 1px solid ${themeColors.uiBorder};
             border-radius: 6px;
             overflow: hidden;
             position: relative;
@@ -26,7 +25,7 @@ export const accordionStyles = [
             gap: 6px;
             padding: 6px 10px;
             background: var(--vscode-textCodeBlock-background);
-            color: var(--color-ui-font-dimm);
+            color: ${themeColors.uiFontDimm};
             cursor: pointer;
             user-select: none;
             font-size: 0.9em;
@@ -37,7 +36,7 @@ export const accordionStyles = [
         }
 
         .accordion-header:hover {
-            background: var(--vscode-toolbar-hoverBackground);
+            background: ${themeColors.uiBackgroundHover};
         }
 
         .accordion-arrow {
@@ -93,7 +92,7 @@ export const accordionStyles = [
 
         .accordion-content-inner {
             background: var(--vscode-editor-background);
-            border-top: 1px solid var(--color-ui-border);
+            border-top: 1px solid ${themeColors.uiBorder};
             max-height: min(300px, 40vh);
             overflow-y: scroll;
             overflow-x: auto;
@@ -139,19 +138,19 @@ export const accordionStyles = [
 
         /* Type-specific styling */
         .accordion.type-think .accordion-header {
-            border-left: 3px solid var(--color-submit);
+            border-left: 3px solid ${themeColors.submit};
         }
 
         .accordion.type-summary .accordion-header {
-            border-left: 3px solid var(--color-compress);
+            border-left: 3px solid ${themeColors.compress};
         }
 
         .accordion.type-tool .accordion-header {
-            border-left: 3px solid var(--color-auto-accept);
+            border-left: 3px solid ${themeColors.autoAccept};
         }
 
         .accordion.type-tool-group .accordion-header {
-            border-left: 3px solid var(--color-auto-accept);
+            border-left: 3px solid ${themeColors.autoAccept};
         }
 
         .accordion.type-tool-group .accordion-content-inner {
@@ -178,7 +177,7 @@ export const accordionStyles = [
         }
 
         .accordion.type-context .accordion-header {
-            border-left: 3px solid var(--color-context);
+            border-left: 3px solid ${themeColors.context};
         }
 
         .accordion-actions {
@@ -193,7 +192,7 @@ export const accordionStyles = [
             gap: 4px;
             background: transparent;
             border: none;
-            color: var(--color-ui-font-dimm);
+            color: ${themeColors.uiFontDimm};
             cursor: pointer;
             padding: 2px 6px;
             border-radius: 4px;
@@ -204,8 +203,8 @@ export const accordionStyles = [
         }
 
         .copy-btn:hover {
-            background: var(--vscode-toolbar-hoverBackground);
-            color: var(--color-ui-font);
+            background: ${themeColors.uiBackgroundHover};
+            color: ${themeColors.uiFont};
         }
 
         .copy-btn:active {

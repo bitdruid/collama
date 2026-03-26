@@ -16,7 +16,6 @@ export const outputStyles = [
         }
     `,
     css`
-        ${themeColors}
         .role-header {
             display: flex;
             justify-content: space-between;
@@ -26,7 +25,7 @@ export const outputStyles = [
             margin-bottom: 6px;
             padding: 2px 6px;
             border-radius: 4px;
-            color: var(--color-ui-element-font);
+            color: ${themeColors.textWhite};
         }
 
         .role-label {

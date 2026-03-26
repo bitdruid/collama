@@ -1,9 +1,9 @@
 // src/chat/web/components/chat_session/components/popup/styles.ts
 import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
+import { themeFonts } from "../../../../styles/theme-fonts";
 
 export const popupStyles = css`
-    ${themeColors}
     .popup-overlay {
         display: none;
         position: absolute;
@@ -59,10 +59,6 @@ export const sessionItemStyles = css`
         border-left-color: var(--vscode-list-activeSelectionForeground);
     }
 
-    .session-item.active:hover {
-        background: var(--vscode-focusBorder);
-    }
-
     .session-info {
         flex: 1;
         min-width: 0;
@@ -70,27 +66,27 @@ export const sessionItemStyles = css`
     }
 
     .session-title {
-        font-size: 13px;
+        font-size: ${themeFonts.medium};
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        color: var(--color-ui-font);
+        color: ${themeColors.uiFont};
     }
 
     .session-title-input {
-        font-size: 13px;
+        font-size: ${themeFonts.medium};
         width: 100%;
         padding: 2px 4px;
         border: 1px solid var(--vscode-focusBorder);
         border-radius: 2px;
-        background: var(--color-ui-background);
+        background: ${themeColors.uiBackground};
         color: var(--vscode-input-foreground);
         outline: none;
     }
 
     .session-date {
-        font-size: 11px;
-        color: var(--color-ui-font-dimm);
+        font-size: ${themeFonts.small};
+        color: ${themeColors.uiFontDimm};
         margin-top: 2px;
     }
 
@@ -105,15 +101,15 @@ export const sessionItemStyles = css`
     }
 
     .rename-button {
-        color: var(--color-ui-font);
+        color: ${themeColors.uiFont};
     }
 
     .copy-button {
-        color: var(--color-ui-font);
+        color: ${themeColors.uiFont};
     }
 
     .export-button {
-        color: var(--color-ui-font);
+        color: ${themeColors.uiFont};
     }
 
     .delete-button {
@@ -125,6 +121,6 @@ export const emptyStateStyles = css`
     .empty-state {
         padding: 1rem;
         text-align: center;
-        color: var(--color-ui-font-dimm);
+        color: ${themeColors.uiFontDimm};
     }
 `;

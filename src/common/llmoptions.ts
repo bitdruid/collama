@@ -204,9 +204,9 @@ export function buildAgentOptions(): Options {
     return {
         num_predict: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
-        temperature: 0.2,
+        temperature: 0.1,
         top_p: 0.5,
         top_k: 40,
-        repeat_penalty: 1.2,
+        repeat_penalty: 1.1,
     };
 }

@@ -1,11 +1,12 @@
 import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
+import { themeFonts } from "../../../../styles/theme-fonts";
+import { panelStyles } from "../../styles-shared";
 
 export const galleryStyles = css`
-    ${themeColors}
-
+    ${panelStyles}
     :host {
-        display: block;
+        padding: 8px;
     }
 
     .prompt-item {
@@ -13,27 +14,26 @@ export const galleryStyles = css`
         justify-content: space-between;
         align-items: center;
         gap: 12px;
-        padding: 10px 12px;
+        padding: 8px;
         cursor: pointer;
-        border-radius: 8px;
-
-        border: 1px solid var(--color-ui-border);
-        background: rgba(255, 255, 255, 0.03);
-
-        transition:
-            border 0.2s ease,
-            background 0.2s ease;
+        border-radius: 4px;
+        border: 1px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackground};
+        color: ${themeColors.uiFont};
+        font-size: ${themeFonts.medium};
+        line-height: 1.4;
     }
 
     .prompt-item:hover {
-        border: 1px solid var(--vscode-focusBorder);
-        background: rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHover};
     }
 
     .prompt-list {
         display: flex;
         flex-direction: column;
         gap: 10px;
+        max-height: 50vh;
+        overflow-y: auto;
     }
 
     .prompt-text {
@@ -52,30 +52,26 @@ export const galleryStyles = css`
     }
 
     .custom-prompt-input {
-        width: 95%;
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 1px solid var(--vscode-editorLineHighlightBorder);
-        background: var(--color-ui-background);
-        color: var(--vscode-input-foreground);
-        font-family: var(--vscode-editor-font-family);
-        font-size: 13px;
+        width: 100%;
+        padding: 8px;
+        border: 1px solid ${themeColors.uiBorder};
+        border-radius: 4px;
+        background: ${themeColors.uiBackground};
+        color: ${themeColors.uiFont};
+        font-family: inherit;
+        font-size: ${themeFonts.medium};
+        line-height: 1.4;
         resize: vertical;
-        outline: none;
-        box-shadow: inset 0 0 0 1px var(--vscode-editorLineHighlightBorder);
-        transition:
-            border-color 0.2s,
-            box-shadow 0.2s;
+        box-sizing: border-box;
     }
 
     .custom-prompt-input:focus {
-        border-color: var(--vscode-focusBorder);
-        box-shadow: 0 0 0 2px var(--vscode-focusBorder) inset;
+        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderFocus};
+        outline: none;
     }
 `;
 
 export const galleryButtonStyles = css`
-    ${themeColors}
     .button-container {
         display: flex;
         gap: 8px;
@@ -90,7 +86,7 @@ export const galleryButtonStyles = css`
         border-radius: 4px;
         align-items: center;
         justify-content: center;
-        color: var(--color-ui-element-font);
+        color: ${themeColors.textWhite};
     }
 
     .edit-btn,
@@ -101,21 +97,19 @@ export const galleryButtonStyles = css`
 
     .prompt-btn,
     .edit-btn {
-        background: var(--color-submit);
+        background: ${themeColors.submit};
     }
-
     .prompt-btn:hover,
     .edit-btn:hover {
-        background: var(--color-submit-hover);
+        background: ${themeColors.submitHover};
     }
 
     .delete-btn,
     .cancel-btn {
-        background: var(--color-cancel);
+        background: ${themeColors.cancel};
     }
-
     .delete-btn:hover,
     .cancel-btn:hover {
-        background: var(--color-cancel-hover);
+        background: ${themeColors.cancelHover};
     }
 `;

@@ -1,12 +1,8 @@
 import { css } from "lit";
 import { themeColors } from "../../styles/theme-colors";
+import { themeFonts } from "../../styles/theme-fonts";
 
-/**
- * Gemeinsame Styles für alle Chat-Components
- * Wiederverwendbare CSS-Klassen und Variablen
- */
 export const commonStyles = css`
-    ${themeColors}
     /* Icon Buttons */
     .icon-button {
         display: inline-flex;
@@ -18,14 +14,14 @@ export const commonStyles = css`
         border: none;
         border-radius: 4px;
         background: transparent;
-        color: var(--color-ui-font);
+        color: ${themeColors.uiFont};
         cursor: pointer;
-        font-size: 16px;
+        font-size: ${themeFonts.large};
         transition: background 0.2s ease;
     }
 
     .icon-button:hover {
-        background: var(--vscode-toolbar-hoverBackground);
+        background: ${themeColors.uiBackgroundHover};
     }
 
     .icon-button:active {
@@ -44,33 +40,33 @@ export const commonStyles = css`
         border-radius: 3px;
         background: transparent;
         cursor: pointer;
-        font-size: 14px;
+        font-size: ${themeFonts.medium};
         transition: all 0.2s ease;
     }
 
     .action-button:hover {
-        background: var(--vscode-toolbar-hoverBackground);
+        background: ${themeColors.uiBackgroundHover};
     }
 
     /* Primary Button */
     .primary-button {
-        background-color: var(--color-submit);
-        color: var(--color-ui-element-font);
+        background-color: ${themeColors.submit};
+        color: ${themeColors.textWhite};
         border: none;
         padding: 6px 12px;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 13px;
+        font-size: ${themeFonts.medium};
         transition: background 0.2s ease;
     }
 
     .primary-button:hover {
-        background-color: var(--color-submit-hover);
+        background-color: ${themeColors.submitHover};
     }
 
     /* Text Utilities */
     .text-muted {
-        color: var(--color-ui-font-dimm);
+        color: ${themeColors.uiFontDimm};
     }
 
     .text-bold {

@@ -1,9 +1,9 @@
 // src/chat/web/components/chat_session/components/header/styles.ts
 import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
+import { themeFonts } from "../../../../styles/theme-fonts";
 
 export const headerStyles = css`
-    ${themeColors}
     .session-header {
         display: flex;
         justify-content: space-between;
@@ -25,15 +25,15 @@ export const headerStyles = css`
 
     .header-title {
         font-weight: bold;
-        font-size: 12px;
+        font-size: ${themeFonts.medium};
         text-transform: uppercase;
-        color: var(--color-ui-font);
+        color: ${themeColors.uiFont};
         opacity: 0.8;
     }
 
     .toggle-icon {
-        font-size: 10px;
-        color: var(--color-ui-font);
+        font-size: ${themeFonts.medium};
+        color: ${themeColors.uiFont};
         opacity: 0.6;
     }
 
@@ -46,16 +46,16 @@ export const headerStyles = css`
     .new-chat-button {
         width: 24px;
         height: 24px;
-        font-size: 16px;
-        background-color: var(--color-submit);
-        color: var(--color-ui-element-font);
+        font-size: ${themeFonts.giant};
+        background-color: ${themeColors.submit};
+        color: ${themeColors.textWhite};
     }
 
     .new-chat-button:hover {
-        background-color: var(--color-submit-hover);
+        background-color: ${themeColors.submitHover};
     }
 
     .new-chat-button:active {
-        background-color: var(--color-submit-active);
+        background-color: ${themeColors.submitActive};
     }
 `;

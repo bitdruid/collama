@@ -1,105 +1,61 @@
-import { css } from "lit";
+import { unsafeCSS } from "lit";
 
 /**
- * Centralized color theme for the chat application
- * Define all standard color tints here and use them across components
- * Colors are named after the buttons that use them
+ * Reusable color values for consistent color usage.
+ * Usage: color: ${themeColors.submit};
+ *        background-color: ${themeColors.context};
  */
-export const themeColors = css`
-    :host {
-        /* Submit Button Colors */
-        --color-submit: #2277a8;
-        --color-submit-hover: #185d86;
-        --color-submit-active: #145a75;
+export const themeColors = {
+    /* Submit Button Colors */
+    submit: unsafeCSS("#2277a8"),
+    submitHover: unsafeCSS("#185d86"),
+    submitActive: unsafeCSS("#145a75"),
 
-        /* Context Button Colors */
-        --color-context: #3a9a40;
-        --color-context-hover: #2c8232;
+    /* Context Button Colors */
+    context: unsafeCSS("#3a9a40"),
+    contextHover: unsafeCSS("#2c8232"),
 
-        /* Cancel Button Colors */
-        --color-cancel: #a82222;
-        --color-cancel-hover: #861818;
+    /* Cancel Button Colors */
+    cancel: unsafeCSS("#a82222"),
+    cancelHover: unsafeCSS("#861818"),
 
-        /* Compress Button Colors */
-        --color-compress: #d99839;
-        --color-compress-hover: #b98a2d;
+    /* Compress Button Colors */
+    compress: unsafeCSS("#d99839"),
+    compressHover: unsafeCSS("#b98a2d"),
 
-        /* Gallery Button Colors */
-        --color-gallery: #9b59b6;
-        --color-gallery-hover: #8e44ad;
+    /* Gallery Button Colors */
+    gallery: unsafeCSS("#9b59b6"),
+    galleryHover: unsafeCSS("#8e44ad"),
 
-        /* Auto-Accept Button Colors */
-        --color-auto-accept: #d87979;
-        --color-auto-accept-hover: #b86565;
-        --color-auto-accept-active: #ff6b6b;
+    /* Auto-Accept Button Colors */
+    autoAccept: unsafeCSS("#d87979"),
+    autoAcceptHover: unsafeCSS("#b86565"),
+    autoAcceptActive: unsafeCSS("#ff6b6b"),
 
-        /* Role Colors */
-        --color-system: #9b59b6;
-        --color-user: #2277a8;
-        --color-assistant: #3a9a40;
-        --color-tool: #d87979;
+    /* Role Colors */
+    system: unsafeCSS("#9b59b6"),
+    user: unsafeCSS("#2277a8"),
+    assistant: unsafeCSS("#3a9a40"),
+    tool: unsafeCSS("#d87979"),
 
-        /* Usage Bar Colors */
-        --color-usage-primary: #4ec9b0;
-        --color-usage-warning: #cca700;
-        --color-usage-danger: #f14c4c;
+    /* Usage Bar Colors */
+    usagePrimary: unsafeCSS("#4ec9b0"),
+    usageWarning: unsafeCSS("#cca700"),
+    usageDanger: unsafeCSS("#f14c4c"),
 
-        /* Shadow Colors */
-        --color-shadow: rgba(0, 0, 0, 0.8);
+    /* Shadow Colors */
+    shadow: unsafeCSS("rgba(0, 0, 0, 0.8)"),
 
-        /* User interactive element Colors */
-        --color-disabled: #555;
-        --color-ui-element-font: #fff;
+    /* User interactive element Colors */
+    disabled: unsafeCSS("#555"),
+    textWhite: unsafeCSS("#fff"),
 
-        /* System element Colors */
-        --color-ui-font: var(--vscode-foreground);
-        --color-ui-font-dimm: var(--vscode-descriptionForeground);
-        --color-ui-border: var(--vscode-commandCenter-activeBorder);
-        --color-ui-background: var(--vscode-input-background);
-    }
-`;
-
-/**
- * Helper function to get color variable names for use in styles
- * Usage: background-color: var(--color-submit);
- */
-export const colorVars = {
-    submit: "var(--color-submit)",
-    submitHover: "var(--color-submit-hover)",
-    submitActive: "var(--color-submit-active)",
-
-    context: "var(--color-context)",
-    contextHover: "var(--color-context-hover)",
-
-    cancel: "var(--color-cancel)",
-    cancelHover: "var(--color-cancel-hover)",
-
-    compress: "var(--color-compress)",
-    compressHover: "var(--color-compress-hover)",
-
-    gallery: "var(--color-gallery)",
-    galleryHover: "var(--color-gallery-hover)",
-
-    autoAccept: "var(--color-auto-accept)",
-    autoAcceptHover: "var(--color-auto-accept-hover)",
-    autoAcceptActive: "var(--color-auto-accept-active)",
-
-    system: "var(--color-system)",
-    user: "var(--color-user)",
-    assistant: "var(--color-assistant)",
-    tool: "var(--color-tool)",
-
-    usagePrimary: "var(--color-usage-primary)",
-    usageWarning: "var(--color-usage-warning)",
-    usageDanger: "var(--color-usage-danger)",
-
-    shadow: "var(--color-shadow)",
-
-    disabled: "var(--color-disabled)",
-    textWhite: "var(--color-ui-element-font)",
-
-    uiFont: "var(--color-ui-font)",
-    uiFontDimm: "var(--color-ui-font-dimm)",
-    uiBorder: "var(--color-ui-border)",
-    uiBackground: "var(--color-ui-background)",
+    /* System element Colors - CSS variables */
+    uiFont: unsafeCSS("var(--vscode-foreground)"),
+    uiFontDimm: unsafeCSS("var(--vscode-descriptionForeground)"),
+    uiBorder: unsafeCSS("var(--vscode-commandCenter-border)"),
+    uiBorderHover: unsafeCSS("var(--vscode-commandCenter-activeBorder)"),
+    uiBorderFocus: unsafeCSS("var(--vscode-commandCenter-foreground)"),
+    uiBackground: unsafeCSS("var(--vscode-commandCenter-background)"),
+    uiBackgroundHover: unsafeCSS("var(--vscode-commandCenter-activeBackground)"),
 } as const;

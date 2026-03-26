@@ -16,6 +16,7 @@ export function createInboundDispatcher(host: ChatContainer) {
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
+        "agent-error": (m) => handleAgentError(host, m),
     };
     return (msg: any) => handlers[msg.type]?.(msg);
 }
@@ -58,7 +59,6 @@ function handleAgentAddMessage(host: ChatContainer, msg: any) {
 /** Appends a streaming text chunk to the message at the given index. */
 function handleAgentChunk(host: ChatContainer, msg: any) {
     host.wvChatContext.appendContent(msg.index, msg.chunk);
-    host.clearLoadingTimeout();
     host.debounceSyncMessages();
 }
 
@@ -71,7 +71,6 @@ function handleAgentTokens(host: ChatContainer, msg: any) {
 /** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
 function handleChatComplete(host: ChatContainer, msg: any) {
     host.isLoading = false;
-    host.clearLoadingTimeout();
     host.agent_token = 0;
     host.hasTokenData = false;
     host.contextUsed = msg.contextUsed ?? sumMsgTokens(host.wvChatContext.getMessages());
@@ -113,6 +112,19 @@ function handleToolConfirmRequest(host: ChatContainer, msg: any) {
             requestAnimationFrame(() => host.scrollDown());
         });
     });
+}
+
+/** Displays the error modal with exported chat and error details when the agent throws. */
+function handleAgentError(host: ChatContainer, msg: any) {
+    host.isLoading = false;
+    host.agent_token = 0;
+    host.hasTokenData = false;
+
+    const content = `${msg.exportedChat}${msg.errorMessage}`;
+
+    const modal = host.shadowRoot?.querySelector("collama-chat-modal") as any;
+    modal?.showError(content);
+    logWebview(`Agent error: ${msg.error?.message}`);
 }
 
 /** Adds a file/selection context sent from the editor (e.g. via "Add to Chat" command). */

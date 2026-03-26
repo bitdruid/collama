@@ -2,6 +2,7 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { themeColors } from "../../styles/theme-colors";
+import { themeFonts } from "../../styles/theme-fonts";
 
 @customElement("collama-context-usage-bar")
 export class ContextUsageBar extends LitElement {
@@ -9,12 +10,8 @@ export class ContextUsageBar extends LitElement {
     @property({ type: Number }) max = 0;
 
     static styles = css`
-        ${themeColors}
         :host {
             --bar-bg: rgba(255, 255, 255, 0.15);
-            --bar-fill: var(--color-usage-primary);
-            --danger-color: var(--color-usage-danger);
-            --warning-color: var(--color-usage-warning);
             display: block;
         }
         .context-usage {
@@ -34,20 +31,20 @@ export class ContextUsageBar extends LitElement {
         }
         .context-bar {
             height: 100%;
-            background: var(--bar-fill);
+            background: ${themeColors.usagePrimary};
             border-radius: 2px;
             transition: width 0.3s ease;
             min-width: 1px;
         }
         .context-bar.danger {
-            background: var(--danger-color);
+            background: ${themeColors.usageDanger};
         }
         .context-bar.warning {
-            background: var(--warning-color);
+            background: ${themeColors.usageWarning};
         }
         .context-text {
-            font-size: 11px;
-            color: var(--color-ui-font);
+            font-size: ${themeFonts.medium};
+            color: ${themeColors.uiFont};
             white-space: nowrap;
             margin-left: 8px;
         }

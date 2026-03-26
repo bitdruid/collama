@@ -86,7 +86,7 @@ export class ChatSessions extends LitElement {
 
         this.dispatchEvent(
             new CustomEvent("select-session", {
-                detail: { id: id }, // <-- von sessionId zu id ändern
+                detail: { id: id },
                 bubbles: true,
                 composed: true,
             }),

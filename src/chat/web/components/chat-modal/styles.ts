@@ -1,38 +1,53 @@
 import { css } from "lit";
 import { themeColors } from "../../styles/theme-colors";
+import { themeFonts } from "../../styles/theme-fonts";
 
 export const chatModalStyles = css`
-    ${themeColors}
     :host {
         display: block;
-    }
-
-    .modal {
-        background: var(--color-ui-background);
-        border-radius: 8px;
-    }
-
-    .modal.closing {
-        opacity: 0;
-        transition: opacity 0.2s ease-in;
     }
 
     .modal-content {
         position: relative;
         padding: 16px;
+        margin-bottom: 8px;
+        overflow: visible;
+        border-radius: 8px;
+        border: 2px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackground};
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    .modal-content.fade-in {
+        opacity: 1;
+    }
+
+    .modal-content.fade-out {
+        opacity: 0;
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        color: ${themeColors.uiFontDimm};
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: ${themeColors.cancel};
     }
 
     .close-btn {
-        position: absolute;
-        top: 8px;
-        right: 12px;
         cursor: pointer;
-        font-size: 18px;
+        font-size: ${themeFonts.giant};
         line-height: 1;
-        color: var(--color-ui-border);
+        color: ${themeColors.uiFontDimm};
     }
 
     .close-btn:hover {
-        color: var(--color-ui-font);
+        color: ${themeColors.uiFont};
     }
 `;

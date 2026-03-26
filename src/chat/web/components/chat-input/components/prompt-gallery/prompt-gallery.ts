@@ -1,8 +1,6 @@
 import { LitElement, html } from "lit";
 import { state } from "lit/decorators.js";
 
-import "../../../chat-modal/chat-modal";
-import type { ChatModal } from "../../../chat-modal/chat-modal";
 import "./prompt-gallery-buttons";
 import { galleryStyles } from "./styles";
 
@@ -16,15 +14,6 @@ export class PromptGallery extends LitElement {
     private _editingIndex?: number;
 
     private _close() {
-        const modal = this.shadowRoot?.querySelector("collama-chat-modal") as ChatModal | null;
-        if (modal) {
-            modal.close();
-        } else {
-            this._onModalClose();
-        }
-    }
-
-    private _onModalClose() {
         this._adding = false;
         this._newPrompt = "";
         this._editingIndex = undefined;
@@ -77,12 +66,21 @@ export class PromptGallery extends LitElement {
     private _editPrompt(index: number) {
         this._newPrompt = this._customPrompts[index];
         this._editingIndex = index;
-        this._adding = true;
+        this._openEditor();
     }
 
     private _startAdding() {
         this._newPrompt = "";
+        this._openEditor();
+    }
+
+    private _openEditor() {
         this._adding = true;
+        this.updateComplete.then(() => {
+            requestAnimationFrame(() => {
+                this.shadowRoot?.querySelector<HTMLTextAreaElement>(".custom-prompt-input")?.focus();
+            });
+        });
     }
 
     private _cancelAdding() {
@@ -93,8 +91,11 @@ export class PromptGallery extends LitElement {
 
     render() {
         return html`
-            <collama-chat-modal .open=${this.visible} @modal-close=${this._onModalClose}>
-                <h3>Prompt Gallery</h3>
+            <div class="panel-content">
+                <div class="panel-header">
+                    <h3>Prompt Gallery</h3>
+                    <span class="close-btn" @click=${this._close}>&#10006;</span>
+                </div>
 
                 <div class="prompt-list">
                     ${this._customPrompts.map(
@@ -133,7 +134,7 @@ export class PromptGallery extends LitElement {
                         @cancel-new-prompt=${this._cancelAdding}
                     ></prompt-gallery-buttons>
                 </div>
-            </collama-chat-modal>
+            </div>
         `;
     }
 }

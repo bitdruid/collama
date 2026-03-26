@@ -1,7 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
-import "../../../chat-modal/chat-modal";
 import { toolConfirmStyles } from "./styles";
 
 export interface ToolConfirmRequest {
@@ -10,20 +9,6 @@ export interface ToolConfirmRequest {
     filePath: string;
 }
 
-/**
- * Tool confirmation modal that shows Accept / Accept All / Cancel buttons.
- * Cancel reveals an input line for the user to send a rejection reason to the LLM.
- *
- * Usage:
- * ```html
- * <collama-tool-confirm
- *     .request=${this.pendingConfirm}
- *     @tool-confirm-accept=${handler}
- *     @tool-confirm-accept-all=${handler}
- *     @tool-confirm-cancel=${handler}
- * ></collama-tool-confirm>
- * ```
- */
 @customElement("collama-tool-confirm")
 export class ToolConfirm extends LitElement {
     static styles = toolConfirmStyles;
@@ -77,10 +62,6 @@ export class ToolConfirm extends LitElement {
         }
     }
 
-    private _onModalClose() {
-        this._sendCancel();
-    }
-
     private _emit(eventName: string) {
         this.dispatchEvent(
             new CustomEvent(eventName, {
@@ -98,44 +79,42 @@ export class ToolConfirm extends LitElement {
     }
 
     render() {
-        const open = this.request !== null;
+        if (!this.request) {
+            return html``;
+        }
 
         return html`
-            <collama-chat-modal .open=${open} @modal-close=${this._onModalClose}>
-                ${this.request
+            <div class="panel-content">
+                <div class="panel-header">
+                    <h3>Tool Confirmation</h3>
+                    <span class="confirm-action">${this.request.action}</span>
+                </div>
+
+                <div class="confirm-filepath">${this.request.filePath}</div>
+
+                ${this._showCancelInput
                     ? html`
-                          <div class="confirm-header">
-                              <h3>Tool Confirmation</h3>
-                              <span class="confirm-action">${this.request.action}</span>
-                          </div>
-
-                          <div class="confirm-filepath">${this.request.filePath}</div>
-
-                          ${this._showCancelInput
-                              ? html`
-                                    <div class="cancel-input-row">
-                                        <input
-                                            class="cancel-input"
-                                            type="text"
-                                            placeholder="What should the agent do instead?"
-                                            .value=${this._cancelReason}
-                                            @input=${(e: Event) =>
-                                                (this._cancelReason = (e.target as HTMLInputElement).value)}
-                                            @keydown=${this._cancelKeyDown}
-                                        />
-                                        <button class="btn-send" @click=${this._sendCancel}>Send</button>
-                                    </div>
-                                `
-                              : null}
-
-                          <div class="confirm-buttons">
-                              <button class="confirm-btn btn-accept" @click=${this._accept}>Accept</button>
-                              <button class="confirm-btn btn-accept-all" @click=${this._acceptAll}>Accept All</button>
-                              <button class="confirm-btn btn-cancel" @click=${this._cancel}>Cancel</button>
+                          <div class="cancel-input-row">
+                              <input
+                                  class="cancel-input"
+                                  type="text"
+                                  placeholder="What should the agent do instead?"
+                                  .value=${this._cancelReason}
+                                  @input=${(e: Event) =>
+                                      (this._cancelReason = (e.target as HTMLInputElement).value)}
+                                  @keydown=${this._cancelKeyDown}
+                              />
+                              <button class="btn-send" @click=${this._sendCancel}>Send</button>
                           </div>
                       `
                     : null}
-            </collama-chat-modal>
+
+                <div class="confirm-buttons">
+                    <button class="confirm-btn btn-accept" @click=${this._accept}>Accept</button>
+                    <button class="confirm-btn btn-accept-all" @click=${this._acceptAll}>Accept All</button>
+                    <button class="confirm-btn btn-cancel" @click=${this._cancel}>Cancel</button>
+                </div>
+            </div>
         `;
     }
 }

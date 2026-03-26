@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { Agent } from "../agent/agent";
+import { Agent, AgentEvent } from "../agent/agent";
 import { resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { EditorContext } from "../common/context-editor";
@@ -186,15 +186,19 @@ export class ChatPanel {
         }
     }
 
+    /** Builds a portable export payload: extension metadata + messages. */
+    private buildExportData(messages: ChatHistory[]) {
+        const { name, version } = this.extContext.extension.packageJSON;
+        return [{ extension: name, version: version }, ...messages];
+    }
+
     /**
      * Opens a read-only preview of a session's chat history as raw JSON.
      */
     private handleExportSession(msg: { sessionId: string }) {
         const session = this.session.sessions.find((s) => s.id === msg.sessionId);
         const messages = session?.messages || [];
-        const { name, version } = this.extContext.extension.packageJSON;
-        const exportData = [{ extension: name, version: version }, ...messages];
-        const json = JSON.stringify(exportData, null, 2);
+        const json = JSON.stringify(this.buildExportData(messages), null, 2);
         const uri = vscode.Uri.parse(`untitled:session-export-${msg.sessionId}.json`);
         vscode.workspace.openTextDocument(uri).then((doc) => {
             vscode.window.showTextDocument(doc, { preview: true }).then((editor) => {
@@ -271,6 +275,59 @@ export class ChatPanel {
     }
 
     /**
+     * Runs the agent with a 60s startup timeout. The timeout fires only if the agent
+     * never produces a first chunk; any inbound chunk clears it. Callers are responsible
+     * for sending `chat-complete` after post-processing.
+     */
+    private async runAgent(
+        webview: vscode.Webview,
+        messages: ChatHistory[],
+        onChunk: (chunk: string) => void,
+        onEvent?: (event: AgentEvent) => void,
+    ): Promise<void> {
+        const agent = new Agent();
+        this.currentAgent = agent;
+        const timeout = setTimeout(() => {
+            webview.postMessage({ type: "chat-complete" });
+        }, 60000);
+
+        try {
+            // // DEBUG: force error after 3s to test error modal
+            // const forceError = new Promise<never>((_, reject) =>
+            //     setTimeout(() => reject(new Error("Forced debug error after 3s")), 3000),
+            // );
+            await Promise.race([
+                agent.work(
+                    messages,
+                    (chunk) => {
+                        clearTimeout(timeout);
+                        onChunk(chunk);
+                    },
+                    onEvent,
+                ),
+                // forceError,
+            ]);
+        } catch (error) {
+            agent.cancel();
+            const errorInfo = {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                name: error instanceof Error ? error.name : "Error",
+            };
+            const exportedChat = JSON.stringify(this.buildExportData(messages), null, 2);
+            const errorMessage = `\n\n--- ERROR ---\n\nname:\n${errorInfo.name}\n\nmessage:\n${errorInfo.message}\n\nstack:\n${errorInfo.stack || "N/A"}`;
+            webview.postMessage({
+                type: "agent-error",
+                exportedChat,
+                errorMessage,
+            });
+        } finally {
+            clearTimeout(timeout);
+            this.currentAgent = null;
+        }
+    }
+
+    /**
      * Handles cancelling the current chat request.
      */
     private handleChatCancel(webview: vscode.Webview) {
@@ -293,16 +350,12 @@ export class ChatPanel {
         const session = this.session.sessions.find((s) => s.id === sessionId);
 
         const summaryPrompt = [...messages, { role: "user" as const, content: chatCompress_Template }];
-
-        const agent = new Agent();
-        this.currentAgent = agent;
         let summaryContent = "";
 
-        await agent.work(summaryPrompt, async (chunk) => {
+        await this.runAgent(webview, summaryPrompt, (chunk) => {
             summaryContent += chunk;
             webview.postMessage({ type: "agent-chunk", index: assistantIndex, chunk });
         });
-        this.currentAgent = null;
 
         const fenced = `\`\`\`Summary: Conversation\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
         const compressedMessages: ChatHistory[] = [
@@ -334,15 +387,11 @@ export class ChatPanel {
         const session = this.session.sessions.find((s) => s.id === sessionId);
 
         const summaryPrompt = [...turnMessages, { role: "user" as const, content: chatSummarizeTurn_Template }];
-
-        const agent = new Agent();
-        this.currentAgent = agent;
         let summaryContent = "";
 
-        await agent.work(summaryPrompt, async (chunk) => {
+        await this.runAgent(webview, summaryPrompt, (chunk) => {
             summaryContent += chunk;
         });
-        this.currentAgent = null;
 
         const fenced = `\`\`\`Summary: Turn\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
         const replacementMessages: ChatHistory[] = [
@@ -401,17 +450,16 @@ export class ChatPanel {
             logMsg(`Context limit exceeded: removed ${turnsRemoved} turn(s) (~${tokensFreed} tokens) from LLM context`);
         }
 
-        const agent = new Agent();
-        this.currentAgent = agent;
-        await agent.work(
+        await this.runAgent(
+            webview,
             trimmedMessages,
-            async (chunk) => {
+            (chunk) => {
                 this.session.updateSession(session, (s) => {
                     s.messages[currentIndex].content += chunk;
                 });
                 webview.postMessage({ type: "agent-chunk", index: currentIndex, chunk });
             },
-            async (event) => {
+            (event) => {
                 if (event.type === "agent-tokens") {
                     webview.postMessage({ type: "agent-tokens", tokens: event.tokens });
                 }
@@ -465,7 +513,6 @@ export class ChatPanel {
                 }
             },
         );
-        this.currentAgent = null;
 
         // Tokenize any new messages (assistant + tool) that don't have msgTokens yet
         await populateMsgTokens(session!.messages);

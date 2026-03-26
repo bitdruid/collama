@@ -1,37 +1,54 @@
 import { css } from "lit";
+import { themeColors } from "../../styles/theme-colors";
+import { themeFonts } from "../../styles/theme-fonts";
 
 export const chatInputStyles = css`
     :host {
-        position: relative;
+        display: block;
         overflow: visible;
         border-radius: 8px;
-        border: 2px solid var(--color-ui-border);
-        background: var(--color-ui-background);
+        border: 2px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackground};
     }
 
-    collama-prompt-gallery,
-    collama-tool-confirm {
+    .panel {
+        display: none;
+    }
+    .panel.active {
         display: block;
-        width: 100%;
     }
-    textarea {
-        flex: 1;
-        width: 100%;
-        font-size: 14px;
+`;
+
+/** Shared styles for panel content (prompt-gallery, tool-confirm, etc.) */
+export const panelStyles = css`
+    :host {
+        display: block;
+    }
+
+    .panel-content {
         padding: 8px;
-        border-radius: 8px;
-        border: none;
-        color: var(--color-ui-font);
-        background: transparent;
-        resize: none;
-        overflow: hidden;
-        line-height: 1.2em;
-        box-sizing: border-box;
     }
-    button-row {
+
+    .panel-header {
         display: flex;
-        justify-content: flex-end;
-        margin-top: 8px;
-        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        color: ${themeColors.uiFontDimm};
+    }
+
+    .panel-header h3 {
+        margin: 0;
+    }
+
+    .close-btn {
+        cursor: pointer;
+        font-size: ${themeFonts.giant};
+        line-height: 1;
+        color: ${themeColors.uiFontDimm};
+    }
+
+    .close-btn:hover {
+        color: ${themeColors.uiFont};
     }
 `;

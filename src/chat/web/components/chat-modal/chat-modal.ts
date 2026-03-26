@@ -1,98 +1,50 @@
 import { LitElement, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
+import "./error-modal/error-modal";
 import { chatModalStyles } from "./styles";
 
 /**
- * Reusable slide-up modal shell.
- *
- * Provides the visual container (background, border, animations, close button)
- * and behavioral logic (outside-click, Escape key, animated close).
- * Content is projected via the default `<slot>`.
- *
- * Usage:
- * ```html
- * <collama-chat-modal .open=${this.showModal} @modal-close=${this._onClose}>
- *     <h3>Title</h3>
- *     <p>Any content here</p>
- * </collama-chat-modal>
- * ```
+ * Simple modal box that sits in chat-area like chat-input.
+ * Hidden by default. Call `showError(content)` to display error content.
  */
 @customElement("collama-chat-modal")
 export class ChatModal extends LitElement {
     static styles = chatModalStyles;
 
-    @property({ type: Boolean }) open = false;
-    @state() private _closing = false;
+    @state() private _open = false;
+    @state() private _visible = false;
+    @state() private _errorContent = "";
 
-    close() {
-        if (this._closing) {
-            return;
-        }
-        this._closing = true;
-
-        const modal = this.shadowRoot?.querySelector(".modal") as HTMLElement | null;
-        if (modal) {
-            modal.addEventListener(
-                "transitionend",
-                () => {
-                    this._closing = false;
-                    this.dispatchEvent(new CustomEvent("modal-close", { bubbles: true, composed: true }));
-                },
-                { once: true },
-            );
-        } else {
-            this._closing = false;
-            this.dispatchEvent(new CustomEvent("modal-close", { bubbles: true, composed: true }));
-        }
+    showError(content: string) {
+        this._errorContent = content;
+        this._open = true;
+        // Small delay to trigger fade-in animation
+        requestAnimationFrame(() => {
+            this._visible = true;
+        });
     }
 
-    updated(changed: Map<string, unknown>) {
-        if (changed.has("open")) {
-            if (this.open) {
-                requestAnimationFrame(() => {
-                    window.addEventListener("click", this._handleOutsideClick);
-                });
-                window.addEventListener("keydown", this._handleKeyDown);
-            } else {
-                window.removeEventListener("click", this._handleOutsideClick);
-                window.removeEventListener("keydown", this._handleKeyDown);
-            }
-        }
+    private _close() {
+        this._visible = false;
+        // Wait for fade-out animation to complete before hiding
+        setTimeout(() => {
+            this._open = false;
+            this._errorContent = "";
+        }, 200);
     }
-
-    disconnectedCallback() {
-        window.removeEventListener("click", this._handleOutsideClick);
-        window.removeEventListener("keydown", this._handleKeyDown);
-        super.disconnectedCallback();
-    }
-
-    private _handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape" && this.open) {
-            this.close();
-        }
-    };
-
-    private _handleOutsideClick = (e: MouseEvent) => {
-        if (!this.open) {
-            return;
-        }
-        const path = e.composedPath();
-        if (!path.includes(this)) {
-            this.close();
-        }
-    };
 
     render() {
-        if (!this.open) {
+        if (!this._open) {
             return html``;
         }
 
         return html`
-            <div class="modal ${this._closing ? "closing" : ""}">
-                <div class="modal-content">
-                    <span class="close-btn" @click=${this.close}>&times;</span>
-                    <slot></slot>
+            <div class="modal-content ${this._visible ? "fade-in" : "fade-out"}">
+                <div class="modal-header">
+                    <h3>Agent Error</h3>
+                    <span class="close-btn" @click=${this._close}>&#10006;</span>
                 </div>
+                <collama-error-modal .content=${this._errorContent} @modal-close=${this._close}></collama-error-modal>
             </div>
         `;
     }
