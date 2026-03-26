@@ -16,6 +16,7 @@ export function createInboundDispatcher(host: ChatContainer) {
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
+        "agent-error": (m) => handleAgentError(host, m),
     };
     return (msg: any) => handlers[msg.type]?.(msg);
 }
@@ -111,6 +112,19 @@ function handleToolConfirmRequest(host: ChatContainer, msg: any) {
             requestAnimationFrame(() => host.scrollDown());
         });
     });
+}
+
+/** Displays the error modal with exported chat and error details when the agent throws. */
+function handleAgentError(host: ChatContainer, msg: any) {
+    host.isLoading = false;
+    host.agent_token = 0;
+    host.hasTokenData = false;
+
+    const content = `${msg.exportedChat}${msg.errorMessage}`;
+
+    const modal = host.shadowRoot?.querySelector("collama-chat-modal") as any;
+    modal?.showError(content);
+    logWebview(`Agent error: ${msg.error?.message}`);
 }
 
 /** Adds a file/selection context sent from the editor (e.g. via "Add to Chat" command). */

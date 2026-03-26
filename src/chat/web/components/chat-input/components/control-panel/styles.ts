@@ -2,8 +2,10 @@ import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
 import { themeFonts } from "../../../../styles/theme-fonts";
 import { themeStyles } from "../../../../styles/theme-styles";
+import { panelStyles } from "../../styles-shared";
 
 export const controlPanelStyles = css`
+    ${panelStyles}
     :host {
         display: block;
     }
@@ -12,6 +14,7 @@ export const controlPanelStyles = css`
         flex: 1;
         width: 100%;
         font-size: ${themeFonts.user};
+        margin-bottom: 4px;
         padding: 8px;
         border-radius: 8px;
         border: none;
@@ -28,7 +31,7 @@ export const controlPanelStyles = css`
     }
 
     textarea::placeholder {
-        color: var(--vscode-commandCenter-activeBorder);
+        color: ${themeColors.uiBorderHover};
     }
 
     textarea:disabled {

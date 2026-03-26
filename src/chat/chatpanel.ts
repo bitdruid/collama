@@ -186,15 +186,19 @@ export class ChatPanel {
         }
     }
 
+    /** Builds a portable export payload: extension metadata + messages. */
+    private buildExportData(messages: ChatHistory[]) {
+        const { name, version } = this.extContext.extension.packageJSON;
+        return [{ extension: name, version: version }, ...messages];
+    }
+
     /**
      * Opens a read-only preview of a session's chat history as raw JSON.
      */
     private handleExportSession(msg: { sessionId: string }) {
         const session = this.session.sessions.find((s) => s.id === msg.sessionId);
         const messages = session?.messages || [];
-        const { name, version } = this.extContext.extension.packageJSON;
-        const exportData = [{ extension: name, version: version }, ...messages];
-        const json = JSON.stringify(exportData, null, 2);
+        const json = JSON.stringify(this.buildExportData(messages), null, 2);
         const uri = vscode.Uri.parse(`untitled:session-export-${msg.sessionId}.json`);
         vscode.workspace.openTextDocument(uri).then((doc) => {
             vscode.window.showTextDocument(doc, { preview: true }).then((editor) => {
@@ -287,17 +291,40 @@ export class ChatPanel {
             webview.postMessage({ type: "chat-complete" });
         }, 60000);
 
-        await agent.work(
-            messages,
-            (chunk) => {
-                clearTimeout(timeout);
-                onChunk(chunk);
-            },
-            onEvent,
-        );
-
-        clearTimeout(timeout);
-        this.currentAgent = null;
+        try {
+            // // DEBUG: force error after 3s to test error modal
+            // const forceError = new Promise<never>((_, reject) =>
+            //     setTimeout(() => reject(new Error("Forced debug error after 3s")), 3000),
+            // );
+            await Promise.race([
+                agent.work(
+                    messages,
+                    (chunk) => {
+                        clearTimeout(timeout);
+                        onChunk(chunk);
+                    },
+                    onEvent,
+                ),
+                // forceError,
+            ]);
+        } catch (error) {
+            agent.cancel();
+            const errorInfo = {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                name: error instanceof Error ? error.name : "Error",
+            };
+            const exportedChat = JSON.stringify(this.buildExportData(messages), null, 2);
+            const errorMessage = `\n\n--- ERROR ---\n\nname:\n${errorInfo.name}\n\nmessage:\n${errorInfo.message}\n\nstack:\n${errorInfo.stack || "N/A"}`;
+            webview.postMessage({
+                type: "agent-error",
+                exportedChat,
+                errorMessage,
+            });
+        } finally {
+            clearTimeout(timeout);
+            this.currentAgent = null;
+        }
     }
 
     /**

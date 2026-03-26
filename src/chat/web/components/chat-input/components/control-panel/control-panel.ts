@@ -87,21 +87,23 @@ export class ControlPanel extends LitElement {
 
     render() {
         return html`
-            <textarea
-                .value=${this.userInput}
-                @input=${this._handleInput}
-                @keydown=${this._handleKeyDown}
-                placeholder="Chat with AI..."
-                ?disabled=${this.isLoading}
-            ></textarea>
+            <div class="panel-content">
+                <textarea
+                    .value=${this.userInput}
+                    @input=${this._handleInput}
+                    @keydown=${this._handleKeyDown}
+                    placeholder="Chat with AI..."
+                    ?disabled=${this.isLoading}
+                ></textarea>
 
-            <collama-control-panel-buttons
-                .contexts=${this.contexts}
-                .isLoading=${this.isLoading}
-                .agentToken=${this.agentToken}
-                .hasTokenData=${this.hasTokenData}
-                @submit-click=${this._handleSubmit}
-            ></collama-control-panel-buttons>
+                <collama-control-panel-buttons
+                    .contexts=${this.contexts}
+                    .isLoading=${this.isLoading}
+                    .agentToken=${this.agentToken}
+                    .hasTokenData=${this.hasTokenData}
+                    @submit-click=${this._handleSubmit}
+                ></collama-control-panel-buttons>
+            </div>
         `;
     }
 }

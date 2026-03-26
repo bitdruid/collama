@@ -155,6 +155,7 @@ export class Agent {
                 const errorMsg = error instanceof Error ? error.message : String(error);
                 const errorStack = error instanceof Error ? error.stack : "";
                 logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n${errorStack}\n\n`);
+                throw error;
             } finally {
                 if (signal.aborted) {
                     onChunk("\n\n**Cancelled**");

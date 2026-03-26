@@ -69,8 +69,6 @@ export class ChatSessionItem extends LitElement {
         `;
     }
 
-    /* ---------- Event‑Handlers ---------- */
-
     private _handleClick() {
         if (!this.editing) {
             this.dispatchEvent(new CustomEvent("select", { bubbles: true, composed: true }));

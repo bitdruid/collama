@@ -3,6 +3,7 @@ import { state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import type { ToolConfirmRequest } from "../chat-input/components/tool-confirm/tool-confirm";
+import "../chat-modal/chat-modal";
 import "../chat-output/chat-output";
 import "../chat-scroll-button/chat-scroll-button.ts";
 import "../chat-session/chat-session";
@@ -153,6 +154,7 @@ export class ChatContainer extends LitElement {
                         @scroll-down=${() => this.scrollDown()}
                     ></collama-scroll-down>
                 </div>
+                <collama-chat-modal></collama-chat-modal>
                 <collama-chatinput
                     @submit=${(e: CustomEvent) => onSubmit(this, e)}
                     @cancel=${() => onCancel(this)}

@@ -76,9 +76,19 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
   - gpt-oss:120b
   - glm-4.7-fp8
   - minimax2.5
-> [!NOTE]
-> For smaller models (like gpt-oss:20b), it's recommended to use chat-only mode instead of agentic mode for better performance.
 
+### Tool use
+
+**1. Small Tool-Capable Models (e.g., gpt-oss:20b)**
+- `Agentic` ON - Model will see tools
+- `Edit Tools` OFF - Model still can explore - improves exploration quality
+
+**2. Non-Tool Models (models without tool-calling capabilities)**
+- `Agentic` OFF - Needs a fresh chat without existing tool-calls
+
+**3. Large Tool-Capable Models (e.g., gpt-oss:120b)**
+- `Agentic` ON
+- `Edit Tools` ON
 
 ## Quick Start
 
@@ -221,8 +231,8 @@ Note: ChatML format is not supported - that means only true FIM models will work
 
 ### AI Agent Usage
 
-> [!IMPORTANT]
-> It is recommended to turn off agentic-mode for small local/home models (like gpt-oss:20b) and use them in chat-only mode instead.
+> [!NOTE]
+> See [Tool use](#tool-use) in the Infos section.
 
 **Available Tools:**
 

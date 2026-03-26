@@ -6,6 +6,10 @@ import { panelStyles } from "../../styles-shared";
 
 export const toolConfirmStyles = css`
     ${panelStyles}
+    :host {
+        padding: 8px;
+    }
+
     .confirm-action {
         font-size: ${themeFonts.medium};
         padding: 2px 8px;

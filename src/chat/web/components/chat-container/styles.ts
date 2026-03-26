@@ -38,11 +38,15 @@ export const chatContainerStyles = css`
         z-index: 10;
     }
 
+    collama-chat-modal {
+        flex: 0 0 auto;
+        display: flex;
+    }
+
     collama-chatinput {
         flex: 0 0 auto;
         display: flex;
         flex-direction: column;
         overflow: visible;
-        padding: 8px;
     }
 `;

@@ -2,34 +2,32 @@ import { css } from "lit";
 import { themeColors } from "../../styles/theme-colors";
 import { themeFonts } from "../../styles/theme-fonts";
 
-export const chatInputStyles = css`
+export const chatModalStyles = css`
     :host {
         display: block;
+    }
+
+    .modal-content {
+        position: relative;
+        padding: 16px;
+        margin-bottom: 8px;
         overflow: visible;
         border-radius: 8px;
         border: 2px solid ${themeColors.uiBorder};
         background: ${themeColors.uiBackground};
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
     }
 
-    .panel {
-        display: none;
-    }
-    .panel.active {
-        display: block;
-    }
-`;
-
-/** Shared styles for panel content (prompt-gallery, tool-confirm, etc.) */
-export const panelStyles = css`
-    :host {
-        display: block;
+    .modal-content.fade-in {
+        opacity: 1;
     }
 
-    .panel-content {
-        padding: 8px;
+    .modal-content.fade-out {
+        opacity: 0;
     }
 
-    .panel-header {
+    .modal-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -37,8 +35,9 @@ export const panelStyles = css`
         color: ${themeColors.uiFontDimm};
     }
 
-    .panel-header h3 {
+    .modal-header h3 {
         margin: 0;
+        color: ${themeColors.cancel};
     }
 
     .close-btn {

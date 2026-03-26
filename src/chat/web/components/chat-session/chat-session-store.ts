@@ -14,8 +14,6 @@ export class ChatSessionStore extends EventTarget {
         this.dispatchEvent(new CustomEvent("change"));
     }
 
-    /* ---------- CRUD ---------- */
-
     newChat() {
         const id = Date.now().toString();
         const now = Date.now();
@@ -67,15 +65,11 @@ export class ChatSessionStore extends EventTarget {
         this._emitChange();
     }
 
-    /* ---------- Context‑Usage ---------- */
-
     setContextUsage(used: number, max: number) {
         this.contextUsed = used;
         this.contextMax = max;
         this._emitChange();
     }
-
-    /* ---------- NEU: Vom Extension Host initialisieren ---------- */
 
     loadFromBackend(data: {
         sessions: ChatSession[];

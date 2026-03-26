@@ -5,6 +5,10 @@ import { panelStyles } from "../../styles-shared";
 
 export const galleryStyles = css`
     ${panelStyles}
+    :host {
+        padding: 8px;
+    }
+
     .prompt-item {
         display: flex;
         justify-content: space-between;
