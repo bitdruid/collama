@@ -1,18 +1,30 @@
-import { LitElement, html } from "lit";
+import { html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { BaseModal } from "../../template-components/modal/base-modal";
 import { errorModalStyles } from "./error-modal-styles";
 
 /**
- * Error content panel for chat-modal.
+ * Error modal component extending BaseModal.
  * Displays exported chat + error JSON with copy/close actions.
- * Slotted into `<collama-chat-modal>` by the parent.
+ *
+ * @element collama-error-modal
+ * @fires modal-close - Dispatched when the modal is closed.
  */
 @customElement("collama-error-modal")
-export class ErrorModal extends LitElement {
-    static styles = errorModalStyles;
+export class ErrorModal extends BaseModal {
+    static styles = [...BaseModal.styles, errorModalStyles];
 
     @property({ type: String }) content = "";
     @state() private _copyLabel = "Copy";
+
+    /**
+     * Show the error modal with the given content
+     */
+    showError(content: string) {
+        this.content = content;
+        this.title = "Agent Error";
+        this.show();
+    }
 
     private async _copy() {
         try {
@@ -26,16 +38,12 @@ export class ErrorModal extends LitElement {
         }
     }
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent("modal-close", { bubbles: true, composed: true }));
-    }
-
-    render() {
+    protected renderContent() {
         return html`
             <pre class="error-content">${this.content}</pre>
             <div class="error-actions">
                 <button class="btn-copy" @click=${this._copy}>${this._copyLabel}</button>
-                <button class="btn-close" @click=${this._close}>Close</button>
+                <button class="btn-close" @click=${this.close}>Close</button>
             </div>
         `;
     }

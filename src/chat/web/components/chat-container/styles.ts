@@ -38,7 +38,7 @@ export const chatContainerStyles = css`
         z-index: 10;
     }
 
-    collama-chat-modal {
+    collama-error-modal {
         flex: 0 0 auto;
         display: flex;
     }
