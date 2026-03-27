@@ -2,7 +2,7 @@ import { ChatContext, ChatHistory } from "../common/context-chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
 import { agent_Template } from "../common/prompt";
-import Tokenizer from "../common/tokenizer";
+import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import { withProgressNotification } from "../common/vscode-utils";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
@@ -10,7 +10,6 @@ import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions, getToolTarget, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
-
 
 /**
  * This class manages the lifecycle of an agent task, including initializing the client,
@@ -142,7 +141,9 @@ export class Agent {
                         });
                     }
 
-                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history.getMessages()));
+                    // Tokenize messages without customKeys (same as populateMsgTokens)
+                    const messagesWithoutCustomKeys = history.getMessages().map(stripCustomKeys);
+                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(messagesWithoutCustomKeys));
                     logAgent(`Agent Tokens: ${toolTokens}`);
                     onEvent?.({ type: "agent-tokens", tokens: toolTokens });
 

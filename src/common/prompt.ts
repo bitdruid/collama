@@ -122,7 +122,7 @@ export const commitMsgCommand_Template: PromptTemplate = ({ diff }) =>
         "</diff>",
         "",
         "===== OUTPUT FORMAT =====",
-        "Common git commit message format. Without explanation in code fences.",
+        "Common git commit message format. Without explanations in code fences.",
     ].join("\n");
 
 export const chatCompress_Template: string = [

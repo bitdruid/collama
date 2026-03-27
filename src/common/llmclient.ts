@@ -201,7 +201,7 @@ class OllamaClient implements LlmClient {
                     logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
                 }
             }
-            return { content: result, toolCalls };
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
         } catch (err) {
             return handleError(err);
         }
@@ -307,7 +307,7 @@ class OpenAiClient implements LlmClient {
             }
 
             return {
-                content: result,
+                content: cleanupResult(result, resultTokens, options),
                 toolCalls: toolAccumulator.build(),
             };
         } catch (err) {
@@ -473,7 +473,7 @@ class AnthropicClient implements LlmClient {
                 function: { name: b.name, arguments: b.inputStr || "{}" },
             }));
 
-            return { content: result, toolCalls };
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
         } catch (err) {
             return handleError(err);
         }
