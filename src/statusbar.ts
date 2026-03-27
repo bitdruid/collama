@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+const { showErrorMessage } = vscode.window;
 
 import { getConfig } from "./config";
 import { logMsg } from "./logging";
@@ -106,6 +107,6 @@ async function showStatusbar() {
         }
     } catch (error: unknown) {
         logMsg(`Error in showStatusbar: ${(error as Error).message}`);
-        vscode.window.showErrorMessage(`collama: Error loading statusbar menu - ${(error as Error).message}`);
+        showErrorMessage(`collama: Error loading statusbar menu - ${(error as Error).message}`);
     }
 }

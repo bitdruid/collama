@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
+const { showErrorMessage, showWarningMessage, showInformationMessage } = vscode.window;
 
 import { requestCommitMessage } from "../common/requests";
-import { withProgressNotification } from "../common/utils-common";
+import { withProgressNotification } from "../common/vscode-utils";
 import { logMsg } from "../logging";
 
 // Type definitions for the Git extension API
@@ -35,7 +36,7 @@ export function registerRequestCommitMessageCommand(extContext: vscode.Extension
     const disposable = vscode.commands.registerCommand("collama.requestCommitMessage", async () => {
         const gitExtension = vscode.extensions.getExtension<GitExtension>("vscode.git");
         if (!gitExtension) {
-            vscode.window.showErrorMessage("collama: Git extension is not available");
+            showErrorMessage("collama: Git extension is not available");
             return;
         }
         if (!gitExtension.isActive) {
@@ -43,14 +44,14 @@ export function registerRequestCommitMessageCommand(extContext: vscode.Extension
         }
         const git = gitExtension.exports.getAPI(1);
         if (!git.repositories.length) {
-            vscode.window.showErrorMessage("collama: No Git repository found in workspace");
+            showErrorMessage("collama: No Git repository found in workspace");
             return;
         }
         const repo = git.repositories[0];
         try {
             const stagedDiff = await repo.diff(true);
             if (!stagedDiff || stagedDiff.trim().length === 0) {
-                vscode.window.showWarningMessage("collama: No staged changes to generate commit message for");
+                showWarningMessage("collama: No staged changes to generate commit message for");
                 return;
             }
             logMsg(`Staged diff size: ${stagedDiff.length} characters`);
@@ -58,14 +59,14 @@ export function registerRequestCommitMessageCommand(extContext: vscode.Extension
                 const commitMessage = await requestCommitMessage(stagedDiff);
                 if (commitMessage) {
                     repo.inputBox.value = commitMessage;
-                    vscode.window.showInformationMessage("collama: Commit message generated");
+                    showInformationMessage("collama: Commit message generated");
                 } else {
-                    vscode.window.showWarningMessage("collama: Failed to generate commit message");
+                    showWarningMessage("collama: Failed to generate commit message");
                 }
             });
         } catch (error) {
             logMsg(`Error generating commit message: ${error}`);
-            vscode.window.showErrorMessage(`collama: Error generating commit message: ${error}`);
+            showErrorMessage(`collama: Error generating commit message: ${error}`);
         }
     });
     extContext.subscriptions.push(disposable);

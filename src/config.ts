@@ -1,8 +1,22 @@
 import * as vscode from "vscode";
 
-import { requestAnthropic, requestOllama, requestOpenAI, setTlsRejectUnauthorized } from "./common/utils-common";
+import { requestAnthropic, requestOllama, requestOpenAI } from "./common/requests";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
+
+let tlsRejectUnauthorized = true;
+
+/**
+ * Toggle TLS certificate validation (process-wide).
+ * When disabled, equivalent to NODE_TLS_REJECT_UNAUTHORIZED=0.
+ */
+export function setTlsRejectUnauthorized(reject: boolean): void {
+    if (reject !== tlsRejectUnauthorized) {
+        tlsRejectUnauthorized = reject;
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = reject ? "1" : "0";
+        logMsg(`TLS certificate validation: ${reject ? "enabled" : "disabled"}`);
+    }
+}
 
 export type RequestType = "completion" | "instruction";
 

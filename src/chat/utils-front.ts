@@ -1,12 +1,7 @@
 import hljs from "highlight.js";
 import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import { css, html, unsafeCSS } from "lit";
-import { ChatHistory } from "../common/context-chat";
 
-/** Sums up cached msgTokens across all messages. Returns 0 for messages without a cached value. */
-export function sumMsgTokens(messages: ChatHistory[]): number {
-    return messages.reduce((sum, m) => sum + (m.customKeys?.msgTokens ?? 0), 0);
-}
 
 export function logWebview(message: string) {
     window.vscode.postMessage({

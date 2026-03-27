@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+const { showInformationMessage } = vscode.window;
 
 import { updateVSConfig } from "./config";
 
@@ -101,10 +102,10 @@ export async function commandSetBearerCompletion(): Promise<void> {
     if (token !== undefined) {
         if (token === "") {
             await clearBearerCompletion();
-            vscode.window.showInformationMessage("Bearer token (Completion) cleared");
+            showInformationMessage("Bearer token (Completion) cleared");
         } else {
             await setBearerCompletion(token);
-            vscode.window.showInformationMessage("Bearer token (Completion) saved securely");
+            showInformationMessage("Bearer token (Completion) saved securely");
         }
         // Trigger backend detection since bearer token changed
         await updateVSConfig();
@@ -125,10 +126,10 @@ export async function commandSetBearerInstruct(): Promise<void> {
     if (token !== undefined) {
         if (token === "") {
             await clearBearerInstruct();
-            vscode.window.showInformationMessage("Bearer token (Instruct) cleared");
+            showInformationMessage("Bearer token (Instruct) cleared");
         } else {
             await setBearerInstruct(token);
-            vscode.window.showInformationMessage("Bearer token (Instruct) saved securely");
+            showInformationMessage("Bearer token (Instruct) saved securely");
         }
         // Trigger backend detection since bearer token changed
         await updateVSConfig();

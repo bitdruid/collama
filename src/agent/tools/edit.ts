@@ -1,7 +1,7 @@
 import path from "path";
 import * as vscode from "vscode";
 import { getWebview } from "../../chat/utils-back";
-import { withProgressNotification } from "../../common/utils-common";
+import { withProgressNotification } from "../../common/vscode-utils";
 import { logAgent, logMsg } from "../../logging";
 import { secureWorkspace } from "../tools";
 

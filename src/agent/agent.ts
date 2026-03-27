@@ -2,7 +2,8 @@ import { ChatContext, ChatHistory } from "../common/context-chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
 import { agent_Template } from "../common/prompt";
-import Tokenizer, { withProgressNotification } from "../common/utils-common";
+import Tokenizer from "../common/tokenizer";
+import { withProgressNotification } from "../common/vscode-utils";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
@@ -55,15 +56,15 @@ export class Agent {
      * @param onEvent  - Optional callback for structured metadata events (e.g. token counts).
      * @returns {Promise<void>}
      */
-    async work(messages: ChatHistory[], onChunk: (chunk: string) => void, onEvent?: (event: AgentEvent) => void) {
+    async work(messages: ChatContext, onChunk: (chunk: string) => void, onEvent?: (event: AgentEvent) => void) {
         await withProgressNotification(`collama: Agent running …`, async () => {
             this.abortController = new AbortController();
             resetAutoAcceptEdits();
             const signal = this.abortController.signal;
 
             const initMessages: ChatHistory[] = userConfig.agentic
-                ? [{ role: "system", content: agent_Template }, ...messages]
-                : [...messages];
+                ? [{ role: "system", content: agent_Template }, ...messages.getMessages()]
+                : [...messages.getMessages()];
             const history = new AgentContext(initMessages);
 
             try {
@@ -144,6 +145,12 @@ export class Agent {
                     const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history.getMessages()));
                     logAgent(`Agent Tokens: ${toolTokens}`);
                     onEvent?.({ type: "agent-tokens", tokens: toolTokens });
+
+                    if (toolTokens > userConfig.apiTokenContextLenInstruct) {
+                        throw new Error(
+                            `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
+                        );
+                    }
 
                     if (signal.aborted) {
                         break;

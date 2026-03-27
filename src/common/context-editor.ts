@@ -1,7 +1,8 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
-import Tokenizer from "./utils-common";
+import Tokenizer from "./tokenizer";
+const { showErrorMessage } = vscode.window;
 
 /**
  * Represents the context of an open file in the workspace.
@@ -116,7 +117,7 @@ export class EditorContext {
     static async create(): Promise<EditorContext | null> {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
-            vscode.window.showErrorMessage("collama: Could not find active editor!");
+            showErrorMessage("collama: Could not find active editor!");
             return null;
         }
 

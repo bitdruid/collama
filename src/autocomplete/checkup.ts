@@ -1,7 +1,6 @@
-import * as vscode from "vscode";
-
 import { getSupportedModels, modelsMatch } from "../common/models";
-import { requestOllama, requestOpenAI } from "../common/utils-common";
+import { requestOllama, requestOpenAI } from "../common/requests";
+import { showErrorMessage } from "../common/vscode-utils";
 import { sysConfig, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getBearerCompletion } from "../secrets";
@@ -12,32 +11,12 @@ let lastCheckResult = false;
 const CHECK_INTERVAL_MS = 15_000; // 15 seconds
 
 /**
- * Posts a message to the user via VS Code UI and logs it.
- *
- * @param message - The message text to display.
- * @param type - The message type: `"info"`, `"error"`, or `"warn"`.
- * @returns A promise that resolves when the message has been shown and logged.
- */
-async function postMessage(message: string, type: string): Promise<void> {
-    if (type === "info") {
-        vscode.window.showInformationMessage(message);
-    }
-    if (type === "error") {
-        vscode.window.showErrorMessage(message);
-    }
-    if (type === "warn") {
-        vscode.window.showWarningMessage(message);
-    }
-    logMsg(message);
-}
-
-/**
  * Handles a connection error by informing the user.
  *
  * @returns A promise that resolves after the error message has been displayed.
  */
 async function connError() {
-    postMessage(`Connection error to the ollama server @ ${userConfig.apiEndpointCompletion}`, "error");
+    showErrorMessage(`Connection error to the ollama server @ ${userConfig.apiEndpointCompletion}`);
 }
 
 /**
@@ -104,7 +83,7 @@ async function checkModelExists(): Promise<boolean> {
             const modelExists = modelNames.some((name) => modelsMatch(name, userConfig.apiModelCompletion));
 
             if (!modelExists) {
-                postMessage(`Model ${userConfig.apiModelCompletion} does not exist on the Ollama server`, "error");
+                showErrorMessage(`Model ${userConfig.apiModelCompletion} does not exist on the Ollama server`);
                 return false;
             }
 
@@ -121,7 +100,7 @@ async function checkModelExists(): Promise<boolean> {
             const modelExists = modelIds.some((id) => modelsMatch(id, userConfig.apiModelCompletion));
 
             if (!modelExists) {
-                postMessage(`Model ${userConfig.apiModelCompletion} does not exist on the OpenAI server`, "error");
+                showErrorMessage(`Model ${userConfig.apiModelCompletion} does not exist on the OpenAI server`);
                 return false;
             }
 
@@ -129,7 +108,7 @@ async function checkModelExists(): Promise<boolean> {
         }
 
         // Unknown backend
-        postMessage(`Unsupported backend: ${sysConfig.backendCompletion}`, "error");
+        showErrorMessage(`Unsupported backend: ${sysConfig.backendCompletion}`);
         return false;
     } catch (error: unknown) {
         connError();

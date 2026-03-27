@@ -1,3 +1,8 @@
+import Anthropic from "@anthropic-ai/sdk";
+import nodeFetch from "node-fetch";
+import { Readable } from "node:stream";
+import { Ollama } from "ollama";
+import OpenAI from "openai";
 import * as vscode from "vscode";
 
 import { userConfig } from "../config";
@@ -176,5 +181,80 @@ export async function requestEditManual(currentContext: EditorContext): Promise<
         instruction: editPrompt,
         snippet: currentContext.selectionText,
         fullContext: currentContext.activeFileText,
+    });
+}
+
+/**
+ * Proxy-aware fetch wrapper.
+ *
+ * node-fetch uses Node.js http.request under the hood, which VS Code
+ * patches to honour the built-in `http.proxy` setting.  The raw
+ * node-fetch Response, however, returns a Node.js Readable as `.body`
+ * instead of a Web ReadableStream — breaking the Ollama SDK which
+ * calls `body.getReader()`.
+ *
+ * This wrapper re-packages the response into a standard `Response`
+ * with a proper Web ReadableStream body so both Ollama and OpenAI
+ * SDKs work correctly.
+ *
+ * TLS settings (custom CA, reject unauthorized) are handled
+ * process-wide via NODE_TLS_REJECT_UNAUTHORIZED and NODE_EXTRA_CA_CERTS.
+ */
+async function proxyFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+    const response = await nodeFetch(input as any, init as any);
+    const body = response.body ? (Readable.toWeb(response.body as any) as ReadableStream) : null;
+    return new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+    });
+}
+
+/**
+ * Creates and configures an Ollama client instance.
+ *
+ * @param url - The base URL of the Ollama host.
+ * @param bearer - Optional bearer token for authentication.
+ * @returns A configured Ollama client.
+ */
+export function requestOllama(url: string, bearer?: string): Ollama {
+    const ollama = new Ollama({
+        ...(bearer ? { headers: { Authorization: `Bearer ${bearer}` } } : {}),
+        host: url,
+        fetch: proxyFetch as typeof fetch,
+    });
+    return ollama;
+}
+
+/**
+ * Creates and configures an OpenAI client instance.
+ *
+ * @param url - The base URL of the OpenAI-compatible API.
+ * @param bearer - Optional API key or bearer token for authentication.
+ * @returns A configured OpenAI client.
+ */
+export function requestOpenAI(url: string, bearer?: string): OpenAI {
+    // Only append /v1 if it's not already present in the URL
+    const baseURL = url.endsWith("/v1") ? url : url + "/v1";
+    const openai = new OpenAI({
+        apiKey: bearer ?? "",
+        baseURL: baseURL,
+        fetch: proxyFetch as typeof fetch,
+    });
+    return openai;
+}
+
+/**
+ * Creates and configures an Anthropic client instance.
+ *
+ * @param url - The base URL of the Anthropic API (defaults to https://api.anthropic.com).
+ * @param apiKey - The Anthropic API key.
+ * @returns A configured Anthropic client.
+ */
+export function requestAnthropic(url: string, bearer?: string): Anthropic {
+    return new Anthropic({
+        apiKey: bearer ?? "",
+        baseURL: url,
+        fetch: proxyFetch as typeof fetch,
     });
 }

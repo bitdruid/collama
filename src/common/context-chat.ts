@@ -51,8 +51,8 @@ export type ToolMessage = Extract<ChatHistory, { role: "tool" }>;
 export class ChatContext {
     private messages: ChatHistory[];
 
-    constructor() {
-        this.messages = [];
+    constructor(messages?: ChatHistory[]) {
+        this.messages = messages ? [...messages] : [];
     }
 
     /**
@@ -152,6 +152,13 @@ export class ChatContext {
         return end;
     }
 
+    /**
+     * Returns the message at the given index, or undefined if out of bounds.
+     */
+    public getMsgByIndex(index: number): ChatHistory | undefined {
+        return this.messages[index];
+    }
+
     // -- ToolCall accessors (host-side only) --
 
     /**
@@ -211,4 +218,19 @@ export class ChatContext {
         }
         return true;
     }
+
+    /** Sums cached `msgTokens` across all messages in the context. */
+    public sumTokens(): number {
+        return sumMsgTokens(this.messages);
+    }
+
+    /** Sums cached `msgTokens` for messages in the range [start, end). */
+    public sumTokensInRange(start: number, end: number): number {
+        return sumMsgTokens(this.messages.slice(start, end));
+    }
+}
+
+/** Sums up cached `msgTokens` across all messages. Returns 0 for messages without a cached value. */
+export function sumMsgTokens(messages: ChatHistory[]): number {
+    return messages.reduce((sum, msg) => sum + (msg.customKeys?.msgTokens ?? 0), 0);
 }
