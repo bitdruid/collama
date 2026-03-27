@@ -1,6 +1,7 @@
 import { html, LitElement } from "lit";
 import { state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
+import type { ContextSearchResult } from "./components/context-search/context-search";
 import "./components/control-panel/control-panel";
 import "./components/prompt-gallery/prompt-gallery";
 import "./components/tool-confirm/tool-confirm";
@@ -18,6 +19,7 @@ export class ChatInput extends LitElement {
             agentToken: { type: Number },
             hasTokenData: { type: Boolean },
             toolConfirmRequest: { type: Object },
+            contextSearchResults: { type: Array },
         };
     }
 
@@ -28,6 +30,7 @@ export class ChatInput extends LitElement {
     agentToken = 0;
     hasTokenData = false;
     toolConfirmRequest: ToolConfirmRequest | null = null;
+    contextSearchResults: ContextSearchResult[] = [];
 
     private get _activePanel(): string {
         if (this.toolConfirmRequest !== null) {
@@ -70,6 +73,7 @@ export class ChatInput extends LitElement {
                 .isLoading=${this.isLoading}
                 .agentToken=${this.agentToken}
                 .hasTokenData=${this.hasTokenData}
+                .contextSearchResults=${this.contextSearchResults}
                 @gallery-click=${this._openGallery}
             ></collama-control-panel>
 

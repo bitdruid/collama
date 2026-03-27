@@ -1,5 +1,6 @@
 import { html, LitElement, PropertyValues } from "lit";
 import { AttachedContext } from "../../../../../../common/context-chat";
+import type { ContextSearchResult } from "../context-search/context-search";
 import "./control-panel-buttons";
 import { controlPanelStyles } from "./styles";
 
@@ -17,6 +18,7 @@ export class ControlPanel extends LitElement {
             isLoading: { type: Boolean },
             agentToken: { type: Number },
             hasTokenData: { type: Boolean },
+            contextSearchResults: { type: Array },
         };
     }
 
@@ -25,6 +27,7 @@ export class ControlPanel extends LitElement {
     isLoading = false;
     agentToken = 0;
     hasTokenData = false;
+    contextSearchResults: ContextSearchResult[] = [];
 
     //  Lifecycle
 
@@ -101,6 +104,7 @@ export class ControlPanel extends LitElement {
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
+                    .contextSearchResults=${this.contextSearchResults}
                     @submit-click=${this._handleSubmit}
                 ></collama-control-panel-buttons>
             </div>

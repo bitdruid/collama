@@ -8,6 +8,7 @@ export const controlPanelStyles = css`
     ${panelStyles}
     :host {
         display: block;
+        overflow: visible;
     }
 
     textarea {
@@ -43,6 +44,7 @@ export const controlPanelStyles = css`
 export const controlPanelButtonStyles = css`
     :host {
         display: block;
+        overflow: visible;
     }
 
     button-submit,
@@ -199,16 +201,23 @@ export const controlPanelButtonStyles = css`
         background: rgba(255, 255, 255, 0.4);
     }
 
-    .context-list {
+    .added-contexts {
         display: flex;
         flex-wrap: wrap;
+        flex-direction: row-reverse;
         gap: 4px;
         align-items: center;
+        margin-top: 4px;
     }
 
     button-row {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
+        position: relative;
+    }
+
+    .context-wrapper {
+        position: relative;
     }
 `;

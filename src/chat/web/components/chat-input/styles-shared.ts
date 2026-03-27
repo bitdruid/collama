@@ -27,6 +27,7 @@ export const panelStyles = css`
 
     .panel-content {
         padding: 8px;
+        overflow: visible;
     }
 
     .panel-header {
