@@ -31,8 +31,8 @@ export const backendApi = {
     sendChatRequest: (messages: ChatHistory[], sessionId: string) =>
         window.vscode.postMessage({ type: "chat-request", messages, sessionId }),
     cancel: () => window.vscode.postMessage({ type: "chat-cancel" }),
-    summarizeConversation: (messages: ChatHistory[], assistantIndex: number, sessionId: string) =>
-        window.vscode.postMessage({ type: "summarize-conversation-request", messages, assistantIndex, sessionId }),
+    summarize: (messages: ChatHistory[], turnStart: number, turnEnd: number, sessionId: string) =>
+        window.vscode.postMessage({ type: "summarize-request", messages, turnStart, turnEnd, sessionId }),
     updateMessages: (messages: ChatHistory[], sessionId: string, approxTokensFreed: number) =>
         window.vscode.postMessage({ type: "update-messages", messages, sessionId, approxTokensFreed }),
     newSession: () => window.vscode.postMessage({ type: "new-session" }),
@@ -43,8 +43,9 @@ export const backendApi = {
     copySession: (sessionId: string) => window.vscode.postMessage({ type: "copy-session", sessionId }),
     autoAcceptAll: (enabled: boolean) => window.vscode.postMessage({ type: "auto-accept-all", enabled }),
     exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
-    summarizeTurn: (turnMessages: ChatHistory[], turnStart: number, turnEnd: number, sessionId: string) =>
-        window.vscode.postMessage({ type: "summarize-turn-request", turnMessages, turnStart, turnEnd, sessionId }),
     toolConfirmResponse: (id: string, value: string, reason: string) =>
         window.vscode.postMessage({ type: "tool-confirm-response", id, value, reason }),
+    contextSearch: (query: string) => window.vscode.postMessage({ type: "context-search", query }),
+    contextAddFile: (filePath: string, isFolder: boolean) =>
+        window.vscode.postMessage({ type: "context-add-file", filePath, isFolder }),
 };

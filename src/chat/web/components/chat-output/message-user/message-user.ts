@@ -1,7 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory } from "../../../../../common/context-chat";
-import { sumMsgTokens } from "../../../../utils-front";
 import "./edit";
 
 export interface UserMessageHost {
@@ -32,8 +31,7 @@ export interface UserRenderOptions {
 function getTurnTokens(messages: ChatHistory[], index: number): number {
     const ctx = new ChatContext();
     ctx.setMessages(messages);
-    const end = ctx.getTurnEnd(index);
-    return sumMsgTokens(messages.slice(index, end));
+    return ctx.sumTokensInRange(index, ctx.getTurnEnd(index));
 }
 
 function handleResend(host: UserMessageHost, index: number) {

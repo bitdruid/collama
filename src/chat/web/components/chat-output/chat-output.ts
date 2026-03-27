@@ -1,7 +1,7 @@
 import { LitElement, html } from "lit";
 import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import { escapeAttr, highlightAllCodeBlocks, icons } from "../../../utils-front";
+import { escapeAttr, /* highlightAllCodeBlocks, */ icons } from "../../../utils-front";
 import "../chat-accordion/chat-accordion";
 import "../chat-session/components/popup/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
@@ -135,9 +135,9 @@ export class ChatOutput extends LitElement {
     isGenerating: boolean = false;
     editingIndex: number | null = null;
 
-    private highlightedBlocks = new WeakSet<Element>();
+    // private highlightedBlocks = new WeakSet<Element>();
     private renderedMarkdownCache = new Map<string, string>();
-    private highlightDebounceTimer: number | null = null;
+    // private highlightDebounceTimer: number | null = null;
 
     private _autoScroll = true;
 
@@ -220,16 +220,6 @@ export class ChatOutput extends LitElement {
 
     updated(changed: Map<string, unknown>) {
         if (changed.has("messages")) {
-            if (this.highlightDebounceTimer !== null) {
-                window.clearTimeout(this.highlightDebounceTimer);
-            }
-
-            this.highlightDebounceTimer = window.setTimeout(() => {
-                this.highlightDebounceTimer = null;
-                highlightAllCodeBlocks(this.shadowRoot, this.highlightedBlocks);
-                this._scrollToBottom();
-            }, 250);
-
             requestAnimationFrame(() => {
                 this._scrollToBottom();
             });

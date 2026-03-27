@@ -1,5 +1,5 @@
 import { AttachedContext } from "../../../../common/context-chat";
-import { logWebview, showToast, sumMsgTokens } from "../../../utils-front";
+import { logWebview, showToast } from "../../../utils-front";
 import type { ChatContainer } from "./chat-container";
 import { backendApi, buildUserContent } from "./utils";
 
@@ -8,6 +8,10 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
     const content = e.detail.value?.trim();
     const contexts: AttachedContext[] = e.detail.contexts || [];
     if (!content) {
+        // Clear contexts even when there's no text, so user can add new contexts
+        if (contexts.length > 0) {
+            host.currentContexts = [];
+        }
         return;
     }
 
@@ -44,7 +48,6 @@ export function onSummarizeConversation(host: ChatContainer) {
     }
 
     const originalMessages = [...host.wvChatContext.getMessages()];
-    const assistantIndex = originalMessages.length + 1;
 
     host.wvChatContext.push({ role: "user", content: "Context summary:" });
     host.wvChatContext.push({ role: "assistant", content: "" });
@@ -53,7 +56,7 @@ export function onSummarizeConversation(host: ChatContainer) {
     host.isLoading = true;
 
     showToast("Summarizing conversation...");
-    backendApi.summarizeConversation(originalMessages, assistantIndex, host.activeSessionId);
+    backendApi.summarize(originalMessages, 0, originalMessages.length, host.activeSessionId);
 }
 
 /** Truncates history after the selected user message and re-sends from that point. */
@@ -111,12 +114,12 @@ export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
     }
 
     const turnEnd = host.wvChatContext.getTurnEnd(messageIndex);
-    const approxTokensFreed = sumMsgTokens(msgs.slice(messageIndex, turnEnd));
+    const approxTokensFreed = host.wvChatContext.sumTokensInRange(messageIndex, turnEnd);
 
     host.wvChatContext.removeRange(messageIndex, turnEnd);
     host.syncMessages();
 
-    host.contextUsed = sumMsgTokens(host.wvChatContext.getMessages());
+    host.contextUsed = host.wvChatContext.sumTokens();
 
     showToast(`~${approxTokensFreed} tokens freed`);
     logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);
@@ -141,7 +144,7 @@ export function onSummarizeTurn(host: ChatContainer, e: CustomEvent) {
 
     showToast("Summarizing turn...");
     logWebview(`Summarizing turn at index ${messageIndex}`);
-    backendApi.summarizeTurn(turnMessages, messageIndex, turnEnd, host.activeSessionId);
+    backendApi.summarize(turnMessages, messageIndex, turnEnd, host.activeSessionId);
 }
 
 /** Exports a session's chat history as raw JSON to a preview window. */
@@ -194,6 +197,16 @@ export function onContextCleared(host: ChatContainer, e: CustomEvent) {
     } else {
         host.currentContexts = [];
     }
+}
+
+/** Sends a context search query to the backend. */
+export function onContextSearch(e: CustomEvent) {
+    backendApi.contextSearch(e.detail.query);
+}
+
+/** Requests the backend to read and attach a file/folder as context. */
+export function onContextAddFile(e: CustomEvent) {
+    backendApi.contextAddFile(e.detail.filePath, e.detail.isFolder);
 }
 
 /** Responds to a tool confirmation with "accept". */

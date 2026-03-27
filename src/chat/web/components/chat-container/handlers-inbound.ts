@@ -1,4 +1,4 @@
-import { logWebview, showToast, sumMsgTokens } from "../../../utils-front";
+import { logWebview, showToast } from "../../../utils-front";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import type { ChatContainer } from "./chat-container";
 
@@ -11,10 +11,10 @@ export function createInboundDispatcher(host: ChatContainer) {
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
         "chat-complete": (m) => handleChatComplete(host, m),
-        "conversation-summarized": (m) => handleConversationSummarized(host, m),
-        "turn-summarized": (m) => handleTurnSummarized(host, m),
+        "summary-complete": (m) => handleSummarized(host, m),
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
+        "context-search-results": (m) => handleContextSearchResults(host, m),
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
         "agent-error": (m) => handleAgentError(host, m),
     };
@@ -27,7 +27,7 @@ function applySessionState(host: ChatContainer, msg: any) {
     host.syncMessages();
     host.sessions = msg.sessions || [];
     host.activeSessionId = msg.activeSessionId || "";
-    host.contextUsed = msg.contextUsed || sumMsgTokens(msg.history || []);
+    host.contextUsed = msg.contextUsed || 0;
     host.contextMax = msg.contextMax || 0;
     host.contextStartIndex = msg.contextStartIndex || 0;
 
@@ -73,25 +73,18 @@ function handleChatComplete(host: ChatContainer, msg: any) {
     host.isLoading = false;
     host.agent_token = 0;
     host.hasTokenData = false;
-    host.contextUsed = msg.contextUsed ?? sumMsgTokens(host.wvChatContext.getMessages());
+    host.contextUsed = msg.contextUsed ?? 0;
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
 }
 
-/** Replaces message history with the summarized conversation returned by the host. */
-function handleConversationSummarized(host: ChatContainer, msg: any) {
+/** Replaces message history with the summarized version returned by the host. */
+function handleSummarized(host: ChatContainer, msg: any) {
     host.wvChatContext.setMessages(msg.messages || []);
     host.syncMessages();
-    host.contextStartIndex = 0;
-    showToast("Conversation summarized");
-}
-
-/** Replaces message history with the version containing the summarized turn. */
-function handleTurnSummarized(host: ChatContainer, msg: any) {
-    host.wvChatContext.setMessages(msg.messages || []);
-    host.syncMessages();
-    host.contextUsed = sumMsgTokens(msg.messages || []);
-    ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
-    showToast("Turn summarized");
+    if (msg.isConversation) {
+        host.contextStartIndex = 0;
+    }
+    showToast(msg.isConversation ? "Conversation summarized" : "Turn summarized");
 }
 
 /** Adjusts `contextStartIndex` when the host trims old messages to stay within the context window. */
@@ -122,9 +115,14 @@ function handleAgentError(host: ChatContainer, msg: any) {
 
     const content = `${msg.exportedChat}${msg.errorMessage}`;
 
-    const modal = host.shadowRoot?.querySelector("collama-chat-modal") as any;
+    const modal = host.shadowRoot?.querySelector("collama-error-modal") as any;
     modal?.showError(content);
     logWebview(`Agent error: ${msg.error?.message}`);
+}
+
+/** Forwards file/folder search results to the chat input's context tree. */
+function handleContextSearchResults(host: ChatContainer, msg: any) {
+    host.contextSearchResults = msg.results || [];
 }
 
 /** Adds a file/selection context sent from the editor (e.g. via "Add to Chat" command). */

@@ -3,7 +3,7 @@ import { state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import type { ToolConfirmRequest } from "../chat-input/components/tool-confirm/tool-confirm";
-import "../chat-modal/chat-modal";
+import "../chat-modal/error-modal/error-modal";
 import "../chat-output/chat-output";
 import "../chat-scroll-button/chat-scroll-button.ts";
 import "../chat-session/chat-session";
@@ -14,7 +14,9 @@ import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
     onCancel,
+    onContextAddFile,
     onContextCleared,
+    onContextSearch,
     onCopySession,
     onDeleteMessage,
     onDeleteSession,
@@ -58,6 +60,8 @@ export class ChatContainer extends LitElement {
     @state() hasTokenData: boolean = false;
     @state() showScrollButton: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
+    @state() contextSearchResults: { fileName: string; filePath: string; relativePath: string; isFolder: boolean }[] =
+        [];
 
     // -- Internal state --
     wvChatContext = new ChatContext();
@@ -154,13 +158,15 @@ export class ChatContainer extends LitElement {
                         @scroll-down=${() => this.scrollDown()}
                     ></collama-scroll-down>
                 </div>
-                <collama-chat-modal></collama-chat-modal>
+                <collama-error-modal></collama-error-modal>
                 <collama-chatinput
                     @submit=${(e: CustomEvent) => onSubmit(this, e)}
                     @cancel=${() => onCancel(this)}
                     @summarize-conversation=${() => onSummarizeConversation(this)}
                     @auto-accept=${(e: CustomEvent) => onAutoAccept(e)}
                     @context-cleared=${(e: CustomEvent) => onContextCleared(this, e)}
+                    @context-search=${(e: CustomEvent) => onContextSearch(e)}
+                    @context-add-file=${(e: CustomEvent) => onContextAddFile(e)}
                     @tool-confirm-accept=${(e: CustomEvent) => onToolConfirmAccept(this, e)}
                     @tool-confirm-accept-all=${(e: CustomEvent) => onToolConfirmAcceptAll(this, e)}
                     @tool-confirm-cancel=${(e: CustomEvent) => onToolConfirmCancel(this, e)}
@@ -169,6 +175,7 @@ export class ChatContainer extends LitElement {
                     .agentToken=${this.agent_token}
                     .hasTokenData=${this.hasTokenData}
                     .toolConfirmRequest=${this.toolConfirmRequest}
+                    .contextSearchResults=${this.contextSearchResults}
                 ></collama-chatinput>
             </div>
             <collama-loading-snake .active=${this.isLoading}></collama-loading-snake>
