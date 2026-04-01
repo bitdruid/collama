@@ -1,11 +1,12 @@
 import { html, TemplateResult } from "lit";
-import { state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
 
 import "./prompt-gallery-buttons";
 import { galleryStyles } from "./styles";
 
+@customElement("collama-prompt-gallery")
 export class PromptGallery extends BasePopup {
     static styles = [basePopupStyles, galleryStyles];
 
@@ -132,5 +133,3 @@ export class PromptGallery extends BasePopup {
         `;
     }
 }
-
-customElements.define("collama-prompt-gallery", PromptGallery);

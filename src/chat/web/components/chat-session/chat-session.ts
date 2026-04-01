@@ -1,6 +1,6 @@
 // src/components/chat-sessions.ts
 import { LitElement, css, html } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 
 import "./components/dropdown/chat-session-dropdown";
 import "./components/header/chat-session-header";

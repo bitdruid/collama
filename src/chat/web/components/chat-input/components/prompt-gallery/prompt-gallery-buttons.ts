@@ -1,8 +1,9 @@
 import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { icons } from "../../../../../utils-front";
 import { galleryButtonStyles } from "./styles";
 
+@customElement("prompt-gallery-buttons")
 export class PromptGalleryButtons extends LitElement {
     static styles = galleryButtonStyles;
 
@@ -88,5 +89,3 @@ export class PromptGalleryButtons extends LitElement {
         `;
     }
 }
-
-customElements.define("prompt-gallery-buttons", PromptGalleryButtons);

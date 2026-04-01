@@ -1,4 +1,5 @@
 import { html, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import type { AttachedContext } from "../../../../../../common/context-chat";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
@@ -26,6 +27,7 @@ export interface ContextSearchResult {
  * @fires context-add-file - Dispatched when a file or folder is added to the context.
  * @fires popup-close - Dispatched (via BasePopup) when the popup closes.
  */
+@customElement("collama-context-search")
 export class ContextTree extends BasePopup {
     static styles = [basePopupStyles, contextTreeStyles];
 
@@ -195,5 +197,3 @@ export class ContextTree extends BasePopup {
         `;
     }
 }
-
-customElements.define("collama-context-search", ContextTree);

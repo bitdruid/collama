@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import type { ToolConfirmRequest } from "../chat-input/components/tool-confirm/tool-confirm";
@@ -44,6 +44,7 @@ import { backendApi } from "./utils";
  * Lit-reactive `messages` snapshot for child components. Delegates user
  * interactions to `handlers-outbound` and host messages to `handlers-inbound`.
  */
+@customElement("collama-chatcontainer")
 export class ChatContainer extends LitElement {
     static styles = chatContainerStyles;
 
@@ -182,5 +183,3 @@ export class ChatContainer extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-chatcontainer", ChatContainer);

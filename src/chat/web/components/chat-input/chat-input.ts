@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { property, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
 import type { ContextSearchResult } from "./components/context-search/context-search";
 import "./components/control-panel/control-panel";
@@ -7,6 +7,7 @@ import "./components/tool-confirm/tool-confirm";
 import type { ToolConfirmRequest } from "./components/tool-confirm/tool-confirm";
 import { chatInputStyles } from "./styles-shared";
 
+@customElement("collama-chatinput")
 export class ChatInput extends LitElement {
     static styles = chatInputStyles;
 
@@ -49,5 +50,3 @@ export class ChatInput extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-chatinput", ChatInput);

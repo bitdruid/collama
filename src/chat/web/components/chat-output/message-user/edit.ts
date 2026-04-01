@@ -1,7 +1,8 @@
 import { LitElement, html } from "lit";
-import { property, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { editStyles } from "./styles";
 
+@customElement("collama-chatedit")
 export class ChatEditMessage extends LitElement {
     static styles = editStyles;
 
@@ -91,5 +92,3 @@ export class ChatEditMessage extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-chatedit", ChatEditMessage);

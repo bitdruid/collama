@@ -1,7 +1,8 @@
 import { html, LitElement } from "lit";
-import { property } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { scrollDownButtonStyles } from "./styles";
 
+@customElement("collama-scroll-down")
 export class ScrollDownButton extends LitElement {
     static styles = scrollDownButtonStyles;
 
@@ -26,5 +27,3 @@ export class ScrollDownButton extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-scroll-down", ScrollDownButton);

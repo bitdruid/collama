@@ -1,4 +1,5 @@
 import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import type { ContextSearchResult } from "../context-search/context-search";
 import "./control-panel-buttons";
@@ -8,6 +9,7 @@ function emit(el: HTMLElement, name: string, detail?: unknown) {
     el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
 }
 
+@customElement("collama-control-panel")
 export class ControlPanel extends LitElement {
     static styles = controlPanelStyles;
 
@@ -100,5 +102,3 @@ export class ControlPanel extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-control-panel", ControlPanel);

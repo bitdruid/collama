@@ -1,4 +1,5 @@
 import { LitElement, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
@@ -121,6 +122,7 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
     return groups;
 }
 
+@customElement("collama-chatoutput")
 export class ChatOutput extends LitElement {
     static styles = outputStyles;
 
@@ -316,5 +318,3 @@ export class ChatOutput extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-chatoutput", ChatOutput);

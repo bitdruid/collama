@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { property, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 
 import { highlightCodeBlock, icons } from "../../../utils-front";
 import { accordionStyles } from "./styles";
@@ -23,6 +23,7 @@ export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group"
  * @property {string} copyCode - Specific text to copy when clicking the copy button (defaults to `code`).
  * @property {string} language - The language identifier for syntax highlighting (e.g., 'typescript', 'python').
  */
+@customElement("collama-accordion")
 export class ChatAccordion extends LitElement {
     static styles = accordionStyles;
 
@@ -169,5 +170,3 @@ export class ChatAccordion extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-accordion", ChatAccordion);
