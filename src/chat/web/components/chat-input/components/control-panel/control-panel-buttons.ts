@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../../utils-front";
 import "../context-search/context-search";
@@ -14,25 +14,15 @@ function emit(el: HTMLElement, name: string, detail?: unknown) {
 export class ControlPanelButtons extends LitElement {
     static styles = controlPanelButtonStyles;
 
-    static get properties() {
-        return {
-            contexts: { type: Array },
-            isLoading: { type: Boolean },
-            agentToken: { type: Number },
-            hasTokenData: { type: Boolean },
-            contextSearchResults: { type: Array },
-        };
-    }
+    @property({ type: Array }) contexts: AttachedContext[] = [];
+    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Number }) agentToken = 0;
+    @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @state() private autoAccept = false;
     @state() private showContextTree = false;
     @state() private showGallery = false;
-
-    contexts: AttachedContext[] = [];
-    isLoading = false;
-    agentToken = 0;
-    hasTokenData = false;
-    contextSearchResults: ContextSearchResult[] = [];
 
     private _handleAutoAccept() {
         this.autoAccept = !this.autoAccept;

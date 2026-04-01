@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
 import type { ContextSearchResult } from "./components/context-search/context-search";
 import "./components/control-panel/control-panel";
@@ -8,25 +8,14 @@ import type { ToolConfirmRequest } from "./components/tool-confirm/tool-confirm"
 import { chatInputStyles } from "./styles-shared";
 
 export class ChatInput extends LitElement {
-    static get properties() {
-        return {
-            contexts: { type: Array },
-            isLoading: { type: Boolean },
-            agentToken: { type: Number },
-            hasTokenData: { type: Boolean },
-            toolConfirmRequest: { type: Object },
-            contextSearchResults: { type: Array },
-        };
-    }
-
     static styles = chatInputStyles;
 
-    contexts: AttachedContext[] = [];
-    isLoading = false;
-    agentToken = 0;
-    hasTokenData = false;
-    toolConfirmRequest: ToolConfirmRequest | null = null;
-    contextSearchResults: ContextSearchResult[] = [];
+    @property({ type: Array }) contexts: AttachedContext[] = [];
+    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Number }) agentToken = 0;
+    @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Object }) toolConfirmRequest: ToolConfirmRequest | null = null;
+    @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @state() private _activePanel: "control-panel" | "tool-confirm" = "control-panel";
 

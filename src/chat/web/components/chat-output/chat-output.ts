@@ -122,19 +122,12 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
 }
 
 export class ChatOutput extends LitElement {
-    static properties = {
-        messages: { state: true },
-        contextStartIndex: { type: Number },
-        isGenerating: { type: Boolean },
-        editingIndex: { state: true },
-    };
-
     static styles = outputStyles;
 
-    messages: ChatHistory[] = [];
-    contextStartIndex: number = 0;
-    isGenerating: boolean = false;
-    editingIndex: number | null = null;
+    @state() messages: ChatHistory[] = [];
+    @property({ type: Number }) contextStartIndex: number = 0;
+    @property({ type: Boolean }) isGenerating: boolean = false;
+    @state() editingIndex: number | null = null;
 
     // private highlightedBlocks = new WeakSet<Element>();
     private renderedMarkdownCache = new Map<string, string>();

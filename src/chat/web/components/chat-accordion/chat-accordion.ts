@@ -1,4 +1,5 @@
 import { LitElement, html } from "lit";
+import { property, state } from "lit/decorators.js";
 
 import { highlightCodeBlock, icons } from "../../../utils-front";
 import { accordionStyles } from "./styles";
@@ -23,27 +24,15 @@ export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group"
  * @property {string} language - The language identifier for syntax highlighting (e.g., 'typescript', 'python').
  */
 export class ChatAccordion extends LitElement {
-    static get properties() {
-        return {
-            label: { type: String },
-            description: { type: String },
-            type: { type: String },
-            expanded: { type: Boolean },
-            code: { type: String },
-            copyCode: { type: String },
-            language: { type: String },
-        };
-    }
-
     static styles = accordionStyles;
 
-    label: string = "";
-    description: string = "";
-    type: AccordionType = "code";
-    expanded: boolean = false;
-    code: string = "";
-    copyCode: string = "";
-    language: string = "";
+    @property({ type: String }) label: string = "";
+    @property({ type: String }) description: string = "";
+    @property({ type: String }) type: AccordionType = "code";
+    @state() expanded: boolean = false;
+    @property({ type: String }) code: string = "";
+    @property({ type: String }) copyCode: string = "";
+    @property({ type: String }) language: string = "";
 
     private _highlighted = false;
     private _copyText = "Copy";

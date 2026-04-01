@@ -29,20 +29,12 @@ export interface ContextSearchResult {
 export class ContextTree extends BasePopup {
     static styles = [basePopupStyles, contextTreeStyles];
 
-    static get properties() {
-        return {
-            results: { type: Array },
-            contexts: { type: Array },
-            searchQuery: { type: String },
-        };
-    }
-
     /** List of search results to display. */
-    results: ContextSearchResult[] = [];
+    @property({ type: Array }) results: ContextSearchResult[] = [];
     /** Array of attached contexts (single source of truth). */
-    contexts: AttachedContext[] = [];
+    @property({ type: Array }) contexts: AttachedContext[] = [];
     /** Current search query text. */
-    searchQuery = "";
+    @property({ type: String }) searchQuery = "";
 
     private _searchTimer: number | null = null;
 

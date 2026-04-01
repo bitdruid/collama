@@ -36,19 +36,11 @@ export class ChatSessions extends LitElement {
         }
     `;
 
-    static properties = {
-        isOpen: { state: true },
-        sessions: { state: true },
-        activeSessionId: { state: true },
-        contextUsed: { state: true },
-        contextMax: { state: true },
-    };
-
-    isOpen = false;
-    sessions: ChatSession[] = [];
-    activeSessionId = "";
-    contextUsed = 0;
-    contextMax = 0;
+    @state() isOpen = false;
+    @state() sessions: ChatSession[] = [];
+    @state() activeSessionId = "";
+    @state() contextUsed = 0;
+    @state() contextMax = 0;
 
     private _onStoreChange = () => this._updateFromStore();
 

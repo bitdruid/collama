@@ -1,10 +1,13 @@
 import { LitElement, html } from "lit";
-import { state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { editStyles } from "./styles";
 
 export class ChatEditMessage extends LitElement {
-    @state()
-    private rows = 1;
+    static styles = editStyles;
+
+    @property({ type: String }) content: string = "";
+    @property({ type: Number }) messageIndex: number = 0;
+    @state() private rows = 1;
 
     firstUpdated() {
         const textarea = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement;
@@ -17,15 +20,6 @@ export class ChatEditMessage extends LitElement {
             this._adjustRows();
         }
     }
-    static properties = {
-        content: { type: String },
-        messageIndex: { type: Number },
-    };
-
-    static styles = editStyles;
-
-    content: string = "";
-    messageIndex: number = 0;
 
     private _handleInput(e: Event) {
         this._adjustRows();

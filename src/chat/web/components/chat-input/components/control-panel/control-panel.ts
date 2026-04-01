@@ -11,23 +11,12 @@ function emit(el: HTMLElement, name: string, detail?: unknown) {
 export class ControlPanel extends LitElement {
     static styles = controlPanelStyles;
 
-    static get properties() {
-        return {
-            userInput: { type: String },
-            contexts: { type: Array },
-            isLoading: { type: Boolean },
-            agentToken: { type: Number },
-            hasTokenData: { type: Boolean },
-            contextSearchResults: { type: Array },
-        };
-    }
-
-    userInput = "";
-    contexts: AttachedContext[] = [];
-    isLoading = false;
-    agentToken = 0;
-    hasTokenData = false;
-    contextSearchResults: ContextSearchResult[] = [];
+    @property({ type: String }) userInput = "";
+    @property({ type: Array }) contexts: AttachedContext[] = [];
+    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Number }) agentToken = 0;
+    @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     //  Lifecycle
 
