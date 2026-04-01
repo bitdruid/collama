@@ -34,7 +34,6 @@ export interface LlmClient {
 
 export interface ChatResult {
     content: string;
-    thinking?: string;
     toolCalls: ToolCall[];
 }
 

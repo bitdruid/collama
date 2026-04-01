@@ -1,27 +1,22 @@
-import { LitElement, html } from "lit";
+import { html, TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
+import { BasePopup } from "../../../template-components/popup/base-popup";
+import { basePopupStyles } from "../../../template-components/popup/styles";
 
 import "./prompt-gallery-buttons";
 import { galleryStyles } from "./styles";
 
-export class PromptGallery extends LitElement {
-    static styles = galleryStyles;
+export class PromptGallery extends BasePopup {
+    static styles = [basePopupStyles, galleryStyles];
 
-    @state() visible = false;
     @state() private _customPrompts: string[] = [];
     @state() private _adding = false;
     @state() private _newPrompt = "";
     private _editingIndex?: number;
 
-    private _close() {
-        this._adding = false;
-        this._newPrompt = "";
-        this._editingIndex = undefined;
-        this.dispatchEvent(new CustomEvent("close-gallery"));
-    }
-
     private _selectPrompt(prompt: string) {
         this.dispatchEvent(new CustomEvent("submit-prompt", { detail: { value: prompt } }));
+        this.close();
     }
 
     connectedCallback() {
@@ -89,51 +84,50 @@ export class PromptGallery extends LitElement {
         this._editingIndex = undefined;
     }
 
-    render() {
+    protected override renderContent(): TemplateResult {
         return html`
-            <div class="panel-content">
-                <div class="panel-header">
-                    <h3>Prompt Gallery</h3>
-                    <span class="close-btn" @click=${this._close}>&#10006;</span>
-                </div>
+            <div class="panel-header">
+                <h3>Prompt Gallery</h3>
+                <span class="close-btn" @click=${() => this.close()}>&#10006;</span>
+            </div>
 
-                <div class="prompt-list">
-                    ${this._customPrompts.map(
-                        (p, index) => html`
-                            <div class="prompt-item">
-                                <div class="prompt-text" @click=${() => this._selectPrompt(p)}>${p}</div>
-                                <div class="prompt-actions">
-                                    <prompt-gallery-buttons
-                                        .index=${index}
-                                        @delete-prompt=${(e: CustomEvent) => this._deletePrompt(e.detail.index)}
-                                        @edit-prompt=${(e: CustomEvent) => this._editPrompt(e.detail.index)}
-                                    ></prompt-gallery-buttons>
-                                </div>
+            <div class="prompt-list">
+                ${this._customPrompts.map(
+                    (p, index) => html`
+                        <div class="prompt-item">
+                            <div class="prompt-text" @click=${() => this._selectPrompt(p)}>${p}</div>
+                            <div class="prompt-actions">
+                                <prompt-gallery-buttons
+                                    .index=${index}
+                                    @delete-prompt=${(e: CustomEvent) => this._deletePrompt(e.detail.index)}
+                                    @edit-prompt=${(e: CustomEvent) => this._editPrompt(e.detail.index)}
+                                ></prompt-gallery-buttons>
                             </div>
-                        `,
-                    )}
-                </div>
+                        </div>
+                    `,
+                )}
+            </div>
 
-                <div class="prompt-add-section">
-                    ${this._adding
-                        ? html`
-                              <textarea
-                                  rows="3"
-                                  class="custom-prompt-input"
-                                  .value=${this._newPrompt}
-                                  @input=${(e: any) => (this._newPrompt = e.target.value)}
-                                  placeholder="Enter your custom prompt..."
-                              ></textarea>
-                          `
-                        : null}
+            <div class="prompt-add-section">
+                ${this._adding
+                    ? html`
+                          <textarea
+                              rows="3"
+                              class="custom-prompt-input"
+                              .value=${this._newPrompt}
+                              @input=${(e: any) => (this._newPrompt = e.target.value)}
+                              placeholder="Enter your custom prompt..."
+                          ></textarea>
+                      `
+                    : null}
 
-                    <prompt-gallery-buttons
-                        .adding=${this._adding}
-                        @add-prompt=${this._startAdding}
-                        @save-new-prompt=${this._saveNewPrompt}
-                        @cancel-new-prompt=${this._cancelAdding}
-                    ></prompt-gallery-buttons>
-                </div>
+                <prompt-gallery-buttons
+                    .adding=${this._adding}
+                    @add-prompt=${this._startAdding}
+                    @save-new-prompt=${this._saveNewPrompt}
+                    @cancel-new-prompt=${this._cancelAdding}
+                    @close-gallery=${() => this.close()}
+                ></prompt-gallery-buttons>
             </div>
         `;
     }

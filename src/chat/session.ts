@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
-import { ChatHistory } from "../common/context-chat";
-import { sumMsgTokens } from "../common/utils-common";
+import { ChatContext, ChatHistory } from "../common/context-chat";
 import { userConfig } from "../config";
 import { mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
 
@@ -11,10 +10,15 @@ export interface ChatSession {
     id: string;
     title: string;
     customTitle?: boolean;
-    messages: ChatHistory[];
+    messages: ChatContext;
     contextStartIndex: number;
     createdAt: number;
     updatedAt: number;
+}
+
+/** Serialized form of a session as stored in globalState (messages as plain array). */
+interface StoredChatSession extends Omit<ChatSession, "messages"> {
+    messages: ChatHistory[];
 }
 
 /** Key for storing chat sessions in global state. */
@@ -40,7 +44,8 @@ export class Session {
         private extContext: vscode.ExtensionContext,
         private webviewView: vscode.WebviewView,
     ) {
-        this.sessions = this.extContext.globalState.get<ChatSession[]>(CHAT_SESSIONS_KEY, []);
+        const stored = this.extContext.globalState.get<StoredChatSession[]>(CHAT_SESSIONS_KEY, []);
+        this.sessions = stored.map((s) => ({ ...s, messages: new ChatContext(s.messages) }));
         this.activeSessionId = this.extContext.globalState.get<string>(ACTIVE_SESSION_KEY, "");
 
         if (this.sessions.length === 0) {
@@ -93,7 +98,7 @@ export class Session {
         const newSession: ChatSession = {
             id: Session.generateSessionId(),
             title: "New Chat",
-            messages: [],
+            messages: new ChatContext(),
             contextStartIndex: 0,
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -120,7 +125,7 @@ export class Session {
             id: Session.generateSessionId(),
             title: source.title + " (Copy)",
             customTitle: true,
-            messages: JSON.parse(JSON.stringify(source.messages)),
+            messages: new ChatContext(JSON.parse(JSON.stringify(source.messages.getMessages()))),
             contextStartIndex: source.contextStartIndex,
             createdAt: now,
             updatedAt: now,
@@ -135,7 +140,8 @@ export class Session {
      * Persists all sessions and the active session ID to the global state.
      */
     saveSessions() {
-        this.extContext.globalState.update(CHAT_SESSIONS_KEY, this.sessions);
+        const toStore: StoredChatSession[] = this.sessions.map((s) => ({ ...s, messages: s.messages.getMessages() }));
+        this.extContext.globalState.update(CHAT_SESSIONS_KEY, toStore);
         this.extContext.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
     }
 
@@ -160,14 +166,14 @@ export class Session {
      */
     sendSessionsUpdate() {
         const activeSession = this.getActiveSession();
-        const messages = activeSession?.messages || [];
+        const messages = activeSession?.messages.getMessages() || [];
 
         this.webviewView.webview.postMessage({
             type: "sessions-update",
             sessions: mapSessionsToSummaries(this.sessions),
             activeSessionId: this.activeSessionId,
             history: sanitizeMessages(messages),
-            contextUsed: sumMsgTokens(messages),
+            contextUsed: activeSession?.messages.sumTokens() ?? 0,
             contextMax: userConfig.apiTokenContextLenInstruct,
             contextStartIndex: activeSession?.contextStartIndex || 0,
         });

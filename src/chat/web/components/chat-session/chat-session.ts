@@ -2,8 +2,8 @@
 import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
 
+import "./components/dropdown/chat-session-dropdown";
 import "./components/header/chat-session-header";
-import "./components/popup/chat-session-popup";
 
 import { ChatSessionStore } from "./chat-session-store";
 
@@ -21,7 +21,7 @@ export class ChatSessions extends LitElement {
             position: relative;
         }
 
-        .popup-overlay {
+        .dropdown-overlay {
             display: none;
             position: fixed;
             top: 0;
@@ -31,7 +31,7 @@ export class ChatSessions extends LitElement {
             z-index: 1000;
         }
 
-        .popup-overlay.open {
+        .dropdown-overlay.open {
             display: block;
         }
     `;
@@ -114,9 +114,9 @@ export class ChatSessions extends LitElement {
                 .contextMax=${this.contextMax}
             ></collama-chatsession-header>
 
-            <div class="popup-overlay ${this.isOpen ? "open" : ""}" @click=${() => (this.isOpen = false)}></div>
+            <div class="dropdown-overlay ${this.isOpen ? "open" : ""}" @click=${() => (this.isOpen = false)}></div>
 
-            <collama-chatsessions-popup
+            <collama-chatsessions-dropdown
                 .isOpen=${this.isOpen}
                 .sessions=${this.sessions}
                 .activeSessionId=${this.activeSessionId}
@@ -125,7 +125,7 @@ export class ChatSessions extends LitElement {
                 @delete-session=${(e: CustomEvent) => this._handleDeleteSession(e.detail.id)}
                 @rename-session=${(e: CustomEvent) => this._handleRenameSession(e.detail.id, e.detail.newTitle)}
                 @copy-session=${(e: CustomEvent) => this._handleCopySession(e.detail.id)}
-            ></collama-chatsessions-popup>
+            ></collama-chatsessions-dropdown>
         `;
     }
 }

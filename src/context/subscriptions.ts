@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+const { showInformationMessage } = vscode.window;
 
 import { EditorContext } from "../common/context-editor";
 import {
@@ -8,7 +9,6 @@ import {
     requestSimplifyCode,
     requestWriteDocstrings,
 } from "../common/requests";
-import { withProgressNotification } from "../common/utils-common";
 import { registerContextCommand } from "./utils-context";
 
 /**
@@ -51,10 +51,10 @@ export async function handleSelectionWithDiff(callback: (currentContext: EditorC
 
     const originalText = currentContext.selectionText;
     if (!originalText) {
-        vscode.window.showInformationMessage("No selection.");
+        showInformationMessage("No selection.");
         return;
     }
-    await withProgressNotification("collama: Generating…", async () => {
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "collama: Generating…", cancellable: false }, async () => {
         const editedText = await callback(currentContext);
         if (!editedText) {
             return;
@@ -96,10 +96,10 @@ export async function handleSelectionWithDiff(callback: (currentContext: EditorC
                     const edit = new vscode.WorkspaceEdit();
                     edit.replace(currentContext.textEditor.document.uri, currentContext.selectionObject, editedText);
                     await vscode.workspace.applyEdit(edit);
-                    vscode.window.showInformationMessage("Changes applied.");
+                    showInformationMessage("Changes applied.");
                 }
                 if (applyChoice === "Cancel") {
-                    vscode.window.showInformationMessage("Changes discarded.");
+                    showInformationMessage("Changes discarded.");
                 }
                 // only close the active tab if it is still the diff preview
                 const activeEditor = vscode.window.activeTextEditor;
@@ -117,10 +117,10 @@ export async function handleSelectionWithDiff(callback: (currentContext: EditorC
                 const edit = new vscode.WorkspaceEdit();
                 edit.replace(currentContext.textEditor.document.uri, currentContext.selectionObject, editedText);
                 await vscode.workspace.applyEdit(edit);
-                vscode.window.showInformationMessage("Changes applied.");
+                showInformationMessage("Changes applied.");
             }
         } else {
-            vscode.window.showInformationMessage("No changes to apply.");
+            showInformationMessage("No changes to apply.");
         }
     });
 }

@@ -3,6 +3,8 @@ import { ToolCall } from "./llmoptions";
 export interface AttachedContext {
     fileName: string;
     filePath: string;
+    relativePath: string;
+    isFolder: boolean;
     hasSelection: boolean;
     startLine: number;
     endLine: number;
@@ -17,6 +19,7 @@ export interface CustomMessageKeys {
     contexts?: AttachedContext[];
     loading?: boolean;
     msgTokens?: number;
+    id?: string;
 }
 
 export type ChatHistory =
@@ -42,6 +45,33 @@ export type UserMessage = Extract<ChatHistory, { role: "user" | "system" }>;
 export type AssistantMessage = Extract<ChatHistory, { role: "assistant" }>;
 export type ToolMessage = Extract<ChatHistory, { role: "tool" }>;
 
+let messageIdCounter = 0;
+
+function nextMessageId(): string {
+    if (typeof globalThis.crypto?.randomUUID === "function") {
+        return globalThis.crypto.randomUUID();
+    }
+    messageIdCounter++;
+    return `msg_${Date.now()}_${messageIdCounter}`;
+}
+
+function ensureMessageId<T extends ChatHistory>(message: T): T {
+    if (message.customKeys?.id) {
+        return message;
+    }
+    return {
+        ...message,
+        customKeys: {
+            ...message.customKeys,
+            id: nextMessageId(),
+        },
+    };
+}
+
+function ensureMessageIds(messages: ChatHistory[]): ChatHistory[] {
+    return messages.map((message) => ensureMessageId(message));
+}
+
 /**
  * Message history container shared between host and webview.
  *
@@ -51,8 +81,8 @@ export type ToolMessage = Extract<ChatHistory, { role: "tool" }>;
 export class ChatContext {
     private messages: ChatHistory[];
 
-    constructor() {
-        this.messages = [];
+    constructor(messages?: ChatHistory[]) {
+        this.messages = messages ? ensureMessageIds(messages) : [];
     }
 
     /**
@@ -66,7 +96,7 @@ export class ChatContext {
      * Sets the messages (e.g. when loading from a session).
      */
     public setMessages(messages: ChatHistory[]): void {
-        this.messages = messages;
+        this.messages = ensureMessageIds(messages);
     }
 
     /**
@@ -80,7 +110,7 @@ export class ChatContext {
      * Appends a message to the end of the history.
      */
     public push(message: ChatHistory): void {
-        this.messages.push(message);
+        this.messages.push(ensureMessageId(message));
     }
 
     /**
@@ -130,7 +160,7 @@ export class ChatContext {
         if (start < 0 || end > this.messages.length || start > end) {
             return;
         }
-        this.messages.splice(start, end - start, ...messages);
+        this.messages.splice(start, end - start, ...ensureMessageIds(messages));
     }
 
     /**
@@ -150,6 +180,13 @@ export class ChatContext {
             end++;
         }
         return end;
+    }
+
+    /**
+     * Returns the message at the given index, or undefined if out of bounds.
+     */
+    public getMsgByIndex(index: number): ChatHistory | undefined {
+        return this.messages[index];
     }
 
     // -- ToolCall accessors (host-side only) --
@@ -211,4 +248,19 @@ export class ChatContext {
         }
         return true;
     }
+
+    /** Sums cached `msgTokens` across all messages in the context. */
+    public sumTokens(): number {
+        return sumMsgTokens(this.messages);
+    }
+
+    /** Sums cached `msgTokens` for messages in the range [start, end). */
+    public sumTokensInRange(start: number, end: number): number {
+        return sumMsgTokens(this.messages.slice(start, end));
+    }
+}
+
+/** Sums up cached `msgTokens` across all messages. Returns 0 for messages without a cached value. */
+export function sumMsgTokens(messages: ChatHistory[]): number {
+    return messages.reduce((sum, msg) => sum + (msg.customKeys?.msgTokens ?? 0), 0);
 }

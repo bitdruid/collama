@@ -57,5 +57,6 @@ export const themeColors = {
     uiBorderHover: unsafeCSS("var(--vscode-commandCenter-activeBorder)"),
     uiBorderFocus: unsafeCSS("var(--vscode-commandCenter-foreground)"),
     uiBackground: unsafeCSS("var(--vscode-commandCenter-background)"),
+    uiBackgroundDimm: unsafeCSS("var(--vscode-editor-background)"),
     uiBackgroundHover: unsafeCSS("var(--vscode-commandCenter-activeBackground)"),
 } as const;

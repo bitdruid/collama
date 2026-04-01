@@ -1,10 +1,10 @@
-// src/chat/web/components/chat_session/components/popup/styles.ts
+// src/chat/web/components/chat_session/components/dropdown/styles.ts
 import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
 import { themeFonts } from "../../../../styles/theme-fonts";
 
-export const popupStyles = css`
-    .popup-overlay {
+export const dropdownStyles = css`
+    .dropdown-overlay {
         display: none;
         position: absolute;
         top: 0;
@@ -15,11 +15,11 @@ export const popupStyles = css`
         background: var(--vscode-widget-shadow);
     }
 
-    .popup-overlay.open {
+    .dropdown-overlay.open {
         display: block;
     }
 
-    .sessions-popup {
+    .sessions-dropdown {
         display: none;
         position: absolute;
         top: 100%;
@@ -34,7 +34,7 @@ export const popupStyles = css`
         overflow-y: auto;
     }
 
-    .sessions-popup.open {
+    .sessions-dropdown.open {
         display: block;
     }
 `;

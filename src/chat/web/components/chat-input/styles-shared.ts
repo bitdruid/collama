@@ -9,7 +9,7 @@ export const chatInputStyles = css`
         border-radius: 8px;
         border: 2px solid ${themeColors.uiBorder};
         background: ${themeColors.uiBackground};
-    }
+}
 
     .panel {
         display: none;
@@ -27,6 +27,7 @@ export const panelStyles = css`
 
     .panel-content {
         padding: 8px;
+        overflow: visible;
     }
 
     .panel-header {

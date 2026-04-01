@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+const { showErrorMessage, showWarningMessage } = vscode.window;
+
 import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
 
 import { RequestType, sysConfig } from "../config";
@@ -6,7 +8,8 @@ import { logMsg } from "../logging";
 import { ToolCallAccumulator, nextToolId } from "./litellmfix";
 import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
-import Tokenizer, { requestAnthropic, requestOllama, requestOpenAI } from "./utils-common";
+import { requestAnthropic, requestOllama, requestOpenAI } from "./requests";
+import Tokenizer from "./tokenizer";
 
 /**
  * Factory that creates and delegates to the appropriate LLM client implementation
@@ -55,7 +58,7 @@ export class LlmClientFactory implements LlmClient {
 
         const promptTokens = await Tokenizer.calcTokens(settings.prompt);
         if (!checkPredictFitsContextLength(settings.options.num_predict, promptTokens, settings.options.num_ctx)) {
-            vscode.window.showErrorMessage(
+            showErrorMessage(
                 `Prompt (${promptTokens} tokens) exceeds available context window (${settings.options.num_ctx} tokens). Please reduce content.`,
             );
             return "";
@@ -523,7 +526,7 @@ function logPerformance(tokenLimit: number, resultTokens: number, resultDuration
     if (tokenLimit === resultTokens) {
         const msg = "WARNING: Output token limit reached - Reduce input?";
         logMsg(msg);
-        vscode.window.showWarningMessage(msg);
+        showWarningMessage(msg);
     }
 }
 

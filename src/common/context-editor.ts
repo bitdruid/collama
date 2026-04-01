@@ -1,18 +1,35 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
-import Tokenizer from "./utils-common";
+import Tokenizer from "./tokenizer";
+const { showErrorMessage } = vscode.window;
+
+/**
+ * Computes the relative path from workspace root for a given URI.
+ * If the file is not in a workspace, returns the file name.
+ *
+ * @param uri - The URI of the file.
+ * @returns The relative path from workspace root, or the file name if not in a workspace.
+ */
+export function getRelativePath(uri: vscode.Uri): string {
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+    if (workspaceFolder) {
+        return vscode.workspace.asRelativePath(uri);
+    }
+    // Fallback to file name if not in a workspace
+    return uri.fsPath.split("/").pop() || uri.fsPath;
+}
 
 /**
  * Represents the context of an open file in the workspace.
  *
- * @property {string} path - The absolute file system path of the open file.
+ * @property {string} relativePath - The relative path from workspace root.
  * @property {string} content - The full text content of the file.
  * @property {number} tokens - The token count of the file's content, as calculated by the tokenizer.
  * @property {number} [priority] - Optional priority for the file; lower values indicate higher priority for dropping when token limits are exceeded.
  */
 export interface OpenFilesContext {
-    path: string;
+    relativePath: string;
     content: string;
     tokens: number;
     priority?: number; // low prio = drop first
@@ -36,8 +53,10 @@ export interface ContextTokens {
     openFiles: number;
     total: number;
 }
+
 /**
- * Encapsulates the state of the current editor selection and open files.
+ * Encapsulates the state of the current editor, including selection details,
+ * active file content (prefix/suffix), other open files, and calculated token statistics.
  */
 export class EditorContext {
     readonly textEditor: vscode.TextEditor;
@@ -47,6 +66,10 @@ export class EditorContext {
     readonly activeSuffix: string;
     readonly openFiles: OpenFilesContext[];
     readonly tokens: ContextTokens;
+    readonly fileName: string;
+    readonly filePath: string;
+    readonly relativePath: string;
+    readonly isFolder: boolean;
 
     get selectionStartLine(): number {
         return this.selectionObject.start.line;
@@ -69,13 +92,18 @@ export class EditorContext {
     }
 
     /**
-     * Private constructor to enforce creation via {@link Context.create}.
+     * Private constructor to enforce creation via {@link EditorContext.create}.
      * @param editor - The active text editor.
      * @param selection - The current selection.
      * @param selectionText - Trimmed text of the selection.
      * @param prefix - Text before the cursor.
      * @param suffix - Text after the cursor.
      * @param openFiles - List of other open files.
+     * @param tokens - Calculated token counts for the context.
+     * @param fileName - The file name.
+     * @param filePath - The absolute file path.
+     * @param relativePath - The relative path from workspace root.
+     * @param isFolder - Whether the path represents a folder.
      */
     private constructor(
         editor: vscode.TextEditor,
@@ -85,6 +113,10 @@ export class EditorContext {
         suffix: string,
         openFiles: OpenFilesContext[],
         tokens: ContextTokens,
+        fileName: string,
+        filePath: string,
+        relativePath: string,
+        isFolder: boolean,
     ) {
         this.textEditor = editor;
         this.selectionObject = selection;
@@ -93,30 +125,33 @@ export class EditorContext {
         this.activeSuffix = suffix;
         this.openFiles = openFiles;
         this.tokens = tokens;
+        this.fileName = fileName;
+        this.filePath = filePath;
+        this.relativePath = relativePath;
+        this.isFolder = isFolder;
     }
 
     /**
-     * Creates a {@link Context} instance from the current active editor.
+     * Creates an {@link EditorContext} instance from the current active editor.
      *
      * This method gathers the current document, selection, and all other open text files,
-     * calculates token counts for each part using the tokenizer, and returns a new {@link Context}
+     * calculates token counts for each part using the tokenizer, and returns a new {@link EditorContext}
      * object containing the gathered information.
      *
      * If there is no active editor, an error message is shown and the method returns {@code null}.
      *
-     * @returns {Promise<Context|null>} A promise that resolves to a {@link Context} instance
+     * @returns {Promise<EditorContext|null>} A promise that resolves to an {@link EditorContext} instance
      *          representing the current editor state, or {@code null} when no editor is active.
      *
      * @remarks
-     * - The method internally calls {@link Context.calcTokens} to compute token counts.
      * - It filters open documents to those that have an open tab, excluding the active one.
-     * - The returned {@link Context} includes token statistics for prefix, suffix, selection,
+     * - The returned {@link EditorContext} includes token statistics for prefix, suffix, selection,
      *   the active file, and all other open files.
      */
     static async create(): Promise<EditorContext | null> {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
-            vscode.window.showErrorMessage("collama: Could not find active editor!");
+            showErrorMessage("collama: Could not find active editor!");
             return null;
         }
 
@@ -148,7 +183,7 @@ export class EditorContext {
         const openFiles: OpenFilesContext[] = await Promise.all(
             openFileDocs.map(async (doc) => {
                 return {
-                    path: doc.uri.fsPath,
+                    relativePath: getRelativePath(doc.uri),
                     content: doc.getText(),
                     tokens: await Tokenizer.calcTokens(doc.getText()),
                 };
@@ -174,11 +209,29 @@ export class EditorContext {
             total: prefixTokens + suffixTokens + selectionTokens + openFilesTokens,
         };
 
-        return new EditorContext(editor, selection, selectionText, prefix, suffix, openFiles, tokens);
+        // Compute file metadata
+        const fileName = document.fileName.split("/").pop() || document.fileName;
+        const filePath = document.fileName;
+        const relativePath = getRelativePath(document.uri);
+        const isFolder = false; // Editor context is always a file
+
+        return new EditorContext(
+            editor,
+            selection,
+            selectionText,
+            prefix,
+            suffix,
+            openFiles,
+            tokens,
+            fileName,
+            filePath,
+            relativePath,
+            isFolder,
+        );
     }
 
     /**
-     * Recreats the current {@link Context} instance with open files pruned to fit within the specified token limit.
+     * Recreates the current {@link EditorContext} instance with open files pruned to fit within the specified token limit.
      * The context will not be fetched again - the current context is used as a base.
      *
      * The method calculates the number of tokens that are fixed (prefix, suffix, and selection). If the remaining
@@ -187,7 +240,7 @@ export class EditorContext {
      * exceeding the remaining token budget.
      *
      * @param maxTokens - The maximum number of tokens allowed for the resulting context.
-     * @returns A new {@link Context} instance containing the same editor, selection, and active file content,
+     * @returns A new {@link EditorContext} instance containing the same editor, selection, and active file content,
      *          but with a subset of open files that fit within the token budget.
      */
     recreateTokenLimit(maxTokens: number): EditorContext {
@@ -211,6 +264,10 @@ export class EditorContext {
                     openFiles: 0,
                     total: fixedTokens,
                 },
+                this.fileName,
+                this.filePath,
+                this.relativePath,
+                this.isFolder,
             );
         }
 
@@ -226,7 +283,7 @@ export class EditorContext {
                 openFilesTokens += file.tokens;
             } else {
                 logMsg(
-                    `CONTEXT - Dropped file ${path.basename(file.path)} [file-tokens=${file.tokens} / remaining=${remaining}]`,
+                    `CONTEXT - Dropped file ${path.basename(file.relativePath)} [file-tokens=${file.tokens} / remaining=${remaining}]`,
                 );
             }
         }
@@ -246,6 +303,10 @@ export class EditorContext {
                 openFiles: openFilesTokens,
                 total: fixedTokens + openFilesTokens,
             },
+            this.fileName,
+            this.filePath,
+            this.relativePath,
+            this.isFolder,
         );
     }
 }

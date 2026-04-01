@@ -29,7 +29,7 @@ export const modelConfigs: ModelConfig[] = [
         modelpattern: ["codeqwen", "qwen2.5-coder", "qwen3-coder"],
         prompt: (openFiles, prefix, suffix) =>
             `${openFiles
-                .map((e) => `<|file_sep|>${e.path}\n${e.content}`)
+                .map((e) => `<|file_sep|>${e.relativePath}\n${e.content}`)
                 .join("")}<|file_sep|><|fim_prefix|>${prefix}<|fim_suffix|>${suffix}<|fim_middle|>`,
         stop: [
             "<|fim_prefix|>",
@@ -45,7 +45,7 @@ export const modelConfigs: ModelConfig[] = [
         modelpattern: ["starcoder:", "starcoder2:"],
         prompt: (openFiles, prefix, suffix) =>
             `${openFiles
-                .map((e) => `<file_sep>${e.path}\n${e.content}`)
+                .map((e) => `<file_sep>${e.relativePath}\n${e.content}`)
                 .join("")}<file_sep><fim_prefix>${prefix}<fim_suffix>${suffix}<fim_middle>`,
         stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "<file_sep>"],
     },

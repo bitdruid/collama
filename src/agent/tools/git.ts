@@ -105,7 +105,7 @@ export async function gitLog_exec(args: {
     includeRemote?: boolean;
 }): Promise<string> {
     const mode = args.mode ?? "commits";
-    logMsg(`Agent - tool use gitLog mode=${mode}`);
+    logMsg(`Agent - use gitLog-tool mode=${mode}`);
 
     const root = getWorkspaceRoot();
     if (!root) {
@@ -132,7 +132,7 @@ export async function gitLog_exec(args: {
             return JSON.stringify({ branches });
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            logMsg(`Agent - gitLog branches error: ${msg}`);
+            logMsg(`Agent - gitLog-tool error: ${msg}`);
             return JSON.stringify({ error: `Failed to list branches: ${msg}` });
         }
     }
@@ -173,11 +173,12 @@ export async function gitLog_exec(args: {
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - gitLog commits error: ${msg}`);
+        logMsg(`Agent - gitLog-tool error: ${msg}`);
         return JSON.stringify({ error: `Failed to get commits: ${msg}` });
     }
 }
 
+export const gitLog_prompt = "gitLog tool: Get git log info — commits or branches.";
 export const gitLog_def = {
     type: "function" as const,
     function: {
@@ -239,7 +240,7 @@ export async function gitDiff_exec(args: {
     filePath?: string;
 }): Promise<string> {
     logMsg(
-        `Agent - tool use gitDiff${args.fromCommit ? ` from=${args.fromCommit}` : ""}${args.toCommit ? ` to=${args.toCommit}` : ""}${args.staged ? " staged" : ""}${args.filePath ? ` file=${args.filePath}` : ""}`,
+        `Agent - use gitDiff-tool${args.fromCommit ? ` from=${args.fromCommit}` : ""}${args.toCommit ? ` to=${args.toCommit}` : ""}${args.staged ? " staged" : ""}${args.filePath ? ` file=${args.filePath}` : ""}`,
     );
 
     const result = await getFirstRepo();
@@ -289,7 +290,7 @@ export async function gitDiff_exec(args: {
             });
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            logMsg(`Agent - gitDiff working tree error: ${msg}`);
+            logMsg(`Agent - gitDiff-tool error: ${msg}`);
             return JSON.stringify({ error: `Failed to get working tree diff: ${msg}` });
         }
     }
@@ -322,11 +323,12 @@ export async function gitDiff_exec(args: {
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - gitDiff commit error: ${msg}`);
+        logMsg(`Agent - gitDiff-tool error: ${msg}`);
         return JSON.stringify({ error: `Failed to get commit diff: ${msg}` });
     }
 }
 
+export const gitDiff_prompt = "gitDiff tool: Get a git diff of working tree or between commits.";
 export const gitDiff_def = {
     type: "function" as const,
     function: {

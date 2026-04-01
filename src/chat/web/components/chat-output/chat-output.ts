@@ -1,9 +1,10 @@
 import { LitElement, html } from "lit";
+import { repeat } from "lit/directives/repeat.js";
 import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import { escapeAttr, highlightAllCodeBlocks, icons } from "../../../utils-front";
+import { escapeAttr, /* highlightAllCodeBlocks, */ icons } from "../../../utils-front";
 import "../chat-accordion/chat-accordion";
-import "../chat-session/components/popup/chat-session-empty";
+import "../chat-session/components/dropdown/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";
@@ -135,18 +136,18 @@ export class ChatOutput extends LitElement {
     isGenerating: boolean = false;
     editingIndex: number | null = null;
 
-    private highlightedBlocks = new WeakSet<Element>();
+    // private highlightedBlocks = new WeakSet<Element>();
     private renderedMarkdownCache = new Map<string, string>();
-    private highlightDebounceTimer: number | null = null;
+    // private highlightDebounceTimer: number | null = null;
 
-    private _autoScroll = true;
+    private _stickyScroll = true;
 
     private _hasScrollbar(): boolean {
         return this.scrollHeight > this.clientHeight;
     }
 
     private _isNearBottom(): boolean {
-        const threshold = 15;
+        const threshold = 5;
         return !this._hasScrollbar() || this.scrollHeight - (this.clientHeight + this.scrollTop) < threshold;
     }
 
@@ -162,15 +163,9 @@ export class ChatOutput extends LitElement {
         return cached;
     };
 
-    private _scrollToBottom() {
-        if (!this._autoScroll) {
-            return;
-        }
-        this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
-    }
-
-    public scrollDown() {
-        this._autoScroll = true;
+    /** Scrolls to bottom and activates sticky scroll. Used by: submit, scroll button, tool-confirm, session switch. */
+    public scrollToBottom() {
+        this._stickyScroll = true;
         this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
     }
 
@@ -180,14 +175,14 @@ export class ChatOutput extends LitElement {
 
         this.addEventListener("wheel", (e: WheelEvent) => {
             if (e.deltaY < 0) {
-                this._autoScroll = false;
+                this._stickyScroll = false;
             }
         });
 
         this.addEventListener("scroll", () => {
             const nearBottom = this._isNearBottom();
-            if (nearBottom && !this._autoScroll) {
-                this._autoScroll = true;
+            if (nearBottom && !this._stickyScroll) {
+                this._stickyScroll = true;
             }
             if (nearBottom !== wasNearBottom) {
                 wasNearBottom = nearBottom;
@@ -219,19 +214,9 @@ export class ChatOutput extends LitElement {
     }
 
     updated(changed: Map<string, unknown>) {
-        if (changed.has("messages")) {
-            if (this.highlightDebounceTimer !== null) {
-                window.clearTimeout(this.highlightDebounceTimer);
-            }
-
-            this.highlightDebounceTimer = window.setTimeout(() => {
-                this.highlightDebounceTimer = null;
-                highlightAllCodeBlocks(this.shadowRoot, this.highlightedBlocks);
-                this._scrollToBottom();
-            }, 250);
-
+        if (changed.has("messages") && this._stickyScroll) {
             requestAnimationFrame(() => {
-                this._scrollToBottom();
+                this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
             });
         }
     }
@@ -259,68 +244,81 @@ export class ChatOutput extends LitElement {
 
         return html`
             <div class="output-container">
-                ${groups.map((group) => {
-                    if (group.type === "tool-group") {
-                        const isOutOfContext = this.contextStartIndex > 0 && group.startIndex < this.contextStartIndex;
-                        const outOfContextClass = isOutOfContext ? "out-of-context" : "";
-                        const label = `Tools used: ${group.tools.length}`;
+                ${repeat(
+                    groups,
+                    (group: MessageGroup) => {
+                        if (group.type === "tool-group") {
+                            return `tool-group-${group.tools[0].customKeys!.id!}`;
+                        }
+                        return group.msg.customKeys!.id!;
+                    },
+                    (group: MessageGroup) => {
+                        if (group.type === "tool-group") {
+                            const isOutOfContext =
+                                this.contextStartIndex > 0 && group.startIndex < this.contextStartIndex;
+                            const outOfContextClass = isOutOfContext ? "out-of-context" : "";
+                            const label = `Tools used: ${group.tools.length}`;
 
-                        return html`
-                            <div class="message tool ${outOfContextClass}">
-                                <div class="bubble-tool">
-                                    <collama-accordion type="tool-group" label="${label}">
-                                        ${group.tools.map((tool) =>
-                                            renderToolMessage({
-                                                msg: tool,
-                                                outOfContextClass: "",
-                                                warningIcon: "",
-                                                bare: true,
-                                            }),
-                                        )}
-                                    </collama-accordion>
+                            return html`
+                                <div class="message tool ${outOfContextClass}">
+                                    <div class="bubble-tool">
+                                        <collama-accordion type="tool-group" label="${label}">
+                                            ${repeat(
+                                                group.tools,
+                                                (tool: ToolMessage) => tool.customKeys!.id!,
+                                                (tool: ToolMessage) =>
+                                                    renderToolMessage({
+                                                        msg: tool,
+                                                        outOfContextClass: "",
+                                                        warningIcon: "",
+                                                        bare: true,
+                                                    }),
+                                            )}
+                                        </collama-accordion>
+                                    </div>
                                 </div>
-                            </div>
-                        `;
-                    }
+                            `;
+                        }
 
-                    const { msg, index } = group;
-                    const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
-                    const outOfContextClass = isOutOfContext ? "out-of-context" : "";
-                    const warningIcon = isOutOfContext
-                        ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>`
-                        : "";
+                        const { msg, index } = group;
+                        const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
+                        const outOfContextClass = isOutOfContext ? "out-of-context" : "";
+                        const warningIcon = isOutOfContext
+                            ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>`
+                            : "";
 
-                    if (msg.role === "user") {
-                        return renderUserMessage({
-                            host: this,
-                            messages,
+                        if (msg.role === "user") {
+                            return renderUserMessage({
+                                host: this,
+                                messages,
+                                msg,
+                                index,
+                                outOfContextClass,
+                                warningIcon,
+                                getCachedMarkdown: this._getCachedMarkdown,
+                            });
+                        }
+
+                        if (msg.role === "assistant") {
+                            const isGeneratingThis = this.isGenerating && index === lastAssistantIndex;
+                            return renderAssistantMessage({
+                                msg,
+                                outOfContextClass,
+                                warningIcon,
+                                isLoading: isGeneratingThis && !msg.content,
+                                isStreaming: isGeneratingThis && !!msg.content,
+                                getCachedMarkdown: this._getCachedMarkdown,
+                            });
+                        }
+
+                        return renderSystemMessage({
                             msg,
-                            index,
                             outOfContextClass,
                             warningIcon,
                             getCachedMarkdown: this._getCachedMarkdown,
                         });
-                    }
-
-                    if (msg.role === "assistant") {
-                        const isGeneratingThis = this.isGenerating && index === lastAssistantIndex;
-                        return renderAssistantMessage({
-                            msg,
-                            outOfContextClass,
-                            warningIcon,
-                            isLoading: isGeneratingThis && !msg.content,
-                            isStreaming: isGeneratingThis && !!msg.content,
-                            getCachedMarkdown: this._getCachedMarkdown,
-                        });
-                    }
-
-                    return renderSystemMessage({
-                        msg,
-                        outOfContextClass,
-                        warningIcon,
-                        getCachedMarkdown: this._getCachedMarkdown,
-                    });
-                })}
+                    },
+                )}
             </div>
         `;
     }

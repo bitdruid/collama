@@ -1,4 +1,4 @@
-// src/chat/web/components/chat_session/components/popup/chat_empty_state.ts
+// src/chat/web/components/chat_session/components/dropdown/chat_empty_state.ts
 import { LitElement, html } from "lit";
 import { customElement } from "lit/decorators.js";
 import { commonStyles } from "../../styles-shared";

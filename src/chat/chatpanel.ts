@@ -2,12 +2,12 @@ import * as vscode from "vscode";
 
 import { Agent, AgentEvent } from "../agent/agent";
 import { resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
-import { ChatContext, ChatHistory } from "../common/context-chat";
-import { EditorContext } from "../common/context-editor";
+import { ChatContext, ChatHistory, sumMsgTokens } from "../common/context-chat";
+import { EditorContext, getRelativePath } from "../common/context-editor";
 import { buildInstructionOptions, ToolCall } from "../common/llmoptions";
 import { checkPredictFitsContextLength } from "../common/models";
-import { chatCompress_Template, chatSummarizeTurn_Template } from "../common/prompt";
-import { populateMsgTokens, sumMsgTokens } from "../common/utils-common";
+import { chatSummarize_Template } from "../common/prompt";
+import { populateMsgTokens } from "../common/tokenizer";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { Session } from "./session";
@@ -35,6 +35,28 @@ export class ChatPanel {
     }
 
     /**
+     * Registry of message type handlers.
+     */
+    private readonly messageHandlers: Record<string, (msg: any, webview: vscode.Webview) => void | Promise<void>> = {
+        "tool-confirm-response": (msg) => resolveToolConfirm(msg.id, msg.value, msg.reason),
+        "chat-ready": (_, webview) => this.handleChatReady(webview),
+        "new-session": () => this.handleNewSession(),
+        "switch-session": (msg) => this.handleSwitchSession(msg),
+        "export-session": (msg) => this.handleExportSession(msg),
+        "rename-session": (msg) => this.handleRenameSession(msg),
+        "copy-session": (msg) => this.handleCopySession(msg),
+        "delete-session": (msg) => this.handleDeleteSession(msg),
+        "delete-messages": (msg) => this.handleDeleteMessages(msg),
+        "auto-accept-all": (msg) => setAutoAcceptAll(msg.enabled),
+        "chat-cancel": (_, webview) => this.handleChatCancel(webview),
+        "summarize-request": (msg, webview) => this.handleSummarizeRequest(msg, webview),
+        "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
+        "context-search": (msg, webview) => this.handleContextSearch(msg, webview),
+        "context-add-file": (msg, webview) => this.handleContextAddFile(msg, webview),
+        log: (msg) => logMsg(`WEBVIEW - ${msg.message}`),
+    };
+
+    /**
      * Renders the initial chat page inside the webview.
      */
     renderPanel() {
@@ -45,113 +67,21 @@ export class ChatPanel {
         setWebview(webview);
 
         webview.onDidReceiveMessage(async (msg) => {
-            if (msg.type === "tool-confirm-response") {
-                resolveToolConfirm(msg.id, msg.value, msg.reason);
-                return;
-            }
-            if (msg.type === "chat-ready") {
-                this.handleChatReady(webview);
-                return;
-            }
-
-            if (msg.type === "new-session") {
-                this.handleNewSession();
-                return;
-            }
-
-            if (msg.type === "switch-session") {
-                this.handleSwitchSession(msg);
-                return;
-            }
-
-            if (msg.type === "export-session") {
-                this.handleExportSession(msg);
-                return;
-            }
-
-            if (msg.type === "rename-session") {
-                this.handleRenameSession(msg);
-                return;
-            }
-
-            if (msg.type === "copy-session") {
-                this.handleCopySession(msg);
-                return;
-            }
-
-            if (msg.type === "delete-session") {
-                this.handleDeleteSession(msg);
-                return;
-            }
-
-            if (msg.type === "update-messages") {
-                this.handleUpdateMessages(msg);
-                return;
-            }
-
-            if (msg.type === "auto-accept-all") {
-                setAutoAcceptAll(msg.enabled);
-                return;
-            }
-
-            if (msg.type === "chat-cancel") {
-                this.handleChatCancel(webview);
-                return;
-            }
-
-            if (msg.type === "summarize-conversation-request") {
-                await this.handleSummarizeConversationRequest(msg, webview);
-                return;
-            }
-
-            if (msg.type === "summarize-turn-request") {
-                await this.handleSummarizeTurnRequest(msg, webview);
-                return;
-            }
-
-            if (msg.type === "chat-request") {
-                await this.handleChatRequest(msg, webview);
-                return;
-            }
-
-            if (msg.type === "log") {
-                logMsg(`WEBVIEW - ${msg.message}`);
+            const handler = this.messageHandlers[msg.type];
+            if (handler) {
+                await handler(msg, webview);
             }
         });
     }
 
-    /**
-     * Sends the current editor context to the webview.
-     *
-     * @param currentContext - The context object containing editor state.
-     */
-    receiveCurrentContext(currentContext: EditorContext) {
-        const document = currentContext.textEditor.document;
-        const fileName = document.fileName.split("/").pop() || document.fileName;
-        const filePath = document.fileName;
-        const hasSelection = currentContext.selectionText.length > 0;
-        const startLine = currentContext.selectionStartLine + 1; // 1-based
-        const endLine = currentContext.selectionEndLine + 1;
-
-        this.webviewView.webview.postMessage({
-            type: "context-update",
-            context: {
-                fileName,
-                filePath,
-                hasSelection,
-                startLine,
-                endLine,
-                content: hasSelection ? currentContext.selectionText : currentContext.activeFileText,
-            },
-        });
-    }
+    // ==================== Message Handlers ====================
 
     /**
      * Handles the chat-ready message by sending initial state to the webview.
      */
     private handleChatReady(webview: vscode.Webview) {
         const activeSession = this.session.getActiveSession();
-        const messages = activeSession?.messages || [];
+        const messages = activeSession?.messages.getMessages() || [];
         const contextMax = userConfig.apiTokenContextLenInstruct;
 
         webview.postMessage({
@@ -159,6 +89,7 @@ export class ChatPanel {
             sessions: mapSessionsToSummaries(this.session.sessions),
             activeSessionId: this.session.activeSessionId,
             history: sanitizeMessages(messages),
+            contextUsed: activeSession?.messages.sumTokens() ?? 0,
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
         });
@@ -186,18 +117,12 @@ export class ChatPanel {
         }
     }
 
-    /** Builds a portable export payload: extension metadata + messages. */
-    private buildExportData(messages: ChatHistory[]) {
-        const { name, version } = this.extContext.extension.packageJSON;
-        return [{ extension: name, version: version }, ...messages];
-    }
-
     /**
      * Opens a read-only preview of a session's chat history as raw JSON.
      */
     private handleExportSession(msg: { sessionId: string }) {
         const session = this.session.sessions.find((s) => s.id === msg.sessionId);
-        const messages = session?.messages || [];
+        const messages = session?.messages.getMessages() || [];
         const json = JSON.stringify(this.buildExportData(messages), null, 2);
         const uri = vscode.Uri.parse(`untitled:session-export-${msg.sessionId}.json`);
         vscode.workspace.openTextDocument(uri).then((doc) => {
@@ -259,72 +184,20 @@ export class ChatPanel {
     }
 
     /**
-     * Handles updating messages for a session.
+     * Handles deleting a turn from a session's message history.
      */
-    private handleUpdateMessages(msg: { messages: ChatHistory[]; sessionId: string; approxTokensFreed: number }) {
-        const { messages, sessionId, approxTokensFreed } = msg;
-        const session = this.session.sessions.find((s) => s.id === sessionId);
+    private handleDeleteMessages(msg: { turnStart: number; turnEnd: number; sessionId: string }) {
+        const { turnStart, turnEnd, sessionId } = msg;
+        const session = this.session.sessions.find((s) => s.id === sessionId)!;
+        const approxTokensFreed = session.messages.sumTokensInRange(turnStart, turnEnd);
         this.session.updateSession(session, (s) => {
-            s.messages = messages;
+            s.messages.removeRange(turnStart, turnEnd);
             if (!s.customTitle) {
-                s.title = Session.generateSessionTitle(messages);
+                s.title = Session.generateSessionTitle(s.messages.getMessages());
             }
         });
         this.session.sendSessionsUpdate();
-        logMsg(`Messages updated for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
-    }
-
-    /**
-     * Runs the agent with a 60s startup timeout. The timeout fires only if the agent
-     * never produces a first chunk; any inbound chunk clears it. Callers are responsible
-     * for sending `chat-complete` after post-processing.
-     */
-    private async runAgent(
-        webview: vscode.Webview,
-        messages: ChatHistory[],
-        onChunk: (chunk: string) => void,
-        onEvent?: (event: AgentEvent) => void,
-    ): Promise<void> {
-        const agent = new Agent();
-        this.currentAgent = agent;
-        const timeout = setTimeout(() => {
-            webview.postMessage({ type: "chat-complete" });
-        }, 60000);
-
-        try {
-            // // DEBUG: force error after 3s to test error modal
-            // const forceError = new Promise<never>((_, reject) =>
-            //     setTimeout(() => reject(new Error("Forced debug error after 3s")), 3000),
-            // );
-            await Promise.race([
-                agent.work(
-                    messages,
-                    (chunk) => {
-                        clearTimeout(timeout);
-                        onChunk(chunk);
-                    },
-                    onEvent,
-                ),
-                // forceError,
-            ]);
-        } catch (error) {
-            agent.cancel();
-            const errorInfo = {
-                message: error instanceof Error ? error.message : String(error),
-                stack: error instanceof Error ? error.stack : undefined,
-                name: error instanceof Error ? error.name : "Error",
-            };
-            const exportedChat = JSON.stringify(this.buildExportData(messages), null, 2);
-            const errorMessage = `\n\n--- ERROR ---\n\nname:\n${errorInfo.name}\n\nmessage:\n${errorInfo.message}\n\nstack:\n${errorInfo.stack || "N/A"}`;
-            webview.postMessage({
-                type: "agent-error",
-                exportedChat,
-                errorMessage,
-            });
-        } finally {
-            clearTimeout(timeout);
-            this.currentAgent = null;
-        }
+        logMsg(`Messages deleted for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
     }
 
     /**
@@ -335,81 +208,44 @@ export class ChatPanel {
             logMsg("Cancelling agent execution");
             this.currentAgent.cancel();
             this.currentAgent = null;
+            const cancelledMsg = { role: "assistant" as const, content: "**Interrupted**" };
+            this.session.getActiveSession()?.messages.push(cancelledMsg);
+            webview.postMessage({ type: "agent-add-message", message: cancelledMsg });
         }
-        webview.postMessage({ type: "chat-complete" });
+        webview.postMessage({
+            type: "chat-complete",
+            contextUsed: this.session.getActiveSession()?.messages.sumTokens() ?? 0,
+        });
     }
 
     /**
      * Handles compressing the chat history into a summary.
      */
-    private async handleSummarizeConversationRequest(
-        msg: { messages: ChatHistory[]; assistantIndex: number; sessionId: string },
+    private async handleSummarizeRequest(
+        msg: { turnStart: number; turnEnd: number; sessionId: string },
         webview: vscode.Webview,
     ) {
-        const { messages, assistantIndex, sessionId } = msg;
-        const session = this.session.sessions.find((s) => s.id === sessionId);
+        const { turnStart, turnEnd, sessionId } = msg;
+        const session = this.session.sessions.find((s) => s.id === sessionId)!;
+        const isConversation = turnStart === 0 && turnEnd === session.messages.length();
+        const label = isConversation ? "Conversation" : "Turn";
+        const sourceMessages = session.messages.getMessages().slice(turnStart, turnEnd);
+        const summarized = await this.summarizeContent(webview, sourceMessages, chatSummarize_Template, label);
 
-        const summaryPrompt = [...messages, { role: "user" as const, content: chatCompress_Template }];
-        let summaryContent = "";
-
-        await this.runAgent(webview, summaryPrompt, (chunk) => {
-            summaryContent += chunk;
-            webview.postMessage({ type: "agent-chunk", index: assistantIndex, chunk });
-        });
-
-        const fenced = `\`\`\`Summary: Conversation\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
-        const compressedMessages: ChatHistory[] = [
-            { role: "user" as const, content: "Context summary:" },
-            { role: "assistant" as const, content: fenced },
-        ];
-
-        await populateMsgTokens(compressedMessages);
         this.session.updateSession(session, (s) => {
-            s.messages = compressedMessages;
-            s.contextStartIndex = 0;
+            if (isConversation) {
+                s.messages.setMessages(summarized);
+                s.contextStartIndex = 0;
+            } else {
+                s.messages.replaceRange(turnStart, turnEnd, summarized);
+            }
         });
 
-        webview.postMessage({ type: "conversation-summarized", messages: compressedMessages });
-        webview.postMessage({ type: "chat-complete", contextUsed: sumMsgTokens(compressedMessages) });
-        this.session.sendSessionsUpdate();
-        logMsg(`Compressed chat for session ${sessionId}`);
-    }
-
-    /**
-     * Handles summarizing a single turn (user message + assistant/tool responses).
-     * Replaces the turn with the original user message and a fenced Summary accordion.
-     */
-    private async handleSummarizeTurnRequest(
-        msg: { turnMessages: ChatHistory[]; turnStart: number; turnEnd: number; sessionId: string },
-        webview: vscode.Webview,
-    ) {
-        const { turnMessages, turnStart, turnEnd, sessionId } = msg;
-        const session = this.session.sessions.find((s) => s.id === sessionId);
-
-        const summaryPrompt = [...turnMessages, { role: "user" as const, content: chatSummarizeTurn_Template }];
-        let summaryContent = "";
-
-        await this.runAgent(webview, summaryPrompt, (chunk) => {
-            summaryContent += chunk;
-        });
-
-        const fenced = `\`\`\`Summary: Turn\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
-        const replacementMessages: ChatHistory[] = [
-            { role: "user" as const, content: "Context summary:" },
-            { role: "assistant" as const, content: fenced },
-        ];
-
-        await populateMsgTokens(replacementMessages);
-        // Replace the turn range in the session messages
-        this.session.updateSession(session, (s) => {
-            s.messages.splice(turnStart, turnEnd - turnStart, ...replacementMessages);
-        });
-
-        const allMessages = session?.messages || [];
-        webview.postMessage({ type: "turn-summarized", messages: allMessages });
+        const allMessages = isConversation ? summarized : session.messages.getMessages();
+        webview.postMessage({ type: "summary-complete", messages: allMessages, isConversation });
         webview.postMessage({ type: "chat-complete", contextUsed: sumMsgTokens(allMessages) });
         this.session.sendSessionsUpdate();
-        logMsg(`Summarized turn at ${turnStart}-${turnEnd} for session ${sessionId}`);
+        logMsg(`Summarized ${isConversation ? "conversation" : "turn"} for session ${sessionId}`);
     }
 
     /**
@@ -422,9 +258,9 @@ export class ChatPanel {
         let currentIndex = messages.length;
 
         // Update the active session's messages (full history + empty assistant slot)
-        const session = this.session.sessions.find((s) => s.id === sessionId);
+        const session = this.session.sessions.find((s) => s.id === sessionId)!;
         this.session.updateSession(session, (s) => {
-            s.messages = [...messages, { role: "assistant" as const, content: "" }];
+            s.messages.setMessages([...messages, { role: "assistant" as const, content: "" }]);
             if (!s.customTitle) {
                 s.title = Session.generateSessionTitle(messages);
             }
@@ -452,10 +288,10 @@ export class ChatPanel {
 
         await this.runAgent(
             webview,
-            trimmedMessages,
+            new ChatContext(trimmedMessages),
             (chunk) => {
                 this.session.updateSession(session, (s) => {
-                    s.messages[currentIndex].content += chunk;
+                    s.messages.appendContent(currentIndex, chunk);
                 });
                 webview.postMessage({ type: "agent-chunk", index: currentIndex, chunk });
             },
@@ -466,18 +302,21 @@ export class ChatPanel {
 
                 if (event.type === "agent-tool-done") {
                     currentIndex++;
+
                     const customKeys = {
                         toolName: event.toolName as string,
                         toolArgs: event.toolArgs as string,
                         toolTarget: event.toolTarget as string,
                     };
                     this.session.updateSession(session, (s) => {
-                        s.messages.splice(currentIndex, 0, {
-                            role: "tool" as const,
-                            content: "[tool result has been stripped after agent answered]",
-                            tool_call_id: event.toolCallId as string,
-                            customKeys,
-                        });
+                        s.messages.replaceRange(currentIndex, currentIndex, [
+                            {
+                                role: "tool" as const,
+                                content: "[tool result has been stripped after agent answered]",
+                                tool_call_id: event.toolCallId as string,
+                                customKeys,
+                            },
+                        ]);
                     });
                     webview.postMessage({
                         type: "agent-add-message",
@@ -491,8 +330,8 @@ export class ChatPanel {
 
                 if (event.type === "agent-tool-calls") {
                     this.session.updateSession(session, (s) => {
-                        const msg = s.messages[currentIndex];
-                        if (msg.role === "assistant") {
+                        const msg = s.messages.getMsgByIndex(currentIndex);
+                        if (msg?.role === "assistant") {
                             msg.tool_calls = event.toolCalls as ToolCall[];
                         }
                     });
@@ -500,11 +339,14 @@ export class ChatPanel {
 
                 if (event.type === "agent-assistant-new") {
                     currentIndex++;
+
                     this.session.updateSession(session, (s) => {
-                        s.messages.splice(currentIndex, 0, {
-                            role: "assistant" as const,
-                            content: "",
-                        });
+                        s.messages.replaceRange(currentIndex, currentIndex, [
+                            {
+                                role: "assistant" as const,
+                                content: "",
+                            },
+                        ]);
                     });
                     webview.postMessage({
                         type: "agent-add-message",
@@ -515,14 +357,273 @@ export class ChatPanel {
         );
 
         // Tokenize any new messages (assistant + tool) that don't have msgTokens yet
-        await populateMsgTokens(session!.messages);
+        await populateMsgTokens(session.messages.getMessages());
         this.session.saveSessions();
 
         // Notify webview that chat is complete
-        webview.postMessage({ type: "chat-complete", contextUsed: sumMsgTokens(session!.messages) });
+        webview.postMessage({ type: "chat-complete", contextUsed: session.messages.sumTokens() });
 
         // Update sessions list after response completes
         this.session.sendSessionsUpdate();
+    }
+
+    /**
+     * Searches workspace files/folders matching the query and sends results to the webview.
+     */
+    private async handleContextSearch(msg: { query: string }, webview: vscode.Webview) {
+        const query = msg.query?.trim();
+        if (!query) {
+            webview.postMessage({ type: "context-search-results", results: [] });
+            return;
+        }
+
+        const pattern = `**/*${query}*`;
+        const excludePattern = "**/node_modules/**";
+
+        try {
+            const uris = await vscode.workspace.findFiles(pattern, excludePattern, 50);
+            const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+
+            const results = uris.map((uri) => {
+                const fullPath = uri.fsPath;
+                const relativePath = workspaceRoot ? fullPath.replace(workspaceRoot + "/", "") : fullPath;
+                const fileName = fullPath.split("/").pop() || fullPath;
+                return { fileName, filePath: fullPath, relativePath, isFolder: false };
+            });
+
+            // Also search for matching folders
+            const folderUris = await vscode.workspace.findFiles(`${pattern}/**/*`, excludePattern, 50);
+            const seenFolders = new Set<string>();
+            for (const uri of folderUris) {
+                const parts = uri.fsPath.split("/");
+                // Walk up the path to find folders matching the query
+                for (let i = parts.length - 2; i >= 0; i--) {
+                    if (parts[i].toLowerCase().includes(query.toLowerCase())) {
+                        const folderPath = parts.slice(0, i + 1).join("/");
+                        if (!seenFolders.has(folderPath) && folderPath !== workspaceRoot) {
+                            seenFolders.add(folderPath);
+                            const relativePath = workspaceRoot
+                                ? folderPath.replace(workspaceRoot + "/", "")
+                                : folderPath;
+                            results.unshift({
+                                fileName: parts[i],
+                                filePath: folderPath,
+                                relativePath,
+                                isFolder: true,
+                            });
+                        }
+                        break;
+                    }
+                }
+            }
+
+            webview.postMessage({ type: "context-search-results", results: results.slice(0, 50) });
+        } catch {
+            webview.postMessage({ type: "context-search-results", results: [] });
+        }
+    }
+
+    /**
+     * Reads a file or folder and sends it as an attached context to the webview.
+     */
+    private async handleContextAddFile(msg: { filePath: string; isFolder: boolean }, webview: vscode.Webview) {
+        const { filePath, isFolder } = msg;
+
+        try {
+            const uri = vscode.Uri.file(filePath);
+            const fileName = filePath.split("/").pop() || filePath;
+            const relativePath = getRelativePath(uri);
+
+            if (isFolder) {
+                // For folders, list the directory contents as the context
+                const entries = await vscode.workspace.fs.readDirectory(uri);
+                const listing = entries
+                    .map(([name, type]) => {
+                        const prefix = type === vscode.FileType.Directory ? "[dir]  " : "       ";
+                        return `${prefix}${name}`;
+                    })
+                    .join("\n");
+
+                webview.postMessage({
+                    type: "context-update",
+                    context: {
+                        fileName: fileName + "/",
+                        filePath,
+                        relativePath: relativePath + "/",
+                        isFolder: true,
+                        hasSelection: false,
+                        startLine: 0,
+                        endLine: 0,
+                        content: listing,
+                    },
+                });
+            } else {
+                const contentBytes = await vscode.workspace.fs.readFile(uri);
+                const content = Buffer.from(contentBytes).toString("utf8");
+
+                webview.postMessage({
+                    type: "context-update",
+                    context: {
+                        fileName,
+                        filePath,
+                        relativePath,
+                        isFolder: false,
+                        hasSelection: false,
+                        startLine: 0,
+                        endLine: 0,
+                        content,
+                    },
+                });
+            }
+        } catch (err) {
+            logMsg(`Failed to read context file: ${filePath} - ${err}`);
+        }
+    }
+
+    // ==================== Helper Methods ====================
+
+    /**
+     * Sends the current editor context to the webview.
+     *
+     * @param currentContext - The context object containing editor state.
+     */
+    receiveCurrentContext(currentContext: EditorContext) {
+        const hasSelection = currentContext.selectionText.length > 0;
+        const startLine = currentContext.selectionStartLine + 1; // 1-based
+        const endLine = currentContext.selectionEndLine + 1;
+
+        this.webviewView.webview.postMessage({
+            type: "context-update",
+            context: {
+                fileName: currentContext.fileName,
+                filePath: currentContext.filePath,
+                relativePath: currentContext.relativePath,
+                isFolder: currentContext.isFolder,
+                hasSelection,
+                startLine,
+                endLine,
+                content: hasSelection ? currentContext.selectionText : currentContext.activeFileText,
+            },
+        });
+    }
+
+    /** Builds a portable export payload: extension metadata + messages. */
+    private buildExportData(messages: ChatHistory[]) {
+        const { name, version } = this.extContext.extension.packageJSON;
+        return [{ extension: name, version: version }, ...messages];
+    }
+
+    /**
+     * Runs the agent with a 60s startup timeout. The timeout fires only if the agent
+     * never produces a first chunk; any inbound chunk clears it. Callers are responsible
+     * for sending `chat-complete` after post-processing.
+     */
+    private async runAgent(
+        webview: vscode.Webview,
+        messages: ChatContext,
+        onChunk: (chunk: string) => void,
+        onEvent?: (event: AgentEvent) => void,
+    ): Promise<void> {
+        const agent = new Agent();
+        this.currentAgent = agent;
+        const timeout = setTimeout(() => {
+            agent.cancel();
+            webview.postMessage({ type: "chat-complete", contextUsed: messages.sumTokens() });
+        }, 60000);
+
+        try {
+            await agent.work(
+                messages,
+                (chunk) => {
+                    clearTimeout(timeout);
+                    onChunk(chunk);
+                },
+                (event) => {
+                    clearTimeout(timeout);
+                    onEvent?.(event);
+                },
+            );
+        } catch (error) {
+            agent.cancel();
+            const errorInfo = {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                name: error instanceof Error ? error.name : "Error",
+            };
+            const exportedChat = JSON.stringify(this.buildExportData(messages.getMessages()), null, 2);
+            const errorMessage = `\n\n--- ERROR ---\n\nname:\n${errorInfo.name}\n\nmessage:\n${errorInfo.message}\n\nstack:\n${errorInfo.stack || "N/A"}`;
+            webview.postMessage({
+                type: "agent-error",
+                exportedChat,
+                errorMessage,
+            });
+        } finally {
+            clearTimeout(timeout);
+            this.currentAgent = null;
+        }
+    }
+
+    /**
+     * Runs the agent on the given messages and returns the raw summary text.
+     */
+    private async summarizeText(webview: vscode.Webview, sourceMessages: ChatHistory[]): Promise<string> {
+        const prompt = [...sourceMessages, { role: "user" as const, content: chatSummarize_Template }];
+        let text = "";
+        await this.runAgent(webview, new ChatContext(prompt), (chunk) => {
+            text += chunk;
+        });
+        return text;
+    }
+
+    /**
+     * Handles compressing the chat history into a summary.
+     */
+    private async summarizeContent(
+        webview: vscode.Webview,
+        sourceMessages: ChatHistory[],
+        promptTemplate: string,
+        label: string,
+    ): Promise<ChatHistory[]> {
+        if (label === "Conversation") {
+            const messages = new ChatContext(sourceMessages);
+            const turnSummaries: string[] = [];
+            let i = 0;
+            let turnNum = 1;
+            while (i < sourceMessages.length) {
+                const end = messages.getTurnEnd(i);
+                if (end <= i) {
+                    break;
+                }
+                const turnMsgs = sourceMessages.slice(i, end);
+                const text = await this.summarizeText(webview, turnMsgs);
+                turnSummaries.push(`# Turn ${turnNum}\n${text}`);
+                turnNum++;
+                i = end;
+            }
+            const combined = turnSummaries.join("\n\n");
+            const fenced = `\`\`\`Summary: ${label}\n${combined.replace(/`/g, "\\`")}\n\`\`\``;
+            const result: ChatHistory[] = [
+                { role: "user" as const, content: "Context summary:" },
+                { role: "assistant" as const, content: fenced },
+            ];
+            await populateMsgTokens(result);
+            return result;
+        }
+
+        const summaryPrompt = [...sourceMessages, { role: "user" as const, content: promptTemplate }];
+        let summaryContent = "";
+
+        await this.runAgent(webview, new ChatContext(summaryPrompt), (chunk) => {
+            summaryContent += chunk;
+        });
+
+        const fenced = `\`\`\`Summary: ${label}\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
+        const result: ChatHistory[] = [
+            { role: "user" as const, content: "Context summary:" },
+            { role: "assistant" as const, content: fenced },
+        ];
+        await populateMsgTokens(result);
+        return result;
     }
 }
 

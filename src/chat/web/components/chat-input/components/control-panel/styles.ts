@@ -8,6 +8,7 @@ export const controlPanelStyles = css`
     ${panelStyles}
     :host {
         display: block;
+        overflow: visible;
     }
 
     textarea {
@@ -43,6 +44,7 @@ export const controlPanelStyles = css`
 export const controlPanelButtonStyles = css`
     :host {
         display: block;
+        overflow: visible;
     }
 
     button-submit,
@@ -81,9 +83,28 @@ export const controlPanelButtonStyles = css`
 
     button-context {
         background-color: ${themeColors.context};
+        position: relative;
     }
     button-context:hover {
         background-color: ${themeColors.contextHover};
+    }
+
+    .context-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: ${themeColors.usageDanger};
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+        line-height: 1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
 
     button-cancel {
@@ -199,16 +220,23 @@ export const controlPanelButtonStyles = css`
         background: rgba(255, 255, 255, 0.4);
     }
 
-    .context-list {
+    .added-contexts {
         display: flex;
         flex-wrap: wrap;
+        flex-direction: row-reverse;
         gap: 4px;
         align-items: center;
+        margin-top: 4px;
     }
 
     button-row {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
+        position: relative;
+    }
+
+    .context-wrapper {
+        position: relative;
     }
 `;

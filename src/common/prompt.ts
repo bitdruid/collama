@@ -17,75 +17,47 @@ export type PromptParams = {
     snippet?: string;
     fullContext?: string;
     diff?: string;
+    outputFormat?: string;
 };
 
 type PromptTemplate = (p: PromptParams) => string;
 
 /**
  * Prompt template that generates a prompt without the think step.
- * @param {PromptParams} { instruction, snippet, fullContext }
+ * @param {PromptParams} { instruction, snippet, fullContext, outputFormat }
  * @returns {string}
  */
-export const contextCommand_noThink_Template: PromptTemplate = ({ instruction, snippet, fullContext }) =>
-    [
+export const contextCommand_Template: PromptTemplate = ({ instruction, snippet, fullContext, outputFormat }) => {
+    const lines: string[] = [
         "SYSTEM:",
-        "You are a senior code reviewer and editor.",
+        "You are a senior software engineer.",
         "",
         "STRICT RULES:",
         "- Never output full files",
         "- Never explain",
-        "- You MUST output a full code snippet",
-        "",
-        "===== FULL CONTEXT (READ ONLY) =====",
-        fullContext ?? "",
+        "- You MUST output a full snippet",
         "",
         "===== TASK =====",
         "Edit the target snippet according to the instruction.",
         "",
-        "===== INSTRUCTION =====",
-        instruction ?? "",
-        "",
-        "===== TARGET SNIPPET =====",
-        snippet ?? "",
-        "",
-        "===== OUTPUT FORMAT =====",
-        "Raw code without explanations in code fences.",
-    ].join("\n");
+    ];
 
-/**
- * Prompt template that includes a think step for detailed planning.
- * @param {PromptParams} { instruction, snippet, fullContext }
- * @returns {string}
- */
-export const contextCommand_Think_Template: PromptTemplate = ({ instruction, snippet, fullContext }) =>
-    [
-        "SYSTEM:",
-        "You are a senior code reviewer and editor.",
-        "",
-        "STRICT RULES:",
-        "- Never output full files",
-        "- Never repeat context",
-        "- Output must be minimal",
-        "",
-        "===== FULL CONTEXT (READ ONLY) =====",
-        fullContext ?? "",
-        "",
-        "",
-        "===== TASK =====",
-        "1. interpret the instruction and specify them",
-        "2. build a step by step plan how to edit the code to match your interpretation",
-        "3. edit the target snippet according to your plan",
-        "4. output the full target snippet",
-        "",
-        "===== INSTRUCTION =====",
-        instruction ?? "",
-        "",
-        "===== TARGET SNIPPET =====",
-        snippet ?? "",
-        "",
-        "===== OUTPUT FORMAT =====",
-        "Raw code without explanations in code fences.",
-    ].join("\n");
+    if (fullContext) {
+        lines.push("===== FULL CONTEXT (READ ONLY) =====", fullContext, "");
+    }
+
+    if (instruction) {
+        lines.push("===== INSTRUCTION =====", instruction, "");
+    }
+
+    if (snippet) {
+        lines.push("===== TARGET SNIPPET =====", snippet, "");
+    }
+
+    lines.push("===== OUTPUT FORMAT =====", outputFormat ?? "Raw code without explanations in code fences.");
+
+    return lines.join("\n");
+};
 
 /**
  * Prompt template for generating concise commit messages from a git diff.
@@ -94,69 +66,34 @@ export const contextCommand_Think_Template: PromptTemplate = ({ instruction, sni
  * @returns {string}
  */
 export const commitMsgCommand_Template: PromptTemplate = ({ diff }) =>
-    [
-        "SYSTEM:",
-        "You are a senior code reviewer and editor.",
-        "",
-        "STRICT RULES:",
-        "- Never output full files",
-        "- Never explain",
-        "- You MUST output a full code snippet",
-        "",
-        "===== TASK =====",
-        "Edit the target snippet according to the instruction.",
-        "",
-        "===== INSTRUCTION =====",
-        "Write a concise, descriptive commit message for the following git diff.",
-        "- Use conventional commits format (type: description)",
-        "- Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci",
-        "- Keep the first line under 72 characters",
-        "- Be specific about what changed",
-        "- Do not include any explanation, only output the commit message",
-        "- If there are multiple logical changes, use bullet points for the body",
-        "- Keep it minimal",
-        "",
-        "===== TARGET SNIPPET =====",
-        "<diff>",
-        diff ?? "",
-        "</diff>",
-        "",
-        "===== OUTPUT FORMAT =====",
-        "Common git commit message format. Without explanation in code fences.",
-    ].join("\n");
-
-export const chatCompress_Template: string = [
-    "Summarize the entire conversation above in detail.",
+    contextCommand_Template({
+        instruction: [
+            "Write a concise, descriptive commit message for the following git diff.",
+            "- Use conventional commits format (type: description)",
+            "- Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci",
+            "- Keep the first line under 72 characters",
+            "- Be specific about what changed",
+            "- Do not include any explanation, only output the commit message",
+            "- If there are multiple logical changes, use bullet points for the body",
+            "- Keep it minimal",
+        ].join("\n"),
+        snippet: `<diff>\n${diff ?? ""}\n</diff>`,
+        outputFormat: "Common git commit message format. Without explanations in code fences.",
+    });
+export const chatSummarize_Template: string = [
+    "Summarize this exchange. Output only the summary, no preamble.",
     "",
-    "RULES:",
-    "- Cover every distinct topic, task, and thread from the conversation",
-    "- Preserve all decisions, conclusions, open questions, and agreed-upon approaches",
-    "- Include relevant technical details, file names, code patterns, or constraints that were mentioned",
-    "- Scale the length to the conversation — a long conversation deserves a long summary",
-    "- Do not add new information or opinions",
-    "- Do not mention that this is a summary",
+    "Include:",
+    "- The user's request or question",
+    "- The assistant's answer, action, or outcome",
+    "- Key details: file names, values, decisions, constraints",
     "",
-    "OUTPUT FORMAT:",
-    "Use markdown structure to keep the summary scannable:",
-    "- Use ## headers to separate major topics",
-    "- Use bullet points for lists of items, decisions, or findings",
-    "- Write in past tense, third-person neutral",
-].join("\n");
-
-export const chatSummarizeTurn_Template: string = [
-    "Summarize the above user question and the assistant's complete response (including any tool usage and results).",
-    "",
-    "RULES:",
-    "- Capture the user's intent and the key outcome or answer",
-    "- Preserve important technical details, file names, code snippets, and decisions",
-    "- Keep it concise but complete — do not lose actionable information",
-    "- Do not add new information or opinions",
-    "- Do not mention that this is a summary",
-    "",
-    "OUTPUT FORMAT:",
-    "Use markdown structure to keep the summary scannable:",
-    "- Use bullet points for lists of items, decisions, or findings",
-    "- Write in past tense, third-person neutral",
+    "Rules:",
+    "- Use Markdown: ## User Request; ## Assistant Answer",
+    "- Be concise but complete — keep every detail that matters",
+    "- Past tense, neutral tone",
+    "- No opinions, no new information",
+    "- Never mention summary",
 ].join("\n");
 /**
  * System prompt prepended to the agent's conversation history.
@@ -164,11 +101,10 @@ export const chatSummarizeTurn_Template: string = [
  */
 export const agent_Template: string = [
     "Guidelines:",
-    "- Only use tools when the user's request requires reading, searching, or modifying files.",
+    "- Only use tools when the user's request requires direct interaction with files.",
     "- For general questions, greetings, or conversations respond directly without tools.",
-    "- When tools are needed, start by exploring with lsPath at max depth.",
-    "- Prefer reading files over searching patterns.",
     "- Explain your actions and why before making changes.",
+    "- Always make several small edits instead of one large.",
     "- After you finished editing, use getDiagnostics to validate the changes.",
     "- Never repeat yourself. Instead move on to the next step.",
     "- Do not re-check conditions you have already confirmed.",

@@ -5,7 +5,11 @@ import { panelStyles } from "../../styles-shared";
 
 export const galleryStyles = css`
     ${panelStyles}
-    :host {
+    .popup-content {
+        width: 400px;
+        max-height: 50vh;
+        display: flex;
+        flex-direction: column;
         padding: 8px;
     }
 

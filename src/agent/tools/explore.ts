@@ -37,21 +37,21 @@ export function buildIgnorePatterns(root: string): string[] {
 }
 
 /**
- * Executes the readFile operation.
+ * Executes the read-tool operation.
  * Reads the content of a file from the workspace. Supports reading specific line ranges
  * via startLine and endLine arguments (1-based indexing).
  */
-export async function readFile_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
+export async function read_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
     logMsg(
-        `Agent - tool use readFile file=${args.filePath}${args.startLine !== undefined ? ` startLine=${args.startLine}` : ""}${args.endLine !== undefined ? ` endLine=${args.endLine}` : ""}`,
+        `Agent - use read-tool file=${args.filePath}${args.startLine !== undefined ? ` startLine=${args.startLine}` : ""}${args.endLine !== undefined ? ` endLine=${args.endLine}` : ""}`,
     );
-    const ws = secureWorkspace(args.filePath, "readFile");
+    const ws = secureWorkspace(args.filePath, "read");
     if (ws.error) {
         return ws.error;
     }
 
     if (!fs.existsSync(ws.fullPath)) {
-        logAgent(`[readFile] File not found: ${args.filePath}`);
+        logAgent(`[read-tool] File not found: ${args.filePath}`);
         return JSON.stringify({ error: `File not found: ${args.filePath}` });
     }
 
@@ -67,12 +67,13 @@ export async function readFile_exec(args: { filePath: string; startLine?: number
 
     return lines.slice(start, end).join("\n");
 }
-export const readFile_def = {
+export const read_prompt = "read tool: Read file contents. Prefer reading files over grep.";
+export const read_def = {
     type: "function" as const,
     function: {
-        name: "readFile",
+        name: "read",
         description:
-            "Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a specific range (1-based). Prefer reading in 100-line chunks (1-100, 101-200, 201-300, etc.) to keep responses manageable. If no range is provided, reads the entire file.",
+            "Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a specific range. Prefer reading in 100-line chunks (1-100, 101-200, 201-300, etc.). If no range is provided, reads the entire file.",
         parameters: {
             type: "object",
             properties: {
@@ -92,7 +93,7 @@ export const readFile_def = {
 };
 
 /**
- * Executes the searchFiles operation.
+ * Executes the grep-tool operation.
  * Searches file contents for a regex pattern and returns matching lines.
  *
  * @param args - The arguments for the operation.
@@ -100,10 +101,10 @@ export const readFile_def = {
  * @param args.glob - Optional glob pattern to restrict search scope.
  * @returns A JSON string containing the search matches, or an error object.
  */
-export async function searchFiles_exec(args: { pattern: string; glob?: string }): Promise<string> {
-    logMsg(`Agent - tool use searchFiles pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
+export async function grep_exec(args: { pattern: string; glob?: string }): Promise<string> {
+    logMsg(`Agent - use grep-tool pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
 
-    const ws = secureWorkspace(".", "searchFiles");
+    const ws = secureWorkspace(".", "grep");
     if (ws.error) {
         return ws.error;
     }
@@ -116,7 +117,7 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
     }
 
     if (args.glob !== undefined && hasPathTraversal(args.glob)) {
-        logAgent(`[searchFiles] Glob must not contain path traversal (..): ${args.glob}`);
+        logAgent(`[grep-tool] Glob must not contain path traversal (..): ${args.glob}`);
         return JSON.stringify({ error: "Glob must not contain path traversal (..)" });
     }
 
@@ -147,24 +148,23 @@ export async function searchFiles_exec(args: { pattern: string; glob?: string })
 
     return results.length > 0 ? results.join("\n") : "No matches found.";
 }
-export const searchFiles_def = {
+export const grep_prompt = "grep tool: Grep file contents for a regex pattern.";
+export const grep_def = {
     type: "function" as const,
     function: {
-        name: "searchFiles",
+        name: "grep",
         description:
-            "Search file contents for a regex pattern. STRATEGY: Start with broad, common patterns that will definitely match (e.g., a function name, variable name, or keyword). Get results first, then read files to find what you need. Avoid overly specific patterns or complex regex - they often fail. If no results, try a simpler pattern once, then stop.",
+            "Grep file contents for a regex pattern. STRATEGY: Start with broad, common patterns (e.g., a function name, variable name, or keyword), then use complex patterns. If no results, try a simpler pattern once, then stop.",
         parameters: {
             type: "object",
             properties: {
                 pattern: {
                     type: "string",
-                    description:
-                        "Valid regex pattern to search for. Start broad (e.g., 'functionName', 'myVar', 'import') rather than specific context. You'll get results faster and can then read files for details.",
+                    description: "Valid regex pattern to search for.",
                 },
                 glob: {
                     type: "string",
-                    description:
-                        "Optional glob pattern to restrict which files are searched (e.g. '**/*.ts'). Defaults to all files.",
+                    description: "Optional glob pattern to restrict files (e.g. '**/*.ts'). Defaults to all files.",
                 },
             },
             required: ["pattern"],
@@ -173,86 +173,71 @@ export const searchFiles_def = {
 };
 
 /**
- * Executes the lsPath operation.
- * Lists files and folders in a workspace directory, optionally filtered by a glob pattern.
- * Results are capped at {@link MAX_LS_RESULTS} to prevent context overflow.
+ * Executes the glob operation.
  *
  * @param args - The arguments for the operation.
- * @param args.dirPath - Relative path to the directory to list. Use '.' for root.
- * @param args.depth - Optional. Recursion depth (default 2, max 5).
- * @param args.pattern - Optional. Glob pattern to filter results (e.g. '*.ts').
- * @returns A JSON string containing the entries, or an error object.
+ * @param args.pattern - The glob pattern to search for.
+ * @returns A JSON string containing the matched paths, the original pattern,
+ *          and the total count. If an error occurs (e.g., invalid pattern or
+ *          workspace error), the JSON string will contain an `error` property.
  */
-const MAX_LS_RESULTS = 200;
+export async function glob_exec(args: { pattern: string }): Promise<string> {
+    logMsg(`Agent - use glob-tool pattern=${args.pattern}`);
 
-export async function lsPath_exec(args: { dirPath: string; depth?: number; pattern?: string }): Promise<string> {
-    logMsg(
-        `Agent - tool use lsPath dirPath=${args.dirPath}${args.depth ? ` depth=${args.depth}` : ""}${args.pattern ? ` pattern=${args.pattern}` : ""}`,
-    );
-    const ws = secureWorkspace(args.dirPath, "lsPath");
+    const ws = secureWorkspace(".", "glob");
     if (ws.error) {
         return ws.error;
     }
 
-    if (hasPathTraversal(args.dirPath)) {
-        logAgent(`[lsPath] Path must not contain path traversal (..): ${args.dirPath}`);
-        return JSON.stringify({ error: "Path must not contain path traversal (..)" });
+    let pattern = args.pattern;
+
+    // 🔧 Normalize simple filenames → **/filename
+    if (!pattern.includes("/") && !pattern.includes("*")) {
+        pattern = `**/${pattern}`;
     }
 
-    if (args.pattern && hasPathTraversal(args.pattern)) {
-        logAgent(`[lsPath] Pattern must not contain path traversal (..): ${args.pattern}`);
+    if (hasPathTraversal(pattern)) {
+        logAgent(`[glob-tool] Pattern must not contain path traversal (..): ${pattern}`);
         return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
     }
 
-    if (!fs.existsSync(ws.fullPath)) {
-        logAgent(`[lsPath] Path not found: ${args.dirPath}`);
-        return JSON.stringify({ error: `Path not found: ${args.dirPath}` });
+    let matches: string[];
+    try {
+        matches = (
+            await fg(pattern, {
+                cwd: ws.root,
+                dot: false,
+                onlyFiles: false,
+                markDirectories: true,
+                ignore: buildIgnorePatterns(ws.root),
+            })
+        ).filter((f) => isWithinRoot(ws.root, path.join(ws.root, f)));
+    } catch {
+        return JSON.stringify({ error: `Invalid glob pattern: ${args.pattern}` });
     }
 
-    const maxDepth = Math.min(args.depth ?? 2, 5);
-    const entries = (
-        await fg(args.pattern ?? "**/*", {
-            cwd: ws.fullPath,
-            deep: maxDepth,
-            onlyFiles: false,
-            markDirectories: true,
-            dot: false,
-            ignore: buildIgnorePatterns(ws.root),
-        })
-    ).sort();
-
-    const truncated = entries.length > MAX_LS_RESULTS;
-
     return JSON.stringify({
-        entries: truncated ? entries.slice(0, MAX_LS_RESULTS) : entries,
-        dirPath: args.dirPath,
-        total: entries.length,
-        ...(truncated && { truncated: true, showing: MAX_LS_RESULTS }),
+        matches: matches.sort(),
+        pattern: args.pattern,
+        total: matches.length,
     });
 }
-export const lsPath_def = {
+
+export const glob_prompt = "glob tool: Find files and folders by glob pattern.";
+export const glob_def = {
     type: "function" as const,
     function: {
-        name: "lsPath",
-        description:
-            "List files and folders in a workspace directory. Directories end with '/'. Use to explore project structure or find files matching a pattern.",
+        name: "glob",
+        description: "Find files and folders by a valid glob pattern, searching recursively.",
         parameters: {
             type: "object",
             properties: {
-                dirPath: {
-                    type: "string",
-                    description: "Relative path to the directory. Use '.' for the workspace root.",
-                },
-                depth: {
-                    type: "number",
-                    description: "Recursion depth (default 2, max 5).",
-                },
                 pattern: {
                     type: "string",
-                    description: "Glob pattern to filter results (e.g. '**/*.ts'). Defaults to all files.",
+                    description: "Glob pattern (e.g. '**/*.ts', 'src/**/*.js', or just 'file.ts' to search anywhere).",
                 },
             },
-            required: ["dirPath"],
+            required: ["pattern"],
         },
     },
 };

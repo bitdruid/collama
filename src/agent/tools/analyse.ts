@@ -22,11 +22,11 @@ const DIAGNOSTIC_SEVERITY: Record<number, string> = {
  * @param args.severity - Optional. Filter by minimum severity: "error", "warning", "info", "hint". Defaults to "warning".
  */
 export async function getDiagnostics_exec(args: { filePath?: string; severity?: string }): Promise<string> {
-    logMsg(`Agent - tool use getDiagnostics file=${args.filePath ?? "all"} severity=${args.severity ?? "warning"}`);
+    logMsg(`Agent - use getDiagnostics-tool file=${args.filePath ?? "all"} severity=${args.severity ?? "warning"}`);
 
     const root = getWorkspaceRoot();
     if (!root) {
-        logAgent(`[getDiagnostics] No workspace root`);
+        logAgent(`[getDiagnostics-tool] No workspace root`);
         return JSON.stringify({ error: "No workspace root" });
     }
 
@@ -38,7 +38,7 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
             // Single file diagnostics
             const fullPath = path.resolve(root, args.filePath);
             if (!isWithinRoot(root, fullPath)) {
-                logAgent(`[getDiagnostics] Path must not escape the workspace root: ${args.filePath}`);
+                logAgent(`[getDiagnostics-tool] Path must not escape the workspace root: ${args.filePath}`);
                 return JSON.stringify({ error: "Path must not escape the workspace root" });
             }
 
@@ -111,12 +111,14 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[getDiagnostics] Failed to get diagnostics: ${msg}`);
-        logMsg(`Agent - getDiagnostics error: ${msg}`);
+        logAgent(`[getDiagnostics-tool] Failed to get diagnostics: ${msg}`);
+        logMsg(`Agent - getDiagnostics-tool error: ${msg}`);
         return JSON.stringify({ error: `Failed to get diagnostics: ${msg}` });
     }
 }
 
+export const getDiagnostics_prompt =
+    "getDiagnostics tool: Get diagnostics (errors, warnings) from the language server.";
 export const getDiagnostics_def = {
     type: "function" as const,
     function: {

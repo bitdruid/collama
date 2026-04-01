@@ -6,20 +6,13 @@ import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
 import {
     create_def,
     create_exec,
-    deleteFile_def,
-    deleteFile_exec,
-    editFile_def,
-    editFile_exec,
+    delete_def,
+    delete_exec,
+    edit_def,
+    edit_exec,
     resetAutoAcceptEdits,
 } from "./tools/edit";
-import {
-    lsPath_def,
-    lsPath_exec,
-    readFile_def,
-    readFile_exec,
-    searchFiles_def,
-    searchFiles_exec,
-} from "./tools/explore";
+import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
 export { resetAutoAcceptEdits };
 
@@ -93,10 +86,10 @@ export function getToolDefinitions() {
 
 /**
  * Checks if a tool is an edit tool (modifies files).
- * Edit tools are: editFile, create, deleteFile
+ * Edit tools are: edit, create, delete
  */
 function isEditTool(toolName: string): boolean {
-    const editTools = ["editFile", "create", "deleteFile"];
+    const editTools = ["edit", "create", "delete"];
     return editTools.includes(toolName);
 }
 
@@ -148,10 +141,7 @@ export function isWithinRoot(root: string, resolvedPath: string): boolean {
  * Resolves a relative path against the workspace root and validates it doesn't escape.
  * Returns { root, fullPath } on success, or { error } (a ready-to-return JSON string) on failure.
  */
-export function secureWorkspace(
-    relPath: string,
-    toolName: string,
-): { root: string; fullPath: string; error: string } {
+export function secureWorkspace(relPath: string, toolName: string): { root: string; fullPath: string; error: string } {
     const root = getWorkspaceRoot();
     if (!root) {
         logAgent(`[${toolName}] No workspace root`);
@@ -184,20 +174,20 @@ export async function confirmAction(action: string, placeHolder: string): Promis
  * Registry of available tools.
  */
 export const toolRegistry: Record<string, Tool<any, any>> = {
-    readFile: {
-        definition: readFile_def,
+    read: {
+        definition: read_def,
         targetKey: "filePath",
-        execute: readFile_exec,
+        execute: read_exec,
     },
-    searchFiles: {
-        definition: searchFiles_def,
+    grep: {
+        definition: grep_def,
         targetKey: "pattern",
-        execute: searchFiles_exec,
+        execute: grep_exec,
     },
-    lsPath: {
-        definition: lsPath_def,
-        targetKey: "dirPath",
-        execute: lsPath_exec,
+    glob: {
+        definition: glob_def,
+        targetKey: "pattern",
+        execute: glob_exec,
     },
     gitLog: {
         definition: gitLog_def,
@@ -209,20 +199,30 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         targetKey: "filePath",
         execute: gitDiff_exec,
     },
-    editFile: {
-        definition: editFile_def,
+    // bash: {
+    //     definition: bash_def,
+    //     targetKey: "command",
+    //     execute: bash_exec,
+    // },
+    // powershell: {
+    //     definition: powershell_def,
+    //     targetKey: "command",
+    //     execute: powershell_exec,
+    // },
+    edit: {
+        definition: edit_def,
         targetKey: "filePath",
-        execute: editFile_exec,
+        execute: edit_exec,
     },
     create: {
         definition: create_def,
         targetKey: "filePath",
         execute: create_exec,
     },
-    deleteFile: {
-        definition: deleteFile_def,
+    delete: {
+        definition: delete_def,
         targetKey: "filePath",
-        execute: deleteFile_exec,
+        execute: delete_exec,
     },
     getDiagnostics: {
         definition: getDiagnostics_def,

@@ -1,8 +1,8 @@
 import { css } from "lit";
-import { themeColors } from "../../styles/theme-colors";
-import { themeFonts } from "../../styles/theme-fonts";
+import { themeColors } from "../../../styles/theme-colors";
+import { themeFonts } from "../../../styles/theme-fonts";
 
-export const chatModalStyles = css`
+export const baseModalStyles = css`
     :host {
         display: block;
     }
@@ -37,7 +37,7 @@ export const chatModalStyles = css`
 
     .modal-header h3 {
         margin: 0;
-        color: ${themeColors.cancel};
+        color: ${themeColors.uiFontDimm};
     }
 
     .close-btn {
@@ -49,5 +49,9 @@ export const chatModalStyles = css`
 
     .close-btn:hover {
         color: ${themeColors.uiFont};
+    }
+
+    .modal-body {
+        /* Placeholder for body styles */
     }
 `;

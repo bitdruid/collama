@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
 import { registerChatProvider, registerSendToChatCommand } from "./chat/subscriptions";
 import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
-import { initTokenizer } from "./common/utils-common";
+import { initTokenizer } from "./common/tokenizer";
 import { registerConfigAutoUpdateCommand, updateVSConfig } from "./config";
 import {
     registerEditManualCommand,

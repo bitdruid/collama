@@ -45,6 +45,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 **Chat Interface**
 - Multiple chat sessions with custom titles
 - Send selected code/files as context with file references
+- **Search and attach files/folders directly from the chat input** - easily browse and add workspace files to your conversation context
 - Real-time context usage bar with automatic trimming
 - Edit messages, copy sessions, scroll navigation
 - Export chat history to JSON for backup and sharing
@@ -52,7 +53,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Summarize individual turns or entire conversations to reduce context usage
 
 **AI Agent with Tool Calling**
-- File system tools: read, list, search, create, edit files
+- File system tools: read, grep, glob, create, write, delete files
 - Git tools: list commits/branches, view diffs
 - Code analysis: get diagnostics from language server
 - Security: path protection, workspace boundaries, .gitignore integration
@@ -210,16 +211,17 @@ Note: ChatML format is not supported - that means only true FIM models will work
 
 1. Open the Chat view in the sidebar (Collama icon)
 2. Right-click on selected code in editor → **Send to Chat**
-3. Type your message - the context is automatically attached with:
+3. **Add context files/folders**: Click the attachment icon in the chat input to search and attach workspace files or folders directly
+4. Type your message - the context is automatically attached with:
     - File name and path
     - Line number references
     - Selected code or full file content
-4. Monitor token usage with the real-time context bar and agent-token counter
-5. Create multiple chat sessions to organize conversations by topic
-6. Session Management: Copy / rename / delete sessions
-7. Export chat history to JSON for backup and sharing
-8. Use auto-accept all toggle for faster workflow when making multiple edits
-9. Click "Summarize" button to condense entire conversation or individual turns to reduce context usage
+5. Monitor token usage with the real-time context bar and agent-token counter
+6. Create multiple chat sessions to organize conversations by topic
+7. Session Management: Copy / rename / delete sessions
+8. Export chat history to JSON for backup and sharing
+9. Use auto-accept all toggle for faster workflow when making multiple edits
+10. Click "Summarize" button to condense entire conversation or individual turns to reduce context usage
 
 ### Commit Message Generation
 
@@ -237,12 +239,12 @@ Note: ChatML format is not supported - that means only true FIM models will work
 **Available Tools:**
 
 - **File System Tools**
-    - `readFile` - Read the contents of a file in the workspace (supports optional line ranges with automatic chunking to 100-line boundaries for efficient reading)
-    - `searchFiles` - Search file contents for a regex pattern (supports optional glob pattern to filter files)
-    - `lsPath` - List files and folders in a workspace directory (supports recursion depth and glob pattern filtering)
+    - `read` - Read the contents of a file in the workspace
+    - `grep` - Grep file contents for a regex pattern
+    - `glob` - Find files and folders by glob pattern
     - `create` - Create a new file or folder (with content: creates a file with preview; without content: creates a folder)
-    - `editFile` - Edit a file by replacing an exact string match with new content (shows diff preview and asks for confirmation)
-    - `deleteFile` - Delete a file from the workspace (asks for user confirmation)
+    - `write` - Write to a file by replacing an exact string match with new content (shows diff preview and asks for confirmation)
+    - `delete` - Delete a file from the workspace (asks for user confirmation)
 
 - **Git Tools**
     - `gitLog` - Git log info (list commits or list branches with optional filters)
@@ -255,7 +257,7 @@ Note: ChatML format is not supported - that means only true FIM models will work
 
 When `enableEditTools` is disabled (toggle via status bar), the following tools are unavailable:
 
-- `editFile`, `create`, `deleteFile`
+- `write`, `create`, `delete`
 
 The agent can still use read-only tools to explore and analyze your codebase safely.
 

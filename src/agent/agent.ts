@@ -2,14 +2,14 @@ import { ChatContext, ChatHistory } from "../common/context-chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
 import { agent_Template } from "../common/prompt";
-import Tokenizer, { withProgressNotification } from "../common/utils-common";
+import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
+import * as vscode from "vscode";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions, getToolTarget, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
-
 
 /**
  * This class manages the lifecycle of an agent task, including initializing the client,
@@ -55,15 +55,15 @@ export class Agent {
      * @param onEvent  - Optional callback for structured metadata events (e.g. token counts).
      * @returns {Promise<void>}
      */
-    async work(messages: ChatHistory[], onChunk: (chunk: string) => void, onEvent?: (event: AgentEvent) => void) {
-        await withProgressNotification(`collama: Agent running …`, async () => {
+    async work(messages: ChatContext, onChunk: (chunk: string) => void, onEvent?: (event: AgentEvent) => void) {
+        await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "collama: Agent running …", cancellable: false }, async () => {
             this.abortController = new AbortController();
             resetAutoAcceptEdits();
             const signal = this.abortController.signal;
 
             const initMessages: ChatHistory[] = userConfig.agentic
-                ? [{ role: "system", content: agent_Template }, ...messages]
-                : [...messages];
+                ? [{ role: "system", content: agent_Template }, ...messages.getMessages()]
+                : [...messages.getMessages()];
             const history = new AgentContext(initMessages);
 
             try {
@@ -141,9 +141,17 @@ export class Agent {
                         });
                     }
 
-                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history.getMessages()));
+                    // Tokenize messages without customKeys (same as populateMsgTokens)
+                    const messagesWithoutCustomKeys = history.getMessages().map(stripCustomKeys);
+                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(messagesWithoutCustomKeys));
                     logAgent(`Agent Tokens: ${toolTokens}`);
                     onEvent?.({ type: "agent-tokens", tokens: toolTokens });
+
+                    if (toolTokens > userConfig.apiTokenContextLenInstruct) {
+                        throw new Error(
+                            `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
+                        );
+                    }
 
                     if (signal.aborted) {
                         break;
@@ -157,9 +165,6 @@ export class Agent {
                 logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n${errorStack}\n\n`);
                 throw error;
             } finally {
-                if (signal.aborted) {
-                    onChunk("\n\n**Cancelled**");
-                }
                 this.abortController = null;
             }
         });
@@ -171,7 +176,7 @@ export class Agent {
  *
  * Wraps a ChatContext instance to handle message storage, retrieval,
  * and specific optimization logic.
- * TODO: readFile content is currently set to empty in the session
+ * TODO: read content is currently set to empty in the session
  * Agent needs to re-read on each request (save tokens in history).
  * Possible Solution:
  * Session does deduplication of the whole chat by itself
@@ -205,13 +210,13 @@ class AgentContext {
     }
 
     /**
-     * Replaces stale readFile tool results with a short note.
+     * Replaces stale read tool results with a short note.
      * - Full-file reads (no line numbers) evict all previous reads of the same file.
      * - Partial reads evict older reads with identical startLine/endLine arguments.
      */
     public deduplicateReadFile(newToolCallId: string): void {
         const newTc = this.context.findToolCall(newToolCallId);
-        if (!newTc || newTc.function.name !== "readFile") {
+        if (!newTc || newTc.function.name !== "read") {
             return;
         }
         const newArgs = JSON.parse(newTc.function.arguments);
@@ -223,7 +228,7 @@ class AgentContext {
                 continue;
             }
             const tc = this.context.findToolCall(toolCallId);
-            if (!tc || tc.function.name !== "readFile") {
+            if (!tc || tc.function.name !== "read") {
                 continue;
             }
             const args = JSON.parse(tc.function.arguments);

@@ -2,6 +2,9 @@ import { html, LitElement } from "lit";
 import { state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../../utils-front";
+import "../context-search/context-search";
+import type { ContextSearchResult } from "../context-search/context-search";
+import "../prompt-gallery/prompt-gallery";
 import { controlPanelButtonStyles } from "./styles";
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
@@ -17,48 +20,31 @@ export class ControlPanelButtons extends LitElement {
             isLoading: { type: Boolean },
             agentToken: { type: Number },
             hasTokenData: { type: Boolean },
+            contextSearchResults: { type: Array },
         };
     }
 
     @state() private autoAccept = false;
+    @state() private showContextTree = false;
+    @state() private showGallery = false;
 
     contexts: AttachedContext[] = [];
     isLoading = false;
     agentToken = 0;
     hasTokenData = false;
+    contextSearchResults: ContextSearchResult[] = [];
 
     private _handleAutoAccept() {
         this.autoAccept = !this.autoAccept;
         emit(this, "auto-accept", { enabled: this.autoAccept });
     }
 
-    private _formatTokens(n: number): string {
-        return n >= 1000 ? n.toLocaleString("de-DE") : String(n);
+    private _toggleContextTree() {
+        this.showContextTree = true;
     }
 
-    private _renderContexts() {
-        if (this.contexts.length === 0) {
-            return html` <button-context title="Add context"> ${icons.paperclip} </button-context> `;
-        }
-        return html`
-            <div class="context-list">
-                ${this.contexts.map((ctx, i) => {
-                    const label = ctx.hasSelection ? `${ctx.fileName} (${ctx.startLine}-${ctx.endLine})` : ctx.fileName;
-                    return html`
-                        <span class="context-display" title="Context attached">
-                            ${label}
-                            <button
-                                class="context-close"
-                                @click=${() => emit(this, "context-cleared", { index: i })}
-                                title="Remove context"
-                            >
-                                ×
-                            </button>
-                        </span>
-                    `;
-                })}
-            </div>
-        `;
+    private _formatTokens(n: number): string {
+        return n >= 1000 ? n.toLocaleString("de-DE") : String(n);
     }
 
     private _renderAutoAccept() {
@@ -90,11 +76,45 @@ export class ControlPanelButtons extends LitElement {
         `;
     }
 
+    private _renderContextButton() {
+        const hasContext = this.contexts.length > 0;
+        return html`
+            <button-context title="Add context" data-popup-anchor @click=${this._toggleContextTree}>
+                ${icons.paperclip} ${hasContext ? html`<span class="context-badge">${this.contexts.length}</span>` : ""}
+            </button-context>
+            ${this.showContextTree
+                ? html`<collama-context-search
+                      autoShow
+                      .results=${this.contextSearchResults}
+                      .contexts=${this.contexts}
+                      @popup-close=${() => (this.showContextTree = false)}
+                      @context-search=${(e: CustomEvent) => emit(this, "context-search", { query: e.detail.query })}
+                      @context-add-file=${(e: CustomEvent) => emit(this, "context-add-file", e.detail)}
+                      @context-remove-file=${(e: CustomEvent) => {
+                          const index = this.contexts.findIndex((ctx) => ctx.filePath === e.detail.filePath);
+                          if (index !== -1) {
+                              emit(this, "context-cleared", { index });
+                          }
+                      }}
+                  ></collama-context-search>`
+                : ""}
+        `;
+    }
+
     private _renderGallery() {
         return html`
-            <button-gallery title="Open Prompt Gallery" @click=${() => emit(this, "gallery-click")}>
+            <button-gallery title="Open Prompt Gallery" data-popup-anchor @click=${() => (this.showGallery = true)}>
                 ${icons.gallery}
             </button-gallery>
+            ${this.showGallery
+                ? html`<collama-prompt-gallery
+                      autoShow
+                      @popup-close=${() => (this.showGallery = false)}
+                      @submit-prompt=${(e: CustomEvent) => {
+                          emit(this, "submit-prompt", e.detail);
+                      }}
+                  ></collama-prompt-gallery>`
+                : ""}
         `;
     }
 
@@ -123,8 +143,8 @@ export class ControlPanelButtons extends LitElement {
 
         return html`
             <button-row>
-                ${this._renderContexts()} ${this._renderGallery()} ${this._renderCompress()} ${this._renderAutoAccept()}
-                ${this._renderSubmit()}
+                ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
+                ${this._renderAutoAccept()} ${this._renderSubmit()}
             </button-row>
         `;
     }

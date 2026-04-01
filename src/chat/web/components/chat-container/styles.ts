@@ -28,7 +28,7 @@ export const chatContainerStyles = css`
     collama-chatoutput {
         position: absolute;
         inset: 0;
-        overflow-y: auto;
+        overflow-y: scroll;
     }
 
     collama-token-counter {
@@ -38,7 +38,7 @@ export const chatContainerStyles = css`
         z-index: 10;
     }
 
-    collama-chat-modal {
+    collama-error-modal {
         flex: 0 0 auto;
         display: flex;
     }

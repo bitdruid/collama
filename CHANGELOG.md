@@ -3,6 +3,22 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.6.0] - 2025-06-18
+
+### Added
+- Context file/folder search in chat input
+- More detailed conversation summary
+- Delete tool now supports deleting both files and folders (previously files only)
+
+### Fixed
+- Use session state for summarize/delete operations instead of passing messages directly
+- Defer popup-close event and add proper box-sizing to prevent UI issues
+- Scroll timing and copy button state issues resolved
+
+### Changed
+- Lit repeat directive for chat output rendering
+- Tool names: `readFile` → `read`, `lsPath` → `glob`, `searchFiles` → `grep`, `editFile` → `edit`, `createFile`/`createFolder` → `create`, `deleteFile` → `delete`
+
 ## [1.5.1] - 2026-03-25
 
 ### Fixed

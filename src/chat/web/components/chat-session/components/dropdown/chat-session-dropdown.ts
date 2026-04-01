@@ -1,24 +1,24 @@
-// src/chat/web/components/chat_session/components/popup/chat_session_popup.ts
+// src/chat/web/components/chat_session/components/dropdown/chat_session_dropdown.ts
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ChatSession } from "../../chat-session";
 import "./chat-session-empty";
 import "./chat-session-item";
-import { popupStyles } from "./styles";
+import { dropdownStyles } from "./styles";
 
-@customElement("collama-chatsessions-popup")
-export class ChatSessionsPopup extends LitElement {
+@customElement("collama-chatsessions-dropdown")
+export class ChatSessionsDropdown extends LitElement {
     @property({ type: Boolean }) isOpen = false;
     @property({ type: Array }) sessions: ChatSession[] = [];
     @property({ type: String }) activeSessionId = "";
 
-    static styles = popupStyles;
+    static styles = dropdownStyles;
 
     render() {
         const sorted = [...this.sessions].sort((a, b) => b.updatedAt - a.updatedAt);
 
         return html`
-            <div class="sessions-popup ${this.isOpen ? "open" : ""}">
+            <div class="sessions-dropdown ${this.isOpen ? "open" : ""}">
                 ${sorted.length === 0
                     ? html`<collama-empty-state></collama-empty-state>`
                     : sorted.map(
