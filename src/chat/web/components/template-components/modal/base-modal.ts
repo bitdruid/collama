@@ -1,5 +1,6 @@
 import { html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { DismissalController } from "../controllers/dismissal-controller";
 import { baseModalStyles } from "./styles";
 
 /**
@@ -17,12 +18,7 @@ export class BaseModal extends LitElement {
     @property({ type: Boolean }) closeOnOutsideClick = true;
     @property({ type: Boolean }) closeOnEscape = true;
 
-    private _handleDocumentClick: ((e: MouseEvent) => void) | null = null;
-    private _handleKeyDown = (e: KeyboardEvent) => {
-        if (this.closeOnEscape && e.key === "Escape") {
-            this.close();
-        }
-    };
+    private _dismissalController: DismissalController;
 
     /**
      * Show the modal with optional title override
@@ -68,28 +64,14 @@ export class BaseModal extends LitElement {
         }
     }
 
-    /**
-     * Set up document click listener when connected to DOM
-     */
-    connectedCallback() {
-        super.connectedCallback();
-        if (this.closeOnOutsideClick) {
-            this._handleDocumentClick = (e: MouseEvent) => this._onDocumentClick(e);
-            document.addEventListener("click", this._handleDocumentClick, { capture: true });
-        }
-        document.addEventListener("keydown", this._handleKeyDown);
-    }
-
-    /**
-     * Clean up event listeners when disconnected from DOM
-     */
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this._handleDocumentClick) {
-            document.removeEventListener("click", this._handleDocumentClick, { capture: true });
-            this._handleDocumentClick = null;
-        }
-        document.removeEventListener("keydown", this._handleKeyDown);
+    constructor() {
+        super();
+        this._dismissalController = new DismissalController(this, {
+            closeOnOutsideClick: this.closeOnOutsideClick,
+            closeOnEscape: this.closeOnEscape,
+            onDismiss: () => this.close(),
+            onDocumentClick: (e: MouseEvent) => this._onDocumentClick(e),
+        });
     }
 
     /**
@@ -105,7 +87,7 @@ export class BaseModal extends LitElement {
         }
 
         return html`
-            <div class="modal-content ${this._visible ? "fade-in" : "fade-out"}" @keydown=${this._handleKeyDown}>
+            <div class="modal-content ${this._visible ? "fade-in" : "fade-out"}">
                 <div class="modal-header">
                     <h3>${this.title}</h3>
                     <span class="close-btn" @click=${this.close}>&#10006;</span>

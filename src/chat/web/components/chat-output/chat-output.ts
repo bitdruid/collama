@@ -4,8 +4,6 @@ import { repeat } from "lit/directives/repeat.js";
 import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
 import { escapeAttr, /* highlightAllCodeBlocks, */ icons } from "../../../utils-front";
-import "../chat-accordion/chat-accordion";
-import "../chat-session/components/dropdown/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";

@@ -2,9 +2,7 @@ import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../../utils-front";
-import "../context-search/context-search";
-import type { ContextSearchResult } from "../context-search/context-search";
-import "../prompt-gallery/prompt-gallery";
+import type { ContextSearchResult } from "../../../../types";
 import { controlPanelButtonStyles } from "./styles";
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
