@@ -14,6 +14,7 @@ export class DismissalController implements ReactiveController {
     private _closeOnEscape: boolean;
     private _onDismiss: () => void;
     private _onDocumentClick?: (e: MouseEvent) => void;
+    private _closeTimer: number | undefined;
 
     constructor(
         host: ReactiveControllerHost,
@@ -75,6 +76,26 @@ export class DismissalController implements ReactiveController {
             document.removeEventListener("keydown", this._handleKeyDown);
             this._handleKeyDown = null;
         }
+        if (this._closeTimer !== undefined) {
+            clearTimeout(this._closeTimer);
+            this._closeTimer = undefined;
+        }
+    }
+
+    /**
+     * Execute a callback after a delay, with automatic cleanup on disconnect.
+     * Useful for animation delays before closing.
+     * Clears any existing timer before setting a new one.
+     */
+    delayedClose(callback: () => void, delayMs: number = 200) {
+        // Clear any existing timer to prevent multiple callbacks
+        if (this._closeTimer !== undefined) {
+            clearTimeout(this._closeTimer);
+        }
+        this._closeTimer = window.setTimeout(() => {
+            callback();
+            this._closeTimer = undefined;
+        }, delayMs);
     }
 
     private _onDocumentClickHandler(e: MouseEvent) {

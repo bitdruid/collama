@@ -135,6 +135,56 @@ export class ChatOutput extends LitElement {
 
     private _stickyScroll = true;
 
+    // Memoized event handlers for cleanup
+    private handleWheel = (e: WheelEvent) => {
+        if (e.deltaY < 0) {
+            this._stickyScroll = false;
+        }
+    };
+
+    private handleScroll = () => {
+        const nearBottom = this._isNearBottom();
+        if (nearBottom && !this._stickyScroll) {
+            this._stickyScroll = true;
+        }
+        if (nearBottom !== this._wasNearBottom) {
+            this._wasNearBottom = nearBottom;
+            if (nearBottom) {
+                this._clearShowButtonTimer();
+                this.dispatchEvent(
+                    new CustomEvent("near-bottom-changed", {
+                        detail: { nearBottom: true },
+                        bubbles: true,
+                        composed: true,
+                    }),
+                );
+            } else if (this._hasScrollbar()) {
+                this._clearShowButtonTimer();
+                this._showButtonTimer = window.setTimeout(() => {
+                    if (this._hasScrollbar() && !this._isNearBottom()) {
+                        this.dispatchEvent(
+                            new CustomEvent("near-bottom-changed", {
+                                detail: { nearBottom: false },
+                                bubbles: true,
+                                composed: true,
+                            }),
+                        );
+                    }
+                }, 300);
+            }
+        }
+    };
+
+    private _wasNearBottom = true;
+    private _showButtonTimer: number | undefined;
+
+    private _clearShowButtonTimer() {
+        if (this._showButtonTimer !== undefined) {
+            clearTimeout(this._showButtonTimer);
+            this._showButtonTimer = undefined;
+        }
+    }
+
     private _hasScrollbar(): boolean {
         return this.scrollHeight > this.clientHeight;
     }
@@ -163,47 +213,15 @@ export class ChatOutput extends LitElement {
     }
 
     firstUpdated() {
-        let wasNearBottom = true;
-        let showButtonTimer: number | undefined;
+        this.addEventListener("wheel", this.handleWheel);
+        this.addEventListener("scroll", this.handleScroll);
+    }
 
-        this.addEventListener("wheel", (e: WheelEvent) => {
-            if (e.deltaY < 0) {
-                this._stickyScroll = false;
-            }
-        });
-
-        this.addEventListener("scroll", () => {
-            const nearBottom = this._isNearBottom();
-            if (nearBottom && !this._stickyScroll) {
-                this._stickyScroll = true;
-            }
-            if (nearBottom !== wasNearBottom) {
-                wasNearBottom = nearBottom;
-                if (nearBottom) {
-                    clearTimeout(showButtonTimer);
-                    this.dispatchEvent(
-                        new CustomEvent("near-bottom-changed", {
-                            detail: { nearBottom: true },
-                            bubbles: true,
-                            composed: true,
-                        }),
-                    );
-                } else if (this._hasScrollbar()) {
-                    clearTimeout(showButtonTimer);
-                    showButtonTimer = window.setTimeout(() => {
-                        if (this._hasScrollbar() && !this._isNearBottom()) {
-                            this.dispatchEvent(
-                                new CustomEvent("near-bottom-changed", {
-                                    detail: { nearBottom: false },
-                                    bubbles: true,
-                                    composed: true,
-                                }),
-                            );
-                        }
-                    }, 300);
-                }
-            }
-        });
+    disconnectedCallback() {
+        this.removeEventListener("wheel", this.handleWheel);
+        this.removeEventListener("scroll", this.handleScroll);
+        this._clearShowButtonTimer();
+        super.disconnectedCallback();
     }
 
     updated(changed: Map<string, unknown>) {

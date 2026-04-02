@@ -40,7 +40,7 @@ export class BaseModal extends LitElement {
     close() {
         this._visible = false;
         // Wait for fade-out animation to complete before hiding
-        setTimeout(() => {
+        this._dismissalController.delayedClose(() => {
             this._open = false;
         }, 200);
     }

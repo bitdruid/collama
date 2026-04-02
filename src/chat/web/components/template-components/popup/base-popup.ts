@@ -41,7 +41,7 @@ export class BasePopup extends LitElement {
      */
     close() {
         this._visible = false;
-        setTimeout(() => {
+        this._dismissalController.delayedClose(() => {
             this._open = false;
             this.dispatchEvent(new CustomEvent("popup-close", { bubbles: true, composed: true }));
         }, 200);

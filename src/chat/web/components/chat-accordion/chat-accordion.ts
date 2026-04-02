@@ -37,6 +37,8 @@ export class ChatAccordion extends LitElement {
 
     private _highlighted = false;
     private _copyText = "Copy";
+    private _highlightTimer: number | undefined;
+    private _copyResetTimer: number | undefined;
 
     /**
      * Called when the element is added to the document's DOM.
@@ -58,12 +60,25 @@ export class ChatAccordion extends LitElement {
      */
     firstUpdated() {
         if (this.expanded && !this._highlighted) {
-            setTimeout(() => {
+            this._highlightTimer = window.setTimeout(() => {
                 if (this.isConnected && !this._highlighted) {
                     this._highlightCode();
                 }
+                this._highlightTimer = undefined;
             }, 500);
         }
+    }
+
+    disconnectedCallback() {
+        if (this._highlightTimer !== undefined) {
+            clearTimeout(this._highlightTimer);
+            this._highlightTimer = undefined;
+        }
+        if (this._copyResetTimer !== undefined) {
+            clearTimeout(this._copyResetTimer);
+            this._copyResetTimer = undefined;
+        }
+        super.disconnectedCallback();
     }
 
     /**
@@ -89,9 +104,10 @@ export class ChatAccordion extends LitElement {
             await navigator.clipboard.writeText(textToCopy);
             this._copyText = "Copied!";
             this.requestUpdate();
-            setTimeout(() => {
+            this._copyResetTimer = window.setTimeout(() => {
                 this._copyText = "Copy";
                 this.requestUpdate();
+                this._copyResetTimer = undefined;
             }, 1500);
         } catch (err) {
             console.error("Failed to copy:", err);
