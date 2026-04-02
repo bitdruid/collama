@@ -1,14 +1,12 @@
 import { html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import { scrollDownButtonStyles } from "./styles";
 
+@customElement("collama-scroll-down")
 export class ScrollDownButton extends LitElement {
-    static properties = {
-        visible: { type: Boolean },
-    };
-
-    visible: boolean = false;
-
     static styles = scrollDownButtonStyles;
+
+    @property({ type: Boolean }) visible = false;
 
     private _onClick() {
         this.dispatchEvent(new CustomEvent("scroll-down", { bubbles: true, composed: true }));
@@ -29,5 +27,3 @@ export class ScrollDownButton extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-scroll-down", ScrollDownButton);

@@ -1,9 +1,9 @@
+import * as vscode from "vscode";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { LlmClientFactory } from "../common/llmclient";
-import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
-import { agent_Template } from "../common/prompt";
+import { getAgentTemplate } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
-import * as vscode from "vscode";
+import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/types-llm";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
@@ -56,118 +56,121 @@ export class Agent {
      * @returns {Promise<void>}
      */
     async work(messages: ChatContext, onChunk: (chunk: string) => void, onEvent?: (event: AgentEvent) => void) {
-        await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "collama: Agent running …", cancellable: false }, async () => {
-            this.abortController = new AbortController();
-            resetAutoAcceptEdits();
-            const signal = this.abortController.signal;
+        await vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Window, title: "collama: Agent running …", cancellable: false },
+            async () => {
+                this.abortController = new AbortController();
+                resetAutoAcceptEdits();
+                const signal = this.abortController.signal;
 
-            const initMessages: ChatHistory[] = userConfig.agentic
-                ? [{ role: "system", content: agent_Template }, ...messages.getMessages()]
-                : [...messages.getMessages()];
-            const history = new AgentContext(initMessages);
+                const initMessages: ChatHistory[] = userConfig.agentic
+                    ? [{ role: "system", content: getAgentTemplate() }, ...messages.getMessages()]
+                    : [...messages.getMessages()];
+                const history = new AgentContext(initMessages);
 
-            try {
-                this.client = new LlmClientFactory("instruction");
+                try {
+                    this.client = new LlmClientFactory("instruction");
 
-                const settings: LlmChatSettings = {
-                    apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
-                    model: userConfig.apiModelInstruct,
-                    messages: history.getMessages(),
-                    tools: userConfig.agentic ? getToolDefinitions() : [],
-                    options: buildAgentOptions(),
-                    stop: emptyStop(),
-                    signal: signal,
-                };
+                    const settings: LlmChatSettings = {
+                        apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
+                        model: userConfig.apiModelInstruct,
+                        messages: history.getMessages(),
+                        tools: userConfig.agentic ? getToolDefinitions() : [],
+                        options: buildAgentOptions(),
+                        stop: emptyStop(),
+                        signal: signal,
+                    };
 
-                while (true) {
-                    if (signal.aborted) {
-                        break;
-                    }
-
-                    const result = await this.client.chat({ ...settings }, (chunk) => {
-                        if (!signal.aborted) {
-                            onChunk(chunk);
-                        }
-                    });
-
-                    if (result.toolCalls.length === 0) {
-                        break;
-                    }
-
-                    // agent internal history
-                    history.push({
-                        role: "assistant",
-                        content: result.content,
-                        tool_calls: result.toolCalls,
-                    });
-
-                    // push to webview history
-                    onEvent?.({
-                        type: "agent-tool-calls",
-                        toolCalls: result.toolCalls,
-                    });
-
-                    for (const toolCall of result.toolCalls) {
+                    while (true) {
                         if (signal.aborted) {
                             break;
                         }
 
-                        const args = JSON.parse(toolCall.function.arguments);
+                        const result = await this.client.chat({ ...settings }, (chunk) => {
+                            if (!signal.aborted) {
+                                onChunk(chunk);
+                            }
+                        });
 
-                        const hasArgs = Object.keys(args).length > 0;
-                        let argsBody = "";
-                        if (hasArgs) {
-                            argsBody = Object.entries(args)
-                                .map(([key, value]) => `${key}:\n${value}`)
-                                .join("\n");
+                        if (result.toolCalls.length === 0) {
+                            break;
                         }
-                        const toolResult = await executeTool(toolCall.function.name, args);
 
+                        // agent internal history
                         history.push({
-                            role: "tool",
-                            tool_call_id: toolCall.id,
-                            content: toolResult,
+                            role: "assistant",
+                            content: result.content,
+                            tool_calls: result.toolCalls,
                         });
 
-                        history.deduplicateReadFile(toolCall.id);
-
+                        // push to webview history
                         onEvent?.({
-                            type: "agent-tool-done",
-                            toolCallId: toolCall.id,
-                            toolName: toolCall.function.name,
-                            toolArgs: argsBody,
-                            toolTarget: getToolTarget(toolCall.function.name, args),
-                            toolResult: toolResult,
+                            type: "agent-tool-calls",
+                            toolCalls: result.toolCalls,
                         });
+
+                        for (const toolCall of result.toolCalls) {
+                            if (signal.aborted) {
+                                break;
+                            }
+
+                            const args = JSON.parse(toolCall.function.arguments);
+
+                            const hasArgs = Object.keys(args).length > 0;
+                            let argsBody = "";
+                            if (hasArgs) {
+                                argsBody = Object.entries(args)
+                                    .map(([key, value]) => `${key}:\n${value}`)
+                                    .join("\n");
+                            }
+                            const toolResult = await executeTool(toolCall.function.name, args);
+
+                            history.push({
+                                role: "tool",
+                                tool_call_id: toolCall.id,
+                                content: toolResult,
+                            });
+
+                            history.deduplicateReadFile(toolCall.id);
+
+                            onEvent?.({
+                                type: "agent-tool-done",
+                                toolCallId: toolCall.id,
+                                toolName: toolCall.function.name,
+                                toolArgs: argsBody,
+                                toolTarget: getToolTarget(toolCall.function.name, args),
+                                toolResult: toolResult,
+                            });
+                        }
+
+                        // Tokenize messages without customKeys (same as populateMsgTokens)
+                        const messagesWithoutCustomKeys = history.getMessages().map(stripCustomKeys);
+                        const toolTokens = await Tokenizer.calcTokens(JSON.stringify(messagesWithoutCustomKeys));
+                        logAgent(`Agent Tokens: ${toolTokens}`);
+                        onEvent?.({ type: "agent-tokens", tokens: toolTokens });
+
+                        if (toolTokens > userConfig.apiTokenContextLenInstruct) {
+                            throw new Error(
+                                `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
+                            );
+                        }
+
+                        if (signal.aborted) {
+                            break;
+                        }
+
+                        onEvent?.({ type: "agent-assistant-new" });
                     }
-
-                    // Tokenize messages without customKeys (same as populateMsgTokens)
-                    const messagesWithoutCustomKeys = history.getMessages().map(stripCustomKeys);
-                    const toolTokens = await Tokenizer.calcTokens(JSON.stringify(messagesWithoutCustomKeys));
-                    logAgent(`Agent Tokens: ${toolTokens}`);
-                    onEvent?.({ type: "agent-tokens", tokens: toolTokens });
-
-                    if (toolTokens > userConfig.apiTokenContextLenInstruct) {
-                        throw new Error(
-                            `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
-                        );
-                    }
-
-                    if (signal.aborted) {
-                        break;
-                    }
-
-                    onEvent?.({ type: "agent-assistant-new" });
+                } catch (error) {
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    const errorStack = error instanceof Error ? error.stack : "";
+                    logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n${errorStack}\n\n`);
+                    throw error;
+                } finally {
+                    this.abortController = null;
                 }
-            } catch (error) {
-                const errorMsg = error instanceof Error ? error.message : String(error);
-                const errorStack = error instanceof Error ? error.stack : "";
-                logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n${errorStack}\n\n`);
-                throw error;
-            } finally {
-                this.abortController = null;
-            }
-        });
+            },
+        );
     }
 }
 

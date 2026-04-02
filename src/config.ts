@@ -18,8 +18,6 @@ export function setTlsRejectUnauthorized(reject: boolean): void {
     }
 }
 
-export type RequestType = "completion" | "instruction";
-
 /**
  * Registers a configuration change listener that automatically updates the in-memory config
  * when the collama configuration changes.

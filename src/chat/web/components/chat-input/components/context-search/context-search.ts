@@ -1,22 +1,10 @@
 import { html, TemplateResult } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
 import type { AttachedContext } from "../../../../../../common/context-chat";
+import type { ContextSearchResult } from "../../../../types";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
 import { contextTreeStyles } from "./styles";
-
-/**
- * Represents a single search result item.
- */
-export interface ContextSearchResult {
-    /** The name of the file or folder. */
-    fileName: string;
-    /** The absolute path to the file or folder. */
-    filePath: string;
-    /** The relative path of the file or folder from the workspace root. */
-    relativePath: string;
-    /** Flag indicating if the result is a folder. */
-    isFolder: boolean;
-}
 
 /**
  * A context tree component for searching and adding workspace files.
@@ -26,25 +14,26 @@ export interface ContextSearchResult {
  * @fires context-add-file - Dispatched when a file or folder is added to the context.
  * @fires popup-close - Dispatched (via BasePopup) when the popup closes.
  */
+@customElement("collama-context-search")
 export class ContextTree extends BasePopup {
     static styles = [basePopupStyles, contextTreeStyles];
 
-    static get properties() {
-        return {
-            results: { type: Array },
-            contexts: { type: Array },
-            searchQuery: { type: String },
-        };
-    }
-
     /** List of search results to display. */
-    results: ContextSearchResult[] = [];
+    @property({ type: Array }) results: ContextSearchResult[] = [];
     /** Array of attached contexts (single source of truth). */
-    contexts: AttachedContext[] = [];
+    @property({ type: Array }) contexts: AttachedContext[] = [];
     /** Current search query text. */
-    searchQuery = "";
+    @property({ type: String }) searchQuery = "";
 
     private _searchTimer: number | null = null;
+
+    @query("input")
+    private searchInput!: HTMLInputElement;
+
+    // Memoized event handlers
+    private handleSearchInput = (e: Event) => this._handleSearchInput(e);
+    private handleClearSearch = () => this._handleClearSearch();
+    private handleInputKeyDown = (e: KeyboardEvent) => this._handleInputKeyDown(e);
 
     /**
      * Handles search input events with a 200ms debounce.
@@ -69,7 +58,7 @@ export class ContextTree extends BasePopup {
         this.searchQuery = "";
         this.dispatchEvent(new CustomEvent("context-search", { detail: { query: "" }, bubbles: true, composed: true }));
         requestAnimationFrame(() => {
-            this.shadowRoot?.querySelector("input")?.focus();
+            this.searchInput?.focus();
         });
     }
 
@@ -113,7 +102,7 @@ export class ContextTree extends BasePopup {
     override firstUpdated(changedProperties: Map<PropertyKey, unknown>) {
         super.firstUpdated(changedProperties);
         requestAnimationFrame(() => {
-            this.shadowRoot?.querySelector("input")?.focus();
+            this.searchInput?.focus();
         });
     }
 
@@ -141,13 +130,11 @@ export class ContextTree extends BasePopup {
                     type="text"
                     .value=${this.searchQuery}
                     placeholder="Search files and folders..."
-                    @input=${this._handleSearchInput}
-                    @keydown=${this._handleInputKeyDown}
+                    @input=${this.handleSearchInput}
+                    @keydown=${this.handleInputKeyDown}
                 />
                 ${this.searchQuery
-                    ? html`
-                          <button class="clear-btn" @click=${this._handleClearSearch} title="Clear search">✕</button>
-                      `
+                    ? html` <button class="clear-btn" @click=${this.handleClearSearch} title="Clear search">✕</button> `
                     : ""}
             </div>
             <div class="results">
@@ -203,5 +190,3 @@ export class ContextTree extends BasePopup {
         `;
     }
 }
-
-customElements.define("collama-context-search", ContextTree);

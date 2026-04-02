@@ -1,7 +1,8 @@
 import { css, html, LitElement, svg } from "lit";
-import { property } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { themeColors } from "../../styles/theme-colors";
 
+@customElement("collama-loading-snake")
 export class ChatContainerLoading extends LitElement {
     static styles = css`
         :host {
@@ -85,5 +86,3 @@ export class ChatContainerLoading extends LitElement {
         return html`<svg>${svg`<rect x="2" y="2" rx="4" ry="4" />`}</svg>`;
     }
 }
-
-customElements.define("collama-loading-snake", ChatContainerLoading);

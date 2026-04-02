@@ -18,13 +18,13 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
     if (contexts.length > 0) {
         host.currentContexts = [];
     }
-    host.wvChatContext.push({
+    host.chatContext?.push({
         role: "user",
         content: buildUserContent(contexts, content),
         customKeys: contexts.length > 0 ? { contexts } : undefined,
     });
-    const messagesToSend = [...host.wvChatContext.getMessages()];
-    host.wvChatContext.push({ role: "assistant", content: "" });
+    const messagesToSend = [...(host.chatContext?.getMessages() || [])];
+    host.chatContext?.push({ role: "assistant", content: "" });
     host.syncMessages();
 
     host.isLoading = true;
@@ -47,14 +47,14 @@ export function onCancel(host: ChatContainer) {
 
 /** Appends a summarization prompt and sends the full history for conversation summarization. */
 export function onSummarizeConversation(host: ChatContainer) {
-    if (host.isLoading || host.wvChatContext.length() === 0) {
+    if (host.isLoading || !host.chatContext || host.chatContext.length() === 0) {
         return;
     }
 
-    const totalMessages = host.wvChatContext.length();
+    const totalMessages = host.chatContext.length();
 
-    host.wvChatContext.push({ role: "user", content: "Context summary:" });
-    host.wvChatContext.push({ role: "assistant", content: "" });
+    host.chatContext.push({ role: "user", content: "Context summary:" });
+    host.chatContext.push({ role: "assistant", content: "" });
     host.syncMessages();
 
     host.isLoading = true;
@@ -66,14 +66,14 @@ export function onSummarizeConversation(host: ChatContainer) {
 /** Truncates history after the selected user message and re-sends from that point. */
 export function onResendMessage(host: ChatContainer, e: CustomEvent) {
     const messageIndex = e.detail.messageIndex;
-    const msgs = host.wvChatContext.getMessages();
+    const msgs = host.chatContext?.getMessages() || [];
     if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
         return;
     }
 
-    host.wvChatContext.truncate(messageIndex + 1);
-    const messagesToSend = [...host.wvChatContext.getMessages()];
-    host.wvChatContext.push({ role: "assistant", content: "" });
+    host.chatContext?.truncate(messageIndex + 1);
+    const messagesToSend = [...(host.chatContext?.getMessages() || [])];
+    host.chatContext?.push({ role: "assistant", content: "" });
     host.syncMessages();
 
     host.isLoading = true;
@@ -85,7 +85,7 @@ export function onResendMessage(host: ChatContainer, e: CustomEvent) {
 /** Replaces a user message with edited text, re-embeds its original contexts, and re-sends. */
 export function onEditMessage(host: ChatContainer, e: CustomEvent) {
     const { messageIndex, newContent } = e.detail;
-    const msgs = host.wvChatContext.getMessages();
+    const msgs = host.chatContext?.getMessages() || [];
     if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
         return;
     }
@@ -93,14 +93,14 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
     const userContexts = msgs[messageIndex].customKeys?.contexts ?? [];
     const updatedContent = buildUserContent(userContexts, newContent);
 
-    host.wvChatContext.truncate(messageIndex);
-    host.wvChatContext.push({
+    host.chatContext?.truncate(messageIndex);
+    host.chatContext?.push({
         role: "user",
         content: updatedContent,
         customKeys: userContexts.length > 0 ? { contexts: userContexts } : undefined,
     });
-    const messagesToSend = [...host.wvChatContext.getMessages()];
-    host.wvChatContext.push({ role: "assistant", content: "" });
+    const messagesToSend = [...(host.chatContext?.getMessages() || [])];
+    host.chatContext?.push({ role: "assistant", content: "" });
     host.syncMessages();
 
     host.isLoading = true;
@@ -112,18 +112,18 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
 /** Removes a user message and its entire turn (assistant + tool responses), then notifies the host. */
 export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
     const messageIndex = e.detail.messageIndex;
-    const msgs = host.wvChatContext.getMessages();
+    const msgs = host.chatContext?.getMessages() || [];
     if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
         return;
     }
 
-    const turnEnd = host.wvChatContext.getTurnEnd(messageIndex);
-    const approxTokensFreed = host.wvChatContext.sumTokensInRange(messageIndex, turnEnd);
+    const turnEnd = host.chatContext?.getTurnEnd(messageIndex) ?? messageIndex;
+    const approxTokensFreed = host.chatContext?.sumTokensInRange(messageIndex, turnEnd) ?? 0;
 
-    host.wvChatContext.removeRange(messageIndex, turnEnd);
+    host.chatContext?.removeRange(messageIndex, turnEnd);
     host.syncMessages();
 
-    host.contextUsed = host.wvChatContext.sumTokens();
+    host.contextUsed = host.chatContext?.sumTokens() ?? 0;
 
     showToast(`~${approxTokensFreed} tokens freed`);
     logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);
@@ -136,12 +136,12 @@ export function onSummarizeTurn(host: ChatContainer, e: CustomEvent) {
         return;
     }
     const messageIndex = e.detail.messageIndex;
-    const msgs = host.wvChatContext.getMessages();
+    const msgs = host.chatContext?.getMessages() || [];
     if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
         return;
     }
 
-    const turnEnd = host.wvChatContext.getTurnEnd(messageIndex);
+    const turnEnd = host.chatContext?.getTurnEnd(messageIndex) ?? messageIndex;
 
     host.isLoading = true;
 

@@ -1,4 +1,5 @@
 import { LitElement, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 
 import { highlightCodeBlock, icons } from "../../../utils-front";
 import { accordionStyles } from "./styles";
@@ -22,38 +23,33 @@ export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group"
  * @property {string} copyCode - Specific text to copy when clicking the copy button (defaults to `code`).
  * @property {string} language - The language identifier for syntax highlighting (e.g., 'typescript', 'python').
  */
+@customElement("collama-accordion")
 export class ChatAccordion extends LitElement {
-    static get properties() {
-        return {
-            label: { type: String },
-            description: { type: String },
-            type: { type: String },
-            expanded: { type: Boolean },
-            code: { type: String },
-            copyCode: { type: String },
-            language: { type: String },
-        };
-    }
-
     static styles = accordionStyles;
 
-    label: string = "";
-    description: string = "";
-    type: AccordionType = "code";
-    expanded: boolean = false;
-    code: string = "";
-    copyCode: string = "";
-    language: string = "";
+    @property({ type: String }) label: string = "";
+    @property({ type: String }) description: string = "";
+    @property({ type: String }) type: AccordionType = "code";
+    @state() expanded: boolean = false;
+    @property({ type: String }) code: string = "";
+    @property({ type: String }) copyCode: string = "";
+    @property({ type: String }) language: string = "";
 
     private _highlighted = false;
     private _copyText = "Copy";
+    private _highlightTimer: number | undefined;
+    private _copyResetTimer: number | undefined;
 
     /**
      * Called when the element is added to the document's DOM.
-     * Explicitly avoids auto-expansion logic for user code.
+     * Standard code accordions are always expanded by default.
      */
     connectedCallback() {
         super.connectedCallback();
+        // Standard code accordions should always be expanded
+        if (this.type === "code") {
+            this.expanded = true;
+        }
     }
 
     /**
@@ -64,12 +60,25 @@ export class ChatAccordion extends LitElement {
      */
     firstUpdated() {
         if (this.expanded && !this._highlighted) {
-            setTimeout(() => {
+            this._highlightTimer = window.setTimeout(() => {
                 if (this.isConnected && !this._highlighted) {
                     this._highlightCode();
                 }
+                this._highlightTimer = undefined;
             }, 500);
         }
+    }
+
+    disconnectedCallback() {
+        if (this._highlightTimer !== undefined) {
+            clearTimeout(this._highlightTimer);
+            this._highlightTimer = undefined;
+        }
+        if (this._copyResetTimer !== undefined) {
+            clearTimeout(this._copyResetTimer);
+            this._copyResetTimer = undefined;
+        }
+        super.disconnectedCallback();
     }
 
     /**
@@ -95,9 +104,10 @@ export class ChatAccordion extends LitElement {
             await navigator.clipboard.writeText(textToCopy);
             this._copyText = "Copied!";
             this.requestUpdate();
-            setTimeout(() => {
+            this._copyResetTimer = window.setTimeout(() => {
                 this._copyText = "Copy";
                 this.requestUpdate();
+                this._copyResetTimer = undefined;
             }, 1500);
         } catch (err) {
             console.error("Failed to copy:", err);
@@ -180,5 +190,3 @@ export class ChatAccordion extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-accordion", ChatAccordion);

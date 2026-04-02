@@ -2,19 +2,7 @@ import * as vscode from "vscode";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { userConfig } from "../config";
 import { mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
-
-/**
- * Represents a single chat session, including its messages and metadata.
- */
-export interface ChatSession {
-    id: string;
-    title: string;
-    customTitle?: boolean;
-    messages: ChatContext;
-    contextStartIndex: number;
-    createdAt: number;
-    updatedAt: number;
-}
+import type { ChatSession } from "./web/types";
 
 /** Serialized form of a session as stored in globalState (messages as plain array). */
 interface StoredChatSession extends Omit<ChatSession, "messages"> {

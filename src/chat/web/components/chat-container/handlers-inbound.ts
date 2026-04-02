@@ -23,20 +23,28 @@ export function createInboundDispatcher(host: ChatContainer) {
 
 /** Applies session state (history, sessions list, context usage) from a host message. */
 function applySessionState(host: ChatContainer, msg: any) {
-    host.wvChatContext.setMessages(msg.history || []);
-    host.syncMessages();
-    host.sessions = msg.sessions || [];
-    host.activeSessionId = msg.activeSessionId || "";
-    host.contextUsed = msg.contextUsed || 0;
-    host.contextMax = msg.contextMax || 0;
-    host.contextStartIndex = msg.contextStartIndex || 0;
+    const store = ChatSessionStore.instance;
 
-    ChatSessionStore.instance.loadFromBackend({
-        sessions: host.sessions,
-        activeSessionId: host.activeSessionId,
-        contextUsed: host.contextUsed,
-        contextMax: host.contextMax,
+    // Use store's public method to update state
+    store.updateFromBackend({
+        sessions: msg.sessions || [],
+        activeSessionId: msg.activeSessionId || host.activeSessionId,
+        history: msg.history || [],
+        contextUsed: msg.contextUsed || 0,
+        contextMax: msg.contextMax || 0,
     });
+
+    // Refresh reference to store's ChatContext
+    // Note: This is also handled by _onStoreChange event, but we refresh here for immediate UI update
+    host.chatContext = store.getActiveChatContext();
+    host.syncMessages();
+
+    // Update host properties for UI
+    host.sessions = store.sessions;
+    host.activeSessionId = store.activeSessionId;
+    host.contextUsed = store.contextUsed;
+    host.contextMax = store.contextMax;
+    host.contextStartIndex = msg.contextStartIndex || 0;
 }
 
 /** Initializes the component with session history, context usage, and session list from the host. */
@@ -52,26 +60,26 @@ function handleSessionsUpdate(host: ChatContainer, msg: any) {
 
 /** Appends a complete message (e.g. tool call/response) pushed by the agent. */
 function handleAgentAddMessage(host: ChatContainer, msg: any) {
-    host.wvChatContext.push(msg.message);
+    host.chatContext?.push(msg.message);
     host.syncMessages();
 }
 
 /** Appends a streaming text chunk to the message at the given index. */
 function handleAgentChunk(host: ChatContainer, msg: any) {
-    host.wvChatContext.appendContent(msg.index, msg.chunk);
+    host.chatContext?.appendContent(msg.index, msg.chunk);
     host.debounceSyncMessages();
 }
 
 /** Updates the live agent token counter during streaming. */
 function handleAgentTokens(host: ChatContainer, msg: any) {
-    host.agent_token = msg.tokens;
+    host.agentToken = msg.tokens;
     host.hasTokenData = true;
 }
 
 /** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
 function handleChatComplete(host: ChatContainer, msg: any) {
     host.isLoading = false;
-    host.agent_token = 0;
+    host.agentToken = 0;
     host.hasTokenData = false;
     host.contextUsed = msg.contextUsed ?? 0;
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
@@ -79,7 +87,7 @@ function handleChatComplete(host: ChatContainer, msg: any) {
 
 /** Replaces message history with the summarized version returned by the host. */
 function handleSummarized(host: ChatContainer, msg: any) {
-    host.wvChatContext.setMessages(msg.messages || []);
+    host.chatContext?.setMessages(msg.messages || []);
     host.syncMessages();
     if (msg.isConversation) {
         host.contextStartIndex = 0;
@@ -110,7 +118,7 @@ function handleToolConfirmRequest(host: ChatContainer, msg: any) {
 /** Displays the error modal with exported chat and error details when the agent throws. */
 function handleAgentError(host: ChatContainer, msg: any) {
     host.isLoading = false;
-    host.agent_token = 0;
+    host.agentToken = 0;
     host.hasTokenData = false;
 
     const content = `${msg.exportedChat}${msg.errorMessage}`;

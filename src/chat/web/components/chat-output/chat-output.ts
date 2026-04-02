@@ -1,10 +1,9 @@
 import { LitElement, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import MarkdownIt from "markdown-it";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
 import { escapeAttr, /* highlightAllCodeBlocks, */ icons } from "../../../utils-front";
-import "../chat-accordion/chat-accordion";
-import "../chat-session/components/dropdown/chat-session-empty";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";
@@ -121,26 +120,70 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
     return groups;
 }
 
+@customElement("collama-chatoutput")
 export class ChatOutput extends LitElement {
-    static properties = {
-        messages: { state: true },
-        contextStartIndex: { type: Number },
-        isGenerating: { type: Boolean },
-        editingIndex: { state: true },
-    };
-
     static styles = outputStyles;
 
-    messages: ChatHistory[] = [];
-    contextStartIndex: number = 0;
-    isGenerating: boolean = false;
-    editingIndex: number | null = null;
+    @property({ type: Array }) messages: ChatHistory[] = [];
+    @property({ type: Number }) contextStartIndex: number = 0;
+    @property({ type: Boolean }) isGenerating: boolean = false;
+    @state() editingIndex: number | null = null;
 
     // private highlightedBlocks = new WeakSet<Element>();
     private renderedMarkdownCache = new Map<string, string>();
     // private highlightDebounceTimer: number | null = null;
 
     private _stickyScroll = true;
+
+    // Memoized event handlers for cleanup
+    private handleWheel = (e: WheelEvent) => {
+        if (e.deltaY < 0) {
+            this._stickyScroll = false;
+        }
+    };
+
+    private handleScroll = () => {
+        const nearBottom = this._isNearBottom();
+        if (nearBottom && !this._stickyScroll) {
+            this._stickyScroll = true;
+        }
+        if (nearBottom !== this._wasNearBottom) {
+            this._wasNearBottom = nearBottom;
+            if (nearBottom) {
+                this._clearShowButtonTimer();
+                this.dispatchEvent(
+                    new CustomEvent("near-bottom-changed", {
+                        detail: { nearBottom: true },
+                        bubbles: true,
+                        composed: true,
+                    }),
+                );
+            } else if (this._hasScrollbar()) {
+                this._clearShowButtonTimer();
+                this._showButtonTimer = window.setTimeout(() => {
+                    if (this._hasScrollbar() && !this._isNearBottom()) {
+                        this.dispatchEvent(
+                            new CustomEvent("near-bottom-changed", {
+                                detail: { nearBottom: false },
+                                bubbles: true,
+                                composed: true,
+                            }),
+                        );
+                    }
+                }, 300);
+            }
+        }
+    };
+
+    private _wasNearBottom = true;
+    private _showButtonTimer: number | undefined;
+
+    private _clearShowButtonTimer() {
+        if (this._showButtonTimer !== undefined) {
+            clearTimeout(this._showButtonTimer);
+            this._showButtonTimer = undefined;
+        }
+    }
 
     private _hasScrollbar(): boolean {
         return this.scrollHeight > this.clientHeight;
@@ -170,47 +213,15 @@ export class ChatOutput extends LitElement {
     }
 
     firstUpdated() {
-        let wasNearBottom = true;
-        let showButtonTimer: number | undefined;
+        this.addEventListener("wheel", this.handleWheel);
+        this.addEventListener("scroll", this.handleScroll);
+    }
 
-        this.addEventListener("wheel", (e: WheelEvent) => {
-            if (e.deltaY < 0) {
-                this._stickyScroll = false;
-            }
-        });
-
-        this.addEventListener("scroll", () => {
-            const nearBottom = this._isNearBottom();
-            if (nearBottom && !this._stickyScroll) {
-                this._stickyScroll = true;
-            }
-            if (nearBottom !== wasNearBottom) {
-                wasNearBottom = nearBottom;
-                if (nearBottom) {
-                    clearTimeout(showButtonTimer);
-                    this.dispatchEvent(
-                        new CustomEvent("near-bottom-changed", {
-                            detail: { nearBottom: true },
-                            bubbles: true,
-                            composed: true,
-                        }),
-                    );
-                } else if (this._hasScrollbar()) {
-                    clearTimeout(showButtonTimer);
-                    showButtonTimer = window.setTimeout(() => {
-                        if (this._hasScrollbar() && !this._isNearBottom()) {
-                            this.dispatchEvent(
-                                new CustomEvent("near-bottom-changed", {
-                                    detail: { nearBottom: false },
-                                    bubbles: true,
-                                    composed: true,
-                                }),
-                            );
-                        }
-                    }, 300);
-                }
-            }
-        });
+    disconnectedCallback() {
+        this.removeEventListener("wheel", this.handleWheel);
+        this.removeEventListener("scroll", this.handleScroll);
+        this._clearShowButtonTimer();
+        super.disconnectedCallback();
     }
 
     updated(changed: Map<string, unknown>) {
@@ -323,5 +334,3 @@ export class ChatOutput extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-chatoutput", ChatOutput);

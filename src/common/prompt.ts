@@ -1,17 +1,8 @@
-/**
- * @typedef {Object} PromptParams
- * @property {string} [instruction] - Instruction for the prompt.
- * @property {string} [snippet] - Target snippet to edit.
- * @property {string} [fullContext] - Full context of the code.
- * @property {string} [diff] - Git diff for commit message generation.
- */
+import { userConfig } from "../config";
 
 /**
- * @callback PromptTemplate
- * @param {PromptParams} p
- * @returns {string}
+ * Parameters for constructing a prompt string.
  */
-
 export type PromptParams = {
     instruction?: string;
     snippet?: string;
@@ -20,12 +11,15 @@ export type PromptParams = {
     outputFormat?: string;
 };
 
+/**
+ * A function type that formats prompt parameters into a string.
+ */
 type PromptTemplate = (p: PromptParams) => string;
 
 /**
- * Prompt template that generates a prompt without the think step.
+ * Generates a structured prompt for editing code snippets based on instructions.
  * @param {PromptParams} { instruction, snippet, fullContext, outputFormat }
- * @returns {string}
+ * @returns {string} The formatted prompt string.
  */
 export const contextCommand_Template: PromptTemplate = ({ instruction, snippet, fullContext, outputFormat }) => {
     const lines: string[] = [
@@ -80,6 +74,11 @@ export const commitMsgCommand_Template: PromptTemplate = ({ diff }) =>
         snippet: `<diff>\n${diff ?? ""}\n</diff>`,
         outputFormat: "Common git commit message format. Without explanations in code fences.",
     });
+
+/**
+ * Prompt template for summarizing a conversation exchange.
+ * Instructs the LLM to extract user requests, assistant answers, and key details concisely.
+ */
 export const chatSummarize_Template: string = [
     "Summarize this exchange. Output only the summary, no preamble.",
     "",
@@ -95,18 +94,28 @@ export const chatSummarize_Template: string = [
     "- No opinions, no new information",
     "- Never mention summary",
 ].join("\n");
+
 /**
  * System prompt prepended to the agent's conversation history.
  * Guides the LLM on how to use tools effectively and when to stop.
  */
-export const agent_Template: string = [
-    "Guidelines:",
-    "- Only use tools when the user's request requires direct interaction with files.",
-    "- For general questions, greetings, or conversations respond directly without tools.",
-    "- Explain your actions and why before making changes.",
-    "- Always make several small edits instead of one large.",
-    "- After you finished editing, use getDiagnostics to validate the changes.",
-    "- Never repeat yourself. Instead move on to the next step.",
-    "- Do not re-check conditions you have already confirmed.",
-    "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",
-].join("\n");
+export function getAgentTemplate(): string {
+    const tokenLimit = userConfig?.apiTokenPredictInstruct ?? 4096;
+
+    return [
+        "Guidelines:",
+        "- Only use tools when the user's request requires direct interaction with files.",
+        "- For general questions, greetings, or conversations respond directly without tools.",
+        "- Explain your actions and why before making changes.",
+        "- Make multiple small edits instead of large.",
+        "- Grep and Glob efficient.",
+        "- After you finished editing, use getDiagnostics to validate the changes.",
+        "- Never repeat yourself. Instead move on to the next step.",
+        "- Do not re-check conditions you have already confirmed.",
+        "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",
+        "- BE CONCISE: Keep responses brief and focused.",
+        "- Stop immediately after completing the task - no unnecessary commentary.",
+        "",
+        `OUTPUT LIMIT: Keep your response under approximately ${tokenLimit} tokens (~${Math.floor(tokenLimit * 4)} characters).`,
+    ].join("\n");
+}

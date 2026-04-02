@@ -1,6 +1,7 @@
 import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
-import type { ContextSearchResult } from "../context-search/context-search";
+import { ContextSearchResult } from "../../../../types";
 import "./control-panel-buttons";
 import { controlPanelStyles } from "./styles";
 
@@ -8,26 +9,19 @@ function emit(el: HTMLElement, name: string, detail?: unknown) {
     el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
 }
 
+@customElement("collama-control-panel")
 export class ControlPanel extends LitElement {
     static styles = controlPanelStyles;
 
-    static get properties() {
-        return {
-            userInput: { type: String },
-            contexts: { type: Array },
-            isLoading: { type: Boolean },
-            agentToken: { type: Number },
-            hasTokenData: { type: Boolean },
-            contextSearchResults: { type: Array },
-        };
-    }
+    @property({ type: String }) userInput = "";
+    @property({ type: Array }) contexts: AttachedContext[] = [];
+    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Number }) agentToken = 0;
+    @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
-    userInput = "";
-    contexts: AttachedContext[] = [];
-    isLoading = false;
-    agentToken = 0;
-    hasTokenData = false;
-    contextSearchResults: ContextSearchResult[] = [];
+    @query("textarea")
+    private textarea!: HTMLTextAreaElement;
 
     //  Lifecycle
 
@@ -61,29 +55,25 @@ export class ControlPanel extends LitElement {
         emit(this, "submit", { value: this.userInput, contexts: this.contexts });
         this.userInput = "";
         this.contexts = [];
-        const ta = this.shadowRoot?.querySelector("textarea") as HTMLTextAreaElement | null;
-        if (ta) {
-            ta.rows = 1;
+        if (this.textarea) {
+            this.textarea.rows = 1;
         }
         this.updateComplete.then(() => this._focusTextarea());
     }
 
-    //  Helpers
-
     private _focusTextarea() {
-        this.shadowRoot?.querySelector("textarea")?.focus();
+        this.textarea?.focus();
     }
 
     private _adjustRows() {
-        const ta = this.shadowRoot?.querySelector("textarea") as HTMLTextAreaElement | null;
-        if (!ta) {
+        if (!this.textarea) {
             return;
         }
-        ta.rows = 1;
-        const style = getComputedStyle(ta);
+        this.textarea.rows = 1;
+        const style = getComputedStyle(this.textarea);
         const lineHeight = parseFloat(style.lineHeight);
         const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-        ta.rows = Math.max(1, Math.round((ta.scrollHeight - padding) / lineHeight));
+        this.textarea.rows = Math.max(1, Math.round((this.textarea.scrollHeight - padding) / lineHeight));
     }
 
     // Render
@@ -111,5 +101,3 @@ export class ControlPanel extends LitElement {
         `;
     }
 }
-
-customElements.define("collama-control-panel", ControlPanel);
