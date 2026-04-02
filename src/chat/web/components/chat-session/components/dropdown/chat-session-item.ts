@@ -1,6 +1,6 @@
 // src/chat/web/components/chat_session/components/dropdown/chat_session_item.ts
 import { LitElement, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { ChatSession } from "../../../../types";
 import { commonStyles } from "../../styles-shared";
 import { sessionItemStyles } from "./styles";
@@ -29,7 +29,9 @@ export class ChatSessionItem extends LitElement {
     @property({ type: Boolean }) isActive = false;
 
     @state() private editing = false;
-    private inputEl?: HTMLInputElement;
+
+    @query(".session-title-input")
+    private inputEl!: HTMLInputElement;
 
     static styles = [commonStyles, sessionItemStyles];
 
@@ -79,7 +81,6 @@ export class ChatSessionItem extends LitElement {
         e.stopPropagation();
         this.editing = true;
         this.updateComplete.then(() => {
-            this.inputEl = this.shadowRoot?.querySelector(".session-title-input") as HTMLInputElement;
             this.inputEl?.focus();
             this.inputEl?.select();
         });

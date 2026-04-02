@@ -1,5 +1,5 @@
 import { html, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import type { AttachedContext } from "../../../../../../common/context-chat";
 import type { ContextSearchResult } from "../../../../types";
 import { BasePopup } from "../../../template-components/popup/base-popup";
@@ -27,6 +27,14 @@ export class ContextTree extends BasePopup {
 
     private _searchTimer: number | null = null;
 
+    @query("input")
+    private searchInput!: HTMLInputElement;
+
+    // Memoized event handlers
+    private handleSearchInput = (e: Event) => this._handleSearchInput(e);
+    private handleClearSearch = () => this._handleClearSearch();
+    private handleInputKeyDown = (e: KeyboardEvent) => this._handleInputKeyDown(e);
+
     /**
      * Handles search input events with a 200ms debounce.
      * @param e - The input event.
@@ -50,7 +58,7 @@ export class ContextTree extends BasePopup {
         this.searchQuery = "";
         this.dispatchEvent(new CustomEvent("context-search", { detail: { query: "" }, bubbles: true, composed: true }));
         requestAnimationFrame(() => {
-            this.shadowRoot?.querySelector("input")?.focus();
+            this.searchInput?.focus();
         });
     }
 
@@ -94,7 +102,7 @@ export class ContextTree extends BasePopup {
     override firstUpdated(changedProperties: Map<PropertyKey, unknown>) {
         super.firstUpdated(changedProperties);
         requestAnimationFrame(() => {
-            this.shadowRoot?.querySelector("input")?.focus();
+            this.searchInput?.focus();
         });
     }
 
@@ -122,13 +130,11 @@ export class ContextTree extends BasePopup {
                     type="text"
                     .value=${this.searchQuery}
                     placeholder="Search files and folders..."
-                    @input=${this._handleSearchInput}
-                    @keydown=${this._handleInputKeyDown}
+                    @input=${this.handleSearchInput}
+                    @keydown=${this.handleInputKeyDown}
                 />
                 ${this.searchQuery
-                    ? html`
-                          <button class="clear-btn" @click=${this._handleClearSearch} title="Clear search">✕</button>
-                      `
+                    ? html` <button class="clear-btn" @click=${this.handleClearSearch} title="Clear search">✕</button> `
                     : ""}
             </div>
             <div class="results">

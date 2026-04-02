@@ -124,7 +124,7 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
 export class ChatOutput extends LitElement {
     static styles = outputStyles;
 
-    @state() messages: ChatHistory[] = [];
+    @property({ type: Array }) messages: ChatHistory[] = [];
     @property({ type: Number }) contextStartIndex: number = 0;
     @property({ type: Boolean }) isGenerating: boolean = false;
     @state() editingIndex: number | null = null;

@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../../utils-front";
 import type { ContextSearchResult } from "../../../../types";
@@ -23,6 +23,30 @@ export class ControlPanelButtons extends LitElement {
     @state() private showContextTree = false;
     @state() private showGallery = false;
 
+    @query("collama-context-search")
+    private contextSearch!: HTMLElement;
+
+    @query("collama-prompt-gallery")
+    private promptGallery!: HTMLElement;
+
+    private handleAutoAccept = () => this._handleAutoAccept();
+    private handleToggleContextTree = () => this._toggleContextTree();
+    private handleCancel = () => emit(this, "cancel");
+    private handleToggleGallery = () => (this.showGallery = true);
+    private handleSummarizeConversation = () => emit(this, "summarize-conversation");
+    private handleSubmitClick = () => emit(this, "submit-click");
+    private handlePopupClose = () => (this.showContextTree = false);
+    private handleGalleryPopupClose = () => (this.showGallery = false);
+    private handleContextSearch = (e: CustomEvent) => emit(this, "context-search", { query: e.detail.query });
+    private handleContextAddFile = (e: CustomEvent) => emit(this, "context-add-file", e.detail);
+    private handleContextRemoveFile = (e: CustomEvent) => {
+        const index = this.contexts.findIndex((ctx) => ctx.filePath === e.detail.filePath);
+        if (index !== -1) {
+            emit(this, "context-cleared", { index });
+        }
+    };
+    private handleSubmitPrompt = (e: CustomEvent) => emit(this, "submit-prompt", e.detail);
+
     private _handleAutoAccept() {
         this.autoAccept = !this.autoAccept;
         emit(this, "auto-accept", { enabled: this.autoAccept });
@@ -40,7 +64,7 @@ export class ControlPanelButtons extends LitElement {
         return html`
             <button-auto-accept
                 title="Auto accept all edits"
-                @click=${this._handleAutoAccept}
+                @click=${this.handleAutoAccept}
                 ?active=${this.autoAccept}
             >
                 ${this.autoAccept ? icons.alertTriangle : icons.checkCircle}
@@ -60,15 +84,13 @@ export class ControlPanelButtons extends LitElement {
     }
 
     private _renderCancel() {
-        return html`
-            <button-cancel title="Cancel" @click=${() => emit(this, "cancel")}> ${icons.cancel} </button-cancel>
-        `;
+        return html` <button-cancel title="Cancel" @click=${this.handleCancel}> ${icons.cancel} </button-cancel> `;
     }
 
     private _renderContextButton() {
         const hasContext = this.contexts.length > 0;
         return html`
-            <button-context title="Add context" data-popup-anchor @click=${this._toggleContextTree}>
+            <button-context title="Add context" data-popup-anchor @click=${this.handleToggleContextTree}>
                 ${icons.paperclip} ${hasContext ? html`<span class="context-badge">${this.contexts.length}</span>` : ""}
             </button-context>
             ${this.showContextTree
@@ -76,15 +98,10 @@ export class ControlPanelButtons extends LitElement {
                       autoShow
                       .results=${this.contextSearchResults}
                       .contexts=${this.contexts}
-                      @popup-close=${() => (this.showContextTree = false)}
-                      @context-search=${(e: CustomEvent) => emit(this, "context-search", { query: e.detail.query })}
-                      @context-add-file=${(e: CustomEvent) => emit(this, "context-add-file", e.detail)}
-                      @context-remove-file=${(e: CustomEvent) => {
-                          const index = this.contexts.findIndex((ctx) => ctx.filePath === e.detail.filePath);
-                          if (index !== -1) {
-                              emit(this, "context-cleared", { index });
-                          }
-                      }}
+                      @popup-close=${this.handlePopupClose}
+                      @context-search=${this.handleContextSearch}
+                      @context-add-file=${this.handleContextAddFile}
+                      @context-remove-file=${this.handleContextRemoveFile}
                   ></collama-context-search>`
                 : ""}
         `;
@@ -92,16 +109,14 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderGallery() {
         return html`
-            <button-gallery title="Open Prompt Gallery" data-popup-anchor @click=${() => (this.showGallery = true)}>
+            <button-gallery title="Open Prompt Gallery" data-popup-anchor @click=${this.handleToggleGallery}>
                 ${icons.gallery}
             </button-gallery>
             ${this.showGallery
                 ? html`<collama-prompt-gallery
                       autoShow
-                      @popup-close=${() => (this.showGallery = false)}
-                      @submit-prompt=${(e: CustomEvent) => {
-                          emit(this, "submit-prompt", e.detail);
-                      }}
+                      @popup-close=${this.handleGalleryPopupClose}
+                      @submit-prompt=${this.handleSubmitPrompt}
                   ></collama-prompt-gallery>`
                 : ""}
         `;
@@ -109,16 +124,14 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderCompress() {
         return html`
-            <button-compress title="Summarize conversation" @click=${() => emit(this, "summarize-conversation")}>
+            <button-compress title="Summarize conversation" @click=${this.handleSummarizeConversation}>
                 ${icons.compress}
             </button-compress>
         `;
     }
 
     private _renderSubmit() {
-        return html`
-            <button-submit title="Submit" @click=${() => emit(this, "submit-click")}> ${icons.enter} </button-submit>
-        `;
+        return html` <button-submit title="Submit" @click=${this.handleSubmitClick}> ${icons.enter} </button-submit> `;
     }
 
     render() {

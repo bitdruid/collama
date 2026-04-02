@@ -1,6 +1,6 @@
 // src/components/chat-sessions.ts
 import { LitElement, css, html } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 
 import "./components/dropdown/chat-session-dropdown";
 import "./components/header/chat-session-header";
@@ -31,12 +31,18 @@ export class ChatSessions extends LitElement {
     `;
 
     @state() isOpen = false;
-    @state() sessions: ChatSession[] = [];
-    @state() activeSessionId = "";
-    @state() contextUsed = 0;
-    @state() contextMax = 0;
+    @property({ type: Array }) sessions: ChatSession[] = [];
+    @property({ type: String }) activeSessionId = "";
+    @property({ type: Number }) contextUsed = 0;
+    @property({ type: Number }) contextMax = 0;
 
     private _onStoreChange = () => this._updateFromStore();
+
+    private handleSelectSession = (e: CustomEvent) => this._handleSelectSession(e.detail.id);
+    private handleDeleteSession = (e: CustomEvent) => this._handleDeleteSession(e.detail.id);
+    private handleRenameSession = (e: CustomEvent) => this._handleRenameSession(e.detail.id, e.detail.newTitle);
+    private handleCopySession = (e: CustomEvent) => this._handleCopySession(e.detail.id);
+    private handleOverlayClick = () => (this.isOpen = false);
 
     connectedCallback() {
         super.connectedCallback();
@@ -100,17 +106,17 @@ export class ChatSessions extends LitElement {
                 .contextMax=${this.contextMax}
             ></collama-chatsession-header>
 
-            <div class="dropdown-overlay ${this.isOpen ? "open" : ""}" @click=${() => (this.isOpen = false)}></div>
+            <div class="dropdown-overlay ${this.isOpen ? "open" : ""}" @click=${this.handleOverlayClick}></div>
 
             <collama-chatsessions-dropdown
                 .isOpen=${this.isOpen}
                 .sessions=${this.sessions}
                 .activeSessionId=${this.activeSessionId}
                 @new-chat=${this._handleNewChat}
-                @select-session=${(e: CustomEvent) => this._handleSelectSession(e.detail.id)}
-                @delete-session=${(e: CustomEvent) => this._handleDeleteSession(e.detail.id)}
-                @rename-session=${(e: CustomEvent) => this._handleRenameSession(e.detail.id, e.detail.newTitle)}
-                @copy-session=${(e: CustomEvent) => this._handleCopySession(e.detail.id)}
+                @select-session=${this.handleSelectSession}
+                @delete-session=${this.handleDeleteSession}
+                @rename-session=${this.handleRenameSession}
+                @copy-session=${this.handleCopySession}
             ></collama-chatsessions-dropdown>
         `;
     }

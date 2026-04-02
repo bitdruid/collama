@@ -64,14 +64,14 @@ function handleAgentChunk(host: ChatContainer, msg: any) {
 
 /** Updates the live agent token counter during streaming. */
 function handleAgentTokens(host: ChatContainer, msg: any) {
-    host.agent_token = msg.tokens;
+    host.agentToken = msg.tokens;
     host.hasTokenData = true;
 }
 
 /** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
 function handleChatComplete(host: ChatContainer, msg: any) {
     host.isLoading = false;
-    host.agent_token = 0;
+    host.agentToken = 0;
     host.hasTokenData = false;
     host.contextUsed = msg.contextUsed ?? 0;
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
@@ -110,7 +110,7 @@ function handleToolConfirmRequest(host: ChatContainer, msg: any) {
 /** Displays the error modal with exported chat and error details when the agent throws. */
 function handleAgentError(host: ChatContainer, msg: any) {
     host.isLoading = false;
-    host.agent_token = 0;
+    host.agentToken = 0;
     host.hasTokenData = false;
 
     const content = `${msg.exportedChat}${msg.errorMessage}`;

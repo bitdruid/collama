@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { editStyles } from "./styles";
 
 @customElement("collama-chatedit")
@@ -10,45 +10,51 @@ export class ChatEditMessage extends LitElement {
     @property({ type: Number }) messageIndex: number = 0;
     @state() private rows = 1;
 
+    @query(".edit-textarea")
+    private textarea!: HTMLTextAreaElement;
+
+    // Memoized event handlers
+    private handleInput = () => this._handleInput();
+    private handleSend = () => this._handleSend();
+    private handleCancel = () => this._handleCancel();
+    private handleMouseDown = (e: Event) => e.preventDefault();
+
     firstUpdated() {
-        const textarea = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement;
-        if (textarea) {
+        if (this.textarea) {
             // Focus immediately when edit starts
-            textarea.focus();
+            this.textarea.focus();
             // Close edit view when focus is lost
-            textarea.addEventListener("blur", () => this._handleCancel());
+            this.textarea.addEventListener("blur", () => this._handleCancel());
             // Adjust initial rows based on content
             this._adjustRows();
         }
     }
 
-    private _handleInput(e: Event) {
+    private _handleInput() {
         this._adjustRows();
     }
 
     private _adjustRows() {
-        const ta = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement | null;
-        if (!ta) {
+        if (!this.textarea) {
             return;
         }
-        ta.rows = 1;
-        const style = getComputedStyle(ta);
+        this.textarea.rows = 1;
+        const style = getComputedStyle(this.textarea);
         const lineHeight = parseFloat(style.lineHeight);
         const paddingTop = parseFloat(style.paddingTop);
         const paddingBottom = parseFloat(style.paddingBottom);
         const verticalPadding = paddingTop + paddingBottom;
-        const contentHeight = ta.scrollHeight - verticalPadding;
+        const contentHeight = this.textarea.scrollHeight - verticalPadding;
         const newRows = Math.max(1, Math.round(contentHeight / lineHeight));
-        ta.rows = newRows;
+        this.textarea.rows = newRows;
         this.rows = newRows;
     }
 
     private _handleSend() {
-        const textarea = this.shadowRoot?.querySelector(".edit-textarea") as HTMLTextAreaElement;
-        if (!textarea) {
+        if (!this.textarea) {
             return;
         }
-        const newContent = textarea.value.trim();
+        const newContent = this.textarea.value.trim();
         if (!newContent) {
             return;
         }
@@ -72,22 +78,12 @@ export class ChatEditMessage extends LitElement {
 
     render() {
         return html`
-            <textarea class="edit-textarea" rows=${this.rows} @input=${this._handleInput}>${this.content}</textarea>
+            <textarea class="edit-textarea" rows=${this.rows} @input=${this.handleInput}>${this.content}</textarea>
             <div class="edit-actions">
-                <button
-                    class="edit-cancel"
-                    @mousedown=${(e: Event) => e.preventDefault()}
-                    @click=${() => this._handleCancel()}
-                >
+                <button class="edit-cancel" @mousedown=${this.handleMouseDown} @click=${this.handleCancel}>
                     Cancel
                 </button>
-                <button
-                    class="edit-send"
-                    @mousedown=${(e: Event) => e.preventDefault()}
-                    @click=${() => this._handleSend()}
-                >
-                    Send
-                </button>
+                <button class="edit-send" @mousedown=${this.handleMouseDown} @click=${this.handleSend}>Send</button>
             </div>
         `;
     }

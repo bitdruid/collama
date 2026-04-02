@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 
 import type { ToolConfirmRequest } from "../../../../types";
 import { toolConfirmStyles } from "./styles";
@@ -11,6 +11,17 @@ export class ToolConfirm extends LitElement {
     @property({ type: Object }) request: ToolConfirmRequest | null = null;
     @state() private _showCancelInput = false;
     @state() private _cancelReason = "";
+
+    @query(".cancel-input")
+    private cancelInput!: HTMLInputElement;
+
+    // Memoized event handlers
+    private handleAccept = () => this._accept();
+    private handleAcceptAll = () => this._acceptAll();
+    private handleCancel = () => this._cancel();
+    private handleSendCancel = () => this._sendCancel();
+    private handleCancelInput = (e: Event) => (this._cancelReason = (e.target as HTMLInputElement).value);
+    private handleCancelKeyDown = (e: KeyboardEvent) => this._cancelKeyDown(e);
 
     private _accept() {
         this._emit("tool-confirm-accept");
@@ -27,7 +38,7 @@ export class ToolConfirm extends LitElement {
         }
         this._showCancelInput = true;
         this.updateComplete.then(() => {
-            this.shadowRoot?.querySelector<HTMLInputElement>(".cancel-input")?.focus();
+            this.cancelInput?.focus();
         });
     }
 
@@ -95,18 +106,18 @@ export class ToolConfirm extends LitElement {
                                   type="text"
                                   placeholder="What should the agent do instead?"
                                   .value=${this._cancelReason}
-                                  @input=${(e: Event) => (this._cancelReason = (e.target as HTMLInputElement).value)}
-                                  @keydown=${this._cancelKeyDown}
+                                  @input=${this.handleCancelInput}
+                                  @keydown=${this.handleCancelKeyDown}
                               />
-                              <button class="btn-send" @click=${this._sendCancel}>Send</button>
+                              <button class="btn-send" @click=${this.handleSendCancel}>Send</button>
                           </div>
                       `
                     : null}
 
                 <div class="confirm-buttons">
-                    <button class="confirm-btn btn-accept" @click=${this._accept}>Accept</button>
-                    <button class="confirm-btn btn-accept-all" @click=${this._acceptAll}>Accept All</button>
-                    <button class="confirm-btn btn-cancel" @click=${this._cancel}>Cancel</button>
+                    <button class="confirm-btn btn-accept" @click=${this.handleAccept}>Accept</button>
+                    <button class="confirm-btn btn-accept-all" @click=${this.handleAcceptAll}>Accept All</button>
+                    <button class="confirm-btn btn-cancel" @click=${this.handleCancel}>Cancel</button>
                 </div>
             </div>
         `;

@@ -1,5 +1,5 @@
 import { html, TemplateResult } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
 
@@ -14,6 +14,19 @@ export class PromptGallery extends BasePopup {
     @state() private _adding = false;
     @state() private _newPrompt = "";
     private _editingIndex?: number;
+
+    @query(".custom-prompt-input")
+    private customPromptInput!: HTMLTextAreaElement;
+
+    // Memoized event handlers
+    private handleClose = () => this.close();
+    private handleDeletePrompt = (e: CustomEvent) => this._deletePrompt(e.detail.index);
+    private handleEditPrompt = (e: CustomEvent) => this._editPrompt(e.detail.index);
+    private handleInput = (e: Event) => (this._newPrompt = (e.target as HTMLTextAreaElement).value);
+    private handleStartAdding = () => this._startAdding();
+    private handleSaveNewPrompt = () => this._saveNewPrompt();
+    private handleCancelAdding = () => this._cancelAdding();
+    private handleCloseGallery = () => this.close();
 
     private _selectPrompt(prompt: string) {
         this.dispatchEvent(new CustomEvent("submit-prompt", { detail: { value: prompt } }));
@@ -74,7 +87,7 @@ export class PromptGallery extends BasePopup {
         this._adding = true;
         this.updateComplete.then(() => {
             requestAnimationFrame(() => {
-                this.shadowRoot?.querySelector<HTMLTextAreaElement>(".custom-prompt-input")?.focus();
+                this.customPromptInput?.focus();
             });
         });
     }
@@ -89,7 +102,7 @@ export class PromptGallery extends BasePopup {
         return html`
             <div class="panel-header">
                 <h3>Prompt Gallery</h3>
-                <span class="close-btn" @click=${() => this.close()}>&#10006;</span>
+                <span class="close-btn" @click=${this.handleClose}>&#10006;</span>
             </div>
 
             <div class="prompt-list">
@@ -100,8 +113,8 @@ export class PromptGallery extends BasePopup {
                             <div class="prompt-actions">
                                 <prompt-gallery-buttons
                                     .index=${index}
-                                    @delete-prompt=${(e: CustomEvent) => this._deletePrompt(e.detail.index)}
-                                    @edit-prompt=${(e: CustomEvent) => this._editPrompt(e.detail.index)}
+                                    @delete-prompt=${this.handleDeletePrompt}
+                                    @edit-prompt=${this.handleEditPrompt}
                                 ></prompt-gallery-buttons>
                             </div>
                         </div>
@@ -116,7 +129,7 @@ export class PromptGallery extends BasePopup {
                               rows="3"
                               class="custom-prompt-input"
                               .value=${this._newPrompt}
-                              @input=${(e: any) => (this._newPrompt = e.target.value)}
+                              @input=${this.handleInput}
                               placeholder="Enter your custom prompt..."
                           ></textarea>
                       `
@@ -124,10 +137,10 @@ export class PromptGallery extends BasePopup {
 
                 <prompt-gallery-buttons
                     .adding=${this._adding}
-                    @add-prompt=${this._startAdding}
-                    @save-new-prompt=${this._saveNewPrompt}
-                    @cancel-new-prompt=${this._cancelAdding}
-                    @close-gallery=${() => this.close()}
+                    @add-prompt=${this.handleStartAdding}
+                    @save-new-prompt=${this.handleSaveNewPrompt}
+                    @cancel-new-prompt=${this.handleCancelAdding}
+                    @close-gallery=${this.handleCloseGallery}
                 ></prompt-gallery-buttons>
             </div>
         `;

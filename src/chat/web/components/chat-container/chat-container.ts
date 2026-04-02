@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import type { ChatSession, ToolConfirmRequest } from "../../types";
@@ -41,29 +41,54 @@ import { backendApi } from "./utils";
 export class ChatContainer extends LitElement {
     static styles = chatContainerStyles;
 
-    // -- Reactive state --
-    @state() messages: ChatHistory[] = [];
-    @state() sessions: ChatSession[] = [];
-    @state() activeSessionId: string = "";
-    @state() currentContexts: AttachedContext[] = [];
-    @state() contextUsed: number = 0;
-    @state() contextMax: number = 0;
-    @state() contextStartIndex: number = 0;
-    @state() isLoading: boolean = false;
-    @state() agent_token: number = 0;
-    @state() hasTokenData: boolean = false;
-    @state() showScrollButton: boolean = false;
-    @state() toolConfirmRequest: ToolConfirmRequest | null = null;
+    @property({ type: Array }) sessions: ChatSession[] = [];
+    @property({ type: Boolean }) hasTokenData: boolean = false;
+    @property({ type: Boolean, reflect: true }) isLoading: boolean = false;
+    @property({ type: Number }) agentToken: number = 0;
+    @property({ type: Number }) contextMax: number = 0;
+    @property({ type: Number }) contextUsed: number = 0;
+    @property({ type: String }) activeSessionId: string = "";
     @state() contextSearchResults: { fileName: string; filePath: string; relativePath: string; isFolder: boolean }[] =
         [];
 
-    // -- Internal state --
+    @state() contextStartIndex: number = 0;
+    @state() currentContexts: AttachedContext[] = [];
+    @state() messages: ChatHistory[] = [];
+    @state() showScrollButton: boolean = false;
+    @state() toolConfirmRequest: ToolConfirmRequest | null = null;
+
     wvChatContext = new ChatContext();
     private _updateTimer: number | null = null;
     private _inputResizeObserver: ResizeObserver | null = null;
     private _lastInputHeight = 0;
+    private _messageHandler: ((e: MessageEvent) => void) | null = null;
 
-    // -- Methods used by handler modules --
+    @query("collama-chatinput")
+    private chatInput!: HTMLElement;
+
+    @query("collama-chatoutput")
+    private chatOutput!: HTMLElement;
+
+    @query("collama-scroll-down")
+    private scrollDown!: HTMLElement;
+
+    private handleExportSession = (e: CustomEvent) => onExportSession(this, e);
+    private handleSelectSession = (e: CustomEvent) => onSelectSession(e);
+    private handleDeleteSession = (e: CustomEvent) => onDeleteSession(e);
+    private handleRenameSession = (e: CustomEvent) => onRenameSession(e);
+    private handleResendMessage = (e: CustomEvent) => onResendMessage(this, e);
+    private handleEditMessage = (e: CustomEvent) => onEditMessage(this, e);
+    private handleDeleteMessage = (e: CustomEvent) => onDeleteMessage(this, e);
+    private handleSummarizeTurn = (e: CustomEvent) => onSummarizeTurn(this, e);
+    private handleNearBottomChanged = (e: CustomEvent) => onNearBottomChanged(this, e);
+    private handleSubmit = (e: CustomEvent) => onSubmit(this, e);
+    private handleCancel = () => onCancel(this);
+    private handleSummarizeConversation = () => onSummarizeConversation(this);
+    private handleContextCleared = (e: CustomEvent) => onContextCleared(this, e);
+    private handleToolConfirmAccept = (e: CustomEvent) => onToolConfirmAccept(this, e);
+    private handleToolConfirmAcceptAll = (e: CustomEvent) => onToolConfirmAcceptAll(this, e);
+    private handleToolConfirmCancel = (e: CustomEvent) => onToolConfirmCancel(this, e);
+    private handleScrollDown = () => this.scrollToBottom();
 
     /** Creates a fresh array snapshot from `wvChatContext` to trigger a Lit re-render. */
     syncMessages() {
@@ -85,8 +110,8 @@ export class ChatContainer extends LitElement {
 
     /** Scrolls the chat output to the bottom and activates sticky scroll. */
     scrollToBottom() {
-        const output = this.shadowRoot?.querySelector("collama-chatoutput") as any;
-        output?.scrollToBottom();
+        const output = this.chatOutput as unknown as { scrollToBottom?: () => void };
+        output?.scrollToBottom?.();
     }
 
     /** Initializes the component by signaling readiness to the backend and setting up the window message listener for host communication. */
@@ -94,33 +119,58 @@ export class ChatContainer extends LitElement {
         super.connectedCallback();
         backendApi.ready();
         const dispatch = createInboundDispatcher(this);
-        window.addEventListener("message", (e) => dispatch(e.data));
+        this._messageHandler = (e: MessageEvent) => dispatch(e.data);
+        window.addEventListener("message", this._messageHandler);
     }
 
+    /**
+     * Sets up a ResizeObserver on the chat input to synchronize scrolling.
+     *
+     * Adjusts the scroll position of the chat output when the input height changes
+     * to prevent the content from being obscured or jumping.
+     */
     firstUpdated() {
-        const chatInput = this.shadowRoot?.querySelector("collama-chatinput") as HTMLElement | null;
-        const chatOutput = this.shadowRoot?.querySelector("collama-chatoutput") as HTMLElement | null;
-        if (!chatInput || !chatOutput) {
+        if (!this.chatInput || !this.chatOutput) {
             return;
         }
 
-        this._lastInputHeight = chatInput.getBoundingClientRect().height;
+        this._lastInputHeight = this.chatInput.getBoundingClientRect().height;
         this._inputResizeObserver = new ResizeObserver(() => {
-            const newHeight = chatInput.getBoundingClientRect().height;
+            const newHeight = this.chatInput.getBoundingClientRect().height;
             const delta = newHeight - this._lastInputHeight;
             this._lastInputHeight = newHeight;
             if (Math.abs(delta) > 1) {
-                chatOutput.scrollTop += delta;
+                this.chatOutput.scrollTop += delta;
             }
         });
-        this._inputResizeObserver.observe(chatInput);
+        this._inputResizeObserver.observe(this.chatInput);
     }
 
+    /**
+     * Cleans up resources when the component is removed from the DOM.
+     *
+     * Disconnects the ResizeObserver, removes the window message listener,
+     * and clears any pending update timers.
+     */
     disconnectedCallback() {
         super.disconnectedCallback();
         this._inputResizeObserver?.disconnect();
+        if (this._messageHandler) {
+            window.removeEventListener("message", this._messageHandler);
+            this._messageHandler = null;
+        }
+        if (this._updateTimer !== null) {
+            clearTimeout(this._updateTimer);
+            this._updateTimer = null;
+        }
     }
 
+    /**
+     * Renders the main chat interface layout.
+     *
+     * Includes the session sidebar, the chat output area with scroll controls,
+     * the input area, and the loading indicator.
+     */
     render() {
         return html`
             <collama-chatsessions
@@ -128,12 +178,12 @@ export class ChatContainer extends LitElement {
                 .activeSessionId=${this.activeSessionId}
                 .contextUsed=${this.contextUsed}
                 .contextMax=${this.contextMax}
-                @export-session=${(e: CustomEvent) => onExportSession(this, e)}
+                @export-session=${this.handleExportSession}
                 @new-chat=${onNewChat}
-                @select-session=${(e: CustomEvent) => onSelectSession(e)}
-                @delete-session=${(e: CustomEvent) => onDeleteSession(e)}
-                @rename-session=${(e: CustomEvent) => onRenameSession(e)}
-                @copy-session=${(e: CustomEvent) => onCopySession(e)}
+                @select-session=${this.handleSelectSession}
+                @delete-session=${this.handleDeleteSession}
+                @rename-session=${this.handleRenameSession}
+                @copy-session=${onCopySession}
             ></collama-chatsessions>
             <div class="chat-area">
                 <div class="output-wrapper">
@@ -141,32 +191,32 @@ export class ChatContainer extends LitElement {
                         .messages=${this.messages}
                         .contextStartIndex=${this.contextStartIndex}
                         .isGenerating=${this.isLoading}
-                        @resend-message=${(e: CustomEvent) => onResendMessage(this, e)}
-                        @edit-message=${(e: CustomEvent) => onEditMessage(this, e)}
-                        @delete-message=${(e: CustomEvent) => onDeleteMessage(this, e)}
-                        @summarize-turn=${(e: CustomEvent) => onSummarizeTurn(this, e)}
-                        @near-bottom-changed=${(e: CustomEvent) => onNearBottomChanged(this, e)}
+                        @resend-message=${this.handleResendMessage}
+                        @edit-message=${this.handleEditMessage}
+                        @delete-message=${this.handleDeleteMessage}
+                        @summarize-turn=${this.handleSummarizeTurn}
+                        @near-bottom-changed=${this.handleNearBottomChanged}
                     ></collama-chatoutput>
                     <collama-scroll-down
                         .visible=${this.showScrollButton}
-                        @scroll-down=${() => this.scrollToBottom()}
+                        @scroll-down=${this.handleScrollDown}
                     ></collama-scroll-down>
                 </div>
                 <collama-error-modal></collama-error-modal>
                 <collama-chatinput
-                    @submit=${(e: CustomEvent) => onSubmit(this, e)}
-                    @cancel=${() => onCancel(this)}
-                    @summarize-conversation=${() => onSummarizeConversation(this)}
-                    @auto-accept=${(e: CustomEvent) => onAutoAccept(e)}
-                    @context-cleared=${(e: CustomEvent) => onContextCleared(this, e)}
-                    @context-search=${(e: CustomEvent) => onContextSearch(e)}
-                    @context-add-file=${(e: CustomEvent) => onContextAddFile(e)}
-                    @tool-confirm-accept=${(e: CustomEvent) => onToolConfirmAccept(this, e)}
-                    @tool-confirm-accept-all=${(e: CustomEvent) => onToolConfirmAcceptAll(this, e)}
-                    @tool-confirm-cancel=${(e: CustomEvent) => onToolConfirmCancel(this, e)}
+                    @submit=${this.handleSubmit}
+                    @cancel=${this.handleCancel}
+                    @summarize-conversation=${this.handleSummarizeConversation}
+                    @auto-accept=${onAutoAccept}
+                    @context-cleared=${this.handleContextCleared}
+                    @context-search=${onContextSearch}
+                    @context-add-file=${onContextAddFile}
+                    @tool-confirm-accept=${this.handleToolConfirmAccept}
+                    @tool-confirm-accept-all=${this.handleToolConfirmAcceptAll}
+                    @tool-confirm-cancel=${this.handleToolConfirmCancel}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
-                    .agentToken=${this.agent_token}
+                    .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
                     .toolConfirmRequest=${this.toolConfirmRequest}
                     .contextSearchResults=${this.contextSearchResults}
