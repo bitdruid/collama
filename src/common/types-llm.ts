@@ -1,6 +1,10 @@
 import { userConfig } from "../config";
 
 /**
+ * LLM-related types and utility functions
+ */
+
+/**
  * A contract for an LLM client.
  *
  * All providers must expose the same two methods:
@@ -12,7 +16,7 @@ import { userConfig } from "../config";
  *
  * @remarks
  * The `LlmChatSettings` and `LlmGenerateSettings` types are defined in
- * `llmoptions.ts`.  They already contain everything the provider needs
+ * `types-llm.ts`.  They already contain everything the provider needs
  * (endpoint, model, options, stop tokens, etc.).
  **/
 export interface LlmClient {
@@ -20,7 +24,7 @@ export interface LlmClient {
      * Sends a chat request to the underlying LLM.
      *
      * @param settings - Full chat request configuration.
-     * @returns The assistant’s reply and any tool calls it made.
+     * @returns The assistant's reply and any tool calls it made.
      */
     chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult>;
     /**

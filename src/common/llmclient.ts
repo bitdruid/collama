@@ -1,15 +1,17 @@
 import * as vscode from "vscode";
 const { showErrorMessage, showWarningMessage } = vscode.window;
 
-import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./llmoptions";
+import { ChatResult, LlmClient, Options, Stop, ToolCall } from "./types-llm";
 
-import { RequestType, sysConfig } from "../config";
+import { sysConfig } from "../config";
 import { logMsg } from "../logging";
 import { ToolCallAccumulator, nextToolId } from "./litellmfix";
-import { LlmChatSettings, LlmGenerateSettings } from "./llmoptions";
 import { checkPredictFitsContextLength } from "./models";
 import { requestAnthropic, requestOllama, requestOpenAI } from "./requests";
 import Tokenizer from "./tokenizer";
+import { LlmChatSettings, LlmGenerateSettings } from "./types-llm";
+
+export type RequestType = "completion" | "instruction";
 
 /**
  * Factory that creates and delegates to the appropriate LLM client implementation

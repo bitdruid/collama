@@ -2,25 +2,8 @@ import * as vscode from "vscode";
 const { showErrorMessage, showWarningMessage, showInformationMessage } = vscode.window;
 
 import { requestCommitMessage } from "../common/requests";
+import { GitExtension } from "../common/types-git";
 import { logMsg } from "../logging";
-
-// Type definitions for the Git extension API
-interface GitExtension {
-    getAPI(version: number): GitAPI;
-}
-
-interface GitAPI {
-    repositories: Repository[];
-}
-
-interface Repository {
-    inputBox: InputBox;
-    diff(staged?: boolean): Promise<string>;
-}
-
-interface InputBox {
-    value: string;
-}
 
 /**
  * Registers the `collama.requestCommitMessage` command with VS Code.
@@ -54,15 +37,22 @@ export function registerRequestCommitMessageCommand(extContext: vscode.Extension
                 return;
             }
             logMsg(`Staged diff size: ${stagedDiff.length} characters`);
-            await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "collama: Generating commit message...", cancellable: false }, async () => {
-                const commitMessage = await requestCommitMessage(stagedDiff);
-                if (commitMessage) {
-                    repo.inputBox.value = commitMessage;
-                    showInformationMessage("collama: Commit message generated");
-                } else {
-                    showWarningMessage("collama: Failed to generate commit message");
-                }
-            });
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Window,
+                    title: "collama: Generating commit message...",
+                    cancellable: false,
+                },
+                async () => {
+                    const commitMessage = await requestCommitMessage(stagedDiff);
+                    if (commitMessage) {
+                        repo.inputBox.value = commitMessage;
+                        showInformationMessage("collama: Commit message generated");
+                    } else {
+                        showWarningMessage("collama: Failed to generate commit message");
+                    }
+                },
+            );
         } catch (error) {
             logMsg(`Error generating commit message: ${error}`);
             showErrorMessage(`collama: Error generating commit message: ${error}`);

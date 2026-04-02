@@ -1,5 +1,5 @@
 import { logAgent } from "../logging";
-import { ToolCall } from "./llmoptions";
+import { ToolCall } from "./types-llm";
 
 let _toolIdSeq = 0;
 export function nextToolId(): string {

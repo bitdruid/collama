@@ -2,59 +2,11 @@ import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
+import { GitAPI, GitExtension, GitRepository } from "../../common/types-git";
 import { logMsg } from "../../logging";
 import { getWorkspaceRoot } from "../tools";
 
 const execFileAsync = promisify(execFile);
-
-/**
- * Represents the VS Code Git extension interface.
- */
-interface GitExtension {
-    getAPI(version: number): GitAPI;
-}
-
-/**
- * API provided by the VS Code Git extension.
- */
-interface GitAPI {
-    repositories: GitRepository[];
-}
-
-/**
- * Represents a Git repository.
- */
-interface GitRepository {
-    diff(staged?: boolean): Promise<string>;
-    diffBetween(ref1: string, ref2: string): Promise<GitChange[]>;
-    diffBetween(ref1: string, ref2: string, path: string): Promise<string>;
-    log(options?: { maxEntries?: number; path?: string }): Promise<GitCommit[]>;
-    state: {
-        HEAD?: { name?: string; commit?: string };
-        refs: Array<{ name?: string; commit?: string; type: number }>;
-    };
-}
-
-/**
- * Represents a Git commit.
- */
-interface GitCommit {
-    hash: string;
-    message: string;
-    authorDate?: Date;
-    authorName?: string;
-    authorEmail?: string;
-}
-
-/**
- * Represents a change in a Git repository.
- */
-interface GitChange {
-    uri: vscode.Uri;
-    originalUri: vscode.Uri;
-    renameUri?: vscode.Uri;
-    status: number; // 0=Modified, 1=Added, 2=Deleted, 3=Renamed, etc.
-}
 
 /**
  * Gets the VS Code Git extension API.

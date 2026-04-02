@@ -10,15 +10,15 @@ import { logMsg } from "../logging";
 import { getBearerCompletion, getBearerInstruct } from "../secrets";
 import { EditorContext } from "./context-editor";
 import { LlmClientFactory } from "./llmclient";
+import { getCompletionModelConfig } from "./models";
+import { commitMsgCommand_Template, contextCommand_Template, PromptParams } from "./prompt";
 import {
     buildCommitOptions,
     buildCompletionOptions,
     buildCompletionStop,
     buildInstructionOptions,
     emptyStop,
-} from "./llmoptions";
-import { getCompletionModelConfig } from "./models";
-import { commitMsgCommand_Template, contextCommand_Template, PromptParams } from "./prompt";
+} from "./types-llm";
 
 /**
  * Generates a completion from the editor context.
