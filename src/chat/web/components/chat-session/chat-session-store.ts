@@ -1,6 +1,6 @@
 // src/services/chat-session-store.ts
 
-import { ChatContext } from "../../../../common/context-chat";
+import { ChatContext, type ChatHistory } from "../../../../common/context-chat";
 import type { ChatSession } from "../../types";
 
 export class ChatSessionStore extends EventTarget {
@@ -95,6 +95,110 @@ export class ChatSessionStore extends EventTarget {
         this.activeSessionId = "";
         this.contextUsed = 0;
         this.contextMax = 0;
+        this._emitChange();
+    }
+
+    /**
+     * Get the ChatContext for a specific session
+     * @param sessionId - Session ID
+     * @returns ChatContext instance or undefined if session not found
+     */
+    getChatContext(sessionId: string): ChatContext | undefined {
+        const session = this.sessions.find((s) => s.id === sessionId);
+        return session?.messages;
+    }
+
+    /**
+     * Get the ChatContext for the active session
+     * @returns ChatContext instance or undefined if no active session
+     */
+    getActiveChatContext(): ChatContext | undefined {
+        if (!this.activeSessionId) {
+            return undefined;
+        }
+        return this.getChatContext(this.activeSessionId);
+    }
+
+    /**
+     * Update messages for a session from backend data
+     * Replaces the ChatContext content without creating a new instance
+     * @param sessionId - Session ID
+     * @param messages - New messages from backend
+     */
+    updateSessionMessages(sessionId: string, messages: ChatHistory[]): void {
+        const session = this.sessions.find((s) => s.id === sessionId);
+        if (session) {
+            session.messages.setMessages(messages);
+            this._emitChange();
+        }
+    }
+
+    /**
+     * Append a message to a session's ChatContext
+     * @param sessionId - Session ID
+     * @param message - Message to append
+     */
+    appendMessage(sessionId: string, message: ChatHistory): void {
+        const session = this.sessions.find((s) => s.id === sessionId);
+        if (session) {
+            session.messages.push(message);
+            this._emitChange();
+        }
+    }
+
+    /**
+     * Update session state from backend message
+     * Handles session summaries (metadata) and active session history
+     * @param data - Backend session state data
+     */
+    updateFromBackend(data: {
+        sessions: Array<{
+            id: string;
+            title: string;
+            customTitle?: boolean;
+            createdAt: number;
+            updatedAt: number;
+        }>;
+        activeSessionId: string;
+        history: ChatHistory[];
+        contextUsed: number;
+        contextMax: number;
+    }): void {
+        const { sessions: sessionSummaries, activeSessionId, history, contextUsed, contextMax } = data;
+
+        // Update session metadata without losing ChatContext instances
+        sessionSummaries.forEach((summary) => {
+            const session = this.sessions.find((s) => s.id === summary.id);
+            if (session) {
+                // Update metadata, preserve ChatContext
+                session.title = summary.title;
+                session.customTitle = summary.customTitle;
+                session.createdAt = summary.createdAt;
+                session.updatedAt = summary.updatedAt;
+            } else {
+                // New session - create with ChatContext
+                this.sessions.push({
+                    ...summary,
+                    messages: new ChatContext(),
+                    contextStartIndex: 0,
+                });
+            }
+        });
+
+        // Remove sessions that no longer exist
+        const summaryIds = new Set(sessionSummaries.map((s) => s.id));
+        this.sessions = this.sessions.filter((s) => summaryIds.has(s.id));
+
+        // Update the active session's messages from history
+        if (activeSessionId && history.length > 0) {
+            this.updateSessionMessages(activeSessionId, history);
+        }
+
+        // Update store state
+        this.activeSessionId = activeSessionId;
+        this.contextUsed = contextUsed;
+        this.contextMax = contextMax;
+
         this._emitChange();
     }
 }

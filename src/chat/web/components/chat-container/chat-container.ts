@@ -3,6 +3,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import type { ChatSession, ToolConfirmRequest } from "../../types";
+import { ChatSessionStore } from "../chat-session/chat-session-store";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
@@ -33,7 +34,7 @@ import { backendApi } from "./utils";
 /**
  * Root webview component that orchestrates the chat UI.
  *
- * Owns the authoritative message history (`wvChatContext`) and exposes a
+ * Uses the ChatContext from ChatSessionStore (single source of truth) and exposes a
  * Lit-reactive `messages` snapshot for child components. Delegates user
  * interactions to `handlers-outbound` and host messages to `handlers-inbound`.
  */
@@ -57,7 +58,9 @@ export class ChatContainer extends LitElement {
     @state() showScrollButton: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
 
-    wvChatContext = new ChatContext();
+    // Reference to store's ChatContext (single source of truth)
+    // Public so handlers can access it
+    chatContext?: ChatContext;
     private _updateTimer: number | null = null;
     private _inputResizeObserver: ResizeObserver | null = null;
     private _lastInputHeight = 0;
@@ -90,9 +93,9 @@ export class ChatContainer extends LitElement {
     private handleToolConfirmCancel = (e: CustomEvent) => onToolConfirmCancel(this, e);
     private handleScrollDown = () => this.scrollToBottom();
 
-    /** Creates a fresh array snapshot from `wvChatContext` to trigger a Lit re-render. */
+    /** Creates a fresh array snapshot from store's ChatContext to trigger a Lit re-render. */
     syncMessages() {
-        this.messages = [...this.wvChatContext.getMessages()];
+        this.messages = [...(this.chatContext?.getMessages() || [])];
     }
 
     /**
@@ -114,9 +117,24 @@ export class ChatContainer extends LitElement {
         output?.scrollToBottom?.();
     }
 
+    private _onStoreChange = () => {
+        // Refresh ChatContext reference when store changes
+        // This handles the case where chatContext was undefined initially
+        this.chatContext = ChatSessionStore.instance.getActiveChatContext();
+        this.syncMessages();
+    };
+
     /** Initializes the component by signaling readiness to the backend and setting up the window message listener for host communication. */
     connectedCallback() {
         super.connectedCallback();
+        // Get ChatContext reference from store (not a copy)
+        // Note: May be undefined initially until backend sends init message
+        this.chatContext = ChatSessionStore.instance.getActiveChatContext();
+
+        // Subscribe to store changes for automatic synchronization
+        this._onStoreChange = this._onStoreChange.bind(this);
+        ChatSessionStore.instance.addEventListener("change", this._onStoreChange);
+
         backendApi.ready();
         const dispatch = createInboundDispatcher(this);
         this._messageHandler = (e: MessageEvent) => dispatch(e.data);
@@ -163,6 +181,8 @@ export class ChatContainer extends LitElement {
             clearTimeout(this._updateTimer);
             this._updateTimer = null;
         }
+        // Unsubscribe from store to prevent memory leaks
+        ChatSessionStore.instance.removeEventListener("change", this._onStoreChange);
     }
 
     /**

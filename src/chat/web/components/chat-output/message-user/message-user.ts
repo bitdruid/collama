@@ -29,8 +29,9 @@ export interface UserRenderOptions {
 }
 
 function getTurnTokens(messages: ChatHistory[], index: number): number {
-    const ctx = new ChatContext();
-    ctx.setMessages(messages);
+    // Temporary instance is OK for pure calculation
+    // ChatContext constructor accepts optional messages parameter
+    const ctx = new ChatContext(messages);
     return ctx.sumTokensInRange(index, ctx.getTurnEnd(index));
 }
 
