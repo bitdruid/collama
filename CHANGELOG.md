@@ -3,7 +3,22 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
-## [1.6.0] - 2025-06-18
+## [1.6.1] - 2026-04-02
+
+### Fixed
+- Prevent memory leaks in web components
+- Centralize ChatContext in ChatSessionStore
+
+### Changed
+- Reorganize type definitions and update imports
+- Refactor @query, @state, @property, event handlers
+- Move shared web types
+- Extract DismissalController for modals and popups
+- Barrel export with index
+- Migrate Lit components to @customElement decorator
+- Replace static properties with Lit decorators
+
+## [1.6.0] - 2026-04-01
 
 ### Added
 - Context file/folder search in chat input
