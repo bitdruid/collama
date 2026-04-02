@@ -1,6 +1,7 @@
 // src/services/chat-session-store.ts
 
-import { ChatSession } from "./chat-session";
+import { ChatContext } from "../../../../common/context-chat";
+import type { ChatSession } from "../../types";
 
 export class ChatSessionStore extends EventTarget {
     static instance = new ChatSessionStore();
@@ -20,6 +21,8 @@ export class ChatSessionStore extends EventTarget {
         const newSession: ChatSession = {
             id,
             title: "New Chat",
+            messages: new ChatContext(),
+            contextStartIndex: 0,
             createdAt: now,
             updatedAt: now,
         };
@@ -57,6 +60,9 @@ export class ChatSessionStore extends EventTarget {
         const newSession: ChatSession = {
             id: now.toString(),
             title: source.title + " (Copy)",
+            customTitle: true,
+            messages: new ChatContext(JSON.parse(JSON.stringify(source.messages.getMessages()))),
+            contextStartIndex: source.contextStartIndex,
             createdAt: now,
             updatedAt: now,
         };

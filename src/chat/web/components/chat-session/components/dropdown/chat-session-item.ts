@@ -1,7 +1,7 @@
 // src/chat/web/components/chat_session/components/dropdown/chat_session_item.ts
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { ChatSession } from "../../chat-session";
+import { ChatSession } from "../../../../types";
 import { commonStyles } from "../../styles-shared";
 import { sessionItemStyles } from "./styles";
 

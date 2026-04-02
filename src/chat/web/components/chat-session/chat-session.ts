@@ -5,14 +5,8 @@ import { customElement, state } from "lit/decorators.js";
 import "./components/dropdown/chat-session-dropdown";
 import "./components/header/chat-session-header";
 
+import type { ChatSession } from "../../types";
 import { ChatSessionStore } from "./chat-session-store";
-
-export interface ChatSession {
-    id: string;
-    title: string;
-    createdAt: number;
-    updatedAt: number;
-}
 
 @customElement("collama-chatsessions")
 export class ChatSessions extends LitElement {

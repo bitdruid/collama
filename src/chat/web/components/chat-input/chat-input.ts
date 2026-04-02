@@ -1,10 +1,9 @@
 import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
-import type { ContextSearchResult } from "./components/context-search/context-search";
+import type { ContextSearchResult, ToolConfirmRequest } from "../../types";
 import "./components/control-panel/control-panel";
 import "./components/tool-confirm/tool-confirm";
-import type { ToolConfirmRequest } from "./components/tool-confirm/tool-confirm";
 import { chatInputStyles } from "./styles-shared";
 
 @customElement("collama-chatinput")

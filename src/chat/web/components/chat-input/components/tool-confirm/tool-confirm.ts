@@ -1,13 +1,8 @@
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
+import type { ToolConfirmRequest } from "../../../../types";
 import { toolConfirmStyles } from "./styles";
-
-export interface ToolConfirmRequest {
-    id: string;
-    action: string;
-    filePath: string;
-}
 
 @customElement("collama-tool-confirm")
 export class ToolConfirm extends LitElement {
@@ -100,8 +95,7 @@ export class ToolConfirm extends LitElement {
                                   type="text"
                                   placeholder="What should the agent do instead?"
                                   .value=${this._cancelReason}
-                                  @input=${(e: Event) =>
-                                      (this._cancelReason = (e.target as HTMLInputElement).value)}
+                                  @input=${(e: Event) => (this._cancelReason = (e.target as HTMLInputElement).value)}
                                   @keydown=${this._cancelKeyDown}
                               />
                               <button class="btn-send" @click=${this._sendCancel}>Send</button>

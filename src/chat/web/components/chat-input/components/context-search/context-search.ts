@@ -1,23 +1,10 @@
 import { html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import type { AttachedContext } from "../../../../../../common/context-chat";
+import type { ContextSearchResult } from "../../../../types";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
 import { contextTreeStyles } from "./styles";
-
-/**
- * Represents a single search result item.
- */
-export interface ContextSearchResult {
-    /** The name of the file or folder. */
-    fileName: string;
-    /** The absolute path to the file or folder. */
-    filePath: string;
-    /** The relative path of the file or folder from the workspace root. */
-    relativePath: string;
-    /** Flag indicating if the result is a folder. */
-    isFolder: boolean;
-}
 
 /**
  * A context tree component for searching and adding workspace files.

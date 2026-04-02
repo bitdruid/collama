@@ -40,10 +40,14 @@ export class ChatAccordion extends LitElement {
 
     /**
      * Called when the element is added to the document's DOM.
-     * Explicitly avoids auto-expansion logic for user code.
+     * Standard code accordions are always expanded by default.
      */
     connectedCallback() {
         super.connectedCallback();
+        // Standard code accordions should always be expanded
+        if (this.type === "code") {
+            this.expanded = true;
+        }
     }
 
     /**
