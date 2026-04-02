@@ -1,7 +1,7 @@
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { LlmClientFactory } from "../common/llmclient";
 import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/llmoptions";
-import { agent_Template } from "../common/prompt";
+import { getAgentTemplate } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import * as vscode from "vscode";
 import { userConfig } from "../config";
@@ -62,7 +62,7 @@ export class Agent {
             const signal = this.abortController.signal;
 
             const initMessages: ChatHistory[] = userConfig.agentic
-                ? [{ role: "system", content: agent_Template }, ...messages.getMessages()]
+                ? [{ role: "system", content: getAgentTemplate() }, ...messages.getMessages()]
                 : [...messages.getMessages()];
             const history = new AgentContext(initMessages);
 
