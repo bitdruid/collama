@@ -157,6 +157,7 @@ export class ChatSessionStore extends EventTarget {
             title: string;
             customTitle?: boolean;
             temporary?: boolean;
+            ghost?: boolean;
             createdAt: number;
             updatedAt: number;
         }>;
@@ -175,6 +176,7 @@ export class ChatSessionStore extends EventTarget {
                 session.title = summary.title;
                 session.customTitle = summary.customTitle;
                 session.temporary = summary.temporary;
+                session.ghost = summary.ghost;
                 session.createdAt = summary.createdAt;
                 session.updatedAt = summary.updatedAt;
             } else {

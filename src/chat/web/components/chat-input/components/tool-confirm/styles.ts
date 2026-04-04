@@ -43,6 +43,9 @@ export const toolConfirmStyles = css`
     .btn-accept:hover {
         background: ${themeColors.submitHover};
     }
+    .btn-accept:active {
+        background: ${themeColors.submitActive};
+    }
 
     .btn-accept-all {
         background: ${themeColors.context};
@@ -57,6 +60,9 @@ export const toolConfirmStyles = css`
     .btn-cancel:hover {
         background: ${themeColors.cancelHover};
     }
+    .btn-cancel:active {
+        background: ${themeColors.cancelActive};
+    }
 
     .btn-send {
         background: ${themeColors.cancel};
@@ -69,6 +75,9 @@ export const toolConfirmStyles = css`
     }
     .btn-send:hover {
         background: ${themeColors.cancelHover};
+    }
+    .btn-send:active {
+        background: ${themeColors.cancelActive};
     }
 
     .confirm-filepath {

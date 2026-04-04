@@ -53,7 +53,7 @@ export const controlPanelButtonStyles = css`
     button-compress,
     button-gallery,
     button-auto-accept,
-    button-temp-chat,
+    button-ghost-chat,
     button-clear-chat,
     button-token-counter {
         display: inline-flex;
@@ -76,6 +76,9 @@ export const controlPanelButtonStyles = css`
     }
     button-submit:hover {
         background-color: ${themeColors.submitHover};
+    }
+    button-submit:active {
+        background-color: ${themeColors.submitActive};
     }
     button-submit:disabled {
         background-color: ${themeColors.disabled};
@@ -118,6 +121,9 @@ export const controlPanelButtonStyles = css`
     }
     button-cancel:hover {
         background-color: ${themeColors.cancelHover};
+    }
+    button-cancel:active {
+        background-color: ${themeColors.cancelActive};
     }
 
     @keyframes cancel-pulse {
@@ -179,34 +185,14 @@ export const controlPanelButtonStyles = css`
         }
     }
 
-    button-temp-chat {
-        background-color: ${themeColors.tempChat};
+    button-ghost-chat {
+        background-color: ${themeColors.ghostChat};
     }
-    button-temp-chat:hover {
-        background-color: ${themeColors.tempChatHover};
+    button-ghost-chat:hover {
+        background-color: ${themeColors.ghostChatHover};
     }
-
-    button-temp-chat[active] {
-        background-color: ${themeColors.tempChatActive};
-        box-shadow:
-            0 0 0 2px ${themeColors.textWhite},
-            0 0 0 4px ${themeColors.tempChatActive};
-        animation: pulse-temp-chat 2s infinite;
-    }
-
-    @keyframes pulse-temp-chat {
-        0%,
-        100% {
-            box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
-                0 0 0 4px ${themeColors.tempChatActive};
-        }
-        50% {
-            box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
-                0 0 0 8px ${themeColors.tempChatActive},
-                0 0 15px rgba(139, 184, 214, 0.5);
-        }
+    button-ghost-chat:active {
+        background-color: ${themeColors.ghostChatActive};
     }
 
     button-clear-chat {
@@ -214,6 +200,9 @@ export const controlPanelButtonStyles = css`
     }
     button-clear-chat:hover {
         background-color: ${themeColors.clearChatHover};
+    }
+    button-clear-chat:active {
+        background-color: ${themeColors.clearChatActive};
     }
 
     button-token-counter {

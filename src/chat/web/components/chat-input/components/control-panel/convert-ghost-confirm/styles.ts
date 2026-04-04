@@ -1,7 +1,7 @@
 import { css } from "lit";
 import { themeColors } from "../../../../../styles/theme-colors";
 
-export const clearChatConfirmStyles = css`
+export const convertGhostConfirmStyles = css`
     :host {
         right: auto;
         left: 0;
@@ -52,15 +52,15 @@ export const clearChatConfirmStyles = css`
     }
 
     .ok-btn {
-        background-color: ${themeColors.submit};
+        background-color: ${themeColors.ghostChat};
         color: ${themeColors.textWhite};
     }
 
     .ok-btn:hover {
-        background-color: ${themeColors.submitHover};
+        background-color: ${themeColors.ghostChatHover};
     }
 
     .ok-btn:active {
-        background-color: ${themeColors.submitActive};
+        background-color: ${themeColors.ghostChatActive};
     }
 `;

@@ -3,6 +3,15 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-04-04
+
+### Added
+- Temp button in session header — creates a ghost session (temporary, unlisted, never persisted)
+
+### Changed
+- Temp-Chat button now converts active session to a temp chat (asks for confirmation)
+- Active states for some buttons
+
 ## [1.6.2] - 2026-04-04
 
 ### Added

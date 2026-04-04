@@ -26,6 +26,9 @@ export class ChatSessionHeader extends LitElement {
                         .used=${this.contextUsed}
                         .max=${this.contextMax}
                     ></collama-context-usage-bar>
+                    <button class="icon-button new-ghost-chat-button" @click=${this._newGhostChat} title="New Temporary Chat">
+                        ${icons.ghostChat}
+                    </button>
                     <button class="icon-button primary-button new-chat-button" @click=${this._newChat} title="New Chat">
                         ${icons.plus}
                     </button>
@@ -40,5 +43,9 @@ export class ChatSessionHeader extends LitElement {
 
     private _newChat() {
         this.dispatchEvent(new CustomEvent("new-chat", { bubbles: true, composed: true }));
+    }
+
+    private _newGhostChat() {
+        this.dispatchEvent(new CustomEvent("new-ghost-chat", { bubbles: true, composed: true }));
     }
 }

@@ -107,6 +107,10 @@ export const galleryButtonStyles = css`
     .edit-btn:hover {
         background: ${themeColors.submitHover};
     }
+    .prompt-btn:active,
+    .edit-btn:active {
+        background: ${themeColors.submitActive};
+    }
 
     .delete-btn,
     .cancel-btn {
@@ -115,5 +119,9 @@ export const galleryButtonStyles = css`
     .delete-btn:hover,
     .cancel-btn:hover {
         background: ${themeColors.cancelHover};
+    }
+    .delete-btn:active,
+    .cancel-btn:active {
+        background: ${themeColors.cancelActive};
     }
 `;

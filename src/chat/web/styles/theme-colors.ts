@@ -9,7 +9,7 @@ export const themeColors = {
     /* Submit Button Colors */
     submit: unsafeCSS("#2277a8"),
     submitHover: unsafeCSS("#185d86"),
-    submitActive: unsafeCSS("#145a75"),
+    submitActive: unsafeCSS("#0d3d52"),
 
     /* Context Button Colors */
     context: unsafeCSS("#3a9a40"),
@@ -18,6 +18,7 @@ export const themeColors = {
     /* Cancel Button Colors */
     cancel: unsafeCSS("#a82222"),
     cancelHover: unsafeCSS("#861818"),
+    cancelActive: unsafeCSS("#4d0d0d"),
 
     /* Compress Button Colors */
     compress: unsafeCSS("#d99839"),
@@ -32,14 +33,15 @@ export const themeColors = {
     autoAcceptHover: unsafeCSS("#b86565"),
     autoAcceptActive: unsafeCSS("#ff6b6b"),
 
-    /* Temp Chat Button Colors */
-    tempChat: unsafeCSS("#7a9bb5"),
-    tempChatHover: unsafeCSS("#6388a3"),
-    tempChatActive: unsafeCSS("#8bb8d6"),
+    /* Ghost Chat Button Colors */
+    ghostChat: unsafeCSS("#7a9bb5"),
+    ghostChatHover: unsafeCSS("#6388a3"),
+    ghostChatActive: unsafeCSS("#8bb8d6"),
 
     /* Clear Chat Button Colors */
     clearChat: unsafeCSS("#b07070"),
     clearChatHover: unsafeCSS("#995c5c"),
+    clearChatActive: unsafeCSS("#6e4545"),
 
     /* Role Colors */
     system: unsafeCSS("#9b59b6"),

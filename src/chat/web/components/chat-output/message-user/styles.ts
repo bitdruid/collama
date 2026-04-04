@@ -135,11 +135,19 @@ export const editStyles = css`
         background: ${themeColors.submitHover};
     }
 
+    .edit-send:active {
+        background: ${themeColors.submitActive};
+    }
+
     .edit-cancel {
         background: ${themeColors.cancel};
     }
 
     .edit-cancel:hover {
         background: ${themeColors.cancelHover};
+    }
+
+    .edit-cancel:active {
+        background: ${themeColors.cancelActive};
     }
 `;

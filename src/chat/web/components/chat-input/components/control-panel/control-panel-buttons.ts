@@ -4,6 +4,7 @@ import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../../utils-front";
 import type { ContextSearchResult } from "../../../../types";
 import "./clear-chat-confirm/clear-chat-confirm";
+import "./convert-ghost-confirm/convert-ghost-confirm";
 import { controlPanelButtonStyles } from "./styles";
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
@@ -20,12 +21,11 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
-    @property({ type: Boolean }) tempChat = false;
-
     @state() private autoAccept = false;
     @state() private showContextTree = false;
     @state() private showGallery = false;
     @state() private showClearConfirm = false;
+    @state() private showConvertGhostConfirm = false;
 
     @query("collama-context-search")
     private contextSearch!: HTMLElement;
@@ -34,7 +34,9 @@ export class ControlPanelButtons extends LitElement {
     private promptGallery!: HTMLElement;
 
     private handleAutoAccept = () => this._handleAutoAccept();
-    private handleTempChat = () => emit(this, "temp-chat");
+    private handleConvertToGhost = () => (this.showConvertGhostConfirm = true);
+    private handleConvertGhostConfirmed = () => emit(this, "convert-to-ghost");
+    private handleConvertGhostClose = () => (this.showConvertGhostConfirm = false);
     private handleClearChat = () => (this.showClearConfirm = true);
     private handleClearChatConfirmed = () => emit(this, "clear-chat");
     private handleClearConfirmClose = () => (this.showClearConfirm = false);
@@ -130,15 +132,22 @@ export class ControlPanelButtons extends LitElement {
         `;
     }
 
-    private _renderTempChat() {
+    private _renderGhostChat() {
         return html`
-            <button-temp-chat
-                title="Temporary chat (auto-deletes on switch)"
-                @click=${this.handleTempChat}
-                ?active=${this.tempChat}
+            <button-ghost-chat
+                title="Convert to temporary chat"
+                data-popup-anchor
+                @click=${this.handleConvertToGhost}
             >
-                ${icons.tempChat}
-            </button-temp-chat>
+                ${icons.ghostChat}
+            </button-ghost-chat>
+            ${this.showConvertGhostConfirm
+                ? html`<collama-convert-ghost-confirm
+                      autoShow
+                      @popup-close=${this.handleConvertGhostClose}
+                      @convert-ghost-confirmed=${this.handleConvertGhostConfirmed}
+                  ></collama-convert-ghost-confirm>`
+                : ""}
         `;
     }
 
@@ -181,7 +190,7 @@ export class ControlPanelButtons extends LitElement {
 
         return html`
             <button-row>
-                ${this._renderTempChat()} ${this._renderClearChat()}
+                ${this._renderGhostChat()} ${this._renderClearChat()}
                 <span class="spacer"></span>
                 ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
                 ${this._renderAutoAccept()} ${this._renderSubmit()}

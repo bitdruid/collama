@@ -129,7 +129,7 @@ export class Session {
      */
     saveSessions() {
         const toStore: StoredChatSession[] = this.sessions
-            .filter((s) => !s.temporary)
+            .filter((s) => !s.temporary && !s.ghost)
             .map((s) => ({ ...s, messages: s.messages.getMessages() }));
         this.extContext.globalState.update(CHAT_SESSIONS_KEY, toStore);
         this.extContext.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);

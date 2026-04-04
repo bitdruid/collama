@@ -44,6 +44,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 
 **Chat Interface**
 - Multiple chat sessions with custom titles
+- Temporary chat sessions — create unlisted, non-persisted sessions for quick experiments
 - Send selected code/files as context with file references
 - **Search and attach files/folders directly from the chat input** - easily browse and add workspace files to your conversation context
 - Real-time context usage bar with automatic trimming
@@ -210,18 +211,15 @@ Note: ChatML format is not supported - that means only true FIM models will work
 ### Chat Interface
 
 1. Open the Chat view in the sidebar (Collama icon)
-2. Right-click on selected code in editor → **Send to Chat**
-3. **Add context files/folders**: Click the attachment icon in the chat input to search and attach workspace files or folders directly
-4. Type your message - the context is automatically attached with:
-    - File name and path
-    - Line number references
-    - Selected code or full file content
-5. Monitor token usage with the real-time context bar and agent-token counter
-6. Create multiple chat sessions to organize conversations by topic
-7. Session Management: Copy / rename / delete sessions
-8. Export chat history to JSON for backup and sharing
-9. Use auto-accept all toggle for faster workflow when making multiple edits
-10. Click "Summarize" button to condense entire conversation or individual turns to reduce context usage
+2. Send code to chat — Right-click selected code → **Send to Chat**, or type a message directly
+3. Add context — Click the attachment icon to search and attach files/folders from your workspace
+4. Manage sessions:
+   - **New Chat** — Creates a saved session that appears in your session list
+   - **New Temporary Chat** — Creates an unlisted session that's deleted when you switch away (great for quick experiments)
+   - **Session menu** — Copy, rename, delete, or export any session
+5. Monitor token usage in the context bar during conversation (agent loop tokens in button-section)
+6. Optimize context — Click **Summarize** to condense the entire conversations
+7. Speed up edits — Toggle **auto-accept all** to skip confirmation dialogs for multiple edits/creates
 
 ### Commit Message Generation
 

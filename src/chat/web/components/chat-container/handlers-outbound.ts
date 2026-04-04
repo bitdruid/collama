@@ -163,6 +163,12 @@ export function onNewChat() {
     backendApi.newSession();
 }
 
+/** Creates a new ghost (temporary, unlisted) chat session. */
+export function onNewGhostChat() {
+    logWebview("Creating new ghost chat");
+    backendApi.newGhostSession();
+}
+
 /** Switches to the selected session. */
 export function onSelectSession(e: CustomEvent) {
     logWebview(`Switching to session ${e.detail.id}`);
@@ -192,9 +198,10 @@ export function onAutoAccept(e: CustomEvent) {
     backendApi.autoAcceptAll(e.detail.enabled);
 }
 
-/** Toggles temporary chat mode for the active session. */
-export function onTempChat() {
-    backendApi.tempChat();
+/** Converts the active session to a ghost (temporary, unlisted) session. */
+export function onConvertToGhost() {
+    logWebview("Converting session to ghost");
+    backendApi.convertToGhost();
 }
 
 /** Clears all messages from the active session. */

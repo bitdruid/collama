@@ -36,13 +36,14 @@ export const backendApi = {
     deleteMessages: (turnStart: number, turnEnd: number, sessionId: string) =>
         window.vscode.postMessage({ type: "delete-messages", turnStart, turnEnd, sessionId }),
     newSession: () => window.vscode.postMessage({ type: "new-session" }),
+    newGhostSession: () => window.vscode.postMessage({ type: "new-ghost-session" }),
     switchSession: (sessionId: string) => window.vscode.postMessage({ type: "switch-session", sessionId }),
     deleteSession: (sessionId: string) => window.vscode.postMessage({ type: "delete-session", sessionId }),
     renameSession: (sessionId: string, newTitle: string) =>
         window.vscode.postMessage({ type: "rename-session", sessionId, newTitle }),
     copySession: (sessionId: string) => window.vscode.postMessage({ type: "copy-session", sessionId }),
     autoAcceptAll: (enabled: boolean) => window.vscode.postMessage({ type: "auto-accept-all", enabled }),
-    tempChat: () => window.vscode.postMessage({ type: "temp-chat" }),
+    convertToGhost: () => window.vscode.postMessage({ type: "convert-to-ghost" }),
     clearChat: () => window.vscode.postMessage({ type: "clear-chat" }),
     exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
     toolConfirmResponse: (id: string, value: string, reason: string) =>

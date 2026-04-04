@@ -72,6 +72,11 @@ export class ChatSessions extends LitElement {
         this.isOpen = false;
     }
 
+    private _handleNewGhostChat() {
+        this.isOpen = false;
+        this.dispatchEvent(new CustomEvent("new-ghost-chat", { bubbles: true, composed: true }));
+    }
+
     private _handleSelectSession(id: string) {
         ChatSessionStore.instance.selectSession(id);
         this.isOpen = false;
@@ -102,6 +107,7 @@ export class ChatSessions extends LitElement {
             <collama-chatsession-header
                 .isOpen=${this.isOpen}
                 @toggle=${this._toggleOpen}
+                @new-ghost-chat=${this._handleNewGhostChat}
                 .contextUsed=${this.contextUsed}
                 .contextMax=${this.contextMax}
             ></collama-chatsession-header>

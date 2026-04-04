@@ -15,7 +15,6 @@ export class ChatInput extends LitElement {
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Object }) toolConfirmRequest: ToolConfirmRequest | null = null;
-    @property({ type: Boolean }) tempChat = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @state() private _activePanel: "control-panel" | "tool-confirm" = "control-panel";
@@ -40,7 +39,6 @@ export class ChatInput extends LitElement {
                 class="panel ${this._activePanel === "control-panel" ? "active" : ""}"
                 .contexts=${this.contexts}
                 .isLoading=${this.isLoading}
-                .tempChat=${this.tempChat}
                 .agentToken=${this.agentToken}
                 .hasTokenData=${this.hasTokenData}
                 .contextSearchResults=${this.contextSearchResults}

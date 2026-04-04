@@ -22,6 +22,7 @@ export interface SessionSummary {
     id: string;
     title: string;
     temporary?: boolean;
+    ghost?: boolean;
     createdAt: number;
     updatedAt: number;
 }
@@ -37,6 +38,7 @@ export function mapSessionToSummary<T extends SessionSummary>(session: T): Sessi
         id: session.id,
         title: session.title,
         temporary: session.temporary,
+        ghost: session.ghost,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
     };

@@ -46,9 +46,6 @@ function applySessionState(host: ChatContainer, msg: any) {
     host.contextMax = store.contextMax;
     host.contextStartIndex = msg.contextStartIndex || 0;
 
-    // Sync tempChat flag from the active session
-    const activeSession = store.sessions.find((s) => s.id === store.activeSessionId);
-    host.tempChat = activeSession?.temporary ?? false;
 }
 
 /** Initializes the component with session history, context usage, and session list from the host. */

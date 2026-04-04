@@ -67,7 +67,7 @@ export class ChatSessionsDropdown extends LitElement {
     };
 
     render() {
-        const sorted = [...this.sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+        const sorted = [...this.sessions].filter((s) => !s.ghost).sort((a, b) => b.updatedAt - a.updatedAt);
 
         return html`
             <div class="sessions-dropdown ${this.isOpen ? "open" : ""}">

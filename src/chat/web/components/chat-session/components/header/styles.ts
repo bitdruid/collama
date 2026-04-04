@@ -77,4 +77,26 @@ export const headerStyles = css`
     .new-chat-button:active {
         background-color: ${themeColors.submitActive};
     }
+
+    .new-ghost-chat-button {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background-color: ${themeColors.ghostChat};
+        color: ${themeColors.textWhite};
+    }
+
+    .new-ghost-chat-button svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+    }
+
+    .new-ghost-chat-button:hover {
+        background-color: ${themeColors.ghostChatHover};
+    }
+
+    .new-ghost-chat-button:active {
+        background-color: ${themeColors.ghostChatActive};
+    }
 `;

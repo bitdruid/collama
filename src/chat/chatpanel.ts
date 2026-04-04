@@ -41,6 +41,7 @@ export class ChatPanel {
         "tool-confirm-response": (msg) => resolveToolConfirm(msg.id, msg.value, msg.reason),
         "chat-ready": (_, webview) => this.handleChatReady(webview),
         "new-session": () => this.handleNewSession(),
+        "new-ghost-session": () => this.handleNewGhostSession(),
         "switch-session": (msg) => this.handleSwitchSession(msg),
         "export-session": (msg) => this.handleExportSession(msg),
         "rename-session": (msg) => this.handleRenameSession(msg),
@@ -48,7 +49,7 @@ export class ChatPanel {
         "delete-session": (msg) => this.handleDeleteSession(msg),
         "delete-messages": (msg) => this.handleDeleteMessages(msg),
         "auto-accept-all": (msg) => setAutoAcceptAll(msg.enabled),
-        "temp-chat": () => this.handleTempChat(),
+        "convert-to-ghost": () => this.handleConvertToGhost(),
         "clear-chat": () => this.handleClearChat(),
         "chat-cancel": (_, webview) => this.handleChatCancel(webview),
         "summarize-request": (msg, webview) => this.handleSummarizeRequest(msg, webview),
@@ -101,16 +102,44 @@ export class ChatPanel {
      * Handles creating a new session.
      */
     private handleNewSession() {
-        // Auto-delete the old session if it was temporary
+        // Auto-delete the old session if it was temporary or ghost
         const oldSession = this.session.getActiveSession();
-        if (oldSession?.temporary) {
+        if (oldSession?.temporary || oldSession?.ghost) {
             this.session.sessions = this.session.sessions.filter((s) => s.id !== oldSession.id);
-            logMsg(`Auto-deleted temporary session: ${oldSession.id}`);
+            logMsg(`Auto-deleted temporary/ghost session: ${oldSession.id}`);
         }
 
         this.session.createNewSession();
         this.session.sendSessionsUpdate();
         logMsg(`Created new session: ${this.session.activeSessionId}`);
+    }
+
+    /**
+     * Handles creating a new ghost (temporary, unlisted) session.
+     * The session is never persisted and never appears in the sessions list.
+     */
+    private handleNewGhostSession() {
+        // Auto-delete the old session if it was temporary or ghost
+        const oldSession = this.session.getActiveSession();
+        if (oldSession?.temporary || oldSession?.ghost) {
+            this.session.sessions = this.session.sessions.filter((s) => s.id !== oldSession.id);
+            logMsg(`Auto-deleted temporary/ghost session: ${oldSession.id}`);
+        }
+
+        const now = Date.now();
+        const ghostSession = {
+            id: Session.generateSessionId(),
+            title: "Temporary Chat",
+            messages: new ChatContext(),
+            contextStartIndex: 0,
+            ghost: true,
+            createdAt: now,
+            updatedAt: now,
+        };
+        this.session.sessions.push(ghostSession);
+        this.session.activeSessionId = ghostSession.id;
+        this.session.sendSessionsUpdate();
+        logMsg(`Created ghost session: ${ghostSession.id}`);
     }
 
     /**
@@ -122,11 +151,11 @@ export class ChatPanel {
             return;
         }
 
-        // Auto-delete the old session if it was temporary
+        // Auto-delete the old session if it was temporary or ghost
         const oldSession = this.session.getActiveSession();
-        if (oldSession?.temporary) {
+        if (oldSession?.temporary || oldSession?.ghost) {
             this.session.sessions = this.session.sessions.filter((s) => s.id !== oldSession.id);
-            logMsg(`Auto-deleted temporary session: ${oldSession.id}`);
+            logMsg(`Auto-deleted temporary/ghost session: ${oldSession.id}`);
         }
 
         this.session.activeSessionId = sessionId;
@@ -219,18 +248,21 @@ export class ChatPanel {
     }
 
     /**
-     * Toggles the temporary flag on the active session.
+     * Converts the active session to a ghost session.
+     * Has no effect if the session is already ghost.
      */
-    private handleTempChat() {
+    private handleConvertToGhost() {
         const session = this.session.getActiveSession();
-        if (!session) {
+        if (!session || session.ghost) {
             return;
         }
         this.session.updateSession(session, (s) => {
-            s.temporary = !s.temporary;
+            s.ghost = true;
+            s.temporary = false;
         });
         this.session.sendSessionsUpdate();
-        logMsg(`Session ${session.id} temporary: ${session.temporary}`);
+        this.session.saveSessions();
+        logMsg(`Session ${session.id} converted to ghost`);
     }
 
     /**

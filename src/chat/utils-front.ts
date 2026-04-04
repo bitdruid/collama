@@ -315,8 +315,8 @@ export const icons = {
         <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>`,
 
-    /** Message circle dashed - used for temporary chat toggle */
-    tempChat: html`<svg
+    /** Message circle dashed - used for ghost chat button */
+    ghostChat: html`<svg
         width="14"
         height="14"
         viewBox="0 0 24 24"
