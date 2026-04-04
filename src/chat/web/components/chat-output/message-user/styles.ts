@@ -106,12 +106,25 @@ export const editStyles = css`
 
     .edit-send,
     .edit-cancel {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: 4px 12px;
         border: none;
         border-radius: 4px;
         font-size: ${themeFonts.medium};
+        line-height: 1;
+        vertical-align: middle;
         cursor: pointer;
         color: ${themeColors.textWhite};
+    }
+
+    .edit-send svg,
+    .edit-cancel svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
     }
 
     .edit-send {
