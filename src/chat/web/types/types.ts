@@ -7,6 +7,7 @@ export interface ChatSession {
     id: string;
     title: string;
     customTitle?: boolean;
+    temporary?: boolean;
     messages: ChatContext;
     contextStartIndex: number;
     createdAt: number;

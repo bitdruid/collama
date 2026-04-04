@@ -42,6 +42,8 @@ export const backendApi = {
         window.vscode.postMessage({ type: "rename-session", sessionId, newTitle }),
     copySession: (sessionId: string) => window.vscode.postMessage({ type: "copy-session", sessionId }),
     autoAcceptAll: (enabled: boolean) => window.vscode.postMessage({ type: "auto-accept-all", enabled }),
+    tempChat: () => window.vscode.postMessage({ type: "temp-chat" }),
+    clearChat: () => window.vscode.postMessage({ type: "clear-chat" }),
     exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
     toolConfirmResponse: (id: string, value: string, reason: string) =>
         window.vscode.postMessage({ type: "tool-confirm-response", id, value, reason }),

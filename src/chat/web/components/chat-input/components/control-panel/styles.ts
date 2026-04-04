@@ -53,6 +53,8 @@ export const controlPanelButtonStyles = css`
     button-compress,
     button-gallery,
     button-auto-accept,
+    button-temp-chat,
+    button-clear-chat,
     button-token-counter {
         display: inline-flex;
         align-items: center;
@@ -112,13 +114,13 @@ export const controlPanelButtonStyles = css`
         box-shadow:
             0 0 0 2px ${themeColors.textWhite},
             0 0 0 4px ${themeColors.cancel};
-        animation: cancel-spin 2s infinite;
+        animation: cancel-pulse 2s infinite;
     }
     button-cancel:hover {
         background-color: ${themeColors.cancelHover};
     }
 
-    @keyframes cancel-spin {
+    @keyframes cancel-pulse {
         0%,
         100% {
             box-shadow:
@@ -159,10 +161,10 @@ export const controlPanelButtonStyles = css`
         box-shadow:
             0 0 0 2px ${themeColors.textWhite},
             0 0 0 4px ${themeColors.autoAcceptActive};
-        animation: pulse 2s infinite;
+        animation: auto-accept-pulse 2s infinite;
     }
 
-    @keyframes pulse {
+    @keyframes auto-accept-pulse {
         0%,
         100% {
             box-shadow:
@@ -175,6 +177,43 @@ export const controlPanelButtonStyles = css`
                 0 0 0 8px ${themeColors.autoAcceptActive},
                 0 0 15px rgba(255, 107, 107, 0.5);
         }
+    }
+
+    button-temp-chat {
+        background-color: ${themeColors.tempChat};
+    }
+    button-temp-chat:hover {
+        background-color: ${themeColors.tempChatHover};
+    }
+
+    button-temp-chat[active] {
+        background-color: ${themeColors.tempChatActive};
+        box-shadow:
+            0 0 0 2px ${themeColors.textWhite},
+            0 0 0 4px ${themeColors.tempChatActive};
+        animation: pulse-temp-chat 2s infinite;
+    }
+
+    @keyframes pulse-temp-chat {
+        0%,
+        100% {
+            box-shadow:
+                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 4px ${themeColors.tempChatActive};
+        }
+        50% {
+            box-shadow:
+                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 8px ${themeColors.tempChatActive},
+                0 0 15px rgba(139, 184, 214, 0.5);
+        }
+    }
+
+    button-clear-chat {
+        background-color: ${themeColors.clearChat};
+    }
+    button-clear-chat:hover {
+        background-color: ${themeColors.clearChatHover};
     }
 
     button-token-counter {
@@ -231,9 +270,12 @@ export const controlPanelButtonStyles = css`
 
     button-row {
         display: flex;
-        justify-content: flex-end;
         gap: 8px;
         position: relative;
+    }
+
+    .spacer {
+        flex: 1;
     }
 
     .context-wrapper {

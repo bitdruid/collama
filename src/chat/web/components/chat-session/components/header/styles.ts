@@ -32,9 +32,22 @@ export const headerStyles = css`
     }
 
     .toggle-icon {
-        font-size: ${themeFonts.medium};
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         color: ${themeColors.uiFont};
         opacity: 0.6;
+        transition: transform 0.2s ease;
+    }
+
+    .toggle-icon.expanded {
+        transform: rotate(180deg);
+    }
+
+    .toggle-icon svg {
+        display: block;
+        width: 14px;
+        height: 14px;
     }
 
     .header-buttons {
@@ -46,9 +59,15 @@ export const headerStyles = css`
     .new-chat-button {
         width: 24px;
         height: 24px;
-        font-size: ${themeFonts.giant};
+        padding: 0;
         background-color: ${themeColors.submit};
         color: ${themeColors.textWhite};
+    }
+
+    .new-chat-button svg {
+        display: block;
+        width: 14px;
+        height: 14px;
     }
 
     .new-chat-button:hover {

@@ -2,7 +2,6 @@ import hljs from "highlight.js";
 import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import { css, html, unsafeCSS } from "lit";
 
-
 export function logWebview(message: string) {
     window.vscode.postMessage({
         type: "log",
@@ -137,7 +136,8 @@ export function highlightAllCodeBlocks(
 }
 
 /**
- * Feather Icons (https://feathericons.com/) - MIT License
+ * Feather Icons https://feathericons.com/ - MIT
+ * Lucide - https://lucide.dev/ - ISC
  * Centralized SVG icons for consistent use across components.
  * Returns Lit TemplateResult objects for direct use in templates.
  */
@@ -259,7 +259,7 @@ export const icons = {
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        stroke-width="2"
+        stroke-width="3"
         stroke-linecap="round"
         stroke-linejoin="round"
     >
@@ -280,21 +280,6 @@ export const icons = {
         <path
             d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
         ></path>
-    </svg>`,
-
-    /** X - used for cancel button */
-    cancel: html`<svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-    >
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>`,
 
     /** Minimize-2 (inward arrows) - used for compress button */
@@ -330,6 +315,27 @@ export const icons = {
         <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>`,
 
+    /** Message circle dashed - used for temporary chat toggle */
+    tempChat: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <path d="M10.1 2.182a10 10 0 0 1 3.8 0"></path>
+        <path d="M13.9 21.818a10 10 0 0 1-3.8 0"></path>
+        <path d="M17.609 3.72a10 10 0 0 1 2.69 2.7"></path>
+        <path d="M2.182 13.9a10 10 0 0 1 0-3.8"></path>
+        <path d="M20.28 17.61a10 10 0 0 1-2.7 2.69"></path>
+        <path d="M21.818 10.1a10 10 0 0 1 0 3.8"></path>
+        <path d="M3.721 6.391a10 10 0 0 1 2.7-2.69"></path>
+        <path d="m6.163 21.117-2.906.85a1 1 0 0 1-1.236-1.169l.965-2.98"></path>
+    </svg>`,
+
     /** Check circle - used for auto accept button */
     checkCircle: html`<svg
         width="14"
@@ -343,6 +349,40 @@ export const icons = {
     >
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
         <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>`,
+
+    /** Folder - used for folder search results */
+    folder: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <path
+            d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9l-.81-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+        ></path>
+    </svg>`,
+
+    /** File text - used for summarize turn action */
+    fileText: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path>
+        <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+        <path d="M10 9H8"></path>
+        <path d="M16 13H8"></path>
+        <path d="M16 17H8"></path>
     </svg>`,
 
     pencil: html`<svg
@@ -376,5 +416,49 @@ export const icons = {
         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
         <line x1="10" y1="11" x2="10" y2="17"></line>
         <line x1="14" y1="11" x2="14" y2="17"></line>
+    </svg>`,
+
+    /** Plus - used for add actions */
+    plus: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>`,
+
+    /** X - used for dismiss/cancel actions */
+    x: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>`,
+
+    /** Check - used for confirm actions */
+    check: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <polyline points="20 6 9 17 4 12"></polyline>
     </svg>`,
 };

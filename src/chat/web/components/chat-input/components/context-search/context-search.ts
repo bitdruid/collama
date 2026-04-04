@@ -1,6 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import type { AttachedContext } from "../../../../../../common/context-chat";
+import { icons } from "../../../../../utils-front";
 import type { ContextSearchResult } from "../../../../types";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
@@ -134,7 +135,11 @@ export class ContextTree extends BasePopup {
                     @keydown=${this.handleInputKeyDown}
                 />
                 ${this.searchQuery
-                    ? html` <button class="clear-btn" @click=${this.handleClearSearch} title="Clear search">✕</button> `
+                    ? html`
+                          <button class="clear-btn" @click=${this.handleClearSearch} title="Clear search">
+                              ${icons.x}
+                          </button>
+                      `
                     : ""}
             </div>
             <div class="results">
@@ -158,7 +163,7 @@ export class ContextTree extends BasePopup {
             <div class="result-item" @click=${() => this._handleAdd(result)}>
                 <div class="result-info">
                     <span class="result-name">
-                        ${result.isFolder ? html`<span class="folder-icon">&#128193;</span>` : ""} ${result.fileName}
+                        ${result.isFolder ? html`<span class="folder-icon">${icons.folder}</span>` : ""} ${result.fileName}
                     </span>
                     <span class="result-path">${result.relativePath}</span>
                 </div>
@@ -166,7 +171,7 @@ export class ContextTree extends BasePopup {
                     class="add-btn ${isAdded ? "added" : ""}"
                     title=${isAdded ? "Remove from context" : "Add as context"}
                 >
-                    ${isAdded ? "✓" : "+"}
+                    ${isAdded ? icons.check : icons.plus}
                 </button>
             </div>
         `;

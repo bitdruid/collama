@@ -57,14 +57,14 @@ export class PromptGalleryButtons extends LitElement {
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("save-new-prompt", { bubbles: true, composed: true }))}
                     >
-                        Save
+                        ${icons.check}
                     </button>
                     <button
                         class="gallery-btn cancel-btn"
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("cancel-new-prompt", { bubbles: true, composed: true }))}
                     >
-                        Cancel
+                        ${icons.x}
                     </button>
                 </div>
             `;
@@ -76,14 +76,14 @@ export class PromptGalleryButtons extends LitElement {
                     class="gallery-btn prompt-btn"
                     @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
                 >
-                    + Add Prompt
+                    ${icons.plus}
                 </button>
                 <button
                     class="gallery-btn cancel-btn"
                     @click=${() =>
                         this.dispatchEvent(new CustomEvent("close-gallery", { bubbles: true, composed: true }))}
                 >
-                    Cancel
+                    ${icons.x}
                 </button>
             </div>
         `;

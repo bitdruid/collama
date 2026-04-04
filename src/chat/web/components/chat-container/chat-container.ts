@@ -8,6 +8,7 @@ import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
     onCancel,
+    onClearChat,
     onContextAddFile,
     onContextCleared,
     onContextSearch,
@@ -24,6 +25,7 @@ import {
     onSubmit,
     onSummarizeConversation,
     onSummarizeTurn,
+    onTempChat,
     onToolConfirmAccept,
     onToolConfirmAcceptAll,
     onToolConfirmCancel,
@@ -56,6 +58,7 @@ export class ChatContainer extends LitElement {
     @state() currentContexts: AttachedContext[] = [];
     @state() messages: ChatHistory[] = [];
     @state() showScrollButton: boolean = false;
+    @state() tempChat: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
 
     // Reference to store's ChatContext (single source of truth)
@@ -86,6 +89,8 @@ export class ChatContainer extends LitElement {
     private handleNearBottomChanged = (e: CustomEvent) => onNearBottomChanged(this, e);
     private handleSubmit = (e: CustomEvent) => onSubmit(this, e);
     private handleCancel = () => onCancel(this);
+    private handleTempChat = () => onTempChat();
+    private handleClearChat = () => onClearChat(this);
     private handleSummarizeConversation = () => onSummarizeConversation(this);
     private handleContextCleared = (e: CustomEvent) => onContextCleared(this, e);
     private handleToolConfirmAccept = (e: CustomEvent) => onToolConfirmAccept(this, e);
@@ -226,6 +231,8 @@ export class ChatContainer extends LitElement {
                 <collama-chatinput
                     @submit=${this.handleSubmit}
                     @cancel=${this.handleCancel}
+                    @temp-chat=${this.handleTempChat}
+                    @clear-chat=${this.handleClearChat}
                     @summarize-conversation=${this.handleSummarizeConversation}
                     @auto-accept=${onAutoAccept}
                     @context-cleared=${this.handleContextCleared}
@@ -236,6 +243,7 @@ export class ChatContainer extends LitElement {
                     @tool-confirm-cancel=${this.handleToolConfirmCancel}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
+                    .tempChat=${this.tempChat}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
                     .toolConfirmRequest=${this.toolConfirmRequest}

@@ -192,6 +192,19 @@ export function onAutoAccept(e: CustomEvent) {
     backendApi.autoAcceptAll(e.detail.enabled);
 }
 
+/** Toggles temporary chat mode for the active session. */
+export function onTempChat() {
+    backendApi.tempChat();
+}
+
+/** Clears all messages from the active session. */
+export function onClearChat(host: ChatContainer) {
+    if (host.isLoading || !host.chatContext || host.chatContext.length() === 0) {
+        return;
+    }
+    backendApi.clearChat();
+}
+
 /** Removes a single attached context by index, or clears all if no index is provided. */
 export function onContextCleared(host: ChatContainer, e: CustomEvent) {
     const index = e.detail?.index;

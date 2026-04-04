@@ -3,6 +3,15 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-04-04
+
+### Added
+- Button for temporary chat
+- Button to clear conversation
+
+### Changed
+- Replaced all UTF symbols with Lucide SVG images
+
 ## [1.6.1] - 2026-04-02
 
 ### Fixed
@@ -245,4 +254,3 @@ https://keepachangelog.com/
 - Refactored LLM client interfaces and model configuration
 - Centralized LLM option construction
 - Unified request settings across chat and commit features
-

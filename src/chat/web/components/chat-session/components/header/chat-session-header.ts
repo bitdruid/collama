@@ -1,6 +1,7 @@
 // src/chat/web/components/chat_session/components/header/chat_session_header.ts
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { icons } from "../../../../../utils-front";
 import { commonStyles } from "../../styles-shared";
 import { headerStyles } from "./styles";
 
@@ -17,7 +18,7 @@ export class ChatSessionHeader extends LitElement {
             <div class="session-header">
                 <div class="header-left" @click=${this._toggle}>
                     <span class="header-title">Chat History</span>
-                    <span class="toggle-icon">${this.isOpen ? "▲" : "▼"}</span>
+                    <span class="toggle-icon ${this.isOpen ? "expanded" : ""}">${icons.chevronDown}</span>
                 </div>
                 <div class="header-buttons">
                     <span class="header-title">~ Context Usage</span>
@@ -26,7 +27,7 @@ export class ChatSessionHeader extends LitElement {
                         .max=${this.contextMax}
                     ></collama-context-usage-bar>
                     <button class="icon-button primary-button new-chat-button" @click=${this._newChat} title="New Chat">
-                        +
+                        ${icons.plus}
                     </button>
                 </div>
             </div>

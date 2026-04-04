@@ -1,5 +1,6 @@
 import { html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { icons } from "../../../../utils-front";
 import { DismissalController } from "../controllers/dismissal-controller";
 import { baseModalStyles } from "./styles";
 
@@ -90,7 +91,7 @@ export class BaseModal extends LitElement {
             <div class="modal-content ${this._visible ? "fade-in" : "fade-out"}">
                 <div class="modal-header">
                     <h3>${this.title}</h3>
-                    <span class="close-btn" @click=${this.close}>&#10006;</span>
+                    <span class="close-btn" @click=${this.close}>${icons.x}</span>
                 </div>
                 <div class="modal-body">${this.renderContent()}</div>
             </div>

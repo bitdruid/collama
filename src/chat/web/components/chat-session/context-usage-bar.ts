@@ -55,7 +55,7 @@ export class ContextUsageBar extends LitElement {
             return html``;
         }
         const pct = Math.min((this.used / this.max) * 100, 100);
-        const barClass = pct >= 90 ? "danger" : pct >= 70 ? "warning" : "";
+        const barClass = pct >= 90 ? "danger" : pct >= 75 ? "warning" : "";
         return html`
             <div class="context-usage" title="~ Context usage: ${this.used} / ${this.max} tokens">
                 <div class="context-bar-container">

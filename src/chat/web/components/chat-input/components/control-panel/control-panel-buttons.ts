@@ -3,6 +3,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../../utils-front";
 import type { ContextSearchResult } from "../../../../types";
+import "./clear-chat-confirm/clear-chat-confirm";
 import { controlPanelButtonStyles } from "./styles";
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
@@ -19,9 +20,12 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
+    @property({ type: Boolean }) tempChat = false;
+
     @state() private autoAccept = false;
     @state() private showContextTree = false;
     @state() private showGallery = false;
+    @state() private showClearConfirm = false;
 
     @query("collama-context-search")
     private contextSearch!: HTMLElement;
@@ -30,6 +34,10 @@ export class ControlPanelButtons extends LitElement {
     private promptGallery!: HTMLElement;
 
     private handleAutoAccept = () => this._handleAutoAccept();
+    private handleTempChat = () => emit(this, "temp-chat");
+    private handleClearChat = () => (this.showClearConfirm = true);
+    private handleClearChatConfirmed = () => emit(this, "clear-chat");
+    private handleClearConfirmClose = () => (this.showClearConfirm = false);
     private handleToggleContextTree = () => this._toggleContextTree();
     private handleCancel = () => emit(this, "cancel");
     private handleToggleGallery = () => (this.showGallery = true);
@@ -84,7 +92,7 @@ export class ControlPanelButtons extends LitElement {
     }
 
     private _renderCancel() {
-        return html` <button-cancel title="Cancel" @click=${this.handleCancel}> ${icons.cancel} </button-cancel> `;
+        return html` <button-cancel title="Cancel" @click=${this.handleCancel}> ${icons.x} </button-cancel> `;
     }
 
     private _renderContextButton() {
@@ -122,6 +130,33 @@ export class ControlPanelButtons extends LitElement {
         `;
     }
 
+    private _renderTempChat() {
+        return html`
+            <button-temp-chat
+                title="Temporary chat (auto-deletes on switch)"
+                @click=${this.handleTempChat}
+                ?active=${this.tempChat}
+            >
+                ${icons.tempChat}
+            </button-temp-chat>
+        `;
+    }
+
+    private _renderClearChat() {
+        return html`
+            <button-clear-chat title="Clear conversation" data-popup-anchor @click=${this.handleClearChat}>
+                ${icons.trash}
+            </button-clear-chat>
+            ${this.showClearConfirm
+                ? html`<collama-clear-chat-confirm
+                      autoShow
+                      @popup-close=${this.handleClearConfirmClose}
+                      @clear-chat-confirmed=${this.handleClearChatConfirmed}
+                  ></collama-clear-chat-confirm>`
+                : ""}
+        `;
+    }
+
     private _renderCompress() {
         return html`
             <button-compress title="Summarize conversation" @click=${this.handleSummarizeConversation}>
@@ -138,6 +173,7 @@ export class ControlPanelButtons extends LitElement {
         if (this.isLoading) {
             return html`
                 <button-row>
+                    <span class="spacer"></span>
                     ${this._renderTokenCounter()} ${this._renderAutoAccept()} ${this._renderCancel()}
                 </button-row>
             `;
@@ -145,6 +181,8 @@ export class ControlPanelButtons extends LitElement {
 
         return html`
             <button-row>
+                ${this._renderTempChat()} ${this._renderClearChat()}
+                <span class="spacer"></span>
                 ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
                 ${this._renderAutoAccept()} ${this._renderSubmit()}
             </button-row>

@@ -156,6 +156,7 @@ export class ChatSessionStore extends EventTarget {
             id: string;
             title: string;
             customTitle?: boolean;
+            temporary?: boolean;
             createdAt: number;
             updatedAt: number;
         }>;
@@ -173,6 +174,7 @@ export class ChatSessionStore extends EventTarget {
                 // Update metadata, preserve ChatContext
                 session.title = summary.title;
                 session.customTitle = summary.customTitle;
+                session.temporary = summary.temporary;
                 session.createdAt = summary.createdAt;
                 session.updatedAt = summary.updatedAt;
             } else {
@@ -190,7 +192,7 @@ export class ChatSessionStore extends EventTarget {
         this.sessions = this.sessions.filter((s) => summaryIds.has(s.id));
 
         // Update the active session's messages from history
-        if (activeSessionId && history.length > 0) {
+        if (activeSessionId) {
             this.updateSessionMessages(activeSessionId, history);
         }
 

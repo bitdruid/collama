@@ -48,6 +48,8 @@ export class ChatPanel {
         "delete-session": (msg) => this.handleDeleteSession(msg),
         "delete-messages": (msg) => this.handleDeleteMessages(msg),
         "auto-accept-all": (msg) => setAutoAcceptAll(msg.enabled),
+        "temp-chat": () => this.handleTempChat(),
+        "clear-chat": () => this.handleClearChat(),
         "chat-cancel": (_, webview) => this.handleChatCancel(webview),
         "summarize-request": (msg, webview) => this.handleSummarizeRequest(msg, webview),
         "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
@@ -99,6 +101,13 @@ export class ChatPanel {
      * Handles creating a new session.
      */
     private handleNewSession() {
+        // Auto-delete the old session if it was temporary
+        const oldSession = this.session.getActiveSession();
+        if (oldSession?.temporary) {
+            this.session.sessions = this.session.sessions.filter((s) => s.id !== oldSession.id);
+            logMsg(`Auto-deleted temporary session: ${oldSession.id}`);
+        }
+
         this.session.createNewSession();
         this.session.sendSessionsUpdate();
         logMsg(`Created new session: ${this.session.activeSessionId}`);
@@ -109,12 +118,21 @@ export class ChatPanel {
      */
     private handleSwitchSession(msg: { sessionId: string }) {
         const { sessionId } = msg;
-        if (this.session.sessions.find((s) => s.id === sessionId)) {
-            this.session.activeSessionId = sessionId;
-            this.session.saveSessions();
-            this.session.sendSessionsUpdate();
-            logMsg(`Switched to session: ${sessionId}`);
+        if (!this.session.sessions.find((s) => s.id === sessionId)) {
+            return;
         }
+
+        // Auto-delete the old session if it was temporary
+        const oldSession = this.session.getActiveSession();
+        if (oldSession?.temporary) {
+            this.session.sessions = this.session.sessions.filter((s) => s.id !== oldSession.id);
+            logMsg(`Auto-deleted temporary session: ${oldSession.id}`);
+        }
+
+        this.session.activeSessionId = sessionId;
+        this.session.saveSessions();
+        this.session.sendSessionsUpdate();
+        logMsg(`Switched to session: ${sessionId}`);
     }
 
     /**
@@ -158,7 +176,7 @@ export class ChatPanel {
         const newSession = this.session.copySession(sessionId);
         if (newSession) {
             this.session.sendSessionsUpdate();
-            logMsg(`Copied session ${sessionId} → ${newSession.id}`);
+            logMsg(`Copied session ${sessionId} to ${newSession.id}`);
         }
     }
 
@@ -198,6 +216,37 @@ export class ChatPanel {
         });
         this.session.sendSessionsUpdate();
         logMsg(`Messages deleted for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
+    }
+
+    /**
+     * Toggles the temporary flag on the active session.
+     */
+    private handleTempChat() {
+        const session = this.session.getActiveSession();
+        if (!session) {
+            return;
+        }
+        this.session.updateSession(session, (s) => {
+            s.temporary = !s.temporary;
+        });
+        this.session.sendSessionsUpdate();
+        logMsg(`Session ${session.id} temporary: ${session.temporary}`);
+    }
+
+    /**
+     * Clears all messages from the active session.
+     */
+    private handleClearChat() {
+        const session = this.session.getActiveSession();
+        if (!session) {
+            return;
+        }
+        this.session.updateSession(session, (s) => {
+            s.messages.setMessages([]);
+            s.contextStartIndex = 0;
+        });
+        this.session.sendSessionsUpdate();
+        logMsg(`Cleared messages for session ${session.id}`);
     }
 
     /**

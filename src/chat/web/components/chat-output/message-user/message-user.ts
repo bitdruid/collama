@@ -1,6 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory } from "../../../../../common/context-chat";
+import { icons } from "../../../../utils-front";
 import "./edit";
 
 export interface UserMessageHost {
@@ -100,24 +101,28 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             @click=${() => handleSummarize(host, index)}
                             title="Summarize this turn"
                         >
-                            ⊟ Summarize
+                            ${icons.fileText}
+                            <span>Summarize</span>
                         </button>
                         <button class="edit-button" @click=${() => handleEdit(host, index)} title="Edit and resend">
-                            ✎ Edit
+                            ${icons.pencil}
+                            <span>Edit</span>
                         </button>
                         <button
                             class="resend-button"
                             @click=${() => handleResend(host, index)}
                             title="Resend from here"
                         >
-                            ↻ Resend
+                            ${icons.enter}
+                            <span>Resend</span>
                         </button>
                         <button
                             class="delete-button"
                             @click=${() => handleDelete(host, index)}
                             title="Delete this turn (~${getTurnTokens(messages, index)} tokens freed)"
                         >
-                            ✕ Delete
+                            ${icons.trash}
+                            <span>Delete</span>
                         </button>
                     </div>
                 </div>

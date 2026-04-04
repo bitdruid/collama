@@ -32,6 +32,15 @@ export const themeColors = {
     autoAcceptHover: unsafeCSS("#b86565"),
     autoAcceptActive: unsafeCSS("#ff6b6b"),
 
+    /* Temp Chat Button Colors */
+    tempChat: unsafeCSS("#7a9bb5"),
+    tempChatHover: unsafeCSS("#6388a3"),
+    tempChatActive: unsafeCSS("#8bb8d6"),
+
+    /* Clear Chat Button Colors */
+    clearChat: unsafeCSS("#b07070"),
+    clearChatHover: unsafeCSS("#995c5c"),
+
     /* Role Colors */
     system: unsafeCSS("#9b59b6"),
     user: unsafeCSS("#2277a8"),

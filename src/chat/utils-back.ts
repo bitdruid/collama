@@ -21,6 +21,7 @@ export function getWebview(): vscode.Webview | null {
 export interface SessionSummary {
     id: string;
     title: string;
+    temporary?: boolean;
     createdAt: number;
     updatedAt: number;
 }
@@ -35,6 +36,7 @@ export function mapSessionToSummary<T extends SessionSummary>(session: T): Sessi
     return {
         id: session.id,
         title: session.title,
+        temporary: session.temporary,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
     };

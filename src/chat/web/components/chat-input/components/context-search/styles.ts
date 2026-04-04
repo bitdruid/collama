@@ -56,6 +56,13 @@ export const contextTreeStyles = css`
         padding: 0;
     }
 
+    .clear-btn svg,
+    .folder-icon svg,
+    .add-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
     .clear-btn:hover {
         background: ${themeColors.uiBackgroundHover};
         color: ${themeColors.uiFont};
@@ -98,6 +105,8 @@ export const contextTreeStyles = css`
     }
 
     .result-name {
+        display: inline-flex;
+        align-items: center;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -128,10 +137,9 @@ export const contextTreeStyles = css`
         border: none;
         background: ${themeColors.context};
         color: ${themeColors.textWhite};
-        font-size: ${themeFonts.user};
-        font-weight: bold;
         cursor: pointer;
         line-height: 1;
+        padding: 0;
     }
 
     .add-btn:hover {

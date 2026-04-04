@@ -35,6 +35,7 @@ export const userStyles = css`
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 4px;
         padding: 2px 6px;
         border: none;
         border-radius: 4px;
@@ -46,6 +47,15 @@ export const userStyles = css`
         cursor: pointer;
         opacity: 1;
         transition: background 0.15s;
+    }
+
+    .resend-button svg,
+    .delete-button svg,
+    .edit-button svg,
+    .summarize-button svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
     }
 
     .resend-button:hover,

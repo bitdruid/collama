@@ -128,7 +128,9 @@ export class Session {
      * Persists all sessions and the active session ID to the global state.
      */
     saveSessions() {
-        const toStore: StoredChatSession[] = this.sessions.map((s) => ({ ...s, messages: s.messages.getMessages() }));
+        const toStore: StoredChatSession[] = this.sessions
+            .filter((s) => !s.temporary)
+            .map((s) => ({ ...s, messages: s.messages.getMessages() }));
         this.extContext.globalState.update(CHAT_SESSIONS_KEY, toStore);
         this.extContext.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
     }
