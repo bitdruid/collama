@@ -1,9 +1,15 @@
-import { LitElement, html } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import MarkdownIt from "markdown-it";
+import Token from "markdown-it/lib/token.mjs";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import { escapeAttr, /* highlightAllCodeBlocks, */ icons } from "../../../utils-front";
+import {
+    buildOpenFileCommandUri,
+    escapeAttr,
+    FILE_PATH_RE,
+    /* highlightAllCodeBlocks, */ icons,
+} from "../../../utils-front";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";
@@ -34,6 +40,75 @@ function createMarkdownWithCodeHeader(): MarkdownIt {
     });
 
     md.renderer.rules["llm_info"] = (tokens, idx) => `${tokens[idx].content}\n`;
+
+    /**
+     * Core rule that linkifies bare file paths (e.g. `src/foo.ts`,
+     * `./bar.js#L42`) found in plain text. Walks all `inline` block tokens,
+     * splits matching `text` children into `text` + `link_open`/`text`/
+     * `link_close` triples whose href is a `command:vscode.open?...` URI.
+     * `code_inline` and fenced code blocks are skipped naturally because they
+     * are not `text` tokens.
+     */
+    md.core.ruler.push("file_path_links", (state) => {
+        for (const block of state.tokens) {
+            if (block.type !== "inline" || !block.children) {
+                continue;
+            }
+
+            const newChildren: Token[] = [];
+            for (const child of block.children) {
+                if (child.type !== "text") {
+                    newChildren.push(child);
+                    {
+                        continue;
+                    }
+                }
+
+                const text = child.content;
+                FILE_PATH_RE.lastIndex = 0;
+                let lastIndex = 0;
+                let match: RegExpExecArray | null;
+                let matched = false;
+
+                while ((match = FILE_PATH_RE.exec(text)) !== null) {
+                    const [full, filePath, lineAnchor] = match;
+                    const href = buildOpenFileCommandUri(filePath, lineAnchor);
+                    matched = true;
+
+                    if (match.index > lastIndex) {
+                        const pre = new Token("text", "", 0);
+                        pre.content = text.slice(lastIndex, match.index);
+                        newChildren.push(pre);
+                    }
+
+                    const open = new Token("link_open", "a", 1);
+                    open.attrSet("href", href);
+                    open.attrSet("class", "file-link");
+                    newChildren.push(open);
+
+                    const inner = new Token("text", "", 0);
+                    inner.content = full;
+                    newChildren.push(inner);
+
+                    newChildren.push(new Token("link_close", "a", -1));
+
+                    lastIndex = match.index + full.length;
+                }
+
+                if (!matched) {
+                    newChildren.push(child);
+                    continue;
+                }
+
+                if (lastIndex < text.length) {
+                    const tail = new Token("text", "", 0);
+                    tail.content = text.slice(lastIndex);
+                    newChildren.push(tail);
+                }
+            }
+            block.children = newChildren;
+        }
+    });
 
     md.renderer.rules.fence = (tokens, idx) => {
         const token = tokens[idx];

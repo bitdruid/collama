@@ -51,6 +51,32 @@ export function llmInfoTag(tagContent: string): string {
     return `<llm-info>${tagContent}</llm-info>`;
 }
 
+/**
+ * Matches file paths in plain text (`src/foo.ts`, `./bar.js`,
+ * `path/to/file.py#L42-L51`). Requires at least one `/` separator and a
+ * 1-10 char extension. The lookbehind/lookahead avoid matching inside
+ * URLs (`http://...`) or longer identifiers.
+ */
+export const FILE_PATH_RE =
+    /(?<![`:/\w.])((?:\.{1,2}\/)?(?:[\w.-]+\/)+[\w.-]+\.\w{1,10})(?:#(L\d+(?:-L\d+)?))?(?![\w/:])/g;
+
+/**
+ * Builds a `command:collama.openFile?...` URI for the given file path.
+ * Relative path resolution is handled host-side by the command itself.
+ */
+export function buildOpenFileCommandUri(filePath: string, lineAnchor?: string): string {
+    let line: number | undefined;
+    if (lineAnchor) {
+        const m = lineAnchor.match(/^L(\d+)/);
+        if (m) {
+            line = Math.max(0, parseInt(m[1], 10) - 1);
+        }
+    }
+
+    const args = line !== undefined ? [filePath, line] : [filePath];
+    return `command:collama.openFile?${encodeURIComponent(JSON.stringify(args))}`;
+}
+
 /** Escape a string for safe use inside HTML attributes. */
 export function escapeAttr(s: string): string {
     return s

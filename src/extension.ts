@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
-import { registerChatProvider, registerSendToChatCommand } from "./chat/subscriptions";
+import { registerChatProvider, registerOpenFileCommand, registerSendToChatCommand } from "./chat/subscriptions";
 import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
 import { initTokenizer } from "./common/tokenizer";
 import { registerConfigAutoUpdateCommand, updateVSConfig } from "./config";
@@ -44,6 +44,7 @@ export async function activate(extContext: vscode.ExtensionContext) {
 
     registerChatProvider(extContext);
     registerSendToChatCommand(extContext);
+    registerOpenFileCommand(extContext);
 
     registerRequestCommitMessageCommand(extContext);
 
