@@ -17,11 +17,6 @@ export const userStyles = css`
         background: ${themeColors.uiBackground};
     }
 
-    .out-of-context .bubble.bubble-user {
-        background: rgba(255, 60, 60, 0.08);
-        border-color: rgba(255, 60, 60, 0.25);
-    }
-
     .message-actions {
         display: flex;
         align-items: center;

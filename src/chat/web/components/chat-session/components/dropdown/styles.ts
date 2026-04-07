@@ -12,7 +12,6 @@ export const dropdownStyles = css`
         right: 0;
         bottom: 0;
         z-index: 1000;
-        background: var(--vscode-widget-shadow);
     }
 
     .dropdown-overlay.open {
@@ -26,10 +25,9 @@ export const dropdownStyles = css`
         left: 0;
         right: 0;
         z-index: 1001;
-        background: var(--vscode-dropdown-background);
-        border: 1px solid var(--vscode-dropdown-border);
+        background: ${themeColors.uiBackgroundDark};
+        border: 1px solid ${themeColors.uiBorderDark};
         border-radius: 4px;
-        box-shadow: 0 4px 12px var(--vscode-widget-shadow);
         max-height: 300px;
         overflow-y: auto;
     }
@@ -50,13 +48,13 @@ export const sessionItemStyles = css`
     }
 
     .session-item:hover {
-        background: var(--vscode-list-hoverBackground);
+        background: ${themeColors.uiBackgroundHover};
     }
 
     .session-item.active {
-        background: var(--vscode-focusBorder);
-        color: var(--vscode-list-activeSelectionForeground);
-        border-left-color: var(--vscode-list-activeSelectionForeground);
+        background: ${themeColors.uiBackgroundDimm};
+        color: ${themeColors.uiFontDimm};
+        border-left-color: ${themeColors.submit};
     }
 
     .session-info {
@@ -77,10 +75,9 @@ export const sessionItemStyles = css`
         font-size: ${themeFonts.medium};
         width: 100%;
         padding: 2px 4px;
-        border: 1px solid var(--vscode-focusBorder);
         border-radius: 2px;
         background: ${themeColors.uiBackground};
-        color: var(--vscode-input-foreground);
+        color: ${themeColors.input};
         outline: none;
     }
 
@@ -113,7 +110,7 @@ export const sessionItemStyles = css`
     }
 
     .delete-button {
-        color: var(--vscode-errorForeground);
+        color: ${themeColors.usageDanger};
     }
 `;
 

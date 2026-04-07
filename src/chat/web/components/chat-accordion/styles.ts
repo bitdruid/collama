@@ -24,7 +24,7 @@ export const accordionStyles = [
             align-items: center;
             gap: 6px;
             padding: 6px 10px;
-            background: var(--vscode-textCodeBlock-background);
+            background: ${themeColors.accordionHeader};
             color: ${themeColors.uiFontDimm};
             cursor: pointer;
             user-select: none;
@@ -91,7 +91,7 @@ export const accordionStyles = [
         }
 
         .accordion-content-inner {
-            background: var(--vscode-editor-background);
+            background: ${themeColors.accordionContent};
             border-top: 1px solid ${themeColors.uiBorder};
             max-height: min(300px, 40vh);
             overflow-y: scroll;
@@ -205,10 +205,6 @@ export const accordionStyles = [
         .copy-btn:hover {
             background: ${themeColors.uiBackgroundHover};
             color: ${themeColors.uiFont};
-        }
-
-        .copy-btn:active {
-            background: var(--vscode-toolbar-activeBackground);
         }
     `,
 ];

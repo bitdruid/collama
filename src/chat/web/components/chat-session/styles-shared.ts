@@ -125,11 +125,11 @@ export const commonStyles = css`
     }
 
     .custom-scrollbar::-webkit-scrollbar-track {
-        background: var(--vscode-scrollbarSlider-background);
+        background: ${themeColors.scrollBar};
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: var(--vscode-scrollbarSlider-hoverBackground);
+        background: ${themeColors.scrollBarHover};
         border-radius: 4px;
     }
 `;

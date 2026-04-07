@@ -49,25 +49,55 @@ export const themeColors = {
     assistant: unsafeCSS("#3a9a40"),
     tool: unsafeCSS("#d87979"),
 
+    /* Out of Context Colors */
+    outOfContextBackground: unsafeCSS("rgba(255, 60, 60, 0.08)"),
+    outOfContextBorder: unsafeCSS("rgba(255, 60, 60, 0.25)"),
+
     /* Usage Bar Colors */
     usagePrimary: unsafeCSS("#4ec9b0"),
     usageWarning: unsafeCSS("#cca700"),
     usageDanger: unsafeCSS("#f14c4c"),
 
     /* Shadow Colors */
-    shadow: unsafeCSS("rgba(0, 0, 0, 0.8)"),
+    shadowDark: unsafeCSS("rgba(0, 0, 0, 0.8)"),
+    shadowLight: unsafeCSS("rgba(0, 0, 0, 0.3)"),
 
     /* User interactive element Colors */
+    input: unsafeCSS("var(--vscode-input-foreground)"),
     disabled: unsafeCSS("#555"),
     textWhite: unsafeCSS("#fff"),
 
-    /* System element Colors - CSS variables */
+    /* Font */
     uiFont: unsafeCSS("var(--vscode-foreground)"),
     uiFontDimm: unsafeCSS("var(--vscode-descriptionForeground)"),
+    uiFontDark: unsafeCSS("var(--vscode-editorWidget-foreground)"),
+
+    /* Default Background */
+    uiBackground: unsafeCSS("var(--vscode-commandCenter-background)"),
+    uiBackgroundHover: unsafeCSS("var(--vscode-commandCenter-activeBackground)"),
+
+    /* Default Border */
     uiBorder: unsafeCSS("var(--vscode-commandCenter-border)"),
     uiBorderHover: unsafeCSS("var(--vscode-commandCenter-activeBorder)"),
     uiBorderFocus: unsafeCSS("var(--vscode-commandCenter-foreground)"),
-    uiBackground: unsafeCSS("var(--vscode-commandCenter-background)"),
+
+    /* Dimm */
     uiBackgroundDimm: unsafeCSS("var(--vscode-editor-background)"),
-    uiBackgroundHover: unsafeCSS("var(--vscode-commandCenter-activeBackground)"),
+    uiBorderDimm: unsafeCSS("var(--vscode-editor-border)"),
+
+    /* Dark */
+    uiBackgroundDark: unsafeCSS("var(--vscode-editorWidget-background)"),
+    uiBorderDark: unsafeCSS("var(--vscode-editorWidget-border)"),
+
+    /* Accordion */
+    accordionHeader: unsafeCSS("var(--vscode-textCodeBlock-background)"),
+    accordionContent: unsafeCSS("var(--vscode-editor-background)"),
+
+    /* Scrollbar */
+    scrollBar: unsafeCSS("var(--vscode-scrollbarSlider-background)"),
+    scrollBarHover: unsafeCSS("var(--vscode-scrollbarSlider-hoverBackground)"),
+
+    /* Hyperlink */
+    hyperlink: unsafeCSS("var(--vscode-textLink-foreground)"),
+    hyperlinkHover: unsafeCSS("var(--vscode-textLink-activeForeground)"),
 } as const;

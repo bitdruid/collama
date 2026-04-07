@@ -81,12 +81,12 @@ export const toolConfirmStyles = css`
     }
 
     .confirm-filepath {
-        font-family: var(--vscode-editor-font-family), monospace;
+        font-family: ${themeFonts.family}, monospace;
         font-size: ${themeFonts.medium};
         color: ${themeColors.uiFont};
         padding: 8px 12px;
         border-radius: 6px;
-        background: rgba(255, 255, 255, 0.03);
+        background: ${themeColors.uiBackground};
         border: 1px solid ${themeColors.uiBorder};
         word-break: break-all;
     }
@@ -104,8 +104,8 @@ export const toolConfirmStyles = css`
         border-radius: 6px;
         border: 1px solid ${themeColors.uiBorder};
         background: ${themeColors.uiBackground};
-        color: var(--vscode-input-foreground);
-        font-family: var(--vscode-editor-font-family);
+        color: ${themeColors.disabled};
+        font-family: ${themeFonts.family};
         font-size: ${themeFonts.medium};
         outline: none;
     }

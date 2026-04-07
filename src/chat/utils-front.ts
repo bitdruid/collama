@@ -1,6 +1,8 @@
 import hljs from "highlight.js";
 import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import { css, html, unsafeCSS } from "lit";
+import { themeColors } from "./web/styles/theme-colors";
+import { themeFonts } from "./web/styles/theme-fonts";
 
 export function logWebview(message: string) {
     window.vscode.postMessage({
@@ -22,9 +24,9 @@ export function showToast(message: string) {
             bottom: "80px",
             left: "50%",
             transform: "translateX(-50%)",
-            background: "var(--vscode-editorWidget-background)",
-            border: "1px solid var(--vscode-editorWidget-border)",
-            color: "var(--vscode-editorWidget-foreground)",
+            background: String(themeColors.uiBackgroundDark),
+            border: `1px solid ${themeColors.uiBorderDark}`,
+            color: String(themeColors.uiFontDark),
             padding: "6px 14px",
             borderRadius: "6px",
             fontSize: "12px",
@@ -100,17 +102,17 @@ export const hljsStyles = [
             display: block;
             padding: 8px;
             border-radius: 0px;
-            background: var(--vscode-editor-background);
+            background: ${themeColors.uiBackgroundDimm};
             overflow-x: auto;
         }
 
         pre {
             margin: 0;
-            background: var(--vscode-editor-background);
+            background: ${themeColors.uiBackgroundDimm};
         }
 
         pre code {
-            font-family: var(--vscode-editor-font-family), monospace;
+            font-family: ${themeFonts.family}, monospace;
             font-size: 0.95em;
             line-height: 1.4;
         }
@@ -416,7 +418,7 @@ export const icons = {
         height="14"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -433,7 +435,7 @@ export const icons = {
         height="14"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"

@@ -11,7 +11,6 @@ export class ContextUsageBar extends LitElement {
 
     static styles = css`
         :host {
-            --bar-bg: rgba(255, 255, 255, 0.15);
             display: block;
         }
         .context-usage {
@@ -23,8 +22,8 @@ export class ContextUsageBar extends LitElement {
             flex: 1;
             min-width: 50px;
             height: 6px;
-            background: var(--bar-bg);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: ${themeColors.uiBackground};
+            border: 1px solid ${themeColors.uiBorder};
             border-radius: 3px;
             overflow: hidden;
             position: relative;

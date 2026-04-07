@@ -64,27 +64,27 @@ export const outputStyles = [
 
         th,
         td {
-            border: 1px solid var(--vscode-editorWidget-border);
+            border: 1px solid ${themeColors.uiBorderDark};
             padding: 6px 10px;
             text-align: left;
         }
 
         th {
-            background: var(--vscode-editorWidget-background);
+            background: ${themeColors.uiBackgroundDark};
             font-weight: bold;
         }
 
         tr:nth-child(even) {
-            background: var(--vscode-editor-background);
+            background: ${themeColors.uiBackgroundDimm};
         }
 
         tr:hover {
-            background: var(--vscode-list-hoverBackground);
+            background: ${themeColors.uiBackgroundHover};
         }
 
         .out-of-context .bubble {
-            background: rgba(255, 60, 60, 0.08);
-            border-color: rgba(255, 60, 60, 0.25);
+            background: ${themeColors.outOfContextBackground};
+            border-color: ${themeColors.outOfContextBorder};
         }
 
         .output-container {
@@ -98,12 +98,12 @@ export const outputStyles = [
         }
 
         a {
-            color: var(--vscode-textLink-foreground);
+            color: ${themeColors.hyperlink};
             text-decoration: none;
         }
 
         a:hover {
-            color: var(--vscode-textLink-activeForeground);
+            color: ${themeColors.hyperlinkHover};
             text-decoration: underline;
         }
     `,

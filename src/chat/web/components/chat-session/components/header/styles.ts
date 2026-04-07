@@ -9,7 +9,6 @@ export const headerStyles = css`
         justify-content: space-between;
         align-items: center;
         padding: 8px;
-        border-bottom: 1px solid var(--vscode-panel-border);
     }
 
     .header-left {
