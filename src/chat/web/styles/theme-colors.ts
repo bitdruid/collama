@@ -1,5 +1,27 @@
 import { unsafeCSS } from "lit";
 
+type Color = { cssText: string } | string;
+const cssOf = (c: Color) => (typeof c === "string" ? c : c.cssText);
+
+/**
+ * Adjust only the lightness channel in HSL, preserving hue and saturation.
+ * `darken` flips direction based on `--theme-tint` (set globally from the
+ * VSCode theme kind): `1` on dark themes darkens, `-1` on light themes
+ * lightens. `contrast` moves away from the base's own lightness so the
+ * result is always more contrasting — this is what makes borders/hover
+ * states work on both dark and light VSCode themes.
+ */
+const darken = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - var(--theme-tint, 1) * ${n}))`);
+const contrast = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - sign(l - 50) * ${n}))`);
+
+const getBorder = (color: Color) => contrast(color, 10);
+const getHover = (color: Color) => contrast(color, 4);
+
+export const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
+const defaultColor = contrast(baseColor, 3);
+const dimmColor = darken(defaultColor, 7);
+//const backDarkColor = darken(defaultColor, 7);
+
 /**
  * Reusable color values for consistent color usage.
  * Usage: color: ${themeColors.submit};
@@ -49,25 +71,45 @@ export const themeColors = {
     assistant: unsafeCSS("#3a9a40"),
     tool: unsafeCSS("#d87979"),
 
+    /* Out of Context Colors */
+    outOfContextBackground: unsafeCSS("rgba(255, 60, 60, 0.08)"),
+    outOfContextBorder: unsafeCSS("rgba(255, 60, 60, 0.25)"),
+
     /* Usage Bar Colors */
     usagePrimary: unsafeCSS("#4ec9b0"),
     usageWarning: unsafeCSS("#cca700"),
     usageDanger: unsafeCSS("#f14c4c"),
 
     /* Shadow Colors */
-    shadow: unsafeCSS("rgba(0, 0, 0, 0.8)"),
+    shadowDark: unsafeCSS("rgba(0, 0, 0, 0.8)"),
+    shadowLight: unsafeCSS("rgba(0, 0, 0, 0.3)"),
 
     /* User interactive element Colors */
+    placeholder: contrast(defaultColor, 20),
     disabled: unsafeCSS("#555"),
-    textWhite: unsafeCSS("#fff"),
+    cleanWhite: unsafeCSS("#fff"),
+    focus: contrast(defaultColor, 30),
 
-    /* System element Colors - CSS variables */
-    uiFont: unsafeCSS("var(--vscode-foreground)"),
-    uiFontDimm: unsafeCSS("var(--vscode-descriptionForeground)"),
-    uiBorder: unsafeCSS("var(--vscode-commandCenter-border)"),
-    uiBorderHover: unsafeCSS("var(--vscode-commandCenter-activeBorder)"),
-    uiBorderFocus: unsafeCSS("var(--vscode-commandCenter-foreground)"),
-    uiBackground: unsafeCSS("var(--vscode-commandCenter-background)"),
-    uiBackgroundDimm: unsafeCSS("var(--vscode-editor-background)"),
-    uiBackgroundHover: unsafeCSS("var(--vscode-commandCenter-activeBackground)"),
+    /* Font */
+    uiFont: contrast(defaultColor, 50),
+
+    /* Bubble and Chat-Input */
+    uiBackground: defaultColor,
+    uiBackgroundHover: getHover(defaultColor),
+    uiBorder: getBorder(defaultColor),
+    uiBorderHover: getHover(getBorder(defaultColor)),
+
+    /* Dimm */
+    uiBackgroundDimm: dimmColor,
+    uiBackgroundHoverDimm: getHover(dimmColor),
+    uiBorderDimm: getBorder(dimmColor),
+    uiBorderHoverDimm: getHover(getBorder(dimmColor)),
+
+    /* Scrollbar */
+    scrollBar: unsafeCSS("var(--vscode-scrollbarSlider-background)"),
+    scrollBarHover: unsafeCSS("var(--vscode-scrollbarSlider-hoverBackground)"),
+
+    /* Hyperlink */
+    hyperlink: unsafeCSS("var(--vscode-textLink-foreground)"),
+    hyperlinkHover: unsafeCSS("var(--vscode-textLink-activeForeground)"),
 } as const;

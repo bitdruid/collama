@@ -20,7 +20,7 @@ export const controlPanelStyles = css`
         border-radius: 8px;
         border: none;
         color: ${themeColors.uiFont};
-        background: transparent;
+        background: ${themeColors.uiBackground};
         resize: none;
         overflow: hidden;
         line-height: 1.2em;
@@ -32,7 +32,7 @@ export const controlPanelStyles = css`
     }
 
     textarea::placeholder {
-        color: ${themeColors.uiBorderHover};
+        color: ${themeColors.placeholder};
     }
 
     textarea:disabled {
@@ -65,7 +65,7 @@ export const controlPanelButtonStyles = css`
         padding: 0;
         border-radius: 50%;
         line-height: 1;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         border: none;
         cursor: pointer;
         box-sizing: border-box;
@@ -79,11 +79,6 @@ export const controlPanelButtonStyles = css`
     }
     button-submit:active {
         background-color: ${themeColors.submitActive};
-    }
-    button-submit:disabled {
-        background-color: ${themeColors.disabled};
-        cursor: not-allowed;
-        opacity: 0.5;
     }
 
     button-context {
@@ -105,17 +100,17 @@ export const controlPanelButtonStyles = css`
         height: 16px;
         border-radius: 50%;
         background-color: ${themeColors.usageDanger};
-        color: white;
+        color: ${themeColors.cleanWhite};
         font-size: 10px;
         font-weight: bold;
         line-height: 1;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 3px ${themeColors.shadowLight};
     }
 
     button-cancel {
         background-color: ${themeColors.cancel};
         box-shadow:
-            0 0 0 2px ${themeColors.textWhite},
+            0 0 0 2px ${themeColors.cleanWhite},
             0 0 0 4px ${themeColors.cancel};
         animation: cancel-pulse 2s infinite;
     }
@@ -130,14 +125,13 @@ export const controlPanelButtonStyles = css`
         0%,
         100% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 2px ${themeColors.cleanWhite},
                 0 0 0 4px ${themeColors.cancel};
         }
         50% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
-                0 0 0 8px ${themeColors.cancel},
-                0 0 15px rgba(168, 34, 34, 0.5);
+                0 0 0 2px ${themeColors.cleanWhite},
+                0 0 0 8px ${themeColors.cancel};
         }
     }
 
@@ -165,7 +159,7 @@ export const controlPanelButtonStyles = css`
     button-auto-accept[active] {
         background-color: ${themeColors.autoAcceptActive};
         box-shadow:
-            0 0 0 2px ${themeColors.textWhite},
+            0 0 0 2px ${themeColors.cleanWhite},
             0 0 0 4px ${themeColors.autoAcceptActive};
         animation: auto-accept-pulse 2s infinite;
     }
@@ -174,14 +168,13 @@ export const controlPanelButtonStyles = css`
         0%,
         100% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 2px ${themeColors.cleanWhite},
                 0 0 0 4px ${themeColors.autoAcceptActive};
         }
         50% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
-                0 0 0 8px ${themeColors.autoAcceptActive},
-                0 0 15px rgba(255, 107, 107, 0.5);
+                0 0 0 2px ${themeColors.cleanWhite},
+                0 0 0 8px ${themeColors.autoAcceptActive};
         }
     }
 
@@ -214,47 +207,6 @@ export const controlPanelButtonStyles = css`
         font-size: ${themeFonts.medium};
         font-weight: 600;
         cursor: default;
-    }
-
-    .context-display {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 8px;
-        border-radius: 12px;
-        background-color: ${themeColors.context};
-        color: ${themeColors.textWhite};
-        font-size: ${themeFonts.medium};
-        white-space: nowrap;
-    }
-
-    .context-close {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 14px;
-        height: 14px;
-        margin-left: 4px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        color: ${themeColors.textWhite};
-        font-size: ${themeFonts.small};
-        line-height: 1;
-        cursor: pointer;
-        padding: 0;
-    }
-    .context-close:hover {
-        background: rgba(255, 255, 255, 0.4);
-    }
-
-    .added-contexts {
-        display: flex;
-        flex-wrap: wrap;
-        flex-direction: row-reverse;
-        gap: 4px;
-        align-items: center;
-        margin-top: 4px;
     }
 
     button-row {

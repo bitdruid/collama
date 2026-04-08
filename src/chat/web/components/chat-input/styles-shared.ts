@@ -9,7 +9,7 @@ export const chatInputStyles = css`
         border-radius: 8px;
         border: 2px solid ${themeColors.uiBorder};
         background: ${themeColors.uiBackground};
-}
+    }
 
     .panel {
         display: none;
@@ -35,7 +35,7 @@ export const panelStyles = css`
         align-items: center;
         justify-content: space-between;
         margin-bottom: 12px;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 
     .panel-header h3 {
@@ -46,7 +46,7 @@ export const panelStyles = css`
         cursor: pointer;
         font-size: ${themeFonts.giant};
         line-height: 1;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 
     .close-btn:hover {

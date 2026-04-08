@@ -21,7 +21,7 @@ export const commonStyles = css`
     }
 
     .icon-button:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .icon-button:active {
@@ -45,13 +45,13 @@ export const commonStyles = css`
     }
 
     .action-button:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     /* Primary Button */
     .primary-button {
         background-color: ${themeColors.submit};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         border: none;
         padding: 6px 12px;
         border-radius: 4px;
@@ -66,7 +66,7 @@ export const commonStyles = css`
 
     /* Text Utilities */
     .text-muted {
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 
     .text-bold {
@@ -125,11 +125,11 @@ export const commonStyles = css`
     }
 
     .custom-scrollbar::-webkit-scrollbar-track {
-        background: var(--vscode-scrollbarSlider-background);
+        background: ${themeColors.scrollBar};
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: var(--vscode-scrollbarSlider-hoverBackground);
+        background: ${themeColors.scrollBarHover};
         border-radius: 4px;
     }
 `;

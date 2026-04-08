@@ -1,6 +1,9 @@
 import hljs from "highlight.js";
-import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
+import hljsdarkcss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
+import hljslightcss from "highlight.js/styles/atom-one-light.min.css";
 import { css, html, unsafeCSS } from "lit";
+import { themeColors } from "./web/styles/theme-colors";
+import { themeFonts } from "./web/styles/theme-fonts";
 
 export function logWebview(message: string) {
     window.vscode.postMessage({
@@ -22,9 +25,9 @@ export function showToast(message: string) {
             bottom: "80px",
             left: "50%",
             transform: "translateX(-50%)",
-            background: "var(--vscode-editorWidget-background)",
-            border: "1px solid var(--vscode-editorWidget-border)",
-            color: "var(--vscode-editorWidget-foreground)",
+            background: String(themeColors.uiBackgroundDimm),
+            border: `1px solid ${themeColors.uiBorderDimm}`,
+            color: String(themeColors.uiFont),
             padding: "6px 14px",
             borderRadius: "6px",
             fontSize: "12px",
@@ -51,6 +54,32 @@ export function llmInfoTag(tagContent: string): string {
     return `<llm-info>${tagContent}</llm-info>`;
 }
 
+/**
+ * Matches file paths in plain text (`src/foo.ts`, `./bar.js`,
+ * `path/to/file.py#L42-L51`). Requires at least one `/` separator and a
+ * 1-10 char extension. The lookbehind/lookahead avoid matching inside
+ * URLs (`http://...`) or longer identifiers.
+ */
+export const FILE_PATH_RE =
+    /(?<![`:/\w.])((?:\.{1,2}\/)?(?:[\w.-]+\/)+[\w.-]+\.\w{1,10})(?:#(L\d+(?:-L\d+)?))?(?![\w/:])/g;
+
+/**
+ * Builds a `command:collama.openFile?...` URI for the given file path.
+ * Relative path resolution is handled host-side by the command itself.
+ */
+export function buildOpenFileCommandUri(filePath: string, lineAnchor?: string): string {
+    let line: number | undefined;
+    if (lineAnchor) {
+        const m = lineAnchor.match(/^L(\d+)/);
+        if (m) {
+            line = Math.max(0, parseInt(m[1], 10) - 1);
+        }
+    }
+
+    const args = line !== undefined ? [filePath, line] : [filePath];
+    return `command:collama.openFile?${encodeURIComponent(JSON.stringify(args))}`;
+}
+
 /** Escape a string for safe use inside HTML attributes. */
 export function escapeAttr(s: string): string {
     return s
@@ -67,24 +96,30 @@ export function escapeAttr(s: string): string {
  */
 export const hljsStyles = [
     css`
-        ${unsafeCSS(hljscss)}
+        :host-context(body.vscode-light),
+        :host-context(body.vscode-high-contrast-light) {
+            ${unsafeCSS(hljslightcss)}
+        }
+        :host-context(body:not(.vscode-light):not(.vscode-high-contrast-light)) {
+            ${unsafeCSS(hljsdarkcss)}
+        }
     `,
     css`
         pre code.hljs {
             display: block;
             padding: 8px;
             border-radius: 0px;
-            background: var(--vscode-editor-background);
+            background: ${themeColors.uiBackgroundDimm} !important;
             overflow-x: auto;
         }
 
         pre {
             margin: 0;
-            background: var(--vscode-editor-background);
+            background: ${themeColors.uiBackgroundDimm} !important;
         }
 
         pre code {
-            font-family: var(--vscode-editor-font-family), monospace;
+            font-family: ${themeFonts.family}, monospace;
             font-size: 0.95em;
             line-height: 1.4;
         }
@@ -390,7 +425,7 @@ export const icons = {
         height="14"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -407,7 +442,7 @@ export const icons = {
         height="14"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="white"
+        stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"

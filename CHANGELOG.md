@@ -3,6 +3,18 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-04-08
+
+### Added
+- File paths in chat messages are now clickable links for easy navigation
+- Dynamic theme coloring between light / dark
+
+### Changed
+- Simplified color scheme logic
+- 
+### Fixed
+- Prune incomplete messages when agent is cancelled to prevent server errors
+
 ## [1.6.3] - 2026-04-04
 
 ### Added

@@ -11,4 +11,5 @@ export const themeFonts = {
     large: unsafeCSS("16px"),
     giant: unsafeCSS("20px"),
     user: unsafeCSS("14px"),
+    family: unsafeCSS("var(--vscode-editor-font-family)"),
 } as const;

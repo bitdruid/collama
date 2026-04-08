@@ -17,11 +17,6 @@ export const userStyles = css`
         background: ${themeColors.uiBackground};
     }
 
-    .out-of-context .bubble.bubble-user {
-        background: rgba(255, 60, 60, 0.08);
-        border-color: rgba(255, 60, 60, 0.25);
-    }
-
     .message-actions {
         display: flex;
         align-items: center;
@@ -40,7 +35,7 @@ export const userStyles = css`
         border: none;
         border-radius: 4px;
         background: transparent;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         font-size: ${themeFonts.small};
         line-height: 1;
         vertical-align: middle;
@@ -116,7 +111,7 @@ export const editStyles = css`
         line-height: 1;
         vertical-align: middle;
         cursor: pointer;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .edit-send svg,

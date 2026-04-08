@@ -23,6 +23,14 @@ export class StartPage {
                 </script>
                 <script type="module" src="${this.bundleUri}"></script>
                 <style>
+                    :root {
+                        --theme-tint: 1;
+                    }
+                    body.vscode-light,
+                    body.vscode-high-contrast-light {
+                        --theme-tint: -1;
+                    }
+
                     html, body {
                         height: 100%;
                         margin: 0;

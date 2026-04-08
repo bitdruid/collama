@@ -1,6 +1,7 @@
 import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
 import { themeFonts } from "../../../../styles/theme-fonts";
+import { themeStyles } from "../../../../styles/theme-styles";
 import { panelStyles } from "../../styles-shared";
 
 export const galleryStyles = css`
@@ -29,7 +30,7 @@ export const galleryStyles = css`
     }
 
     .prompt-item:hover {
-        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHover};
+        box-shadow: inset 0 0 0 2px ${themeColors.uiBorder};
     }
 
     .prompt-list {
@@ -70,8 +71,7 @@ export const galleryStyles = css`
     }
 
     .custom-prompt-input:focus {
-        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderFocus};
-        outline: none;
+        ${themeStyles.focus}
     }
 `;
 
@@ -90,7 +90,7 @@ export const galleryButtonStyles = css`
         border-radius: 4px;
         align-items: center;
         justify-content: center;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .edit-btn,

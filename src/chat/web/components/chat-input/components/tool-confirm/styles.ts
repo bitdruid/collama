@@ -15,7 +15,7 @@ export const toolConfirmStyles = css`
         padding: 2px 8px;
         border-radius: 4px;
         background: ${themeColors.submit};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         text-transform: capitalize;
     }
 
@@ -34,7 +34,7 @@ export const toolConfirmStyles = css`
         border: none;
         border-radius: 4px;
         font-size: ${themeFonts.medium};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .btn-accept {
@@ -71,7 +71,7 @@ export const toolConfirmStyles = css`
         border: none;
         border-radius: 4px;
         font-size: ${themeFonts.medium};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
     .btn-send:hover {
         background: ${themeColors.cancelHover};
@@ -81,13 +81,13 @@ export const toolConfirmStyles = css`
     }
 
     .confirm-filepath {
-        font-family: var(--vscode-editor-font-family), monospace;
+        font-family: ${themeFonts.family}, monospace;
         font-size: ${themeFonts.medium};
         color: ${themeColors.uiFont};
         padding: 8px 12px;
         border-radius: 6px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackgroundDimm};
+        border: 1px solid ${themeColors.uiBorderDimm};
         word-break: break-all;
     }
 
@@ -102,10 +102,10 @@ export const toolConfirmStyles = css`
         flex: 1;
         padding: 6px 10px;
         border-radius: 6px;
-        border: 1px solid ${themeColors.uiBorder};
+        border: 1px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackground};
-        color: var(--vscode-input-foreground);
-        font-family: var(--vscode-editor-font-family);
+        color: ${themeColors.uiFont};
+        font-family: ${themeFonts.family};
         font-size: ${themeFonts.medium};
         outline: none;
     }
@@ -115,7 +115,7 @@ export const toolConfirmStyles = css`
     }
 
     .cancel-input::placeholder {
-        color: ${themeColors.disabled};
+        color: ${themeColors.placeholder};
     }
 
     @keyframes fadeIn {

@@ -1,4 +1,5 @@
 import { css } from "lit";
+import { themeColors } from "../../styles/theme-colors";
 
 export const scrollDownButtonStyles = css`
     :host {
@@ -17,9 +18,9 @@ export const scrollDownButtonStyles = css`
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        border: 1px solid var(--vscode-editorWidget-border);
-        background: var(--vscode-editorWidget-background);
-        color: var(--vscode-editorWidget-foreground);
+        border: 1px solid ${themeColors.uiBorderDimm};
+        background: ${themeColors.uiBackgroundDimm};
+        color: ${themeColors.uiFont};
         cursor: pointer;
         pointer-events: auto;
         opacity: 0;
@@ -32,6 +33,6 @@ export const scrollDownButtonStyles = css`
     }
 
     .scroll-btn:hover {
-        background: var(--vscode-list-hoverBackground);
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 `;

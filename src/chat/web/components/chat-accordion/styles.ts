@@ -13,7 +13,7 @@ export const accordionStyles = [
         }
 
         .accordion {
-            border: 1px solid ${themeColors.uiBorder};
+            border: 1px solid ${themeColors.uiBorderDimm};
             border-radius: 6px;
             overflow: hidden;
             position: relative;
@@ -24,8 +24,8 @@ export const accordionStyles = [
             align-items: center;
             gap: 6px;
             padding: 6px 10px;
-            background: var(--vscode-textCodeBlock-background);
-            color: ${themeColors.uiFontDimm};
+            background: ${themeColors.uiBackgroundDimm};
+            color: ${themeColors.uiFont};
             cursor: pointer;
             user-select: none;
             font-size: 0.9em;
@@ -36,7 +36,7 @@ export const accordionStyles = [
         }
 
         .accordion-header:hover {
-            background: ${themeColors.uiBackgroundHover};
+            background: ${themeColors.uiBackgroundHoverDimm};
         }
 
         .accordion-arrow {
@@ -91,8 +91,8 @@ export const accordionStyles = [
         }
 
         .accordion-content-inner {
-            background: var(--vscode-editor-background);
-            border-top: 1px solid ${themeColors.uiBorder};
+            background: ${themeColors.uiBackgroundDimm};
+            border-top: 1px solid ${themeColors.uiBorderDimm};
             max-height: min(300px, 40vh);
             overflow-y: scroll;
             overflow-x: auto;
@@ -192,7 +192,7 @@ export const accordionStyles = [
             gap: 4px;
             background: transparent;
             border: none;
-            color: ${themeColors.uiFontDimm};
+            color: ${themeColors.uiFont};
             cursor: pointer;
             padding: 2px 6px;
             border-radius: 4px;
@@ -203,12 +203,8 @@ export const accordionStyles = [
         }
 
         .copy-btn:hover {
-            background: ${themeColors.uiBackgroundHover};
+            background: ${themeColors.uiBackgroundHoverDimm};
             color: ${themeColors.uiFont};
-        }
-
-        .copy-btn:active {
-            background: var(--vscode-toolbar-activeBackground);
         }
     `,
 ];

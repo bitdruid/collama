@@ -15,9 +15,9 @@ export const basePopupStyles = css`
         max-width: 100%;
         box-sizing: border-box;
         background: ${themeColors.uiBackgroundDimm};
-        border: 2px solid ${themeColors.uiBorder};
+        border: 2px solid ${themeColors.uiBorderDimm};
         border-radius: 8px;
-        box-shadow: 0 4px 16px ${themeColors.shadow};
+        box-shadow: 0 4px 16px ${themeColors.shadowDark};
         overflow: hidden;
         opacity: 0;
         transition: opacity 0.2s ease-in-out;

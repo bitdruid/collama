@@ -10,9 +10,9 @@ export const errorModalStyles = css`
         font-size: 12px;
         padding: 8px;
         margin: 8px 0;
-        border: 1px solid ${themeColors.uiBorder};
+        border: 1px solid ${themeColors.uiBorderDimm};
         border-radius: 4px;
-        background: ${themeColors.uiBackground};
+        background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
     }
 
@@ -29,7 +29,7 @@ export const errorModalStyles = css`
         border-radius: 4px;
         cursor: pointer;
         font-size: 13px;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .btn-copy {

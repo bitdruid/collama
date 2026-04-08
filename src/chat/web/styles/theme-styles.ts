@@ -8,10 +8,10 @@ import { themeColors } from "./theme-colors";
  */
 export const themeStyles = {
     focus: css`
-        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderFocus};
+        box-shadow: inset 0 0 0 1px ${themeColors.focus};
         outline: none;
     `,
     hover: css`
-        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHover};
+        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHoverDimm};
     `,
 } as const;

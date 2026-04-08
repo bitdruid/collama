@@ -9,6 +9,7 @@ export function createInboundDispatcher(host: ChatContainer) {
         "sessions-update": (m) => handleSessionsUpdate(host, m),
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
+        "history-replace": (m) => handleHistoryReplace(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
         "chat-complete": (m) => handleChatComplete(host, m),
         "summary-complete": (m) => handleSummarized(host, m),
@@ -62,6 +63,12 @@ function handleSessionsUpdate(host: ChatContainer, msg: any) {
 /** Appends a complete message (e.g. tool call/response) pushed by the agent. */
 function handleAgentAddMessage(host: ChatContainer, msg: any) {
     host.chatContext?.push(msg.message);
+    host.syncMessages();
+}
+
+/** Replaces the full message history (e.g. after a cancel prunes incomplete tail state). */
+function handleHistoryReplace(host: ChatContainer, msg: any) {
+    host.chatContext?.setMessages(msg.messages || []);
     host.syncMessages();
 }
 

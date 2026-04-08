@@ -13,7 +13,7 @@ export const contextTreeStyles = css`
 
     .search-bar {
         padding: 8px;
-        border-bottom: 1px solid ${themeColors.uiBorder};
+        border-bottom: 1px solid ${themeColors.uiBorderDimm};
         position: relative;
         display: flex;
         align-items: center;
@@ -24,7 +24,7 @@ export const contextTreeStyles = css`
         padding: 6px 8px;
         border: none;
         border-radius: 6px;
-        background: transparent;
+        background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.medium};
         box-sizing: border-box;
@@ -35,7 +35,7 @@ export const contextTreeStyles = css`
     }
 
     .search-bar input::placeholder {
-        color: ${themeColors.uiBorderHover};
+        color: ${themeColors.placeholder};
     }
 
     .clear-btn {
@@ -49,7 +49,7 @@ export const contextTreeStyles = css`
         border-radius: 50%;
         border: none;
         background: transparent;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
         font-size: ${themeFonts.small};
         cursor: pointer;
         line-height: 1;
@@ -64,7 +64,7 @@ export const contextTreeStyles = css`
     }
 
     .clear-btn:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
         color: ${themeColors.uiFont};
     }
 
@@ -78,8 +78,8 @@ export const contextTreeStyles = css`
         padding: 8px 12px;
         font-size: ${themeFonts.small};
         font-weight: 600;
-        color: ${themeColors.uiFontDimm};
-        border-bottom: 1px solid ${themeColors.uiBorder};
+        color: ${themeColors.uiFont};
+        border-bottom: 1px solid ${themeColors.uiBorderDimm};
         margin-bottom: 4px;
     }
 
@@ -94,7 +94,7 @@ export const contextTreeStyles = css`
     }
 
     .result-item:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .result-info {
@@ -114,7 +114,7 @@ export const contextTreeStyles = css`
 
     .result-path {
         font-size: ${themeFonts.small};
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -136,7 +136,7 @@ export const contextTreeStyles = css`
         border-radius: 50%;
         border: none;
         background: ${themeColors.context};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         cursor: pointer;
         line-height: 1;
         padding: 0;
@@ -154,7 +154,7 @@ export const contextTreeStyles = css`
     .empty-state {
         padding: 16px;
         text-align: center;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
         font-size: ${themeFonts.medium};
     }
 `;
