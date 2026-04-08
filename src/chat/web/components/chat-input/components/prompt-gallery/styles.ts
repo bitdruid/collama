@@ -30,7 +30,7 @@ export const galleryStyles = css`
     }
 
     .prompt-item:hover {
-        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHover};
+        box-shadow: inset 0 0 0 2px ${themeColors.uiBorder};
     }
 
     .prompt-list {

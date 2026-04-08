@@ -13,7 +13,7 @@ export const accordionStyles = [
         }
 
         .accordion {
-            border: 1px solid ${themeColors.uiBorderDark};
+            border: 1px solid ${themeColors.uiBorderDimm};
             border-radius: 6px;
             overflow: hidden;
             position: relative;
@@ -24,7 +24,7 @@ export const accordionStyles = [
             align-items: center;
             gap: 6px;
             padding: 6px 10px;
-            background: ${themeColors.uiBackgroundDark};
+            background: ${themeColors.uiBackgroundDimm};
             color: ${themeColors.uiFont};
             cursor: pointer;
             user-select: none;
@@ -36,7 +36,7 @@ export const accordionStyles = [
         }
 
         .accordion-header:hover {
-            background: ${themeColors.uiBackgroundHoverDark};
+            background: ${themeColors.uiBackgroundHoverDimm};
         }
 
         .accordion-arrow {
@@ -91,8 +91,8 @@ export const accordionStyles = [
         }
 
         .accordion-content-inner {
-            background: ${themeColors.uiBackgroundDark};
-            border-top: 1px solid ${themeColors.uiBorderDark};
+            background: ${themeColors.uiBackgroundDimm};
+            border-top: 1px solid ${themeColors.uiBorderDimm};
             max-height: min(300px, 40vh);
             overflow-y: scroll;
             overflow-x: auto;
@@ -203,7 +203,7 @@ export const accordionStyles = [
         }
 
         .copy-btn:hover {
-            background: ${themeColors.uiBackgroundHover};
+            background: ${themeColors.uiBackgroundHoverDimm};
             color: ${themeColors.uiFont};
         }
     `,

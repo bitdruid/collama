@@ -14,8 +14,8 @@ export const basePopupStyles = css`
     .popup-content {
         max-width: 100%;
         box-sizing: border-box;
-        background: ${themeColors.uiBackgroundDark};
-        border: 2px solid ${themeColors.uiBorderDark};
+        background: ${themeColors.uiBackgroundDimm};
+        border: 2px solid ${themeColors.uiBorderDimm};
         border-radius: 8px;
         box-shadow: 0 4px 16px ${themeColors.shadowDark};
         overflow: hidden;

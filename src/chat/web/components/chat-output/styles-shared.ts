@@ -70,7 +70,7 @@ export const outputStyles = [
         }
 
         th {
-            background: ${themeColors.uiBackgroundDark};
+            background: ${themeColors.uiBackgroundDimm};
             font-weight: bold;
         }
 

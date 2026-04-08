@@ -18,8 +18,8 @@ export const scrollDownButtonStyles = css`
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        border: 1px solid ${themeColors.uiBorderDark};
-        background: ${themeColors.uiBackgroundDark};
+        border: 1px solid ${themeColors.uiBorderDimm};
+        background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         cursor: pointer;
         pointer-events: auto;
@@ -33,6 +33,6 @@ export const scrollDownButtonStyles = css`
     }
 
     .scroll-btn:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 `;

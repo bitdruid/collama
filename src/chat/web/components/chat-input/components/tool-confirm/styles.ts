@@ -86,8 +86,8 @@ export const toolConfirmStyles = css`
         color: ${themeColors.uiFont};
         padding: 8px 12px;
         border-radius: 6px;
-        background: ${themeColors.uiBackground};
-        border: 1px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackgroundDimm};
+        border: 1px solid ${themeColors.uiBorderDimm};
         word-break: break-all;
     }
 
@@ -102,7 +102,7 @@ export const toolConfirmStyles = css`
         flex: 1;
         padding: 6px 10px;
         border-radius: 6px;
-        border: 1px solid ${themeColors.uiBorder};
+        border: 1px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         font-family: ${themeFonts.family};

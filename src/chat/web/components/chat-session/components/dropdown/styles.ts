@@ -78,7 +78,7 @@ export const sessionItemStyles = css`
         padding: 2px 4px;
         border: none;
         border-radius: 4px;
-        background: ${themeColors.uiBackgroundDimm};
+        background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         outline: none;
         box-shadow: none;

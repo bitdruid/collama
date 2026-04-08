@@ -13,7 +13,7 @@ export const contextTreeStyles = css`
 
     .search-bar {
         padding: 8px;
-        border-bottom: 1px solid ${themeColors.uiBorderDark};
+        border-bottom: 1px solid ${themeColors.uiBorderDimm};
         position: relative;
         display: flex;
         align-items: center;
@@ -24,7 +24,7 @@ export const contextTreeStyles = css`
         padding: 6px 8px;
         border: none;
         border-radius: 6px;
-        background: transparent;
+        background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.medium};
         box-sizing: border-box;
@@ -64,7 +64,7 @@ export const contextTreeStyles = css`
     }
 
     .clear-btn:hover {
-        background: ${themeColors.uiBackgroundHoverDark};
+        background: ${themeColors.uiBackgroundHoverDimm};
         color: ${themeColors.uiFont};
     }
 
@@ -79,7 +79,7 @@ export const contextTreeStyles = css`
         font-size: ${themeFonts.small};
         font-weight: 600;
         color: ${themeColors.uiFont};
-        border-bottom: 1px solid ${themeColors.uiBorderDark};
+        border-bottom: 1px solid ${themeColors.uiBorderDimm};
         margin-bottom: 4px;
     }
 
@@ -94,7 +94,7 @@ export const contextTreeStyles = css`
     }
 
     .result-item:hover {
-        background: ${themeColors.uiBackgroundHoverDark};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .result-info {

@@ -20,7 +20,7 @@ export const controlPanelStyles = css`
         border-radius: 8px;
         border: none;
         color: ${themeColors.uiFont};
-        background: transparent;
+        background: ${themeColors.uiBackground};
         resize: none;
         overflow: hidden;
         line-height: 1.2em;

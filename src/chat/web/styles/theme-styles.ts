@@ -12,6 +12,6 @@ export const themeStyles = {
         outline: none;
     `,
     hover: css`
-        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHover};
+        box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHoverDimm};
     `,
 } as const;

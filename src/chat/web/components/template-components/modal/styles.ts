@@ -13,8 +13,8 @@ export const baseModalStyles = css`
         margin-bottom: 8px;
         overflow: visible;
         border-radius: 8px;
-        border: 2px solid ${themeColors.uiBorder};
-        background: ${themeColors.uiBackground};
+        border: 2px solid ${themeColors.uiBorderDimm};
+        background: ${themeColors.uiBackgroundDimm};
         opacity: 0;
         transition: opacity 0.2s ease-in-out;
     }

@@ -1,5 +1,6 @@
 import hljs from "highlight.js";
-import hljscss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
+import hljsdarkcss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
+import hljslightcss from "highlight.js/styles/atom-one-light.min.css";
 import { css, html, unsafeCSS } from "lit";
 import { themeColors } from "./web/styles/theme-colors";
 import { themeFonts } from "./web/styles/theme-fonts";
@@ -24,8 +25,8 @@ export function showToast(message: string) {
             bottom: "80px",
             left: "50%",
             transform: "translateX(-50%)",
-            background: String(themeColors.uiBackgroundDark),
-            border: `1px solid ${themeColors.uiBorderDark}`,
+            background: String(themeColors.uiBackgroundDimm),
+            border: `1px solid ${themeColors.uiBorderDimm}`,
             color: String(themeColors.uiFont),
             padding: "6px 14px",
             borderRadius: "6px",
@@ -95,20 +96,26 @@ export function escapeAttr(s: string): string {
  */
 export const hljsStyles = [
     css`
-        ${unsafeCSS(hljscss)}
+        :host-context(body.vscode-light),
+        :host-context(body.vscode-high-contrast-light) {
+            ${unsafeCSS(hljslightcss)}
+        }
+        :host-context(body:not(.vscode-light):not(.vscode-high-contrast-light)) {
+            ${unsafeCSS(hljsdarkcss)}
+        }
     `,
     css`
         pre code.hljs {
             display: block;
             padding: 8px;
             border-radius: 0px;
-            background: ${themeColors.uiBackgroundDark};
+            background: ${themeColors.uiBackgroundDimm} !important;
             overflow-x: auto;
         }
 
         pre {
             margin: 0;
-            background: ${themeColors.uiBackgroundDark};
+            background: ${themeColors.uiBackgroundDimm} !important;
         }
 
         pre code {

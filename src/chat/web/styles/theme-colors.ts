@@ -1,26 +1,26 @@
 import { unsafeCSS } from "lit";
 
-const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
-
 type Color = { cssText: string } | string;
 const cssOf = (c: Color) => (typeof c === "string" ? c : c.cssText);
 
 /**
  * Adjust only the lightness channel in HSL, preserving hue and saturation.
- * `darken` moves in a fixed direction; `contrast` moves away from the base's
- * own lightness so the result is always more contrasting — this is what makes
- * borders/hover states work on both dark and light VSCode themes.
- * `sign()` requires Chromium 125+ (VSCode's webview is fine).
+ * `darken` flips direction based on `--theme-tint` (set globally from the
+ * VSCode theme kind): `1` on dark themes darkens, `-1` on light themes
+ * lightens. `contrast` moves away from the base's own lightness so the
+ * result is always more contrasting — this is what makes borders/hover
+ * states work on both dark and light VSCode themes.
  */
-const darken = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - ${n}))`);
+const darken = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - var(--theme-tint, 1) * ${n}))`);
 const contrast = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - sign(l - 50) * ${n}))`);
 
 const getBorder = (color: Color) => contrast(color, 10);
 const getHover = (color: Color) => contrast(color, 4);
 
-const backBaseColor = contrast(baseColor, 3);
-const backDimmColor = darken(backBaseColor, 5);
-const backDarkColor = darken(backBaseColor, 7);
+export const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
+const defaultColor = contrast(baseColor, 3);
+const dimmColor = darken(defaultColor, 7);
+//const backDarkColor = darken(defaultColor, 7);
 
 /**
  * Reusable color values for consistent color usage.
@@ -85,33 +85,25 @@ export const themeColors = {
     shadowLight: unsafeCSS("rgba(0, 0, 0, 0.3)"),
 
     /* User interactive element Colors */
-    placeholder: contrast(backBaseColor, 15),
+    placeholder: contrast(defaultColor, 15),
     disabled: unsafeCSS("#555"),
     cleanWhite: unsafeCSS("#fff"),
-    focus: contrast(backBaseColor, 25),
+    focus: contrast(defaultColor, 25),
 
     /* Font */
-    uiFont: contrast(backBaseColor, 45),
+    uiFont: contrast(defaultColor, 50),
 
-    /* Default Background */
-    uiBackground: backBaseColor,
-    uiBackgroundHover: getHover(backBaseColor),
-
-    /* Default Border */
-    uiBorder: getBorder(backBaseColor),
-    uiBorderHover: getHover(getBorder(backBaseColor)),
+    /* Bubble and Chat-Input */
+    uiBackground: defaultColor,
+    uiBackgroundHover: getHover(defaultColor),
+    uiBorder: getBorder(defaultColor),
+    uiBorderHover: getHover(getBorder(defaultColor)),
 
     /* Dimm */
-    uiBackgroundDimm: backDimmColor,
-    uiBackgroundHoverDimm: getHover(backDimmColor),
-    uiBorderDimm: getBorder(backDimmColor),
-    uiBorderHoverDimm: getHover(getBorder(backDimmColor)),
-
-    /* Dark */
-    uiBackgroundDark: backDarkColor,
-    uiBackgroundHoverDark: getHover(backDarkColor),
-    uiBorderDark: getBorder(backDarkColor),
-    uiBorderHoverDark: getHover(getBorder(backDarkColor)),
+    uiBackgroundDimm: dimmColor,
+    uiBackgroundHoverDimm: getHover(dimmColor),
+    uiBorderDimm: getBorder(dimmColor),
+    uiBorderHoverDimm: getHover(getBorder(dimmColor)),
 
     /* Scrollbar */
     scrollBar: unsafeCSS("var(--vscode-scrollbarSlider-background)"),

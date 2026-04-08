@@ -21,7 +21,7 @@ export const commonStyles = css`
     }
 
     .icon-button:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .icon-button:active {
@@ -45,7 +45,7 @@ export const commonStyles = css`
     }
 
     .action-button:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     /* Primary Button */

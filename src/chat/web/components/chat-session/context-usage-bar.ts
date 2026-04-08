@@ -22,8 +22,8 @@ export class ContextUsageBar extends LitElement {
             flex: 1;
             min-width: 50px;
             height: 6px;
-            background: ${themeColors.uiBackground};
-            border: 1px solid ${themeColors.uiBorder};
+            background: ${themeColors.uiBackgroundDimm};
+            border: 1px solid ${themeColors.uiBorderDimm};
             border-radius: 3px;
             overflow: hidden;
             position: relative;
