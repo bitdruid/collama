@@ -2,6 +2,7 @@
 import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
 import { themeFonts } from "../../../../styles/theme-fonts";
+import { themeStyles } from "../../../../styles/theme-styles";
 
 export const dropdownStyles = css`
     .dropdown-overlay {
@@ -25,8 +26,8 @@ export const dropdownStyles = css`
         left: 0;
         right: 0;
         z-index: 1001;
-        background: ${themeColors.uiBackgroundDark};
-        border: 1px solid ${themeColors.uiBorderDark};
+        background: ${themeColors.uiBackgroundDimm};
+        border: 1px solid ${themeColors.uiBorderDimm};
         border-radius: 4px;
         max-height: 300px;
         overflow-y: auto;
@@ -48,12 +49,12 @@ export const sessionItemStyles = css`
     }
 
     .session-item:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .session-item.active {
-        background: ${themeColors.uiBackgroundDimm};
-        color: ${themeColors.uiFontDimm};
+        background: ${themeColors.uiBackgroundHoverDimm};
+        color: ${themeColors.uiFont};
         border-left-color: ${themeColors.submit};
     }
 
@@ -75,15 +76,22 @@ export const sessionItemStyles = css`
         font-size: ${themeFonts.medium};
         width: 100%;
         padding: 2px 4px;
-        border-radius: 2px;
-        background: ${themeColors.uiBackground};
-        color: ${themeColors.input};
+        border: none;
+        border-radius: 4px;
+        background: ${themeColors.uiBackgroundDimm};
+        color: ${themeColors.uiFont};
         outline: none;
+        box-shadow: none;
+        box-sizing: border-box;
+    }
+
+    .session-title-input:focus {
+        ${themeStyles.focus}
     }
 
     .session-date {
         font-size: ${themeFonts.small};
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
         margin-top: 2px;
     }
 
@@ -118,6 +126,6 @@ export const emptyStateStyles = css`
     .empty-state {
         padding: 1rem;
         text-align: center;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 `;

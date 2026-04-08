@@ -20,7 +20,7 @@ export const scrollDownButtonStyles = css`
         border-radius: 50%;
         border: 1px solid ${themeColors.uiBorderDark};
         background: ${themeColors.uiBackgroundDark};
-        color: ${themeColors.uiFontDark};
+        color: ${themeColors.uiFont};
         cursor: pointer;
         pointer-events: auto;
         opacity: 0;

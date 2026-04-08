@@ -26,7 +26,7 @@ export function showToast(message: string) {
             transform: "translateX(-50%)",
             background: String(themeColors.uiBackgroundDark),
             border: `1px solid ${themeColors.uiBorderDark}`,
-            color: String(themeColors.uiFontDark),
+            color: String(themeColors.uiFont),
             padding: "6px 14px",
             borderRadius: "6px",
             fontSize: "12px",
@@ -102,13 +102,13 @@ export const hljsStyles = [
             display: block;
             padding: 8px;
             border-radius: 0px;
-            background: ${themeColors.uiBackgroundDimm};
+            background: ${themeColors.uiBackgroundDark};
             overflow-x: auto;
         }
 
         pre {
             margin: 0;
-            background: ${themeColors.uiBackgroundDimm};
+            background: ${themeColors.uiBackgroundDark};
         }
 
         pre code {

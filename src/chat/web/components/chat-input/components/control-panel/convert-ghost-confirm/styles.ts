@@ -40,7 +40,7 @@ export const convertGhostConfirmStyles = css`
 
     .cancel-btn {
         background-color: ${themeColors.cancel};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .cancel-btn:hover {
@@ -53,7 +53,7 @@ export const convertGhostConfirmStyles = css`
 
     .ok-btn {
         background-color: ${themeColors.ghostChat};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .ok-btn:hover {

@@ -51,7 +51,7 @@ export const commonStyles = css`
     /* Primary Button */
     .primary-button {
         background-color: ${themeColors.submit};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         border: none;
         padding: 6px 12px;
         border-radius: 4px;
@@ -66,7 +66,7 @@ export const commonStyles = css`
 
     /* Text Utilities */
     .text-muted {
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 
     .text-bold {

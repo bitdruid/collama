@@ -1,5 +1,27 @@
 import { unsafeCSS } from "lit";
 
+const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
+
+type Color = { cssText: string } | string;
+const cssOf = (c: Color) => (typeof c === "string" ? c : c.cssText);
+
+/**
+ * Adjust only the lightness channel in HSL, preserving hue and saturation.
+ * `darken` moves in a fixed direction; `contrast` moves away from the base's
+ * own lightness so the result is always more contrasting — this is what makes
+ * borders/hover states work on both dark and light VSCode themes.
+ * `sign()` requires Chromium 125+ (VSCode's webview is fine).
+ */
+const darken = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - ${n}))`);
+const contrast = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - sign(l - 50) * ${n}))`);
+
+const getBorder = (color: Color) => contrast(color, 10);
+const getHover = (color: Color) => contrast(color, 4);
+
+const backBaseColor = contrast(baseColor, 3);
+const backDimmColor = darken(backBaseColor, 5);
+const backDarkColor = darken(backBaseColor, 7);
+
 /**
  * Reusable color values for consistent color usage.
  * Usage: color: ${themeColors.submit};
@@ -63,35 +85,33 @@ export const themeColors = {
     shadowLight: unsafeCSS("rgba(0, 0, 0, 0.3)"),
 
     /* User interactive element Colors */
-    input: unsafeCSS("var(--vscode-input-foreground)"),
+    placeholder: contrast(backBaseColor, 15),
     disabled: unsafeCSS("#555"),
-    textWhite: unsafeCSS("#fff"),
+    cleanWhite: unsafeCSS("#fff"),
+    focus: contrast(backBaseColor, 25),
 
     /* Font */
-    uiFont: unsafeCSS("var(--vscode-foreground)"),
-    uiFontDimm: unsafeCSS("var(--vscode-descriptionForeground)"),
-    uiFontDark: unsafeCSS("var(--vscode-editorWidget-foreground)"),
+    uiFont: contrast(backBaseColor, 45),
 
     /* Default Background */
-    uiBackground: unsafeCSS("var(--vscode-commandCenter-background)"),
-    uiBackgroundHover: unsafeCSS("var(--vscode-commandCenter-activeBackground)"),
+    uiBackground: backBaseColor,
+    uiBackgroundHover: getHover(backBaseColor),
 
     /* Default Border */
-    uiBorder: unsafeCSS("var(--vscode-commandCenter-border)"),
-    uiBorderHover: unsafeCSS("var(--vscode-commandCenter-activeBorder)"),
-    uiBorderFocus: unsafeCSS("var(--vscode-commandCenter-foreground)"),
+    uiBorder: getBorder(backBaseColor),
+    uiBorderHover: getHover(getBorder(backBaseColor)),
 
     /* Dimm */
-    uiBackgroundDimm: unsafeCSS("var(--vscode-editor-background)"),
-    uiBorderDimm: unsafeCSS("var(--vscode-editor-border)"),
+    uiBackgroundDimm: backDimmColor,
+    uiBackgroundHoverDimm: getHover(backDimmColor),
+    uiBorderDimm: getBorder(backDimmColor),
+    uiBorderHoverDimm: getHover(getBorder(backDimmColor)),
 
     /* Dark */
-    uiBackgroundDark: unsafeCSS("var(--vscode-editorWidget-background)"),
-    uiBorderDark: unsafeCSS("var(--vscode-editorWidget-border)"),
-
-    /* Accordion */
-    accordionHeader: unsafeCSS("var(--vscode-textCodeBlock-background)"),
-    accordionContent: unsafeCSS("var(--vscode-editor-background)"),
+    uiBackgroundDark: backDarkColor,
+    uiBackgroundHoverDark: getHover(backDarkColor),
+    uiBorderDark: getBorder(backDarkColor),
+    uiBorderHoverDark: getHover(getBorder(backDarkColor)),
 
     /* Scrollbar */
     scrollBar: unsafeCSS("var(--vscode-scrollbarSlider-background)"),

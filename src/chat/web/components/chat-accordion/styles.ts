@@ -13,7 +13,7 @@ export const accordionStyles = [
         }
 
         .accordion {
-            border: 1px solid ${themeColors.uiBorder};
+            border: 1px solid ${themeColors.uiBorderDark};
             border-radius: 6px;
             overflow: hidden;
             position: relative;
@@ -24,8 +24,8 @@ export const accordionStyles = [
             align-items: center;
             gap: 6px;
             padding: 6px 10px;
-            background: ${themeColors.accordionHeader};
-            color: ${themeColors.uiFontDimm};
+            background: ${themeColors.uiBackgroundDark};
+            color: ${themeColors.uiFont};
             cursor: pointer;
             user-select: none;
             font-size: 0.9em;
@@ -36,7 +36,7 @@ export const accordionStyles = [
         }
 
         .accordion-header:hover {
-            background: ${themeColors.uiBackgroundHover};
+            background: ${themeColors.uiBackgroundHoverDark};
         }
 
         .accordion-arrow {
@@ -91,8 +91,8 @@ export const accordionStyles = [
         }
 
         .accordion-content-inner {
-            background: ${themeColors.accordionContent};
-            border-top: 1px solid ${themeColors.uiBorder};
+            background: ${themeColors.uiBackgroundDark};
+            border-top: 1px solid ${themeColors.uiBorderDark};
             max-height: min(300px, 40vh);
             overflow-y: scroll;
             overflow-x: auto;
@@ -192,7 +192,7 @@ export const accordionStyles = [
             gap: 4px;
             background: transparent;
             border: none;
-            color: ${themeColors.uiFontDimm};
+            color: ${themeColors.uiFont};
             cursor: pointer;
             padding: 2px 6px;
             border-radius: 4px;

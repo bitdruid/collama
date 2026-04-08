@@ -25,7 +25,7 @@ export const outputStyles = [
             margin-bottom: 6px;
             padding: 2px 6px;
             border-radius: 4px;
-            color: ${themeColors.textWhite};
+            color: ${themeColors.cleanWhite};
         }
 
         .role-label {
@@ -64,7 +64,7 @@ export const outputStyles = [
 
         th,
         td {
-            border: 1px solid ${themeColors.uiBorderDark};
+            border: 1px solid ${themeColors.uiBorderDimm};
             padding: 6px 10px;
             text-align: left;
         }
@@ -79,7 +79,7 @@ export const outputStyles = [
         }
 
         tr:hover {
-            background: ${themeColors.uiBackgroundHover};
+            background: ${themeColors.uiBackgroundHoverDimm};
         }
 
         .out-of-context .bubble {

@@ -32,7 +32,7 @@ export const controlPanelStyles = css`
     }
 
     textarea::placeholder {
-        color: ${themeColors.uiBorderHover};
+        color: ${themeColors.placeholder};
     }
 
     textarea:disabled {
@@ -65,7 +65,7 @@ export const controlPanelButtonStyles = css`
         padding: 0;
         border-radius: 50%;
         line-height: 1;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         border: none;
         cursor: pointer;
         box-sizing: border-box;
@@ -79,11 +79,6 @@ export const controlPanelButtonStyles = css`
     }
     button-submit:active {
         background-color: ${themeColors.submitActive};
-    }
-    button-submit:disabled {
-        background-color: ${themeColors.disabled};
-        cursor: not-allowed;
-        opacity: 0.5;
     }
 
     button-context {
@@ -105,7 +100,7 @@ export const controlPanelButtonStyles = css`
         height: 16px;
         border-radius: 50%;
         background-color: ${themeColors.usageDanger};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         font-size: 10px;
         font-weight: bold;
         line-height: 1;
@@ -115,7 +110,7 @@ export const controlPanelButtonStyles = css`
     button-cancel {
         background-color: ${themeColors.cancel};
         box-shadow:
-            0 0 0 2px ${themeColors.textWhite},
+            0 0 0 2px ${themeColors.cleanWhite},
             0 0 0 4px ${themeColors.cancel};
         animation: cancel-pulse 2s infinite;
     }
@@ -130,12 +125,12 @@ export const controlPanelButtonStyles = css`
         0%,
         100% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 2px ${themeColors.cleanWhite},
                 0 0 0 4px ${themeColors.cancel};
         }
         50% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 2px ${themeColors.cleanWhite},
                 0 0 0 8px ${themeColors.cancel};
         }
     }
@@ -164,7 +159,7 @@ export const controlPanelButtonStyles = css`
     button-auto-accept[active] {
         background-color: ${themeColors.autoAcceptActive};
         box-shadow:
-            0 0 0 2px ${themeColors.textWhite},
+            0 0 0 2px ${themeColors.cleanWhite},
             0 0 0 4px ${themeColors.autoAcceptActive};
         animation: auto-accept-pulse 2s infinite;
     }
@@ -173,12 +168,12 @@ export const controlPanelButtonStyles = css`
         0%,
         100% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 2px ${themeColors.cleanWhite},
                 0 0 0 4px ${themeColors.autoAcceptActive};
         }
         50% {
             box-shadow:
-                0 0 0 2px ${themeColors.textWhite},
+                0 0 0 2px ${themeColors.cleanWhite},
                 0 0 0 8px ${themeColors.autoAcceptActive};
         }
     }

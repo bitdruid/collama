@@ -60,7 +60,7 @@ export const headerStyles = css`
         height: 24px;
         padding: 0;
         background-color: ${themeColors.submit};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .new-chat-button svg {
@@ -82,7 +82,7 @@ export const headerStyles = css`
         height: 24px;
         padding: 0;
         background-color: ${themeColors.ghostChat};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .new-ghost-chat-button svg {

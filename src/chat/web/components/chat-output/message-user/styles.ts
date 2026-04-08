@@ -35,7 +35,7 @@ export const userStyles = css`
         border: none;
         border-radius: 4px;
         background: transparent;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         font-size: ${themeFonts.small};
         line-height: 1;
         vertical-align: middle;
@@ -111,7 +111,7 @@ export const editStyles = css`
         line-height: 1;
         vertical-align: middle;
         cursor: pointer;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .edit-send svg,

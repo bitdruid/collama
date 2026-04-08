@@ -29,7 +29,7 @@ export const errorModalStyles = css`
         border-radius: 4px;
         cursor: pointer;
         font-size: 13px;
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .btn-copy {

@@ -15,7 +15,7 @@ export const toolConfirmStyles = css`
         padding: 2px 8px;
         border-radius: 4px;
         background: ${themeColors.submit};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
         text-transform: capitalize;
     }
 
@@ -34,7 +34,7 @@ export const toolConfirmStyles = css`
         border: none;
         border-radius: 4px;
         font-size: ${themeFonts.medium};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
 
     .btn-accept {
@@ -71,7 +71,7 @@ export const toolConfirmStyles = css`
         border: none;
         border-radius: 4px;
         font-size: ${themeFonts.medium};
-        color: ${themeColors.textWhite};
+        color: ${themeColors.cleanWhite};
     }
     .btn-send:hover {
         background: ${themeColors.cancelHover};
@@ -104,7 +104,7 @@ export const toolConfirmStyles = css`
         border-radius: 6px;
         border: 1px solid ${themeColors.uiBorder};
         background: ${themeColors.uiBackground};
-        color: ${themeColors.disabled};
+        color: ${themeColors.uiFont};
         font-family: ${themeFonts.family};
         font-size: ${themeFonts.medium};
         outline: none;
@@ -115,7 +115,7 @@ export const toolConfirmStyles = css`
     }
 
     .cancel-input::placeholder {
-        color: ${themeColors.disabled};
+        color: ${themeColors.placeholder};
     }
 
     @keyframes fadeIn {

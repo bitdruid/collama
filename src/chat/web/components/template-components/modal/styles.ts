@@ -32,19 +32,19 @@ export const baseModalStyles = css`
         align-items: center;
         justify-content: space-between;
         margin-bottom: 12px;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 
     .modal-header h3 {
         margin: 0;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 
     .close-btn {
         cursor: pointer;
         font-size: ${themeFonts.giant};
         line-height: 1;
-        color: ${themeColors.uiFontDimm};
+        color: ${themeColors.uiFont};
     }
 
     .close-btn:hover {
