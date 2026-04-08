@@ -289,9 +289,30 @@ export class ChatPanel {
             logMsg("Cancelling agent execution");
             this.currentAgent.cancel();
             this.currentAgent = null;
-            const cancelledMsg = { role: "assistant" as const, content: "**Interrupted**" };
-            this.session.getActiveSession()?.messages.push(cancelledMsg);
-            webview.postMessage({ type: "agent-add-message", message: cancelledMsg });
+
+            const active = this.session.getActiveSession();
+            if (active) {
+                // Strip the incomplete assistant/tool tail produced by the cancelled run,
+                // keeping the user message so they can see/retry their prompt.
+                const msgs = active.messages.getMessages();
+                let lastUserIdx = -1;
+                for (let i = msgs.length - 1; i >= 0; i--) {
+                    if (msgs[i].role === "user") {
+                        lastUserIdx = i;
+                        break;
+                    }
+                }
+                this.session.updateSession(active, (s) => {
+                    if (lastUserIdx >= 0 && lastUserIdx + 1 < s.messages.length()) {
+                        s.messages.removeRange(lastUserIdx + 1, s.messages.length());
+                    }
+                    s.messages.push({ role: "assistant" as const, content: "**Interrupted**" });
+                });
+                webview.postMessage({
+                    type: "history-replace",
+                    messages: sanitizeMessages(active.messages.getMessages()),
+                });
+            }
         }
         webview.postMessage({
             type: "chat-complete",

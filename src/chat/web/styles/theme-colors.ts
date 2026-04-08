@@ -85,10 +85,10 @@ export const themeColors = {
     shadowLight: unsafeCSS("rgba(0, 0, 0, 0.3)"),
 
     /* User interactive element Colors */
-    placeholder: contrast(defaultColor, 15),
+    placeholder: contrast(defaultColor, 20),
     disabled: unsafeCSS("#555"),
     cleanWhite: unsafeCSS("#fff"),
-    focus: contrast(defaultColor, 25),
+    focus: contrast(defaultColor, 30),
 
     /* Font */
     uiFont: contrast(defaultColor, 50),
