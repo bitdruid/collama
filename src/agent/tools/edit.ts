@@ -139,6 +139,34 @@ async function applyFileChanges(uri: vscode.Uri, newContent: string): Promise<vo
     }
 }
 
+async function closePreviewTabs(previewUri: vscode.Uri, originalUri?: vscode.Uri): Promise<void> {
+    const tabsToClose: vscode.Tab[] = [];
+    const previewUriString = previewUri.toString();
+    const originalUriString = originalUri?.toString();
+
+    for (const tabGroup of vscode.window.tabGroups.all) {
+        for (const tab of tabGroup.tabs) {
+            if (tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === previewUriString) {
+                tabsToClose.push(tab);
+                continue;
+            }
+
+            if (
+                originalUriString &&
+                tab.input instanceof vscode.TabInputTextDiff &&
+                tab.input.original.toString() === originalUriString &&
+                tab.input.modified.toString() === previewUriString
+            ) {
+                tabsToClose.push(tab);
+            }
+        }
+    }
+
+    if (tabsToClose.length > 0) {
+        await vscode.window.tabGroups.close(tabsToClose, true);
+    }
+}
+
 /**
  * Shows a preview of file changes and asks for user confirmation.
  * Edit mode (originalContent provided): opens a diff view with Accept/Accept All.
@@ -182,9 +210,13 @@ async function handleChanges(
 
                 if (isEdit && originalUri) {
                     provider.set(originalUri, options.originalContent!);
-                    await vscode.commands.executeCommand("vscode.diff", originalUri, previewUri, title);
+                    await vscode.commands.executeCommand("vscode.diff", originalUri, previewUri, title, {
+                        preview: false,
+                    });
                 } else {
-                    await vscode.commands.executeCommand("vscode.openWith", previewUri, "default");
+                    await vscode.commands.executeCommand("vscode.openWith", previewUri, "default", {
+                        preview: false,
+                    });
                 }
 
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
@@ -194,6 +226,7 @@ async function handleChanges(
                 const { value, reason } = await requestToolConfirm(action, relativePath);
 
                 if (!value) {
+                    await closePreviewTabs(previewUri, originalUri);
                     return {
                         success: false,
                         message: reason,
@@ -220,10 +253,7 @@ async function handleChanges(
                 }
                 success = true;
 
-                const activeUri = vscode.window.activeTextEditor?.document.uri.toString();
-                if (activeUri === previewUri.toString() || activeUri === originalUri?.toString()) {
-                    await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-                }
+                await closePreviewTabs(previewUri, originalUri);
 
                 return { success, message };
             } finally {
