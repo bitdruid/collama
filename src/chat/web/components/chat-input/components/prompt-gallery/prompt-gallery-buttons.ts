@@ -17,6 +17,7 @@ export class PromptGalleryButtons extends LitElement {
     render() {
         if (this.index !== undefined) {
             return html`
+                <div class="row-actions">
                 <button
                     class="gallery-btn edit-btn"
                     title="Edit prompt"
@@ -46,6 +47,7 @@ export class PromptGalleryButtons extends LitElement {
                 >
                     ${icons.trash}
                 </button>
+                </div>
             `;
         }
 
