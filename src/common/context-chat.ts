@@ -183,6 +183,22 @@ export class ChatContext {
     }
 
     /**
+     * Returns the total number of turns in the conversation.
+     * A turn = a user message + all following non-user messages until the next user message.
+     */
+    public getTurnCount(): number {
+        let count = 0;
+        let i = 0;
+        while (i < this.messages.length) {
+            if (this.messages[i].role === "user") {
+                count++;
+            }
+            i = this.getTurnEnd(i);
+        }
+        return count;
+    }
+
+    /**
      * Returns the message at the given index, or undefined if out of bounds.
      */
     public getMsgByIndex(index: number): ChatHistory | undefined {

@@ -19,6 +19,7 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Boolean }) isLoading = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @state() private autoAccept = false;
@@ -137,6 +138,7 @@ export class ControlPanelButtons extends LitElement {
             <button-ghost-chat
                 title="Convert to temporary chat"
                 data-popup-anchor
+                ?active=${this.isGhost}
                 @click=${this.handleConvertToGhost}
             >
                 ${icons.ghostChat}

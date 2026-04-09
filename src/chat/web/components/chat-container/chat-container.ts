@@ -246,6 +246,7 @@ export class ChatContainer extends LitElement {
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
+                    .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}
                     .toolConfirmRequest=${this.toolConfirmRequest}
                     .contextSearchResults=${this.contextSearchResults}
                 ></collama-chatinput>

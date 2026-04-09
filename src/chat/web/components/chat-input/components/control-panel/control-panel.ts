@@ -18,6 +18,7 @@ export class ControlPanel extends LitElement {
     @property({ type: Boolean }) isLoading = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @query("textarea")
@@ -94,6 +95,7 @@ export class ControlPanel extends LitElement {
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
+                    .isGhost=${this.isGhost}
                     .contextSearchResults=${this.contextSearchResults}
                     @submit-click=${this._handleSubmit}
                 ></collama-control-panel-buttons>

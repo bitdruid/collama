@@ -691,12 +691,14 @@ export class ChatPanel {
             const turnSummaries: string[] = [];
             let i = 0;
             let turnNum = 1;
+            const totalTurns = messages.getTurnCount();
             while (i < sourceMessages.length) {
                 const end = messages.getTurnEnd(i);
                 if (end <= i) {
                     break;
                 }
                 const turnMsgs = sourceMessages.slice(i, end);
+                webview.postMessage({ type: "summary-progress", current: turnNum, total: totalTurns });
                 const text = await this.summarizeText(webview, turnMsgs);
                 turnSummaries.push(`# Turn ${turnNum}\n${text}`);
                 turnNum++;

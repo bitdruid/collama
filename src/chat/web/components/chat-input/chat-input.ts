@@ -14,6 +14,7 @@ export class ChatInput extends LitElement {
     @property({ type: Boolean }) isLoading = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Boolean }) isGhost = false;
     @property({ type: Object }) toolConfirmRequest: ToolConfirmRequest | null = null;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
@@ -41,6 +42,7 @@ export class ChatInput extends LitElement {
                 .isLoading=${this.isLoading}
                 .agentToken=${this.agentToken}
                 .hasTokenData=${this.hasTokenData}
+                .isGhost=${this.isGhost}
                 .contextSearchResults=${this.contextSearchResults}
                 @submit-prompt=${this._handlePrompt}
             ></collama-control-panel>

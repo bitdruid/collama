@@ -47,7 +47,7 @@ export function showToast(message: string) {
     _toastTimer = window.setTimeout(() => {
         el!.style.opacity = "0";
         _toastTimer = null;
-    }, 2500);
+    }, 5000);
 }
 
 export function llmInfoTag(tagContent: string): string {
