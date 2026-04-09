@@ -1,12 +1,14 @@
-import { LitElement, html } from "lit";
+import { html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 
+import { buildOpenFileCommandUri } from "../../../../../utils-front";
 import type { ToolConfirmRequest } from "../../../../types";
+import { BaseModal } from "../../../template-components/modal/base-modal";
 import { toolConfirmStyles } from "./styles";
 
 @customElement("collama-tool-confirm")
-export class ToolConfirm extends LitElement {
-    static styles = toolConfirmStyles;
+export class ToolConfirm extends BaseModal {
+    static override styles = [...BaseModal.styles, toolConfirmStyles];
 
     @property({ type: Object }) request: ToolConfirmRequest | null = null;
     @state() private _showCancelInput = false;
@@ -15,13 +17,26 @@ export class ToolConfirm extends LitElement {
     @query(".cancel-input")
     private cancelInput!: HTMLInputElement;
 
-    // Memoized event handlers
     private handleAccept = () => this._accept();
     private handleAcceptAll = () => this._acceptAll();
     private handleCancel = () => this._cancel();
     private handleSendCancel = () => this._sendCancel();
     private handleCancelInput = (e: Event) => (this._cancelReason = (e.target as HTMLInputElement).value);
     private handleCancelKeyDown = (e: KeyboardEvent) => this._cancelKeyDown(e);
+
+    constructor() {
+        super();
+        this.title = "Tool Confirmation";
+        this.closeOnOutsideClick = false;
+    }
+
+    override close() {
+        if (!this.request) {
+            super.close();
+            return;
+        }
+        this._sendCancel();
+    }
 
     private _accept() {
         this._emit("tool-confirm-accept");
@@ -63,6 +78,7 @@ export class ToolConfirm extends LitElement {
             this._sendCancel();
         }
         if (e.key === "Escape") {
+            e.preventDefault();
             this._showCancelInput = false;
             this._cancelReason = "";
         }
@@ -84,19 +100,33 @@ export class ToolConfirm extends LitElement {
         this._cancelReason = "";
     }
 
-    render() {
+    private _formatFilePath(filePath: string): string {
+        const normalizedPath = filePath.replace(/\\/g, "/");
+        const segments = normalizedPath.split("/").filter(Boolean);
+
+        if (segments.length <= 4) {
+            return normalizedPath;
+        }
+
+        return `.../${segments.slice(-4).join("/")}`;
+    }
+
+    protected override renderContent() {
         if (!this.request) {
             return html``;
         }
 
         return html`
-            <div class="panel-content">
-                <div class="panel-header">
-                    <h3>Tool Confirmation</h3>
-                    <span class="confirm-action">${this.request.action}</span>
+            <div class="confirm-content">
+                <div class="confirm-summary">
+                    <span class="confirm-action"><b>${this.request.action}</b></span>
+                    <a
+                        class="confirm-filepath"
+                        href="${buildOpenFileCommandUri(this.request.filePath)}"
+                        title="${this.request.filePath}"
+                        >${this._formatFilePath(this.request.filePath)}</a
+                    >
                 </div>
-
-                <div class="confirm-filepath">${this.request.filePath}</div>
 
                 ${this._showCancelInput
                     ? html`
