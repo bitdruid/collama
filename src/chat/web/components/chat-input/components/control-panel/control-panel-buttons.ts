@@ -27,6 +27,8 @@ export class ControlPanelButtons extends LitElement {
     @state() private showGallery = false;
     @state() private showClearConfirm = false;
     @state() private showConvertGhostConfirm = false;
+    @state() private agentDuration = 0;
+    private _durationInterval: number | null = null;
 
     @query("collama-context-search")
     private contextSearch!: HTMLElement;
@@ -71,6 +73,33 @@ export class ControlPanelButtons extends LitElement {
         return n >= 1000 ? n.toLocaleString("de-DE") : String(n);
     }
 
+    private _formatDuration(seconds: number): string {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    override willUpdate(changedProperties: Map<PropertyKey, unknown>) {
+        if (changedProperties.has("isLoading")) {
+            if (this._durationInterval) {
+                clearInterval(this._durationInterval);
+            }
+            if (this.isLoading) {
+                this.agentDuration = 0;
+                this._durationInterval = window.setInterval(() => this.agentDuration++, 1000);
+            } else {
+                this._durationInterval = null;
+            }
+        }
+    }
+
+    override disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._durationInterval) {
+            clearInterval(this._durationInterval);
+        }
+    }
+
     private _renderAutoAccept() {
         return html`
             <button-auto-accept
@@ -91,6 +120,14 @@ export class ControlPanelButtons extends LitElement {
             <button-token-counter title="Agent token usage">
                 ${this._formatTokens(this.agentToken)}
             </button-token-counter>
+        `;
+    }
+
+    private _renderDurationCounter() {
+        return html`
+            <button-duration-counter title="Agent duration">
+                ${this._formatDuration(this.agentDuration)}
+            </button-duration-counter>
         `;
     }
 
@@ -185,7 +222,8 @@ export class ControlPanelButtons extends LitElement {
             return html`
                 <button-row>
                     <span class="spacer"></span>
-                    ${this._renderTokenCounter()} ${this._renderAutoAccept()} ${this._renderCancel()}
+                    ${this._renderTokenCounter()} ${this._renderDurationCounter()} ${this._renderAutoAccept()}
+                    ${this._renderCancel()}
                 </button-row>
             `;
         }

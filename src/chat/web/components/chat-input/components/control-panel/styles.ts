@@ -55,7 +55,8 @@ export const controlPanelButtonStyles = css`
     button-auto-accept,
     button-ghost-chat,
     button-clear-chat,
-    button-token-counter {
+    button-token-counter,
+    button-duration-counter {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -232,7 +233,8 @@ export const controlPanelButtonStyles = css`
         background-color: ${themeColors.clearChatActive};
     }
 
-    button-token-counter {
+    button-token-counter,
+    button-duration-counter {
         background-color: ${themeColors.submit};
         width: auto;
         aspect-ratio: auto;
