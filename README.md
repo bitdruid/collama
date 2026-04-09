@@ -47,6 +47,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Temporary chat sessions — create unlisted, non-persisted sessions for quick experiments
 - Send selected code/files as context with file references
 - **Search and attach files/folders directly from the chat input** - easily browse and add workspace files to your conversation context
+- **Chat search functionality** — find messages in your conversation history
 - Real-time context usage bar with automatic trimming
 - Edit messages, copy sessions, scroll navigation
 - Export chat history to JSON for backup and sharing
@@ -59,6 +60,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Code analysis: get diagnostics from language server
 - Security: path protection, workspace boundaries, .gitignore integration
 - Real-time tool execution feedback
+- Agent duration counter — track how long the agent has been running
 - Tool confirmation modal with Accept/Accept All/Cancel options
 - Cancel with reason: provide feedback to guide the agent
 - Read-only mode for safe exploration
