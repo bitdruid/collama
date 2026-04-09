@@ -44,7 +44,7 @@ export const sessionItemStyles = css`
         align-items: center;
         padding: 8px 12px;
         cursor: pointer;
-        border-left: 3px solid transparent;
+        border-left: 5px solid transparent;
         transition: background 0.1s ease;
     }
 
@@ -53,7 +53,6 @@ export const sessionItemStyles = css`
     }
 
     .session-item.active {
-        background: ${themeColors.uiBackgroundHoverDimm};
         color: ${themeColors.uiFont};
         border-left-color: ${themeColors.submit};
     }

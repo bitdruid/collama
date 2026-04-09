@@ -64,7 +64,7 @@ export const outputStyles = [
 
         th,
         td {
-            border: 1px solid ${themeColors.uiBorderDimm};
+            border: 1px solid ${themeColors.uiBorder};
             padding: 6px 10px;
             text-align: left;
         }
@@ -74,12 +74,8 @@ export const outputStyles = [
             font-weight: bold;
         }
 
-        tr:nth-child(even) {
-            background: ${themeColors.uiBackgroundDimm};
-        }
-
         tr:hover {
-            background: ${themeColors.uiBackgroundHoverDimm};
+            background: ${themeColors.uiBackgroundHover};
         }
 
         .out-of-context .bubble {

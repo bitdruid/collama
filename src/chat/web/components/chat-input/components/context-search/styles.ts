@@ -23,7 +23,7 @@ export const contextTreeStyles = css`
         flex: 1;
         padding: 6px 8px;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.medium};

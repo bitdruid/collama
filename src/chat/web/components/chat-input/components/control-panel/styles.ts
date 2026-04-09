@@ -88,6 +88,9 @@ export const controlPanelButtonStyles = css`
     button-context:hover {
         background-color: ${themeColors.contextHover};
     }
+    button-context:active {
+        background-color: ${themeColors.contextActive};
+    }
 
     .context-badge {
         position: absolute;
@@ -141,6 +144,9 @@ export const controlPanelButtonStyles = css`
     button-compress:hover {
         background-color: ${themeColors.compressHover};
     }
+    button-compress:active {
+        background-color: ${themeColors.compressActive};
+    }
 
     button-gallery {
         background-color: ${themeColors.gallery};
@@ -148,12 +154,18 @@ export const controlPanelButtonStyles = css`
     button-gallery:hover {
         background-color: ${themeColors.galleryHover};
     }
+    button-gallery:active {
+        background-color: ${themeColors.galleryActive};
+    }
 
     button-auto-accept {
         background-color: ${themeColors.autoAccept};
     }
     button-auto-accept:hover {
         background-color: ${themeColors.autoAcceptHover};
+    }
+    button-auto-accept:active {
+        background-color: ${themeColors.autoAcceptActive};
     }
 
     button-auto-accept[active] {
@@ -186,6 +198,28 @@ export const controlPanelButtonStyles = css`
     }
     button-ghost-chat:active {
         background-color: ${themeColors.ghostChatActive};
+    }
+
+    button-ghost-chat[active] {
+        background-color: ${themeColors.ghostChatActive};
+        box-shadow:
+            0 0 0 2px ${themeColors.cleanWhite},
+            0 0 0 4px ${themeColors.ghostChatActive};
+        animation: ghost-chat-pulse 2s infinite;
+    }
+
+    @keyframes ghost-chat-pulse {
+        0%,
+        100% {
+            box-shadow:
+                0 0 0 2px ${themeColors.cleanWhite},
+                0 0 0 4px ${themeColors.ghostChatActive};
+        }
+        50% {
+            box-shadow:
+                0 0 0 2px ${themeColors.cleanWhite},
+                0 0 0 8px ${themeColors.ghostChatActive};
+        }
     }
 
     button-clear-chat {
