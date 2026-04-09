@@ -12,19 +12,8 @@ export const controlPanelStyles = css`
     }
 
     textarea {
-        flex: 1;
-        width: 100%;
-        font-size: ${themeFonts.user};
+        ${themeStyles.textarea}
         margin-bottom: 4px;
-        padding: 8px;
-        border-radius: 8px;
-        border: none;
-        color: ${themeColors.uiFont};
-        background: ${themeColors.uiBackground};
-        resize: none;
-        overflow: hidden;
-        line-height: 1.2em;
-        box-sizing: border-box;
     }
 
     textarea:focus {
@@ -52,6 +41,7 @@ export const controlPanelButtonStyles = css`
     button-cancel,
     button-compress,
     button-gallery,
+    button-search,
     button-auto-accept,
     button-ghost-chat,
     button-clear-chat,
@@ -157,6 +147,16 @@ export const controlPanelButtonStyles = css`
     }
     button-gallery:active {
         background-color: ${themeColors.galleryActive};
+    }
+
+    button-search {
+        background-color: ${themeColors.search};
+    }
+    button-search:hover {
+        background-color: ${themeColors.searchHover};
+    }
+    button-search:active {
+        background-color: ${themeColors.searchActive};
     }
 
     button-auto-accept {

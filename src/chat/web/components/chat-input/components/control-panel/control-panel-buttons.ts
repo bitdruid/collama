@@ -48,6 +48,7 @@ export class ControlPanelButtons extends LitElement {
     private handleToggleGallery = () => (this.showGallery = true);
     private handleSummarizeConversation = () => emit(this, "summarize-conversation");
     private handleSubmitClick = () => emit(this, "submit-click");
+    private handleSearchToggle = () => emit(this, "search-toggle");
     private handlePopupClose = () => (this.showContextTree = false);
     private handleGalleryPopupClose = () => (this.showGallery = false);
     private handleContextSearch = (e: CustomEvent) => emit(this, "context-search", { query: e.detail.query });
@@ -138,7 +139,7 @@ export class ControlPanelButtons extends LitElement {
     private _renderContextButton() {
         const hasContext = this.contexts.length > 0;
         return html`
-            <button-context title="Add context" data-popup-anchor @click=${this.handleToggleContextTree}>
+            <button-context title="Add context" data-base-overlay-anchor @click=${this.handleToggleContextTree}>
                 ${icons.paperclip} ${hasContext ? html`<span class="context-badge">${this.contexts.length}</span>` : ""}
             </button-context>
             ${this.showContextTree
@@ -146,7 +147,7 @@ export class ControlPanelButtons extends LitElement {
                       autoShow
                       .results=${this.contextSearchResults}
                       .contexts=${this.contexts}
-                      @popup-close=${this.handlePopupClose}
+                      @overlay-close=${this.handlePopupClose}
                       @context-search=${this.handleContextSearch}
                       @context-add-file=${this.handleContextAddFile}
                       @context-remove-file=${this.handleContextRemoveFile}
@@ -157,13 +158,13 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderGallery() {
         return html`
-            <button-gallery title="Open Prompt Gallery" data-popup-anchor @click=${this.handleToggleGallery}>
+            <button-gallery title="Open Prompt Gallery" data-base-overlay-anchor @click=${this.handleToggleGallery}>
                 ${icons.gallery}
             </button-gallery>
             ${this.showGallery
                 ? html`<collama-prompt-gallery
                       autoShow
-                      @popup-close=${this.handleGalleryPopupClose}
+                      @overlay-close=${this.handleGalleryPopupClose}
                       @submit-prompt=${this.handleSubmitPrompt}
                   ></collama-prompt-gallery>`
                 : ""}
@@ -174,7 +175,7 @@ export class ControlPanelButtons extends LitElement {
         return html`
             <button-ghost-chat
                 title="Convert to temporary chat"
-                data-popup-anchor
+                data-base-overlay-anchor
                 ?active=${this.isGhost}
                 @click=${this.handleConvertToGhost}
             >
@@ -183,7 +184,7 @@ export class ControlPanelButtons extends LitElement {
             ${this.showConvertGhostConfirm
                 ? html`<collama-convert-ghost-confirm
                       autoShow
-                      @popup-close=${this.handleConvertGhostClose}
+                      @overlay-close=${this.handleConvertGhostClose}
                       @convert-ghost-confirmed=${this.handleConvertGhostConfirmed}
                   ></collama-convert-ghost-confirm>`
                 : ""}
@@ -192,16 +193,24 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderClearChat() {
         return html`
-            <button-clear-chat title="Clear conversation" data-popup-anchor @click=${this.handleClearChat}>
+            <button-clear-chat title="Clear conversation" data-base-overlay-anchor @click=${this.handleClearChat}>
                 ${icons.trash}
             </button-clear-chat>
             ${this.showClearConfirm
                 ? html`<collama-clear-chat-confirm
                       autoShow
-                      @popup-close=${this.handleClearConfirmClose}
+                      @overlay-close=${this.handleClearConfirmClose}
                       @clear-chat-confirmed=${this.handleClearChatConfirmed}
                   ></collama-clear-chat-confirm>`
                 : ""}
+        `;
+    }
+
+    private _renderSearch() {
+        return html`
+            <button-search title="Search chat" data-base-overlay-anchor @click=${this.handleSearchToggle}>
+                ${icons.search}
+            </button-search>
         `;
     }
 
@@ -230,7 +239,7 @@ export class ControlPanelButtons extends LitElement {
 
         return html`
             <button-row>
-                ${this._renderGhostChat()} ${this._renderClearChat()}
+                ${this._renderGhostChat()} ${this._renderClearChat()} ${this._renderSearch()}
                 <span class="spacer"></span>
                 ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
                 ${this._renderAutoAccept()} ${this._renderSubmit()}

@@ -483,6 +483,35 @@ export const icons = {
         <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>`,
 
+    /** Search - used for chat search button */
+    search: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>`,
+
+    /** Chevron up - used for search navigation */
+    chevronUp: html`<svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>`,
+
     /** Check - used for confirm actions */
     check: html`<svg
         width="14"

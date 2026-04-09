@@ -45,6 +45,10 @@ export const chatContainerStyles = css`
         display: flex;
     }
 
+    collama-chat-search {
+        flex: 0 0 auto;
+    }
+
     collama-chatinput {
         flex: 0 0 auto;
         display: flex;

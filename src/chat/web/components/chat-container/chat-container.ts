@@ -4,6 +4,9 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import type { ChatSession, ToolConfirmRequest } from "../../types";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
+import type { ChatSearch, SearchResult } from "../chat-input/components/chat-search/chat-search";
+import "../chat-input/components/chat-search/chat-search";
+import "../chat-input/components/tool-confirm/tool-confirm";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
@@ -60,6 +63,11 @@ export class ChatContainer extends LitElement {
     @state() messages: ChatHistory[] = [];
     @state() showScrollButton: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
+    @state() searchQuery: string = "";
+    @state() activeSearchMessageId: string = "";
+    @state() showSearch = false;
+    @state() showErrorModal = false;
+    @state() errorModalContent = "";
 
     // Reference to store's ChatContext (single source of truth)
     // Public so handlers can access it
@@ -77,6 +85,9 @@ export class ChatContainer extends LitElement {
 
     @query("collama-scroll-down")
     private scrollDown!: HTMLElement;
+
+    @query("collama-chat-search")
+    private chatSearch?: ChatSearch;
 
     private handleExportSession = (e: CustomEvent) => onExportSession(this, e);
     private handleSelectSession = (e: CustomEvent) => onSelectSession(e);
@@ -97,6 +108,27 @@ export class ChatContainer extends LitElement {
     private handleToolConfirmAcceptAll = (e: CustomEvent) => onToolConfirmAcceptAll(this, e);
     private handleToolConfirmCancel = (e: CustomEvent) => onToolConfirmCancel(this, e);
     private handleScrollDown = () => this.scrollToBottom();
+    private handleSearchToggle = () => (this.showSearch = true);
+    private handleSearchQuery = (e: CustomEvent) => this._performSearch(e.detail.query);
+    private handleSearchNavigate = (e: CustomEvent) => {
+        this.activeSearchMessageId = e.detail.messageId;
+        this._scrollToMessage(e.detail.messageId);
+    };
+    private handleSearchClear = () => {
+        this.searchQuery = "";
+        this.activeSearchMessageId = "";
+    };
+    private handleSearchClose = () => (this.showSearch = false);
+    private handleErrorModalClose = () => {
+        this.showErrorModal = false;
+        this.errorModalContent = "";
+    };
+    private handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+            e.preventDefault();
+            this.showSearch = true;
+        }
+    };
 
     /** Creates a fresh array snapshot from store's ChatContext to trigger a Lit re-render. */
     syncMessages() {
@@ -114,6 +146,32 @@ export class ChatContainer extends LitElement {
                 this.syncMessages();
             }, 33);
         }
+    }
+
+    private _performSearch(query: string) {
+        this.searchQuery = query;
+        if (!query) {
+            this.chatSearch?.setResults([]);
+            this.activeSearchMessageId = "";
+            return;
+        }
+        const lowerQuery = query.toLowerCase();
+        const results: SearchResult[] = [];
+        for (const [i, msg] of this.messages.entries()) {
+            if (msg.content && msg.content.toLowerCase().includes(lowerQuery)) {
+                results.push({ messageIndex: i, messageId: msg.customKeys?.id ?? String(i) });
+            }
+        }
+        this.chatSearch?.setResults(results);
+    }
+
+    private _scrollToMessage(messageId: string) {
+        const output = this.chatOutput;
+        if (!output?.shadowRoot) {
+            return;
+        }
+        const el = output.shadowRoot.querySelector(`[data-message-id="${messageId}"]`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     /** Scrolls the chat output to the bottom and activates sticky scroll. */
@@ -144,6 +202,7 @@ export class ChatContainer extends LitElement {
         const dispatch = createInboundDispatcher(this);
         this._messageHandler = (e: MessageEvent) => dispatch(e.data);
         window.addEventListener("message", this._messageHandler);
+        window.addEventListener("keydown", this.handleKeyDown);
     }
 
     /**
@@ -182,6 +241,7 @@ export class ChatContainer extends LitElement {
             window.removeEventListener("message", this._messageHandler);
             this._messageHandler = null;
         }
+        window.removeEventListener("keydown", this.handleKeyDown);
         if (this._updateTimer !== null) {
             clearTimeout(this._updateTimer);
             this._updateTimer = null;
@@ -217,6 +277,8 @@ export class ChatContainer extends LitElement {
                         .messages=${this.messages}
                         .contextStartIndex=${this.contextStartIndex}
                         .isGenerating=${this.isLoading}
+                        .searchQuery=${this.searchQuery}
+                        .activeSearchMessageId=${this.activeSearchMessageId}
                         @resend-message=${this.handleResendMessage}
                         @edit-message=${this.handleEditMessage}
                         @delete-message=${this.handleDeleteMessage}
@@ -228,26 +290,47 @@ export class ChatContainer extends LitElement {
                         @scroll-down=${this.handleScrollDown}
                     ></collama-scroll-down>
                 </div>
-                <collama-error-modal></collama-error-modal>
+                ${this.showErrorModal
+                    ? html`<collama-error-modal
+                          autoShow
+                          .content=${this.errorModalContent}
+                          @overlay-close=${this.handleErrorModalClose}
+                      ></collama-error-modal>`
+                    : ""}
+                ${this.showSearch
+                    ? html`<collama-chat-search
+                          autoShow
+                          @overlay-close=${this.handleSearchClose}
+                          @search-query=${this.handleSearchQuery}
+                          @search-navigate=${this.handleSearchNavigate}
+                          @search-clear=${this.handleSearchClear}
+                      ></collama-chat-search>`
+                    : ""}
+                ${this.toolConfirmRequest
+                    ? html`<collama-tool-confirm
+                          autoShow
+                          .request=${this.toolConfirmRequest}
+                          @tool-confirm-accept=${this.handleToolConfirmAccept}
+                          @tool-confirm-accept-all=${this.handleToolConfirmAcceptAll}
+                          @tool-confirm-cancel=${this.handleToolConfirmCancel}
+                      ></collama-tool-confirm>`
+                    : ""}
                 <collama-chatinput
                     @submit=${this.handleSubmit}
                     @cancel=${this.handleCancel}
                     @convert-to-ghost=${this.handleConvertToGhost}
                     @clear-chat=${this.handleClearChat}
                     @summarize-conversation=${this.handleSummarizeConversation}
+                    @search-toggle=${this.handleSearchToggle}
                     @auto-accept=${onAutoAccept}
                     @context-cleared=${this.handleContextCleared}
                     @context-search=${onContextSearch}
                     @context-add-file=${onContextAddFile}
-                    @tool-confirm-accept=${this.handleToolConfirmAccept}
-                    @tool-confirm-accept-all=${this.handleToolConfirmAcceptAll}
-                    @tool-confirm-cancel=${this.handleToolConfirmCancel}
                     .contexts=${this.currentContexts}
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}
-                    .toolConfirmRequest=${this.toolConfirmRequest}
                     .contextSearchResults=${this.contextSearchResults}
                 ></collama-chatinput>
             </div>

@@ -102,5 +102,15 @@ export const outputStyles = [
             color: ${themeColors.hyperlinkHover};
             text-decoration: underline;
         }
+
+        .search-highlight {
+            background: ${themeColors.searchHighlight};
+            border-radius: 2px;
+        }
+
+        .search-highlight.active {
+            background: ${themeColors.searchHighlightActive};
+            border-radius: 2px;
+        }
     `,
 ];
