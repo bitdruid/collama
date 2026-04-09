@@ -1,7 +1,7 @@
-import { html, LitElement, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { html, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import { icons } from "../../../../utils-front";
-import { DismissalController } from "../controllers/dismissal-controller";
+import { BaseOverlay } from "../overlay/base-overlay";
 import { baseModalStyles } from "./styles";
 
 /**
@@ -10,69 +10,25 @@ import { baseModalStyles } from "./styles";
  * close button, click-outside-to-close, keyboard handling, and customizable title and content.
  */
 @customElement("collama-base-modal")
-export class BaseModal extends LitElement {
-    static styles = [baseModalStyles];
-
-    @state() protected _open = false;
-    @state() protected _visible = false;
+export class BaseModal extends BaseOverlay {
+    static override styles = [baseModalStyles];
     @property({ type: String }) title = "Modal";
-    @property({ type: Boolean }) closeOnOutsideClick = true;
-    @property({ type: Boolean }) closeOnEscape = true;
-
-    private _dismissalController: DismissalController;
 
     /**
      * Show the modal with optional title override
      */
-    show(title?: string) {
+    override show(title?: string) {
         if (title) {
             this.title = title;
         }
-        this._open = true;
-        // Small delay to trigger fade-in animation
-        requestAnimationFrame(() => {
-            this._visible = true;
-        });
+        super.show();
     }
 
-    /**
-     * Close the modal with fade-out animation
-     */
-    close() {
-        this._visible = false;
-        // Wait for fade-out animation to complete before hiding
-        this._dismissalController.delayedClose(() => {
-            this._open = false;
-        }, 200);
-    }
-
-    /**
-     * Check if click is outside the modal
-     * @param e - The mouse event
-     */
-    private _isClickOutside(e: MouseEvent): boolean {
-        const path = e.composedPath();
-        return !path.includes(this);
-    }
-
-    /**
-     * Handle document click events for click-outside-to-close
-     * @param e - The mouse event
-     */
-    private _onDocumentClick(e: MouseEvent) {
-        if (this.closeOnOutsideClick && this._isClickOutside(e)) {
-            this.close();
+    toggle(title?: string) {
+        if (title) {
+            this.title = title;
         }
-    }
-
-    constructor() {
-        super();
-        this._dismissalController = new DismissalController(this, {
-            closeOnOutsideClick: this.closeOnOutsideClick,
-            closeOnEscape: this.closeOnEscape,
-            onDismiss: () => this.close(),
-            onDocumentClick: (e: MouseEvent) => this._onDocumentClick(e),
-        });
+        super.toggle();
     }
 
     /**
@@ -82,7 +38,7 @@ export class BaseModal extends LitElement {
         return html`<slot></slot>`;
     }
 
-    render() {
+    override render() {
         if (!this._open) {
             return html``;
         }
