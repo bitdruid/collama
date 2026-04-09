@@ -13,6 +13,7 @@ export function createInboundDispatcher(host: ChatContainer) {
         "agent-tokens": (m) => handleAgentTokens(host, m),
         "chat-complete": (m) => handleChatComplete(host, m),
         "summary-complete": (m) => handleSummarized(host, m),
+        "summary-progress": (m) => handleSummaryProgress(host, m),
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
         "context-search-results": (m) => handleContextSearchResults(host, m),
@@ -46,7 +47,6 @@ function applySessionState(host: ChatContainer, msg: any) {
     host.contextUsed = store.contextUsed;
     host.contextMax = store.contextMax;
     host.contextStartIndex = msg.contextStartIndex || 0;
-
 }
 
 /** Initializes the component with session history, context usage, and session list from the host. */
@@ -103,6 +103,11 @@ function handleSummarized(host: ChatContainer, msg: any) {
     showToast(msg.isConversation ? "Conversation summarized" : "Turn summarized");
 }
 
+/** Shows a toast with the current summarization progress. */
+function handleSummaryProgress(host: ChatContainer, msg: any) {
+    showToast(`Summarizing: ${msg.current} / ${msg.total}`);
+}
+
 /** Adjusts `contextStartIndex` when the host trims old messages to stay within the context window. */
 function handleContextTrimmed(host: ChatContainer, msg: any) {
     host.contextStartIndex = msg.contextStartIndex || 0;
@@ -129,10 +134,8 @@ function handleAgentError(host: ChatContainer, msg: any) {
     host.agentToken = 0;
     host.hasTokenData = false;
 
-    const content = `${msg.exportedChat}${msg.errorMessage}`;
-
-    const modal = host.shadowRoot?.querySelector("collama-error-modal") as any;
-    modal?.showError(content);
+    host.errorModalContent = `${msg.exportedChat}${msg.errorMessage}`;
+    host.showErrorModal = true;
     logWebview(`Agent error: ${msg.error?.message}`);
 }
 

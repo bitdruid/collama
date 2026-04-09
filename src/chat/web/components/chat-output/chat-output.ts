@@ -202,6 +202,8 @@ export class ChatOutput extends LitElement {
     @property({ type: Array }) messages: ChatHistory[] = [];
     @property({ type: Number }) contextStartIndex: number = 0;
     @property({ type: Boolean }) isGenerating: boolean = false;
+    @property({ type: String }) searchQuery: string = "";
+    @property({ type: String }) activeSearchMessageId: string = "";
     @state() editingIndex: number | null = null;
 
     // private highlightedBlocks = new WeakSet<Element>();
@@ -269,6 +271,25 @@ export class ChatOutput extends LitElement {
         return !this._hasScrollbar() || this.scrollHeight - (this.clientHeight + this.scrollTop) < threshold;
     }
 
+    /**
+     * Injects <mark> highlights into rendered HTML by walking text nodes only.
+     * Skips content inside HTML tags to avoid corrupting attributes.
+     */
+    private _highlightHtml(htmlStr: string, query: string, isActive: boolean): string {
+        if (!query) {
+            return htmlStr;
+        }
+        const cls = isActive ? "search-highlight active" : "search-highlight";
+        // Split HTML into tags and text segments, only replace in text segments
+        return htmlStr.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => {
+            if (tag) {
+                return tag;
+            }
+            const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            return text.replace(new RegExp(escaped, "gi"), (m: string) => `<mark class="${cls}">${m}</mark>`);
+        });
+    }
+
     private _getCachedMarkdown = (content: string, isStreaming: boolean): string => {
         if (isStreaming) {
             return md.render(content);
@@ -327,6 +348,22 @@ export class ChatOutput extends LitElement {
         }
 
         const groups = groupMessages(messages);
+        const searchQuery = this.searchQuery;
+        const activeSearchId = this.activeSearchMessageId;
+
+        /** Wraps getCachedMarkdown to inject search highlights when a query is active. */
+        const getMarkdownWithHighlight = (
+            msgId: string,
+            content: string,
+            isStreaming: boolean,
+        ): string => {
+            const rendered = this._getCachedMarkdown(content, isStreaming);
+            if (!searchQuery) {
+                return rendered;
+            }
+            const isActive = msgId === activeSearchId;
+            return this._highlightHtml(rendered, searchQuery, isActive);
+        };
 
         return html`
             <div class="output-container">
@@ -367,42 +404,52 @@ export class ChatOutput extends LitElement {
                         }
 
                         const { msg, index } = group;
+                        const msgId = msg.customKeys?.id ?? String(index);
                         const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
                         const outOfContextClass = isOutOfContext ? "out-of-context" : "";
                         const warningIcon = isOutOfContext
                             ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>`
                             : "";
 
+                        const getCachedMarkdown = (content: string, isStreaming: boolean) =>
+                            getMarkdownWithHighlight(msgId, content, isStreaming);
+
                         if (msg.role === "user") {
-                            return renderUserMessage({
-                                host: this,
-                                messages,
-                                msg,
-                                index,
-                                outOfContextClass,
-                                warningIcon,
-                                getCachedMarkdown: this._getCachedMarkdown,
-                            });
+                            return html`<div data-message-id="${msgId}">
+                                ${renderUserMessage({
+                                    host: this,
+                                    messages,
+                                    msg,
+                                    index,
+                                    outOfContextClass,
+                                    warningIcon,
+                                    getCachedMarkdown,
+                                })}
+                            </div>`;
                         }
 
                         if (msg.role === "assistant") {
                             const isGeneratingThis = this.isGenerating && index === lastAssistantIndex;
-                            return renderAssistantMessage({
+                            return html`<div data-message-id="${msgId}">
+                                ${renderAssistantMessage({
+                                    msg,
+                                    outOfContextClass,
+                                    warningIcon,
+                                    isLoading: isGeneratingThis && !msg.content,
+                                    isStreaming: isGeneratingThis && !!msg.content,
+                                    getCachedMarkdown,
+                                })}
+                            </div>`;
+                        }
+
+                        return html`<div data-message-id="${msgId}">
+                            ${renderSystemMessage({
                                 msg,
                                 outOfContextClass,
                                 warningIcon,
-                                isLoading: isGeneratingThis && !msg.content,
-                                isStreaming: isGeneratingThis && !!msg.content,
-                                getCachedMarkdown: this._getCachedMarkdown,
-                            });
-                        }
-
-                        return renderSystemMessage({
-                            msg,
-                            outOfContextClass,
-                            warningIcon,
-                            getCachedMarkdown: this._getCachedMarkdown,
-                        });
+                                getCachedMarkdown,
+                            })}
+                        </div>`;
                     },
                 )}
             </div>

@@ -20,14 +20,7 @@ export const contextTreeStyles = css`
     }
 
     .search-bar input {
-        flex: 1;
-        padding: 6px 8px;
-        border: none;
-        border-radius: 6px;
-        background: ${themeColors.uiBackground};
-        color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
-        box-sizing: border-box;
+        ${themeStyles.input}
     }
 
     .search-bar input:focus {

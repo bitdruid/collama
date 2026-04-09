@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { icons } from "../../../../utils-front";
+import { adjustTextareaRows, icons } from "../../../../utils-front";
 import { editStyles } from "./styles";
 
 /**
@@ -56,16 +56,7 @@ export class ChatEditMessage extends LitElement {
         if (!this.textarea) {
             return;
         }
-        this.textarea.rows = 1;
-        const style = getComputedStyle(this.textarea);
-        const lineHeight = parseFloat(style.lineHeight);
-        const paddingTop = parseFloat(style.paddingTop);
-        const paddingBottom = parseFloat(style.paddingBottom);
-        const verticalPadding = paddingTop + paddingBottom;
-        const contentHeight = this.textarea.scrollHeight - verticalPadding;
-        const newRows = Math.max(1, Math.round(contentHeight / lineHeight));
-        this.textarea.rows = newRows;
-        this.rows = newRows;
+        this.rows = adjustTextareaRows(this.textarea);
     }
 
     /**

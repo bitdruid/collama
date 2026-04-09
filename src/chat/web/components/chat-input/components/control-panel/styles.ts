@@ -12,19 +12,8 @@ export const controlPanelStyles = css`
     }
 
     textarea {
-        flex: 1;
-        width: 100%;
-        font-size: ${themeFonts.user};
+        ${themeStyles.textarea}
         margin-bottom: 4px;
-        padding: 8px;
-        border-radius: 8px;
-        border: none;
-        color: ${themeColors.uiFont};
-        background: ${themeColors.uiBackground};
-        resize: none;
-        overflow: hidden;
-        line-height: 1.2em;
-        box-sizing: border-box;
     }
 
     textarea:focus {
@@ -52,10 +41,12 @@ export const controlPanelButtonStyles = css`
     button-cancel,
     button-compress,
     button-gallery,
+    button-search,
     button-auto-accept,
     button-ghost-chat,
     button-clear-chat,
-    button-token-counter {
+    button-token-counter,
+    button-duration-counter {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -87,6 +78,9 @@ export const controlPanelButtonStyles = css`
     }
     button-context:hover {
         background-color: ${themeColors.contextHover};
+    }
+    button-context:active {
+        background-color: ${themeColors.contextActive};
     }
 
     .context-badge {
@@ -141,6 +135,9 @@ export const controlPanelButtonStyles = css`
     button-compress:hover {
         background-color: ${themeColors.compressHover};
     }
+    button-compress:active {
+        background-color: ${themeColors.compressActive};
+    }
 
     button-gallery {
         background-color: ${themeColors.gallery};
@@ -148,12 +145,28 @@ export const controlPanelButtonStyles = css`
     button-gallery:hover {
         background-color: ${themeColors.galleryHover};
     }
+    button-gallery:active {
+        background-color: ${themeColors.galleryActive};
+    }
+
+    button-search {
+        background-color: ${themeColors.search};
+    }
+    button-search:hover {
+        background-color: ${themeColors.searchHover};
+    }
+    button-search:active {
+        background-color: ${themeColors.searchActive};
+    }
 
     button-auto-accept {
         background-color: ${themeColors.autoAccept};
     }
     button-auto-accept:hover {
         background-color: ${themeColors.autoAcceptHover};
+    }
+    button-auto-accept:active {
+        background-color: ${themeColors.autoAcceptActive};
     }
 
     button-auto-accept[active] {
@@ -188,6 +201,28 @@ export const controlPanelButtonStyles = css`
         background-color: ${themeColors.ghostChatActive};
     }
 
+    button-ghost-chat[active] {
+        background-color: ${themeColors.ghostChatActive};
+        box-shadow:
+            0 0 0 2px ${themeColors.cleanWhite},
+            0 0 0 4px ${themeColors.ghostChatActive};
+        animation: ghost-chat-pulse 2s infinite;
+    }
+
+    @keyframes ghost-chat-pulse {
+        0%,
+        100% {
+            box-shadow:
+                0 0 0 2px ${themeColors.cleanWhite},
+                0 0 0 4px ${themeColors.ghostChatActive};
+        }
+        50% {
+            box-shadow:
+                0 0 0 2px ${themeColors.cleanWhite},
+                0 0 0 8px ${themeColors.ghostChatActive};
+        }
+    }
+
     button-clear-chat {
         background-color: ${themeColors.clearChat};
     }
@@ -198,7 +233,8 @@ export const controlPanelButtonStyles = css`
         background-color: ${themeColors.clearChatActive};
     }
 
-    button-token-counter {
+    button-token-counter,
+    button-duration-counter {
         background-color: ${themeColors.submit};
         width: auto;
         aspect-ratio: auto;

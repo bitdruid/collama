@@ -15,41 +15,70 @@ export const galleryStyles = css`
     }
 
     .prompt-item {
+        position: relative;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 12px;
-        padding: 8px;
+        padding: 6px 8px;
         cursor: pointer;
         border-radius: 4px;
-        border: 1px solid ${themeColors.uiBorder};
-        background: ${themeColors.uiBackground};
+        border-bottom: 1px solid ${themeColors.uiBorderDimm};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.medium};
         line-height: 1.4;
     }
 
+    .prompt-item:last-child {
+        border-bottom: none;
+    }
+
     .prompt-item:hover {
-        box-shadow: inset 0 0 0 2px ${themeColors.uiBorder};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .prompt-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 2px;
         max-height: 50vh;
         overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .prompt-text {
         flex: 1;
         word-break: break-word;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .prompt-actions {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
         display: flex;
-        gap: 6px;
-        flex-shrink: 0;
+        align-items: center;
+        padding: 0 8px 0 24px;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateX(6px);
+        transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+        background: linear-gradient(
+            to right,
+            transparent 0%,
+            ${themeColors.uiBackgroundHoverDimm} 40%,
+            ${themeColors.uiBackgroundHoverDimm} 100%
+        );
+        border-radius: 4px;
+    }
+
+    .prompt-item:hover .prompt-actions,
+    .prompt-item:focus-within .prompt-actions {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
     }
 
     .prompt-add-section {
@@ -82,6 +111,11 @@ export const galleryButtonStyles = css`
         margin-top: 6px;
     }
 
+    .row-actions {
+        display: flex;
+        gap: 2px;
+    }
+
     .gallery-btn {
         display: inline-flex;
         padding: 4px 8px;
@@ -93,34 +127,40 @@ export const galleryButtonStyles = css`
         color: ${themeColors.cleanWhite};
     }
 
-    .edit-btn,
-    .delete-btn {
-        width: 28px;
-        height: 28px;
+    .row-actions .gallery-btn {
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        background: transparent;
+        color: ${themeColors.uiFont};
     }
 
-    .prompt-btn,
-    .edit-btn {
+    .row-actions .edit-btn:hover {
+        background: ${themeColors.submitHover};
+        color: ${themeColors.cleanWhite};
+    }
+
+    .row-actions .delete-btn:hover {
+        background: ${themeColors.cancelHover};
+        color: ${themeColors.cleanWhite};
+    }
+
+    .prompt-btn {
         background: ${themeColors.submit};
     }
-    .prompt-btn:hover,
-    .edit-btn:hover {
+    .prompt-btn:hover {
         background: ${themeColors.submitHover};
     }
-    .prompt-btn:active,
-    .edit-btn:active {
+    .prompt-btn:active {
         background: ${themeColors.submitActive};
     }
 
-    .delete-btn,
     .cancel-btn {
         background: ${themeColors.cancel};
     }
-    .delete-btn:hover,
     .cancel-btn:hover {
         background: ${themeColors.cancelHover};
     }
-    .delete-btn:active,
     .cancel-btn:active {
         background: ${themeColors.cancelActive};
     }

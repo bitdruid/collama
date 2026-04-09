@@ -2,17 +2,25 @@ import { css } from "lit";
 import { themeColors } from "../../../../styles/theme-colors";
 import { themeFonts } from "../../../../styles/theme-fonts";
 import { themeStyles } from "../../../../styles/theme-styles";
-import { panelStyles } from "../../styles-shared";
 
 export const toolConfirmStyles = css`
-    ${panelStyles}
-    :host {
-        padding: 8px;
+    .confirm-content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .confirm-summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .confirm-action {
+        display: inline-flex;
+        align-items: center;
         font-size: ${themeFonts.medium};
-        padding: 2px 8px;
+        padding: 6px 12px;
         border-radius: 4px;
         background: ${themeColors.submit};
         color: ${themeColors.cleanWhite};
@@ -21,8 +29,8 @@ export const toolConfirmStyles = css`
 
     .confirm-buttons {
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
-        margin-top: 12px;
     }
 
     .confirm-btn {
@@ -81,33 +89,37 @@ export const toolConfirmStyles = css`
     }
 
     .confirm-filepath {
+        flex: 1;
+        min-width: 0;
         font-family: ${themeFonts.family}, monospace;
         font-size: ${themeFonts.medium};
         color: ${themeColors.uiFont};
-        padding: 8px 12px;
-        border-radius: 6px;
+        padding: 6px 8px;
+        border-radius: 4px;
         background: ${themeColors.uiBackgroundDimm};
         border: 1px solid ${themeColors.uiBorderDimm};
-        word-break: break-all;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+    }
+
+    .confirm-filepath:hover {
+        background: ${themeColors.uiBackground};
+        border-color: ${themeColors.uiBorder};
     }
 
     .cancel-input-row {
         display: flex;
         gap: 8px;
-        margin-top: 8px;
         animation: fadeIn 0.15s ease-out;
     }
 
     .cancel-input {
-        flex: 1;
-        padding: 6px 10px;
-        border-radius: 6px;
-        border: 1px solid ${themeColors.uiBorderDimm};
-        background: ${themeColors.uiBackground};
-        color: ${themeColors.uiFont};
-        font-family: ${themeFonts.family};
-        font-size: ${themeFonts.medium};
-        outline: none;
+        ${themeStyles.input}
+        background: ${themeColors.uiBackgroundDimm};
     }
 
     .cancel-input:focus {

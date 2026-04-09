@@ -73,19 +73,8 @@ export const editStyles = css`
     }
 
     .edit-textarea {
-        width: 100%;
-        min-height: auto;
-        padding: 8px;
+        ${themeStyles.textarea}
         margin-top: 4px;
-        border: 1px solid ${themeColors.uiBorder};
-        border-radius: 8px;
-        background: ${themeColors.uiBackground};
-        color: ${themeColors.uiFont};
-        font-family: inherit;
-        font-size: ${themeFonts.user};
-        resize: vertical;
-        box-sizing: border-box;
-        line-height: 1.4;
     }
 
     .edit-textarea:focus {

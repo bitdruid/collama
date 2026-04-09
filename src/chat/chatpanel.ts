@@ -248,12 +248,20 @@ export class ChatPanel {
     }
 
     /**
-     * Converts the active session to a ghost session.
-     * Has no effect if the session is already ghost.
+     * Toggles the active session between ghost and stored.
      */
     private handleConvertToGhost() {
         const session = this.session.getActiveSession();
-        if (!session || session.ghost) {
+        if (!session) {
+            return;
+        }
+        if (session.ghost) {
+            this.session.updateSession(session, (s) => {
+                s.ghost = false;
+            });
+            this.session.sendSessionsUpdate();
+            this.session.saveSessions();
+            logMsg(`Session ${session.id} converted to stored`);
             return;
         }
         this.session.updateSession(session, (s) => {
@@ -691,12 +699,14 @@ export class ChatPanel {
             const turnSummaries: string[] = [];
             let i = 0;
             let turnNum = 1;
+            const totalTurns = messages.getTurnCount();
             while (i < sourceMessages.length) {
                 const end = messages.getTurnEnd(i);
                 if (end <= i) {
                     break;
                 }
                 const turnMsgs = sourceMessages.slice(i, end);
+                webview.postMessage({ type: "summary-progress", current: turnNum, total: totalTurns });
                 const text = await this.summarizeText(webview, turnMsgs);
                 turnSummaries.push(`# Turn ${turnNum}\n${text}`);
                 turnNum++;

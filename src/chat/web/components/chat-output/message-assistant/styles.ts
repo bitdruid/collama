@@ -34,16 +34,15 @@ export const assistantStyles = css`
 
     @keyframes blink {
         0%,
-        20% {
+        25% {
             content: "";
         }
-        40% {
+        50% {
             content: ".";
         }
-        60% {
+        75% {
             content: "..";
         }
-        80%,
         100% {
             content: "...";
         }

@@ -1,6 +1,7 @@
 import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
+import { adjustTextareaRows } from "../../../../../utils-front";
 import { ContextSearchResult } from "../../../../types";
 import "./control-panel-buttons";
 import { controlPanelStyles } from "./styles";
@@ -18,6 +19,7 @@ export class ControlPanel extends LitElement {
     @property({ type: Boolean }) isLoading = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
+    @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @query("textarea")
@@ -69,11 +71,7 @@ export class ControlPanel extends LitElement {
         if (!this.textarea) {
             return;
         }
-        this.textarea.rows = 1;
-        const style = getComputedStyle(this.textarea);
-        const lineHeight = parseFloat(style.lineHeight);
-        const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-        this.textarea.rows = Math.max(1, Math.round((this.textarea.scrollHeight - padding) / lineHeight));
+        adjustTextareaRows(this.textarea);
     }
 
     // Render
@@ -94,6 +92,7 @@ export class ControlPanel extends LitElement {
                     .isLoading=${this.isLoading}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
+                    .isGhost=${this.isGhost}
                     .contextSearchResults=${this.contextSearchResults}
                     @submit-click=${this._handleSubmit}
                 ></collama-control-panel-buttons>

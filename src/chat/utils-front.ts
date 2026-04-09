@@ -5,6 +5,22 @@ import { css, html, unsafeCSS } from "lit";
 import { themeColors } from "./web/styles/theme-colors";
 import { themeFonts } from "./web/styles/theme-fonts";
 
+/**
+ * Auto-adjusts a textarea's row count to fit its content.
+ * Clears any inline height set by manual resizing so rows take effect.
+ * Returns the new row count.
+ */
+export function adjustTextareaRows(textarea: HTMLTextAreaElement): number {
+    textarea.style.height = "";
+    textarea.rows = 1;
+    const style = getComputedStyle(textarea);
+    const lineHeight = parseFloat(style.lineHeight);
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const rows = Math.max(1, Math.round((textarea.scrollHeight - padding) / lineHeight));
+    textarea.rows = rows;
+    return rows;
+}
+
 export function logWebview(message: string) {
     window.vscode.postMessage({
         type: "log",
@@ -47,7 +63,7 @@ export function showToast(message: string) {
     _toastTimer = window.setTimeout(() => {
         el!.style.opacity = "0";
         _toastTimer = null;
-    }, 2500);
+    }, 5000);
 }
 
 export function llmInfoTag(tagContent: string): string {
@@ -481,6 +497,35 @@ export const icons = {
     >
         <line x1="18" y1="6" x2="6" y2="18"></line>
         <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>`,
+
+    /** Search - used for chat search button */
+    search: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>`,
+
+    /** Chevron up - used for search navigation */
+    chevronUp: html`<svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <polyline points="18 15 12 9 6 15"></polyline>
     </svg>`,
 
     /** Check - used for confirm actions */

@@ -3,6 +3,23 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-04-09
+
+### Added
+- Chat search functionality — find messages in the conversation history
+- Agent duration counter — track how long the agent has been running
+- Summary progress indicator — visual feedback during conversation summarization
+- Toggle ghost session state — convert between temporary and persistent sessions
+
+### Changed
+- Tool confirmation modal
+- Enhanced edit tool preview tab management
+- Active states for buttons and controls
+- Fine tuned styles
+
+### Fixed
+- Auto-resize issues in chat components
+
 ## [1.6.4] - 2026-04-08
 
 ### Added
