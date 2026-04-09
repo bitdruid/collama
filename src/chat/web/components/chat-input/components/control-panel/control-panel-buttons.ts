@@ -37,7 +37,13 @@ export class ControlPanelButtons extends LitElement {
     private promptGallery!: HTMLElement;
 
     private handleAutoAccept = () => this._handleAutoAccept();
-    private handleConvertToGhost = () => (this.showConvertGhostConfirm = true);
+    private handleConvertToGhost = () => {
+        if (this.isGhost) {
+            emit(this, "convert-to-ghost");
+        } else {
+            this.showConvertGhostConfirm = true;
+        }
+    };
     private handleConvertGhostConfirmed = () => emit(this, "convert-to-ghost");
     private handleConvertGhostClose = () => (this.showConvertGhostConfirm = false);
     private handleClearChat = () => (this.showClearConfirm = true);
@@ -104,7 +110,7 @@ export class ControlPanelButtons extends LitElement {
     private _renderAutoAccept() {
         return html`
             <button-auto-accept
-                title="Auto accept all edits"
+                title=${this.autoAccept ? "Turn off auto-accept edits" : "Turn on auto-accept edits"}
                 @click=${this.handleAutoAccept}
                 ?active=${this.autoAccept}
             >
@@ -174,7 +180,7 @@ export class ControlPanelButtons extends LitElement {
     private _renderGhostChat() {
         return html`
             <button-ghost-chat
-                title="Convert to temporary chat"
+                title=${this.isGhost ? "Convert to stored chat" : "Convert to temp chat"}
                 data-base-overlay-anchor
                 ?active=${this.isGhost}
                 @click=${this.handleConvertToGhost}

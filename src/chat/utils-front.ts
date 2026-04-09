@@ -5,6 +5,22 @@ import { css, html, unsafeCSS } from "lit";
 import { themeColors } from "./web/styles/theme-colors";
 import { themeFonts } from "./web/styles/theme-fonts";
 
+/**
+ * Auto-adjusts a textarea's row count to fit its content.
+ * Clears any inline height set by manual resizing so rows take effect.
+ * Returns the new row count.
+ */
+export function adjustTextareaRows(textarea: HTMLTextAreaElement): number {
+    textarea.style.height = "";
+    textarea.rows = 1;
+    const style = getComputedStyle(textarea);
+    const lineHeight = parseFloat(style.lineHeight);
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const rows = Math.max(1, Math.round((textarea.scrollHeight - padding) / lineHeight));
+    textarea.rows = rows;
+    return rows;
+}
+
 export function logWebview(message: string) {
     window.vscode.postMessage({
         type: "log",

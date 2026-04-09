@@ -248,12 +248,20 @@ export class ChatPanel {
     }
 
     /**
-     * Converts the active session to a ghost session.
-     * Has no effect if the session is already ghost.
+     * Toggles the active session between ghost and stored.
      */
     private handleConvertToGhost() {
         const session = this.session.getActiveSession();
-        if (!session || session.ghost) {
+        if (!session) {
+            return;
+        }
+        if (session.ghost) {
+            this.session.updateSession(session, (s) => {
+                s.ghost = false;
+            });
+            this.session.sendSessionsUpdate();
+            this.session.saveSessions();
+            logMsg(`Session ${session.id} converted to stored`);
             return;
         }
         this.session.updateSession(session, (s) => {
