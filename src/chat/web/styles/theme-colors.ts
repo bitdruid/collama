@@ -14,12 +14,12 @@ const cssOf = (c: Color) => (typeof c === "string" ? c : c.cssText);
 const darken = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - var(--theme-tint, 1) * ${n}))`);
 const contrast = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - sign(l - 50) * ${n}))`);
 
-const getBorder = (color: Color) => contrast(color, 10);
-const getHover = (color: Color) => contrast(color, 4);
+const getBorder = (color: Color) => contrast(color, 11);
+const getHover = (color: Color) => contrast(color, 6);
 
 export const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
-const defaultColor = contrast(baseColor, 3);
-const dimmColor = darken(defaultColor, 7);
+const defaultColor = contrast(baseColor, 6);
+const dimmColor = darken(baseColor, 2);
 //const backDarkColor = darken(defaultColor, 7);
 
 /**
@@ -36,6 +36,7 @@ export const themeColors = {
     /* Context Button Colors */
     context: unsafeCSS("#3a9a40"),
     contextHover: unsafeCSS("#2c8232"),
+    contextActive: unsafeCSS("#1e5221"),
 
     /* Cancel Button Colors */
     cancel: unsafeCSS("#a82222"),
@@ -45,10 +46,12 @@ export const themeColors = {
     /* Compress Button Colors */
     compress: unsafeCSS("#d99839"),
     compressHover: unsafeCSS("#b98a2d"),
+    compressActive: unsafeCSS("#8f6a1f"),
 
     /* Gallery Button Colors */
     gallery: unsafeCSS("#9b59b6"),
     galleryHover: unsafeCSS("#8e44ad"),
+    galleryActive: unsafeCSS("#6c3483"),
 
     /* Auto-Accept Button Colors */
     autoAccept: unsafeCSS("#d87979"),
@@ -63,7 +66,16 @@ export const themeColors = {
     /* Clear Chat Button Colors */
     clearChat: unsafeCSS("#b07070"),
     clearChatHover: unsafeCSS("#995c5c"),
-    clearChatActive: unsafeCSS("#6e4545"),
+    clearChatActive: unsafeCSS("#d09090"),
+
+    /* Search Button Colors */
+    search: unsafeCSS("#9eb57a"),
+    searchHover: unsafeCSS("#809363"),
+    searchActive: unsafeCSS("#bad690"),
+
+    /* Search Highlight Colors */
+    searchHighlight: unsafeCSS("rgba(255, 213, 79, 0.4)"),
+    searchHighlightActive: unsafeCSS("rgba(255, 167, 38, 0.8)"),
 
     /* Role Colors */
     system: unsafeCSS("#9b59b6"),
@@ -88,7 +100,7 @@ export const themeColors = {
     placeholder: contrast(defaultColor, 20),
     disabled: unsafeCSS("#555"),
     cleanWhite: unsafeCSS("#fff"),
-    focus: contrast(defaultColor, 30),
+    focus: contrast(defaultColor, 45),
 
     /* Font */
     uiFont: contrast(defaultColor, 50),

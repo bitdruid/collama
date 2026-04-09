@@ -8,7 +8,7 @@ import { errorModalStyles } from "./error-modal-styles";
  * Displays exported chat + error JSON with copy/close actions.
  *
  * @element collama-error-modal
- * @fires modal-close - Dispatched when the modal is closed.
+ * @fires overlay-close - Dispatched when the overlay closes.
  */
 @customElement("collama-error-modal")
 export class ErrorModal extends BaseModal {
@@ -17,13 +17,9 @@ export class ErrorModal extends BaseModal {
     @property({ type: String }) content = "";
     @state() private _copyLabel = "Copy";
 
-    /**
-     * Show the error modal with the given content
-     */
-    showError(content: string) {
-        this.content = content;
+    constructor() {
+        super();
         this.title = "Agent Error";
-        this.show();
     }
 
     private async _copy() {

@@ -134,10 +134,8 @@ function handleAgentError(host: ChatContainer, msg: any) {
     host.agentToken = 0;
     host.hasTokenData = false;
 
-    const content = `${msg.exportedChat}${msg.errorMessage}`;
-
-    const modal = host.shadowRoot?.querySelector("collama-error-modal") as any;
-    modal?.showError(content);
+    host.errorModalContent = `${msg.exportedChat}${msg.errorMessage}`;
+    host.showErrorModal = true;
     logWebview(`Agent error: ${msg.error?.message}`);
 }
 
