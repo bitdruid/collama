@@ -1,5 +1,5 @@
-import fg from "fast-glob";
 import fs from "fs";
+import { globby } from "globby";
 import path from "path";
 import { logAgent, logMsg } from "../../logging";
 import { isWithinRoot, secureWorkspace } from "../tools";
@@ -9,31 +9,6 @@ import { isWithinRoot, secureWorkspace } from "../tools";
  */
 function hasPathTraversal(pattern: string): boolean {
     return pattern.split(/[/\\]/).includes("..");
-}
-
-/**
- * Builds an array of ignore patterns from .gitignore and sensible defaults.
- * Suitable for passing directly to fast-glob's `ignore` option.
- *
- * @param root - The workspace root path (required to load .gitignore)
- * @returns An array of glob ignore patterns
- */
-export function buildIgnorePatterns(root: string): string[] {
-    const patterns = [".git", "**/node_modules", "**/.DS_Store"];
-
-    const gitignorePath = path.join(root, ".gitignore");
-    if (fs.existsSync(gitignorePath)) {
-        try {
-            const lines = fs
-                .readFileSync(gitignorePath, "utf-8")
-                .split("\n")
-                .map((l) => l.trim())
-                .filter((l) => l && !l.startsWith("#"));
-            patterns.push(...lines);
-        } catch {}
-    }
-
-    return patterns;
 }
 
 /**
@@ -73,7 +48,7 @@ export const read_def = {
     function: {
         name: "read",
         description:
-            "Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a specific range. Prefer reading in 100-line chunks (1-100, 101-200, 201-300, etc.). If no range is provided, reads the entire file.",
+            'Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a range. Read in 100-line chunks (1-100, 101-200, 201-300, etc.). Use separate numeric fields like {"startLine":1,"endLine":100}. If no range is provided, reads the entire file.',
         parameters: {
             type: "object",
             properties: {
@@ -122,10 +97,12 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
     }
 
     const files = (
-        await fg(args.glob ?? "**/*", {
+        await globby(args.glob ?? "**/*", {
             cwd: ws.root,
             dot: false,
-            ignore: buildIgnorePatterns(ws.root),
+            gitignore: true,
+            onlyFiles: true,
+            ignore: ["**/node_modules/**", "**/.git/**", "**/.venv/**", "**/venv/**", "**/.DS_Store"],
         })
     ).filter((f) => isWithinRoot(ws.root, path.join(ws.root, f)));
 
@@ -204,12 +181,13 @@ export async function glob_exec(args: { pattern: string }): Promise<string> {
     let matches: string[];
     try {
         matches = (
-            await fg(pattern, {
+            await globby(pattern, {
                 cwd: ws.root,
                 dot: false,
+                gitignore: true,
                 onlyFiles: false,
                 markDirectories: true,
-                ignore: buildIgnorePatterns(ws.root),
+                ignore: ["**/node_modules/**", "**/.git/**", "**/.venv/**", "**/venv/**", "**/.DS_Store"],
             })
         ).filter((f) => isWithinRoot(ws.root, path.join(ws.root, f)));
     } catch {

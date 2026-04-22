@@ -1,7 +1,7 @@
 import { html, LitElement } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { AttachedContext } from "../../../../common/context-chat";
-import type { ContextSearchResult } from "../../types";
+import { defaultChatConfig, type ChatConfig, type ContextSearchResult } from "../../types";
 import "./components/control-panel/control-panel";
 import { chatInputStyles } from "./styles-shared";
 
@@ -15,6 +15,7 @@ export class ChatInput extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
+    @property({ type: Object }) config: ChatConfig = defaultChatConfig;
 
     @query("collama-control-panel")
     private controlPanel!: HTMLElement;
@@ -36,6 +37,7 @@ export class ChatInput extends LitElement {
                 .hasTokenData=${this.hasTokenData}
                 .isGhost=${this.isGhost}
                 .contextSearchResults=${this.contextSearchResults}
+                .config=${this.config}
                 @submit-prompt=${this._handlePrompt}
             ></collama-control-panel>
         `;

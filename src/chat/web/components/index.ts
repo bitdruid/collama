@@ -5,6 +5,7 @@
 export * from "./chat-accordion";
 export * from "./chat-container";
 export * from "./chat-input";
+export * from "./chat-modal";
 export * from "./chat-output";
 export * from "./chat-scroll-button";
 export * from "./chat-session";

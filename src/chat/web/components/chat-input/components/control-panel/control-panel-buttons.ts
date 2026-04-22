@@ -2,7 +2,7 @@ import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../../utils-front";
-import type { ContextSearchResult } from "../../../../types";
+import { defaultChatConfig, type ChatConfig, type ContextSearchResult } from "../../../../types";
 import "./clear-chat-confirm/clear-chat-confirm";
 import "./convert-ghost-confirm/convert-ghost-confirm";
 import { controlPanelButtonStyles } from "./styles";
@@ -21,6 +21,7 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
+    @property({ type: Object }) config: ChatConfig = defaultChatConfig;
 
     @state() private autoAccept = false;
     @state() private showContextTree = false;
@@ -49,12 +50,12 @@ export class ControlPanelButtons extends LitElement {
     private handleClearChat = () => (this.showClearConfirm = true);
     private handleClearChatConfirmed = () => emit(this, "clear-chat");
     private handleClearConfirmClose = () => (this.showClearConfirm = false);
+    private handleOpenSettings = () => emit(this, "open-settings");
     private handleToggleContextTree = () => this._toggleContextTree();
     private handleCancel = () => emit(this, "cancel");
     private handleToggleGallery = () => (this.showGallery = true);
     private handleSummarizeConversation = () => emit(this, "summarize-conversation");
     private handleSubmitClick = () => emit(this, "submit-click");
-    private handleSearchToggle = () => emit(this, "search-toggle");
     private handlePopupClose = () => (this.showContextTree = false);
     private handleGalleryPopupClose = () => (this.showGallery = false);
     private handleContextSearch = (e: CustomEvent) => emit(this, "context-search", { query: e.detail.query });
@@ -146,7 +147,7 @@ export class ControlPanelButtons extends LitElement {
         const hasContext = this.contexts.length > 0;
         return html`
             <button-context title="Add context" data-base-overlay-anchor @click=${this.handleToggleContextTree}>
-                ${icons.paperclip} ${hasContext ? html`<span class="context-badge">${this.contexts.length}</span>` : ""}
+                ${icons.paperclip} ${hasContext ? html`<span class="button-badge">${this.contexts.length}</span>` : ""}
             </button-context>
             ${this.showContextTree
                 ? html`<collama-context-search
@@ -212,11 +213,12 @@ export class ControlPanelButtons extends LitElement {
         `;
     }
 
-    private _renderSearch() {
+    private _renderSettings() {
+        const showBadge = this.config.agentic && !this.config.enableEditTools /* || !this.config.enableShellTool */;
         return html`
-            <button-search title="Search chat" data-base-overlay-anchor @click=${this.handleSearchToggle}>
-                ${icons.search}
-            </button-search>
+            <button-settings title="Open settings" data-base-overlay-anchor @click=${this.handleOpenSettings}>
+                ${icons.settings} ${showBadge ? html`<span class="button-badge">!</span>` : ""}
+            </button-settings>
         `;
     }
 
@@ -245,7 +247,7 @@ export class ControlPanelButtons extends LitElement {
 
         return html`
             <button-row>
-                ${this._renderGhostChat()} ${this._renderClearChat()} ${this._renderSearch()}
+                ${this._renderGhostChat()} ${this._renderClearChat()} ${this._renderSettings()}
                 <span class="spacer"></span>
                 ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
                 ${this._renderAutoAccept()} ${this._renderSubmit()}

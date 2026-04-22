@@ -101,15 +101,27 @@ export const chatSummarize_Template: string = [
  */
 export function getAgentTemplate(): string {
     const tokenLimit = userConfig?.apiTokenPredictInstruct ?? 4096;
+    const lines: string[] = ["Guidelines:", ""];
 
-    return [
-        "Guidelines:",
-        "- Only use tools when the user's request requires direct interaction with files.",
-        "- For general questions, greetings, or conversations respond directly without tools.",
-        "- Explain your actions and why before making changes.",
-        "- Make multiple small edits instead of large.",
-        "- Grep and Glob efficient.",
-        "- After you finished editing, use getDiagnostics to validate the changes.",
+    if (userConfig.agentic) {
+        lines.push(
+            "- Only use tools when the user's request requires direct interaction with files.",
+            "- For general questions, greetings, or conversations respond directly without tools.",
+            "- Grep and Glob efficient.",
+            "",
+        );
+    }
+
+    if (userConfig.agentic && userConfig.enableEditTools) {
+        lines.push(
+            "- Explain your actions and why before making changes.",
+            "- After you finished editing, use getDiagnostics to validate the changes.",
+            "- Make multiple small edits instead of large.",
+            "",
+        );
+    }
+
+    lines.push(
         "- Never repeat yourself. Instead move on to the next step.",
         "- Do not re-check conditions you have already confirmed.",
         "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",
@@ -117,5 +129,7 @@ export function getAgentTemplate(): string {
         "- Stop immediately after completing the task - no unnecessary commentary.",
         "",
         `OUTPUT LIMIT: Keep your response under approximately ${tokenLimit} tokens (~${Math.floor(tokenLimit * 4)} characters).`,
-    ].join("\n");
+    );
+
+    return lines.join("\n");
 }

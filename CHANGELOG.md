@@ -1,7 +1,21 @@
 # Change Log
 https://keepachangelog.com/
 
-## [Unreleased]
+## [1.6.6] - 2026-04-22
+
+### Added
+- Settings Button for extension and style settings
+- Test implementation of a possible shell-tool (default off, keep off or check briefly)
+
+### Changed
+- Improved tool result deduplication for all non-editing tools
+- Better path truncation in tools
+- Refactored ChatPanel — extracted agent, session, and handler logic into separate modules for better maintainability
+- Replaced vscode.git with cli git
+
+### Fixed
+- Several fixes when useing minimax2.7
+- Tool calls metadata attached to assistant messages for better grouping
 
 ## [1.6.5] - 2026-04-09
 

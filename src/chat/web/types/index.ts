@@ -1,1 +1,2 @@
-export type { ChatSession, ContextSearchResult, ToolConfirmRequest } from "./types";
+export { defaultChatConfig } from "./types";
+export type { ChatConfig, ChatSession, ContextSearchResult, ToolConfirmRequest } from "./types";

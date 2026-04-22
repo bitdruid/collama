@@ -14,11 +14,35 @@ import {
 } from "./tools/edit";
 import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
+import { debug_def, debug_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
+
+export type ToolCategory = "explore" | "git" | "edit" | "analyse" | "shell";
+export type ToolHistoryPolicy = "dedupeExactArgs" | "keepAll";
+
+function formatToolTargetValue(key: string, raw: unknown): string {
+    if (!raw) {
+        return "";
+    }
+    const value = String(raw);
+    // Truncate file paths to the last 6 parts.
+    if (key !== "pattern" && key !== "branch") {
+        const parts = value.split("/");
+        if (parts.length > 3) {
+            return ".../" + parts.slice(-3).join("/");
+        }
+    }
+    return value;
+}
+
+function formatGitRefTarget(raw: unknown): string {
+    const value = formatToolTargetValue("branch", raw);
+    return /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(value) ? value.slice(0, 7) : value;
+}
 
 /**
  * Extracts the primary target value from tool args for UI display.
- * Uses the tool's `targetKey` to pick the right arg, then truncates file paths.
+ * Uses the tool's `targetKey` to pick or format the right args, then truncates file paths.
  */
 export function getToolTarget(toolName: string, args: Record<string, any>): string {
     const tool = toolRegistry[toolName];
@@ -26,19 +50,10 @@ export function getToolTarget(toolName: string, args: Record<string, any>): stri
     if (!key) {
         return "";
     }
-    const raw = args[key];
-    if (!raw) {
-        return "";
+    if (typeof key === "function") {
+        return key(args);
     }
-    const value = String(raw);
-    // Truncate file paths: .../<parent>/<file>
-    if (key !== "pattern" && key !== "branch") {
-        const parts = value.split("/");
-        if (parts.length > 2) {
-            return ".../" + parts.slice(-2).join("/");
-        }
-    }
-    return value;
+    return formatToolTargetValue(key, args[key]);
 }
 
 /**
@@ -47,6 +62,8 @@ export function getToolTarget(toolName: string, args: Record<string, any>): stri
  * @template TOutput The type of output the tool returns (usually a JSON string).
  */
 export interface Tool<TInput = any, TOutput = any> {
+    category: ToolCategory;
+    historyPolicy: ToolHistoryPolicy;
     definition: {
         type: "function";
         function: {
@@ -55,8 +72,8 @@ export interface Tool<TInput = any, TOutput = any> {
             parameters?: Record<string, any>;
         };
     };
-    /** The args key whose value identifies this tool's primary target (shown in UI). */
-    targetKey?: string;
+    /** The args key or formatter whose value identifies this tool's primary target (shown in UI). */
+    targetKey?: string | ((args: Record<string, any>) => string);
     execute: (input: TInput) => Promise<TOutput>;
 }
 
@@ -67,12 +84,7 @@ export interface Tool<TInput = any, TOutput = any> {
  * @returns An array of tool definition objects containing type, name, description, and parameters.
  */
 export function getToolDefinitions() {
-    const tools = Object.values(toolRegistry);
-
-    // Filter out edit tools if enableEditTools is false (read-only mode)
-    const filteredTools = userConfig.enableEditTools
-        ? tools
-        : tools.filter((tool) => !isEditTool(tool.definition.function.name));
+    const filteredTools = getAvailableTools();
 
     return filteredTools.map((tool) => ({
         type: tool.definition.type,
@@ -84,13 +96,38 @@ export function getToolDefinitions() {
     }));
 }
 
+function getToolNames() {
+    return getAvailableTools().map((tool) => tool.definition.function.name);
+}
+
+function getAvailableTools() {
+    const tools = Object.values(toolRegistry);
+
+    return tools.filter((tool) => {
+        if (!userConfig.enableEditTools && isEditTool(tool.definition.function.name)) {
+            return false;
+        }
+        if (!userConfig.enableShellTool && isShellTool(tool.definition.function.name)) {
+            return false;
+        }
+        return true;
+    });
+}
+
 /**
  * Checks if a tool is an edit tool (modifies files).
  * Edit tools are: edit, create, delete
  */
 function isEditTool(toolName: string): boolean {
-    const editTools = ["edit", "create", "delete"];
-    return editTools.includes(toolName);
+    return toolRegistry[toolName]?.category === "edit";
+}
+
+function isShellTool(toolName: string): boolean {
+    return toolRegistry[toolName]?.category === "shell";
+}
+
+export function shouldDeduplicateToolResult(toolName: string): boolean {
+    return toolRegistry[toolName]?.historyPolicy === "dedupeExactArgs";
 }
 
 /**
@@ -104,7 +141,10 @@ function isEditTool(toolName: string): boolean {
 export async function executeTool(name: string, args: unknown) {
     const tool = toolRegistry[name];
     if (!tool) {
-        return JSON.stringify({ error: `Unknown tool: ${name}`, available: getToolDefinitions() });
+        return JSON.stringify({ error: `Unknown tool: ${name}`, available: getToolNames() });
+    }
+    if (!getAvailableTools().includes(tool)) {
+        return JSON.stringify({ error: `Tool is disabled: ${name}`, available: getToolNames() });
     }
     try {
         return await tool.execute(args);
@@ -175,58 +215,92 @@ export async function confirmAction(action: string, placeHolder: string): Promis
  */
 export const toolRegistry: Record<string, Tool<any, any>> = {
     read: {
+        category: "explore",
+        historyPolicy: "dedupeExactArgs",
         definition: read_def,
-        targetKey: "filePath",
+        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: read_exec,
     },
     grep: {
+        category: "explore",
+        historyPolicy: "dedupeExactArgs",
         definition: grep_def,
-        targetKey: "pattern",
+        targetKey: (args) => {
+            const pattern = formatToolTargetValue("pattern", args.pattern);
+            const glob = formatToolTargetValue("filePath", args.glob);
+            return glob ? `${pattern} → ${glob}` : pattern;
+        },
         execute: grep_exec,
     },
     glob: {
+        category: "explore",
+        historyPolicy: "dedupeExactArgs",
         definition: glob_def,
         targetKey: "pattern",
         execute: glob_exec,
     },
     gitLog: {
+        category: "git",
+        historyPolicy: "dedupeExactArgs",
         definition: gitLog_def,
-        targetKey: "branch",
+        targetKey: (args) => {
+            const mode = formatToolTargetValue("mode", args.mode ?? "commits");
+            if (mode === "branches") {
+                return args.includeRemote ? "branches (all)" : "branches";
+            }
+            const branch = formatGitRefTarget(args.branch ?? "HEAD");
+            const filePath = formatToolTargetValue("filePath", args.filePath);
+            const target = filePath ? `${branch} → ${filePath}` : branch;
+            return `${mode}: ${target}`;
+        },
         execute: gitLog_exec,
     },
     gitDiff: {
+        category: "git",
+        historyPolicy: "dedupeExactArgs",
         definition: gitDiff_def,
-        targetKey: "filePath",
+        targetKey: (args) => {
+            const from = formatGitRefTarget(args.fromCommit);
+            const to = formatGitRefTarget(args.toCommit ?? "HEAD");
+            const filePath = formatToolTargetValue("filePath", args.filePath);
+            const base = from ? `${from}..${to}` : args.staged ? "staged" : "working-tree";
+            return filePath ? `${base} → ${filePath}` : base;
+        },
         execute: gitDiff_exec,
     },
-    // bash: {
-    //     definition: bash_def,
-    //     targetKey: "command",
-    //     execute: bash_exec,
-    // },
-    // powershell: {
-    //     definition: powershell_def,
-    //     targetKey: "command",
-    //     execute: powershell_exec,
-    // },
+    Debug: {
+        category: "shell",
+        historyPolicy: "keepAll",
+        definition: debug_def,
+        targetKey: (args) => formatToolTargetValue("command", args.command),
+        execute: debug_exec,
+    },
     edit: {
+        category: "edit",
+        historyPolicy: "keepAll",
         definition: edit_def,
-        targetKey: "filePath",
+        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: edit_exec,
     },
     create: {
+        category: "edit",
+        historyPolicy: "keepAll",
         definition: create_def,
-        targetKey: "filePath",
+        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: create_exec,
     },
     delete: {
+        category: "edit",
+        historyPolicy: "keepAll",
         definition: delete_def,
-        targetKey: "filePath",
+        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: delete_exec,
     },
     getDiagnostics: {
+        category: "analyse",
+        historyPolicy: "dedupeExactArgs",
         definition: getDiagnostics_def,
-        targetKey: "filePath",
+        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: getDiagnostics_exec,
     },
 };

@@ -6,7 +6,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.6.5",
+    "version": "1.6.6",
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -106,6 +106,11 @@
                         "type": "boolean",
                         "default": true,
                         "description": "Enable edit tools (write, create, delete). When disabled, the agent runs in read-only mode."
+                    },
+                    "collama.enableShellTool": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enable the shell tool. When disabled, shell command execution is unavailable to the agent."
                     }
                 }
             }
@@ -253,7 +258,7 @@
     "dependencies": {
         "@anthropic-ai/sdk": "^0.78.0",
         "@microsoft/tiktokenizer": "^1.0.10",
-        "fast-glob": "^3.3.3",
+        "globby": "^16.2.0",
         "highlight.js": "^11.11.1",
         "lit": "^3.3.2",
         "markdown-it": "^14.1.1",

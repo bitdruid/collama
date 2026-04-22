@@ -66,6 +66,10 @@ async function showStatusbar() {
                 description: "Toggle edit tools (read-only mode when off)",
             },
             {
+                label: `${config.get<boolean>("enableShellTool", false) ? "🟢" : "🔴"} Shell Tool`,
+                description: "Toggle shell tool usage",
+            },
+            {
                 label: "Switch Agentic-Mode",
                 kind: vscode.QuickPickItemKind.Separator,
             },
@@ -88,6 +92,10 @@ async function showStatusbar() {
         if (selected.label.includes("Edit Tools")) {
             const current = config.get<boolean>("enableEditTools", true);
             await config.update("enableEditTools", !current, vscode.ConfigurationTarget.Global);
+        }
+        if (selected.label.includes("Shell Tool")) {
+            const current = config.get<boolean>("enableShellTool", false);
+            await config.update("enableShellTool", !current, vscode.ConfigurationTarget.Global);
         }
         // Handle toggling autocomplete and suggestion modes
         if (selected.label.includes("Autocomplete")) {

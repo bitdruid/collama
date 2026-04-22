@@ -51,4 +51,5 @@ export const backendApi = {
     contextSearch: (query: string) => window.vscode.postMessage({ type: "context-search", query }),
     contextAddFile: (filePath: string, isFolder: boolean) =>
         window.vscode.postMessage({ type: "context-add-file", filePath, isFolder }),
+    updateConfig: (key: string, value: unknown) => window.vscode.postMessage({ type: "config-update-request", key, value }),
 };

@@ -1,45 +1,31 @@
 import { execFile } from "node:child_process";
-import path from "node:path";
 import { promisify } from "node:util";
-import * as vscode from "vscode";
-import { GitAPI, GitExtension, GitRepository } from "../../common/types-git";
 import { logMsg } from "../../logging";
 import { getWorkspaceRoot } from "../tools";
 
 const execFileAsync = promisify(execFile);
 
-/**
- * Gets the VS Code Git extension API.
- * Activates the extension if it is not already active.
- * @returns The Git API or null if the extension is not available.
- */
-export async function getGitAPI(): Promise<GitAPI | null> {
-    const gitExtension = vscode.extensions.getExtension<GitExtension>("vscode.git");
-    if (!gitExtension) {
-        return null;
-    }
-    if (!gitExtension.isActive) {
-        await gitExtension.activate();
-    }
-    return gitExtension.exports.getAPI(1);
+async function runGit(args: string[], cwd: string): Promise<string> {
+    const { stdout } = await execFileAsync("git", args, {
+        cwd,
+        env: {
+            ...process.env,
+            GIT_TERMINAL_PROMPT: "0",
+            FORCE_COLOR: "0",
+        },
+    });
+    return stdout;
 }
 
-/**
- * Gets the first Git repository in the workspace.
- * Returns an object with the repo or a specific error message.
- * @returns An object containing the repository or an error string.
- */
-export async function getFirstRepo(): Promise<{ repo: GitRepository } | { error: string }> {
-    const gitExtension = vscode.extensions.getExtension<GitExtension>("vscode.git");
-    if (!gitExtension) {
-        return { error: "Git extension is not available. Is git installed?" };
-    }
-    const git = await getGitAPI();
-    if (!git || !git.repositories.length) {
-        return { error: "No Git repository found in workspace" };
-    }
-    return { repo: git.repositories[0] };
-}
+const GIT_CHANGE_STATUS: Record<string, string> = {
+    A: "added",
+    C: "copied",
+    D: "deleted",
+    M: "modified",
+    R: "renamed",
+    T: "typechanged",
+    U: "unmerged",
+};
 
 /**
  * Retrieves git log info: commits or branches.
@@ -71,7 +57,7 @@ export async function gitLog_exec(args: {
                 gitArgs.push("-a");
             }
 
-            const { stdout } = await execFileAsync("git", gitArgs, { cwd: root });
+            const stdout = await runGit(gitArgs, root);
             const branches = stdout
                 .trim()
                 .split("\n")
@@ -97,7 +83,7 @@ export async function gitLog_exec(args: {
             gitArgs.push("--", args.filePath);
         }
 
-        const { stdout } = await execFileAsync("git", gitArgs, { cwd: root });
+        const stdout = await runGit(gitArgs, root);
         const lines = stdout.trim().split("\n");
         const commits: Array<{
             hash: string;
@@ -167,18 +153,6 @@ export const gitLog_def = {
 };
 
 /**
- * Mapping of Git status codes to human-readable strings.
- */
-const GIT_CHANGE_STATUS: Record<number, string> = {
-    0: "modified",
-    1: "added",
-    2: "deleted",
-    3: "renamed",
-    4: "copied",
-    5: "untracked",
-};
-
-/**
  * Unified git diff: compare commits/branches or show working tree changes.
  * @param args.fromCommit - Starting commit/branch. If omitted, shows working tree diff.
  * @param args.toCommit - Ending commit/branch (default: HEAD). Only for commit diff.
@@ -195,15 +169,23 @@ export async function gitDiff_exec(args: {
         `Agent - use gitDiff-tool${args.fromCommit ? ` from=${args.fromCommit}` : ""}${args.toCommit ? ` to=${args.toCommit}` : ""}${args.staged ? " staged" : ""}${args.filePath ? ` file=${args.filePath}` : ""}`,
     );
 
-    const result = await getFirstRepo();
-    if ("error" in result) {
-        return JSON.stringify({ error: result.error });
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return JSON.stringify({ error: "No workspace root found" });
     }
 
     // Working tree diff (no commits specified)
     if (!args.fromCommit) {
         try {
-            const diff = await result.repo.diff(args.staged ?? false);
+            const gitArgs = ["diff", "--no-ext-diff"];
+            if (args.staged) {
+                gitArgs.push("--cached");
+            }
+            if (args.filePath) {
+                gitArgs.push("--", args.filePath);
+            }
+
+            const diff = await runGit(gitArgs, root);
 
             if (!diff || diff.trim().length === 0) {
                 return JSON.stringify({
@@ -214,29 +196,8 @@ export async function gitDiff_exec(args: {
                 });
             }
 
-            let filteredDiff = diff;
-            if (args.filePath) {
-                const normalizedTarget = args.filePath.replace(/^\//, "");
-                const lines = diff.split("\n");
-                let inTargetFile = false;
-                const filteredLines: string[] = [];
-
-                for (const line of lines) {
-                    const diffHeaderMatch = line.match(/^diff --git a\/(\S+) b\/(\S+)$/);
-                    if (diffHeaderMatch) {
-                        inTargetFile =
-                            diffHeaderMatch[1] === normalizedTarget || diffHeaderMatch[2] === normalizedTarget;
-                    }
-                    if (inTargetFile) {
-                        filteredLines.push(line);
-                    }
-                }
-
-                filteredDiff = filteredLines.join("\n");
-            }
-
             return JSON.stringify({
-                diff: filteredDiff,
+                diff,
                 staged: args.staged ?? false,
                 filePath: args.filePath ?? null,
             });
@@ -250,10 +211,8 @@ export async function gitDiff_exec(args: {
     // Commit diff
     const toCommit = args.toCommit ?? "HEAD";
     try {
-        const root = getWorkspaceRoot();
-
         if (args.filePath) {
-            const diff = await result.repo.diffBetween(args.fromCommit, toCommit, args.filePath);
+            const diff = await runGit(["diff", "--no-ext-diff", args.fromCommit, toCommit, "--", args.filePath], root);
             return JSON.stringify({
                 diff,
                 fromCommit: args.fromCommit,
@@ -262,11 +221,18 @@ export async function gitDiff_exec(args: {
             });
         }
 
-        const changes = await result.repo.diffBetween(args.fromCommit, toCommit);
-        const files = changes.map((c) => ({
-            path: root ? path.relative(root, c.uri.fsPath) : c.uri.fsPath,
-            status: GIT_CHANGE_STATUS[c.status] ?? `unknown(${c.status})`,
-        }));
+        const changes = await runGit(["diff", "--name-status", args.fromCommit, toCommit], root);
+        const files = changes
+            .trim()
+            .split("\n")
+            .filter((line) => line.length > 0)
+            .map((line) => {
+                const [statusCode, firstPath, secondPath] = line.split("\t");
+                return {
+                    path: secondPath ?? firstPath,
+                    status: GIT_CHANGE_STATUS[statusCode[0]] ?? `unknown(${statusCode})`,
+                };
+            });
 
         return JSON.stringify({
             files,

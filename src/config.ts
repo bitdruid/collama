@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 
 import { requestAnthropic, requestOllama, requestOpenAI } from "./common/requests";
+import { broadcastConfig } from "./chat/utils-back";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 
@@ -51,6 +52,7 @@ export const userConfig = {
     suggestMode: "inline",
     suggestDelay: 1500,
     enableEditTools: true,
+    enableShellTool: false,
     tlsRejectUnauthorized: false,
     apiTokenContextLenCompletion: 4096,
     apiTokenContextLenInstruct: 4096,
@@ -102,6 +104,7 @@ export async function updateVSConfig() {
         suggestMode: cfg.get("suggestMode", userConfig.suggestMode),
         suggestDelay: Math.max(cfg.get("suggestDelay", userConfig.suggestDelay), 1500),
         enableEditTools: cfg.get("enableEditTools", userConfig.enableEditTools),
+        enableShellTool: cfg.get("enableShellTool", userConfig.enableShellTool),
         tlsRejectUnauthorized: cfg.get("tlsRejectUnauthorized", userConfig.tlsRejectUnauthorized),
         apiTokenContextLenCompletion: cfg.get("apiTokenContextLenCompletion", userConfig.apiTokenContextLenCompletion),
         apiTokenContextLenInstruct: cfg.get("apiTokenContextLenInstruct", userConfig.apiTokenContextLenInstruct),
@@ -140,6 +143,7 @@ export async function updateVSConfig() {
 
     if (Object.keys(changed).length > 0) {
         logMsg(`🔄 Config changed: ${JSON.stringify(changed)}`);
+        broadcastConfig(userConfig);
     }
 
     // Apply TLS settings before any network calls

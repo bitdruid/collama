@@ -13,6 +13,7 @@ export const controlPanelStyles = css`
 
     textarea {
         ${themeStyles.textarea}
+        resize: none;
         margin-bottom: 4px;
     }
 
@@ -41,10 +42,10 @@ export const controlPanelButtonStyles = css`
     button-cancel,
     button-compress,
     button-gallery,
-    button-search,
     button-auto-accept,
     button-ghost-chat,
     button-clear-chat,
+    button-settings,
     button-token-counter,
     button-duration-counter {
         display: inline-flex;
@@ -83,7 +84,7 @@ export const controlPanelButtonStyles = css`
         background-color: ${themeColors.contextActive};
     }
 
-    .context-badge {
+    .button-badge {
         position: absolute;
         top: -4px;
         right: -4px;
@@ -147,16 +148,6 @@ export const controlPanelButtonStyles = css`
     }
     button-gallery:active {
         background-color: ${themeColors.galleryActive};
-    }
-
-    button-search {
-        background-color: ${themeColors.search};
-    }
-    button-search:hover {
-        background-color: ${themeColors.searchHover};
-    }
-    button-search:active {
-        background-color: ${themeColors.searchActive};
     }
 
     button-auto-accept {
@@ -231,6 +222,17 @@ export const controlPanelButtonStyles = css`
     }
     button-clear-chat:active {
         background-color: ${themeColors.clearChatActive};
+    }
+
+    button-settings {
+        background-color: ${themeColors.settings};
+        position: relative;
+    }
+    button-settings:hover {
+        background-color: ${themeColors.settingsHover};
+    }
+    button-settings:active {
+        background-color: ${themeColors.settingsActive};
     }
 
     button-token-counter,

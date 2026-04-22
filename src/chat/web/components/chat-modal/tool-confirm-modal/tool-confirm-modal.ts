@@ -1,13 +1,13 @@
 import { html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 
-import { buildOpenFileCommandUri } from "../../../../../utils-front";
-import type { ToolConfirmRequest } from "../../../../types";
-import { BaseModal } from "../../../template-components/modal/base-modal";
+import { buildOpenFileCommandUri } from "../../../../utils-front";
+import type { ToolConfirmRequest } from "../../../types";
+import { BaseModal } from "../../template-components/modal/base-modal";
 import { toolConfirmStyles } from "./styles";
 
-@customElement("collama-tool-confirm")
-export class ToolConfirm extends BaseModal {
+@customElement("collama-tool-confirm-modal")
+export class ToolConfirmModal extends BaseModal {
     static override styles = [...BaseModal.styles, toolConfirmStyles];
 
     @property({ type: Object }) request: ToolConfirmRequest | null = null;
@@ -100,17 +100,6 @@ export class ToolConfirm extends BaseModal {
         this._cancelReason = "";
     }
 
-    private _formatFilePath(filePath: string): string {
-        const normalizedPath = filePath.replace(/\\/g, "/");
-        const segments = normalizedPath.split("/").filter(Boolean);
-
-        if (segments.length <= 4) {
-            return normalizedPath;
-        }
-
-        return `.../${segments.slice(-4).join("/")}`;
-    }
-
     protected override renderContent() {
         if (!this.request) {
             return html``;
@@ -124,7 +113,7 @@ export class ToolConfirm extends BaseModal {
                         class="confirm-filepath"
                         href="${buildOpenFileCommandUri(this.request.filePath)}"
                         title="${this.request.filePath}"
-                        >${this._formatFilePath(this.request.filePath)}</a
+                        >${this.request.filePath}</a
                     >
                 </div>
 

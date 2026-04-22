@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { EditorContext } from "../common/context-editor";
 import { logMsg } from "../logging";
 import { ChatPanel } from "./chatpanel";
+import { receiveCurrentContext } from "./handlers/context-handlers";
 
 let panel: ChatPanel | null = null;
 
@@ -18,7 +19,7 @@ export function registerSendToChatCommand(extContext: vscode.ExtensionContext) {
             await vscode.commands.executeCommand("workbench.view.extension.collama_chat");
             const currentContext = await EditorContext.create();
             if (currentContext) {
-                panel.receiveCurrentContext(currentContext);
+                receiveCurrentContext(panel.webview, currentContext);
             }
         }
     });

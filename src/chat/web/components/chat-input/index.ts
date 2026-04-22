@@ -11,4 +11,3 @@ export { ControlPanel } from "./components/control-panel/control-panel";
 export { ControlPanelButtons } from "./components/control-panel/control-panel-buttons";
 export { PromptGallery } from "./components/prompt-gallery/prompt-gallery";
 export { PromptGalleryButtons } from "./components/prompt-gallery/prompt-gallery-buttons";
-export { ToolConfirm } from "./components/tool-confirm/tool-confirm";

@@ -40,15 +40,6 @@ export const chatContainerStyles = css`
         z-index: 10;
     }
 
-    collama-error-modal {
-        flex: 0 0 auto;
-        display: flex;
-    }
-
-    collama-chat-search {
-        flex: 0 0 auto;
-    }
-
     collama-chatinput {
         flex: 0 0 auto;
         display: flex;

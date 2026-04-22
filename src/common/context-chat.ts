@@ -72,6 +72,20 @@ function ensureMessageIds(messages: ChatHistory[]): ChatHistory[] {
     return messages.map((message) => ensureMessageId(message));
 }
 
+function stableStringify(value: unknown): string {
+    if (Array.isArray(value)) {
+        return `[${value.map(stableStringify).join(",")}]`;
+    }
+    if (value && typeof value === "object") {
+        const obj = value as Record<string, unknown>;
+        return `{${Object.keys(obj)
+            .sort()
+            .map((key) => `${JSON.stringify(key)}:${stableStringify(obj[key])}`)
+            .join(",")}}`;
+    }
+    return JSON.stringify(value);
+}
+
 /**
  * Message history container shared between host and webview.
  *
@@ -249,7 +263,7 @@ export class ChatContext {
      * Partially updates a tool response message by its tool_call_id.
      * Allows modifying the content of an existing tool response.
      *
-     * Example: setToolResponse("call_123", { content: "[stale - file re-read later]" })
+     * Example: setToolResponse("call_123", { content: "[stale - tool re-run later]" })
      */
     public setToolResponse(toolCallId: string, fields: Partial<{ content: string; tool_call_id: string }>): boolean {
         const msg = this.findToolResponse(toolCallId);
@@ -258,11 +272,55 @@ export class ChatContext {
         }
         if (fields.content !== undefined) {
             msg.content = fields.content;
+            if (msg.customKeys) {
+                const { msgTokens: _, ...restKeys } = msg.customKeys;
+                msg.customKeys = Object.keys(restKeys).length > 0 ? restKeys : undefined;
+            }
         }
         if (fields.tool_call_id !== undefined) {
             msg.tool_call_id = fields.tool_call_id;
         }
         return true;
+    }
+
+    /**
+     * Replaces stale tool results with a short note when a non-mutating tool is re-run
+     * with identical structured arguments.
+     */
+    public deduplicateToolResult(newToolCallId: string, shouldDeduplicate: (toolName: string) => boolean): void {
+        const newTc = this.findToolCall(newToolCallId);
+        if (!newTc || !shouldDeduplicate(newTc.function.name)) {
+            return;
+        }
+
+        let newArgsKey: string;
+        try {
+            newArgsKey = stableStringify(JSON.parse(newTc.function.arguments));
+        } catch {
+            return;
+        }
+
+        for (let i = 0; i < this.length(); i++) {
+            const toolCallId = this.getToolCallId(i);
+            if (!toolCallId || toolCallId === newToolCallId) {
+                continue;
+            }
+            const tc = this.findToolCall(toolCallId);
+            if (!tc || tc.function.name !== newTc.function.name) {
+                continue;
+            }
+
+            let argsKey: string;
+            try {
+                argsKey = stableStringify(JSON.parse(tc.function.arguments));
+            } catch {
+                continue;
+            }
+
+            if (argsKey === newArgsKey) {
+                this.setToolResponse(toolCallId, { content: "[stale - tool re-run later]" });
+            }
+        }
     }
 
     /** Sums cached `msgTokens` across all messages in the context. */

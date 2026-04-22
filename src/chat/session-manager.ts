@@ -4,28 +4,48 @@ import { userConfig } from "../config";
 import { mapSessionsToSummaries, sanitizeMessages } from "./utils-back";
 import type { ChatSession } from "./web/types";
 
-/** Serialized form of a session as stored in globalState (messages as plain array). */
+/**
+ * Represents a serialized chat session stored in the extension's global state.
+ * The `messages` field is stored as a plain array rather than a ChatContext instance.
+ *
+ * @see ChatSession
+ * @see ChatContext
+ */
 interface StoredChatSession extends Omit<ChatSession, "messages"> {
     messages: ChatHistory[];
 }
 
-/** Key for storing chat sessions in global state. */
+/**
+ * Key used for persisting chat sessions in the extension's global state.
+ */
 const CHAT_SESSIONS_KEY = "collama.chatSessions";
-/** Key for storing the active session ID in global state. */
+
+/**
+ * Key used for persisting the active session ID in the extension's global state.
+ */
 const ACTIVE_SESSION_KEY = "collama.activeSessionId";
 
 /**
- * Manages the lifecycle and persistence of chat sessions.
+ * Manages the lifecycle and persistence of chat sessions within the VS Code extension.
+ * Handles loading, creating, updating, and deleting sessions while maintaining
+ * synchronization with the extension's global state and the webview UI.
+ *
+ * @example
+ * ```typescript
+ * const sessionManager = new SessionManager(context, webviewView);
+ * sessionManager.createNewSession();
+ * ```
  */
-export class Session {
+export class SessionManager {
     sessions: ChatSession[] = [];
     activeSessionId: string = "";
 
     /**
      * Initializes the session manager by loading sessions from the extension's global state.
-     * Ensures an active session exists, creating one if necessary.
+     * If no sessions exist, creates a new session. If the active session ID is invalid,
+     * selects the most recently updated session as active.
      *
-     * @param context - The extension context.
+     * @param extContext - The VS Code extension context used for global state access.
      * @param webviewView - The webview view used for communication with the UI.
      */
     constructor(
@@ -45,9 +65,10 @@ export class Session {
     }
 
     /**
-     * Generates a unique session ID using the current timestamp.
+     * Generates a unique session identifier using the current timestamp.
+     * The format is `session_{timestamp}` where timestamp is milliseconds since epoch.
      *
-     * @returns A string that uniquely identifies a chat session.
+     * @returns A unique string identifier for a chat session.
      */
     static generateSessionId(): string {
         return `session_${Date.now()}`;
@@ -55,9 +76,10 @@ export class Session {
 
     /**
      * Generates a title for a chat session based on the first user message.
+     * If the content exceeds 40 characters, it is truncated with an ellipsis.
      *
-     * @param messages - The array of chat history messages.
-     * @returns A truncated title derived from the first user message, or "New Chat" if none.
+     * @param messages - The array of chat history messages to derive the title from.
+     * @returns A truncated title derived from the first user message, or "New Chat" if none exists.
      */
     static generateSessionTitle(messages: ChatHistory[]): string {
         const firstUserMessage = messages.find((m) => m.role === "user");
@@ -69,22 +91,23 @@ export class Session {
     }
 
     /**
-     * Retrieves the currently active chat session.
+     * Retrieves the currently active chat session from the managed sessions.
      *
-     * @returns The active {@link ChatSession} or {@code undefined} if none is active.
+     * @returns The active {@link ChatSession} if found, or `undefined` if no active session exists.
      */
     getActiveSession(): ChatSession | undefined {
         return this.sessions.find((s) => s.id === this.activeSessionId);
     }
 
     /**
-     * Creates a new chat session, sets it as active, and persists the change.
+     * Creates a new chat session with default values, sets it as the active session,
+     * and persists the change to global state.
      *
-     * @returns The newly created {@link ChatSession}.
+     * @returns The newly created {@link ChatSession} instance.
      */
     createNewSession(): ChatSession {
         const newSession: ChatSession = {
-            id: Session.generateSessionId(),
+            id: SessionManager.generateSessionId(),
             title: "New Chat",
             messages: new ChatContext(),
             contextStartIndex: 0,
@@ -98,10 +121,11 @@ export class Session {
     }
 
     /**
-     * Creates a copy of an existing session with cloned messages and a "(Copy)" title suffix.
+     * Creates a deep copy of an existing session with cloned messages and a "(Copy)" suffix
+     * appended to the title. The copied session is set as the active session.
      *
-     * @param sourceId - The ID of the session to copy.
-     * @returns The newly created session, or undefined if the source was not found.
+     * @param sourceId - The unique identifier of the session to copy.
+     * @returns The newly created session copy, or `undefined` if the source session was not found.
      */
     copySession(sourceId: string): ChatSession | undefined {
         const source = this.sessions.find((s) => s.id === sourceId);
@@ -110,7 +134,7 @@ export class Session {
         }
         const now = Date.now();
         const newSession: ChatSession = {
-            id: Session.generateSessionId(),
+            id: SessionManager.generateSessionId(),
             title: source.title + " (Copy)",
             customTitle: true,
             messages: new ChatContext(JSON.parse(JSON.stringify(source.messages.getMessages()))),
@@ -125,7 +149,11 @@ export class Session {
     }
 
     /**
-     * Persists all sessions and the active session ID to the global state.
+     * Persists all non-temporary and non-ghost sessions along with the active session ID
+     * to the extension's global state. Sessions marked as `temporary` or `ghost` are
+     * excluded from persistence.
+     *
+     * @see StoredChatSession
      */
     saveSessions() {
         const toStore: StoredChatSession[] = this.sessions
@@ -136,10 +164,17 @@ export class Session {
     }
 
     /**
-     * Applies a mutation to a specific session, updates its timestamp, and saves the changes.
+     * Applies a mutation to a specific session, updates its `updatedAt` timestamp,
+     * and persists the changes to global state.
      *
-     * @param session - The session to mutate. If undefined, the function returns immediately.
+     * @param session - The session to mutate. If `undefined`, the function returns immediately without action.
      * @param mutate - A callback function that performs the desired mutation on the session object.
+     * @example
+     * ```typescript
+     * sessionManager.updateSession(session, (s) => {
+     *     s.title = "Updated Title";
+     * });
+     * ```
      */
     updateSession(session: ChatSession | undefined, mutate: (s: ChatSession) => void) {
         if (!session) {
@@ -151,8 +186,12 @@ export class Session {
     }
 
     /**
-     * Sends the current session state to the webview.
-     * Token counts are pre-computed on the backend via msgTokens.
+     * Sends the current session state to the webview via a message.
+     * The message includes session summaries, the active session ID, sanitized message history,
+     * and context usage information. Token counts are pre-computed on the backend.
+     *
+     * @see mapSessionsToSummaries
+     * @see sanitizeMessages
      */
     sendSessionsUpdate() {
         const activeSession = this.getActiveSession();

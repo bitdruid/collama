@@ -1,153 +1,13 @@
 import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import MarkdownIt from "markdown-it";
-import Token from "markdown-it/lib/token.mjs";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import {
-    buildOpenFileCommandUri,
-    escapeAttr,
-    FILE_PATH_RE,
-    /* highlightAllCodeBlocks, */ icons,
-} from "../../../utils-front";
+import { icons } from "../../../utils-front";
+import { chatMarkdown } from "./markdown";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
 import { renderUserMessage } from "./message-user/message-user";
 import { outputStyles } from "./styles-shared";
-
-/**
- * Create a MarkdownIt instance configured with code-fence headers and copy buttons.
- */
-function createMarkdownWithCodeHeader(): MarkdownIt {
-    const md = new MarkdownIt({
-        html: false,
-        linkify: false,
-        breaks: true,
-    });
-
-    md.block.ruler.before("html_block", "llm_info", (state, startLine, _endLine, silent) => {
-        const line = state.src.slice(state.bMarks[startLine], state.eMarks[startLine]);
-        if (!line.startsWith("<llm-info>") || !line.endsWith("</llm-info>")) {
-            return false;
-        }
-        if (silent) {
-            return true;
-        }
-        const token = state.push("llm_info", "", 0);
-        token.content = line;
-        state.line = startLine + 1;
-        return true;
-    });
-
-    md.renderer.rules["llm_info"] = (tokens, idx) => `${tokens[idx].content}\n`;
-
-    /**
-     * Core rule that linkifies bare file paths (e.g. `src/foo.ts`,
-     * `./bar.js#L42`) found in plain text. Walks all `inline` block tokens,
-     * splits matching `text` children into `text` + `link_open`/`text`/
-     * `link_close` triples whose href is a `command:vscode.open?...` URI.
-     * `code_inline` and fenced code blocks are skipped naturally because they
-     * are not `text` tokens.
-     */
-    md.core.ruler.push("file_path_links", (state) => {
-        for (const block of state.tokens) {
-            if (block.type !== "inline" || !block.children) {
-                continue;
-            }
-
-            const newChildren: Token[] = [];
-            for (const child of block.children) {
-                if (child.type !== "text") {
-                    newChildren.push(child);
-                    {
-                        continue;
-                    }
-                }
-
-                const text = child.content;
-                FILE_PATH_RE.lastIndex = 0;
-                let lastIndex = 0;
-                let match: RegExpExecArray | null;
-                let matched = false;
-
-                while ((match = FILE_PATH_RE.exec(text)) !== null) {
-                    const [full, filePath, lineAnchor] = match;
-                    const href = buildOpenFileCommandUri(filePath, lineAnchor);
-                    matched = true;
-
-                    if (match.index > lastIndex) {
-                        const pre = new Token("text", "", 0);
-                        pre.content = text.slice(lastIndex, match.index);
-                        newChildren.push(pre);
-                    }
-
-                    const open = new Token("link_open", "a", 1);
-                    open.attrSet("href", href);
-                    open.attrSet("class", "file-link");
-                    newChildren.push(open);
-
-                    const inner = new Token("text", "", 0);
-                    inner.content = full;
-                    newChildren.push(inner);
-
-                    newChildren.push(new Token("link_close", "a", -1));
-
-                    lastIndex = match.index + full.length;
-                }
-
-                if (!matched) {
-                    newChildren.push(child);
-                    continue;
-                }
-
-                if (lastIndex < text.length) {
-                    const tail = new Token("text", "", 0);
-                    tail.content = text.slice(lastIndex);
-                    newChildren.push(tail);
-                }
-            }
-            block.children = newChildren;
-        }
-    });
-
-    md.renderer.rules.fence = (tokens, idx) => {
-        const token = tokens[idx];
-        const lang = token.info.trim() || "code";
-        const code = token.content;
-        const escapedCode = escapeAttr(code);
-
-        let accordionType = "code";
-        let expandedAttr = "expanded";
-        let languageAttr = "";
-
-        let label = lang;
-        let description = "";
-
-        if (lang.startsWith("Think:")) {
-            accordionType = "think";
-            expandedAttr = "";
-        } else if (lang.startsWith("Summary:")) {
-            accordionType = "summary";
-            expandedAttr = "";
-            languageAttr = 'language="markdown"';
-        } else if (lang.startsWith("Context:")) {
-            accordionType = "context";
-            expandedAttr = "";
-        }
-
-        if (accordionType !== "code") {
-            const [prefix, ...rest] = lang.split(":");
-            label = prefix + ":";
-            description = rest.join(":").trim();
-        }
-
-        return `<collama-accordion type="${accordionType}" label="${label}" description="${escapeAttr(description)}" code="${escapedCode}" copyCode="${escapedCode}" ${languageAttr} ${expandedAttr}></collama-accordion>`;
-    };
-
-    return md;
-}
-
-const md = createMarkdownWithCodeHeader();
 
 type MessageGroup =
     | { type: "tool-group"; tools: ToolMessage[]; startIndex: number }
@@ -162,23 +22,24 @@ type MessageGroup =
 function groupMessages(messages: ChatHistory[]): MessageGroup[] {
     const groups: MessageGroup[] = [];
     let toolBuffer: ToolMessage[] = [];
-    let toolStartIndex = 0;
+    let toolStartIndex: number | null = null;
 
     const flushTools = () => {
         if (toolBuffer.length > 0) {
-            groups.push({ type: "tool-group", tools: toolBuffer, startIndex: toolStartIndex });
+            groups.push({ type: "tool-group", tools: toolBuffer, startIndex: toolStartIndex ?? 0 });
             toolBuffer = [];
+            toolStartIndex = null;
         }
     };
 
     for (const [i, msg] of messages.entries()) {
         const isToolBridge =
             msg.role === "assistant" &&
-            !msg.content &&
+            !msg.content.trim() &&
             ((msg.tool_calls?.length ?? 0) > 0 || messages[i + 1]?.role === "tool");
 
         if (msg.role === "tool" || isToolBridge) {
-            if (toolBuffer.length === 0) {
+            if (msg.role === "tool" && toolBuffer.length === 0) {
                 toolStartIndex = i;
             }
             if (msg.role === "tool") {
@@ -202,8 +63,6 @@ export class ChatOutput extends LitElement {
     @property({ type: Array }) messages: ChatHistory[] = [];
     @property({ type: Number }) contextStartIndex: number = 0;
     @property({ type: Boolean }) isGenerating: boolean = false;
-    @property({ type: String }) searchQuery: string = "";
-    @property({ type: String }) activeSearchMessageId: string = "";
     @state() editingIndex: number | null = null;
 
     // private highlightedBlocks = new WeakSet<Element>();
@@ -271,32 +130,13 @@ export class ChatOutput extends LitElement {
         return !this._hasScrollbar() || this.scrollHeight - (this.clientHeight + this.scrollTop) < threshold;
     }
 
-    /**
-     * Injects <mark> highlights into rendered HTML by walking text nodes only.
-     * Skips content inside HTML tags to avoid corrupting attributes.
-     */
-    private _highlightHtml(htmlStr: string, query: string, isActive: boolean): string {
-        if (!query) {
-            return htmlStr;
-        }
-        const cls = isActive ? "search-highlight active" : "search-highlight";
-        // Split HTML into tags and text segments, only replace in text segments
-        return htmlStr.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => {
-            if (tag) {
-                return tag;
-            }
-            const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            return text.replace(new RegExp(escaped, "gi"), (m: string) => `<mark class="${cls}">${m}</mark>`);
-        });
-    }
-
     private _getCachedMarkdown = (content: string, isStreaming: boolean): string => {
         if (isStreaming) {
-            return md.render(content);
+            return chatMarkdown.render(content);
         }
         let cached = this.renderedMarkdownCache.get(content);
         if (!cached) {
-            cached = md.render(content);
+            cached = chatMarkdown.render(content);
             this.renderedMarkdownCache.set(content, cached);
         }
         return cached;
@@ -348,22 +188,6 @@ export class ChatOutput extends LitElement {
         }
 
         const groups = groupMessages(messages);
-        const searchQuery = this.searchQuery;
-        const activeSearchId = this.activeSearchMessageId;
-
-        /** Wraps getCachedMarkdown to inject search highlights when a query is active. */
-        const getMarkdownWithHighlight = (
-            msgId: string,
-            content: string,
-            isStreaming: boolean,
-        ): string => {
-            const rendered = this._getCachedMarkdown(content, isStreaming);
-            if (!searchQuery) {
-                return rendered;
-            }
-            const isActive = msgId === activeSearchId;
-            return this._highlightHtml(rendered, searchQuery, isActive);
-        };
 
         return html`
             <div class="output-container">
@@ -404,52 +228,42 @@ export class ChatOutput extends LitElement {
                         }
 
                         const { msg, index } = group;
-                        const msgId = msg.customKeys?.id ?? String(index);
                         const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
                         const outOfContextClass = isOutOfContext ? "out-of-context" : "";
                         const warningIcon = isOutOfContext
                             ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>`
                             : "";
 
-                        const getCachedMarkdown = (content: string, isStreaming: boolean) =>
-                            getMarkdownWithHighlight(msgId, content, isStreaming);
-
                         if (msg.role === "user") {
-                            return html`<div data-message-id="${msgId}">
-                                ${renderUserMessage({
-                                    host: this,
-                                    messages,
-                                    msg,
-                                    index,
-                                    outOfContextClass,
-                                    warningIcon,
-                                    getCachedMarkdown,
-                                })}
-                            </div>`;
+                            return renderUserMessage({
+                                host: this,
+                                messages,
+                                msg,
+                                index,
+                                outOfContextClass,
+                                warningIcon,
+                                getCachedMarkdown: this._getCachedMarkdown,
+                            });
                         }
 
                         if (msg.role === "assistant") {
                             const isGeneratingThis = this.isGenerating && index === lastAssistantIndex;
-                            return html`<div data-message-id="${msgId}">
-                                ${renderAssistantMessage({
-                                    msg,
-                                    outOfContextClass,
-                                    warningIcon,
-                                    isLoading: isGeneratingThis && !msg.content,
-                                    isStreaming: isGeneratingThis && !!msg.content,
-                                    getCachedMarkdown,
-                                })}
-                            </div>`;
-                        }
-
-                        return html`<div data-message-id="${msgId}">
-                            ${renderSystemMessage({
+                            return renderAssistantMessage({
                                 msg,
                                 outOfContextClass,
                                 warningIcon,
-                                getCachedMarkdown,
-                            })}
-                        </div>`;
+                                isLoading: isGeneratingThis && !msg.content,
+                                isStreaming: isGeneratingThis && !!msg.content,
+                                getCachedMarkdown: this._getCachedMarkdown,
+                            });
+                        }
+
+                        return renderSystemMessage({
+                            msg,
+                            outOfContextClass,
+                            warningIcon,
+                            getCachedMarkdown: this._getCachedMarkdown,
+                        });
                     },
                 )}
             </div>

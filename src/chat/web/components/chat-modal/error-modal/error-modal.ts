@@ -1,7 +1,7 @@
 import { html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { BaseModal } from "../../template-components/modal/base-modal";
-import { errorModalStyles } from "./error-modal-styles";
+import { errorModalStyles } from "./styles";
 
 /**
  * Error modal component extending BaseModal.

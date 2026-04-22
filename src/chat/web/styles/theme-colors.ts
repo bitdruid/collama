@@ -68,14 +68,10 @@ export const themeColors = {
     clearChatHover: unsafeCSS("#995c5c"),
     clearChatActive: unsafeCSS("#d09090"),
 
-    /* Search Button Colors */
-    search: unsafeCSS("#9eb57a"),
-    searchHover: unsafeCSS("#809363"),
-    searchActive: unsafeCSS("#bad690"),
-
-    /* Search Highlight Colors */
-    searchHighlight: unsafeCSS("rgba(255, 213, 79, 0.4)"),
-    searchHighlightActive: unsafeCSS("rgba(255, 167, 38, 0.8)"),
+    /* Settings Button Colors */
+    settings: unsafeCSS("#7a828c"),
+    settingsHover: unsafeCSS("#646b74"),
+    settingsActive: unsafeCSS("#99a2ad"),
 
     /* Role Colors */
     system: unsafeCSS("#9b59b6"),

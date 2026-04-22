@@ -1,4 +1,6 @@
+import type { ToolCall } from "../../../../common/types-llm";
 import { logWebview, showToast } from "../../../utils-front";
+import type { ChatConfig } from "../../types";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import type { ChatContainer } from "./chat-container";
 
@@ -6,8 +8,10 @@ import type { ChatContainer } from "./chat-container";
 export function createInboundDispatcher(host: ChatContainer) {
     const handlers: Record<string, (m: any) => void> = {
         init: (m) => handleInit(host, m),
+        "config-update": (m) => handleConfigUpdate(host, m),
         "sessions-update": (m) => handleSessionsUpdate(host, m),
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
+        "agent-tool-calls": (m) => handleAgentToolCalls(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "history-replace": (m) => handleHistoryReplace(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
@@ -49,10 +53,34 @@ function applySessionState(host: ChatContainer, msg: any) {
     host.contextStartIndex = msg.contextStartIndex || 0;
 }
 
+function legacyConfigFromMessage(msg: any): Partial<ChatConfig> {
+    const config: Partial<ChatConfig> = {};
+    if ("enableEditTools" in msg) {
+        config.enableEditTools = msg.enableEditTools;
+    }
+    if ("enableShellTool" in msg) {
+        config.enableShellTool = msg.enableShellTool;
+    }
+    return config;
+}
+
+function applyConfig(host: ChatContainer, msg: any) {
+    host.config = {
+        ...host.config,
+        ...(msg.config || legacyConfigFromMessage(msg)),
+    };
+}
+
 /** Initializes the component with session history, context usage, and session list from the host. */
 function handleInit(host: ChatContainer, msg: any) {
     applySessionState(host, msg);
+    applyConfig(host, msg);
     logWebview(`${host.sessions.length} sessions total, active: ${host.activeSessionId}`);
+}
+
+/** Updates tool enable/disable state when config changes. */
+function handleConfigUpdate(host: ChatContainer, msg: any) {
+    applyConfig(host, msg);
 }
 
 /** Replaces the full session state when the user switches sessions or sessions change on the host. */
@@ -64,6 +92,15 @@ function handleSessionsUpdate(host: ChatContainer, msg: any) {
 function handleAgentAddMessage(host: ChatContainer, msg: any) {
     host.chatContext?.push(msg.message);
     host.syncMessages();
+}
+
+/** Attaches tool-call metadata to the assistant message that initiated the tool run. */
+function handleAgentToolCalls(host: ChatContainer, msg: any) {
+    const target = host.chatContext?.getMsgByIndex(msg.index);
+    if (target?.role === "assistant") {
+        target.tool_calls = (msg.toolCalls || []) as ToolCall[];
+        host.syncMessages();
+    }
 }
 
 /** Replaces the full message history (e.g. after a cancel prunes incomplete tail state). */
@@ -153,6 +190,6 @@ function handleContextUpdate(host: ChatContainer, msg: any) {
     );
     if (!exists) {
         host.currentContexts = [...host.currentContexts, newCtx];
+        logWebview(`Context received: ${newCtx.fileName} (total: ${host.currentContexts.length})`);
     }
-    logWebview(`Context received: ${newCtx.fileName} (total: ${host.currentContexts.length})`);
 }

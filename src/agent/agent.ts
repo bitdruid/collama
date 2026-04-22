@@ -7,7 +7,13 @@ import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/types-l
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import { executeTool, getToolDefinitions, getToolTarget, resetAutoAcceptEdits } from "./tools";
+import {
+    executeTool,
+    getToolDefinitions,
+    getToolTarget,
+    resetAutoAcceptEdits,
+    shouldDeduplicateToolResult,
+} from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
 
@@ -63,9 +69,7 @@ export class Agent {
                 resetAutoAcceptEdits();
                 const signal = this.abortController.signal;
 
-                const initMessages: ChatHistory[] = userConfig.agentic
-                    ? [{ role: "system", content: getAgentTemplate() }, ...messages.getMessages()]
-                    : [...messages.getMessages()];
+                const initMessages: ChatHistory[] = [{ role: "system", content: getAgentTemplate() }, ...messages.getMessages()];
                 const history = new AgentContext(initMessages);
 
                 try {
@@ -131,7 +135,7 @@ export class Agent {
                                 content: toolResult,
                             });
 
-                            history.deduplicateReadFile(toolCall.id);
+                            history.deduplicateToolResult(toolCall.id);
 
                             onEvent?.({
                                 type: "agent-tool-done",
@@ -213,37 +217,10 @@ class AgentContext {
     }
 
     /**
-     * Replaces stale read tool results with a short note.
-     * - Full-file reads (no line numbers) evict all previous reads of the same file.
-     * - Partial reads evict older reads with identical startLine/endLine arguments.
+     * Replaces stale non-mutating tool results with a short note when a tool is re-run
+     * with identical structured arguments.
      */
-    public deduplicateReadFile(newToolCallId: string): void {
-        const newTc = this.context.findToolCall(newToolCallId);
-        if (!newTc || newTc.function.name !== "read") {
-            return;
-        }
-        const newArgs = JSON.parse(newTc.function.arguments);
-        const isFullRead = newArgs.startLine === undefined && newArgs.endLine === undefined;
-
-        for (let i = 0; i < this.context.length(); i++) {
-            const toolCallId = this.context.getToolCallId(i);
-            if (!toolCallId || toolCallId === newToolCallId) {
-                continue;
-            }
-            const tc = this.context.findToolCall(toolCallId);
-            if (!tc || tc.function.name !== "read") {
-                continue;
-            }
-            const args = JSON.parse(tc.function.arguments);
-            if (args.filePath !== newArgs.filePath) {
-                continue;
-            }
-            // if full re-read OR all args are identical - deduplicate
-            const isDuplicate =
-                isFullRead || (args.startLine === newArgs.startLine && args.endLine === newArgs.endLine);
-            if (isDuplicate) {
-                this.context.setToolResponse(toolCallId, { content: "[stale - file re-read later]" });
-            }
-        }
+    public deduplicateToolResult(newToolCallId: string): void {
+        this.context.deduplicateToolResult(newToolCallId, shouldDeduplicateToolResult);
     }
 }

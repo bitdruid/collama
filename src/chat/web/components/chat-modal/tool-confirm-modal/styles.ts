@@ -1,7 +1,7 @@
 import { css } from "lit";
-import { themeColors } from "../../../../styles/theme-colors";
-import { themeFonts } from "../../../../styles/theme-fonts";
-import { themeStyles } from "../../../../styles/theme-styles";
+import { themeColors } from "../../../styles/theme-colors";
+import { themeFonts } from "../../../styles/theme-fonts";
+import { themeStyles } from "../../../styles/theme-styles";
 
 export const toolConfirmStyles = css`
     .confirm-content {
@@ -99,8 +99,8 @@ export const toolConfirmStyles = css`
         background: ${themeColors.uiBackgroundDimm};
         border: 1px solid ${themeColors.uiBorderDimm};
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        overflow-x: auto;
+        overflow-y: hidden;
         cursor: pointer;
         text-decoration: none;
         display: block;

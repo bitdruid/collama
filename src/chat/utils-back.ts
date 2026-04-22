@@ -15,6 +15,24 @@ export function getWebview(): vscode.Webview | null {
     return _webview;
 }
 
+/** Creates a plain snapshot suitable for posting to the webview. */
+export function createConfigSnapshot<T extends object>(config: T): T {
+    return { ...config };
+}
+
+/** Broadcasts the current config to the webview. */
+export function broadcastConfig<T extends object>(config: T): void {
+    if (_webview) {
+        _webview.postMessage({ type: "config-update", config: createConfigSnapshot(config) });
+    }
+}
+
+/** Builds a portable export payload: extension metadata + messages. */
+export function buildExportData(extContext: vscode.ExtensionContext, messages: ChatHistory[]): unknown[] {
+    const { name, version } = extContext.extension.packageJSON;
+    return [{ extension: name, version }, ...messages];
+}
+
 /**
  * Session summary for UI display (excludes full message history).
  */
@@ -69,7 +87,11 @@ export function sanitizeMessages(messages: ChatHistory[]): ChatHistory[] {
         // If assistant message is empty and was loading, show fallback
         if (m.role === "assistant" && !m.content && loading) {
             const { loading: _, ...restKeys } = m.customKeys!;
-            return { ...m, content: "No response received.", customKeys: Object.keys(restKeys).length > 0 ? restKeys : undefined };
+            return {
+                ...m,
+                content: "No response received.",
+                customKeys: Object.keys(restKeys).length > 0 ? restKeys : undefined,
+            };
         }
         if (loading) {
             const { loading: _, ...restKeys } = m.customKeys!;

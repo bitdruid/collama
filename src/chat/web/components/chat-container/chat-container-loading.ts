@@ -32,6 +32,12 @@ export class ChatContainerLoading extends LitElement {
             animation: snake-dash var(--snake-duration, 2s) linear infinite;
         }
 
+        :host([eyecandy]) rect {
+            animation:
+                snake-dash var(--snake-duration, 2s) linear infinite,
+                snake-rainbow 0.35s linear infinite;
+        }
+
         @keyframes snake-dash {
             0% {
                 stroke-dashoffset: 0;
@@ -40,9 +46,35 @@ export class ChatContainerLoading extends LitElement {
                 stroke-dashoffset: var(--snake-perimeter, -800);
             }
         }
+
+        @keyframes snake-rainbow {
+            0% {
+                stroke: #ff004c;
+            }
+            16% {
+                stroke: #ff9f00;
+            }
+            33% {
+                stroke: #fff200;
+            }
+            50% {
+                stroke: #00ff66;
+            }
+            66% {
+                stroke: #00c8ff;
+            }
+            83% {
+                stroke: #8f00ff;
+            }
+            100% {
+                stroke: #ff004c;
+            }
+        }
     `;
 
     @property({ type: Boolean, reflect: true }) active = false;
+    @property({ type: Boolean, reflect: true }) eyecandy = false;
+    @property({ type: Number }) speed = 1800;
 
     private _resizeObserver: ResizeObserver | null = null;
 
@@ -55,9 +87,10 @@ export class ChatContainerLoading extends LitElement {
         const h = this.offsetHeight;
         const perimeter = 2 * (w + h);
         const segment = perimeter * 0.15;
+        const speed = Math.max(1, this.speed);
         rect.style.strokeDasharray = `${segment} ${perimeter - segment}`;
         this.style.setProperty("--snake-perimeter", `${-perimeter}`);
-        this.style.setProperty("--snake-duration", `${perimeter / 2000}s`);
+        this.style.setProperty("--snake-duration", `${perimeter / speed}s`);
     }
 
     connectedCallback() {
@@ -77,7 +110,7 @@ export class ChatContainerLoading extends LitElement {
     }
 
     updated(changed: Map<string, unknown>) {
-        if (changed.has("active") && this.active) {
+        if ((changed.has("active") || changed.has("speed")) && this.active) {
             this._updatePerimeter();
         }
     }

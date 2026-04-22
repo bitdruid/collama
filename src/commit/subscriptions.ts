@@ -2,8 +2,22 @@ import * as vscode from "vscode";
 const { showErrorMessage, showWarningMessage, showInformationMessage } = vscode.window;
 
 import { requestCommitMessage } from "../common/requests";
-import { GitExtension } from "../common/types-git";
 import { logMsg } from "../logging";
+
+interface GitExtension {
+    getAPI(version: number): GitAPI;
+}
+
+interface GitAPI {
+    repositories: GitRepository[];
+}
+
+interface GitRepository {
+    inputBox: {
+        value: string;
+    };
+    diff(staged?: boolean): Promise<string>;
+}
 
 /**
  * Registers the `collama.requestCommitMessage` command with VS Code.

@@ -5,13 +5,17 @@ import { themeFonts } from "../../../styles/theme-fonts";
 export const baseModalStyles = css`
     :host {
         display: block;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .modal-content {
         position: relative;
+        box-sizing: border-box;
+        width: 100%;
         padding: 16px;
         margin-bottom: 8px;
-        overflow: visible;
+        overflow: auto;
         border-radius: 8px;
         border: 2px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackgroundDimm};
