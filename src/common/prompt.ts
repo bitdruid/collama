@@ -95,13 +95,41 @@ export const chatSummarize_Template: string = [
     "- Never mention summary",
 ].join("\n");
 
+type VerbosityMode = "compact" | "medium" | "detailed";
+
+const VERBOSITY_PROMPTS: Record<VerbosityMode, string[]> = {
+    compact: [
+        "- No filler words where possible.",
+        "- No politeness.",
+        "- No grammar if not needed. Short sentences.",
+        "- No repetition. No long explanations unless asked.",
+        "- Prefer symbols (→, =, vs, ×).",
+        "- Compress aggressively. Assume user is expert.",
+        "- Output = shortest correct answer possible.",
+    ],
+    medium: [
+        "- Be direct and concise. No preamble, no sign-off.",
+        "- Answer first, explain only if essential.",
+        "- Use prose, not bullets unless structure genuinely helps.",
+        "- Skip edge cases unless asked.",
+    ],
+    detailed: [
+        "- Provide thorough responses with context and reasoning.",
+        "- Include relevant edge cases, alternatives, and at least one example.",
+        "- Use structure (headers/bullets) when it aids clarity.",
+        "- Don't omit important nuance.",
+    ],
+};
+
 /**
  * System prompt prepended to the agent's conversation history.
  * Guides the LLM on how to use tools effectively and when to stop.
  */
 export function getAgentTemplate(): string {
-    const tokenLimit = userConfig?.apiTokenPredictInstruct ?? 4096;
+    const tokenLimit = userConfig.apiTokenPredictInstruct;
+    const configuredVerbosity = userConfig.verbosityMode as VerbosityMode;
     const lines: string[] = ["Guidelines:", ""];
+    lines.push("You are a senior software engineer.");
 
     if (userConfig.agentic) {
         lines.push(
@@ -125,8 +153,7 @@ export function getAgentTemplate(): string {
         "- Never repeat yourself. Instead move on to the next step.",
         "- Do not re-check conditions you have already confirmed.",
         "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",
-        "- BE CONCISE: Keep responses brief and focused.",
-        "- Stop immediately after completing the task - no unnecessary commentary.",
+        ...(VERBOSITY_PROMPTS[configuredVerbosity] ?? VERBOSITY_PROMPTS.medium),
         "",
         `OUTPUT LIMIT: Keep your response under approximately ${tokenLimit} tokens (~${Math.floor(tokenLimit * 4)} characters).`,
     );

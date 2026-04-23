@@ -113,11 +113,28 @@ export const settingsModalStyles = css`
 
     .setting-value {
         flex: 0 0 auto;
+        text-transform: capitalize;
         color: ${themeColors.placeholder};
     }
 
     input[type="range"] {
         width: 100%;
         accent-color: ${themeColors.submit};
+    }
+
+    .slider-labels {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+        color: ${themeColors.placeholder};
+        font-size: ${themeFonts.small};
+    }
+
+    .slider-labels span:nth-child(2) {
+        text-align: center;
+    }
+
+    .slider-labels span:nth-child(3) {
+        text-align: right;
     }
 `;

@@ -45,6 +45,7 @@ export interface ChatConfig {
     agentic: boolean;
     autoComplete: boolean;
     suggestMode: string;
+    verbosityMode: "compact" | "medium" | "detailed";
     suggestDelay: number;
     enableEditTools: boolean;
     enableShellTool: boolean;
@@ -63,6 +64,7 @@ export const defaultChatConfig: ChatConfig = {
     agentic: true,
     autoComplete: true,
     suggestMode: "inline",
+    verbosityMode: "medium",
     suggestDelay: 1500,
     enableEditTools: true,
     enableShellTool: false,

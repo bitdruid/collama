@@ -1,6 +1,16 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.6.8] - 2026-04-23
+
+### Added
+- Verbosity mode setting — control how concise or detailed chat responses should be (compact, medium, or detailed)
+- Compact mode: aggressive compression, no filler, symbols over words, assumes expert user
+- Detailed mode: thorough responses with context, edge cases, examples, and structured formatting
+
+### Changed
+- Settings modal now includes a slider control for verbosity mode selection
+
 ## [1.6.7] - 2026-04-23
 
 ### Added

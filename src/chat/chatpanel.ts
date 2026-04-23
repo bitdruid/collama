@@ -120,6 +120,21 @@ export class ChatPanel {
         } as const;
         const key = msg.key as keyof typeof schema;
 
+        if (msg.key === "verbosityMode") {
+            if (!["compact", "medium", "detailed"].includes(String(msg.value))) {
+                return;
+            }
+
+            await vscode.workspace
+                .getConfiguration("collama")
+                .update("verbosityMode", msg.value, vscode.ConfigurationTarget.Global);
+            webview.postMessage({
+                type: "config-update",
+                config: { verbosityMode: msg.value },
+            });
+            return;
+        }
+
         if (!(key in schema) || typeof msg.value !== schema[key]) {
             return;
         }

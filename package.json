@@ -6,7 +6,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.6.7",
+    "version": "1.6.8",
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -91,6 +91,16 @@
                             "multiline"
                         ],
                         "markdownDescription": "Suggest code-blocks or code-lines."
+                    },
+                    "collama.verbosityMode": {
+                        "type": "string",
+                        "default": "medium",
+                        "enum": [
+                            "compact",
+                            "medium",
+                            "detailed"
+                        ],
+                        "markdownDescription": "Controls how concise or detailed chat responses should be."
                     },
                     "collama.suggestDelay": {
                         "type": "number",

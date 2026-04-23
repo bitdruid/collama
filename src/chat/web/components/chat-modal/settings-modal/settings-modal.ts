@@ -6,6 +6,8 @@ import { BaseModal } from "../../template-components/modal/base-modal";
 import { settingsModalStyles } from "./styles";
 
 const DEFAULT_SNAKE_LOADING_SPEED = 1800;
+const VERBOSITY_MODES = ["compact", "medium", "detailed"] as const;
+type VerbosityMode = (typeof VERBOSITY_MODES)[number];
 
 @customElement("collama-settings-modal")
 export class SettingsModal extends BaseModal {
@@ -30,6 +32,19 @@ export class SettingsModal extends BaseModal {
             }),
         );
     }
+
+    private updateVerbosityMode = (event: Event) => {
+        const index = Number((event.target as HTMLInputElement).value);
+        const value = VERBOSITY_MODES[index] ?? "medium";
+
+        this.dispatchEvent(
+            new CustomEvent("settings-update", {
+                detail: { key: "verbosityMode", value },
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    };
 
     private updateSnakeSpeed = (event: Event) => {
         this.dispatchEvent(
@@ -77,6 +92,7 @@ export class SettingsModal extends BaseModal {
                     "enableShellTool",
                     this.config.enableShellTool,
                 )}
+                ${this.renderVerbosityMode()}
             </section>
             <section class="settings-section">
                 <h4>Style</h4>
@@ -99,6 +115,34 @@ export class SettingsModal extends BaseModal {
                     />
                 </div>
             </section>
+        `;
+    }
+
+    private renderVerbosityMode() {
+        const value = this.config.verbosityMode ?? "medium";
+        const index = VERBOSITY_MODES.indexOf(value as VerbosityMode);
+
+        return html`
+            <div class="setting-row slider-row">
+                <div class="slider-heading">
+                    <span class="setting-title">Verbosity</span>
+                    <span class="setting-value">${value}</span>
+                </div>
+                <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="1"
+                    .value=${String(index < 0 ? 1 : index)}
+                    @input=${this.updateVerbosityMode}
+                    aria-label="Verbosity"
+                />
+                <div class="slider-labels" aria-hidden="true">
+                    <span>Compact</span>
+                    <span>Medium</span>
+                    <span>Detailed</span>
+                </div>
+            </div>
         `;
     }
 
