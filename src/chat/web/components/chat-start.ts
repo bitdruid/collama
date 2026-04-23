@@ -25,6 +25,7 @@ export class StartPage {
                 <style>
                     :root {
                         --theme-tint: 1;
+                        --theme-flat: 0;
                     }
                     body.vscode-light,
                     body.vscode-high-contrast-light {

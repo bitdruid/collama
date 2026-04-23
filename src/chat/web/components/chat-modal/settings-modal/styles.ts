@@ -51,7 +51,7 @@ export const settingsModalStyles = css`
         line-height: 1.3;
     }
 
-    .setting-warning {
+    .setting-danger {
         display: inline-flex;
         align-items: center;
         color: ${themeColors.usageDanger};

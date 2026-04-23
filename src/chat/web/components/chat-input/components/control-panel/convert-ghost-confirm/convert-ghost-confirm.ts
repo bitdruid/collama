@@ -1,6 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import { icons } from "../../../../../../utils-front";
+import "../../../../template-components/action-button";
 import { BasePopup } from "../../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../../template-components/popup/styles";
 import { convertGhostConfirmStyles } from "./styles";
@@ -14,12 +14,8 @@ export class ConvertGhostConfirm extends BasePopup {
             <div class="confirm-content">
                 <div class="confirm-text">Are you sure?</div>
                 <div class="confirm-actions">
-                    <button class="confirm-btn ok-btn" title="Convert" @click=${this._handleConfirm}>
-                        ${icons.check}
-                    </button>
-                    <button class="confirm-btn cancel-btn" title="Cancel" @click=${this._handleCancel}>
-                        ${icons.x}
-                    </button>
+                    <collama-accept-button title="Convert" @action=${this._handleConfirm}></collama-accept-button>
+                    <collama-cancel-button title="Cancel" @action=${this._handleCancel}></collama-cancel-button>
                 </div>
             </div>
         `;

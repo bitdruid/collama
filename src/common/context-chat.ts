@@ -332,6 +332,11 @@ export class ChatContext {
     public sumTokensInRange(start: number, end: number): number {
         return sumMsgTokens(this.messages.slice(start, end));
     }
+
+    /** Sums cached `msgTokens` from the given start index through the end. */
+    public sumTokensFrom(start: number): number {
+        return this.sumTokensInRange(Math.max(0, start), this.messages.length);
+    }
 }
 
 /** Sums up cached `msgTokens` across all messages. Returns 0 for messages without a cached value. */

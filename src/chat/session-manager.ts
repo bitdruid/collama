@@ -202,7 +202,7 @@ export class SessionManager {
             sessions: mapSessionsToSummaries(this.sessions),
             activeSessionId: this.activeSessionId,
             history: sanitizeMessages(messages),
-            contextUsed: activeSession?.messages.sumTokens() ?? 0,
+            contextUsed: activeSession?.messages.sumTokensFrom(activeSession.contextStartIndex) ?? 0,
             contextMax: userConfig.apiTokenContextLenInstruct,
             contextStartIndex: activeSession?.contextStartIndex || 0,
         });

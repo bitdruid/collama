@@ -34,7 +34,7 @@ export class AgentRunner {
      * never produces a first chunk or event; any inbound activity clears it. Callers
      * are responsible for sending `chat-complete` after post-processing.
      */
-    async run({ webview, messages, onChunk, onEvent }: AgentRunnerRunOptions): Promise<void> {
+    async run({ webview, messages, onChunk, onEvent }: AgentRunnerRunOptions): Promise<boolean> {
         const agent = new Agent();
         this.currentAgent = agent;
         const timeout = setTimeout(() => {
@@ -54,6 +54,7 @@ export class AgentRunner {
                     onEvent?.(event);
                 },
             );
+            return true;
         } catch (error) {
             agent.cancel();
             const errorInfo = {
@@ -68,6 +69,7 @@ export class AgentRunner {
                 exportedChat,
                 errorMessage,
             });
+            return false;
         } finally {
             clearTimeout(timeout);
             if (this.currentAgent === agent) {

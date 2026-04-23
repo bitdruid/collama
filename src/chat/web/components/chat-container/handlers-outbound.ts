@@ -53,14 +53,17 @@ export function onSummarizeConversation(host: ChatContainer) {
 
     const totalMessages = host.chatContext.length();
 
-    host.chatContext.push({ role: "user", content: "Context summary:" });
-    host.chatContext.push({ role: "assistant", content: "" });
-    host.syncMessages();
-
     host.isLoading = true;
 
     showToast("Summarizing conversation...");
     backendApi.summarize(0, totalMessages, host.activeSessionId);
+}
+
+/** Accepts the forced auto-summary prompt and starts conversation summarization. */
+export function onAcquireAutoSummaryAccept(host: ChatContainer) {
+    host.showAcquireModal = false;
+    host.beginAutoSummary();
+    onSummarizeConversation(host);
 }
 
 /** Truncates history after the selected user message and re-sends from that point. */
@@ -122,8 +125,6 @@ export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
 
     host.chatContext?.removeRange(messageIndex, turnEnd);
     host.syncMessages();
-
-    host.contextUsed = host.chatContext?.sumTokens() ?? 0;
 
     showToast(`~${approxTokensFreed} tokens freed`);
     logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);

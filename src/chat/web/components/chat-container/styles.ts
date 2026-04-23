@@ -46,4 +46,9 @@ export const chatContainerStyles = css`
         flex-direction: column;
         overflow: visible;
     }
+
+    collama-chatinput[inert] {
+        pointer-events: none;
+        user-select: none;
+    }
 `;

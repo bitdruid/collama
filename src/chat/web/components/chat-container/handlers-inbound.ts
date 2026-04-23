@@ -17,6 +17,7 @@ export function createInboundDispatcher(host: ChatContainer) {
         "agent-tokens": (m) => handleAgentTokens(host, m),
         "chat-complete": (m) => handleChatComplete(host, m),
         "summary-complete": (m) => handleSummarized(host, m),
+        "summary-error": (m) => handleSummaryError(host, m),
         "summary-progress": (m) => handleSummaryProgress(host, m),
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
@@ -128,6 +129,7 @@ function handleChatComplete(host: ChatContainer, msg: any) {
     host.hasTokenData = false;
     host.contextUsed = msg.contextUsed ?? 0;
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
+    host.completeAutoSummaryContextUpdate();
 }
 
 /** Replaces message history with the summarized version returned by the host. */
@@ -136,8 +138,18 @@ function handleSummarized(host: ChatContainer, msg: any) {
     host.syncMessages();
     if (msg.isConversation) {
         host.contextStartIndex = 0;
+        host.markAutoSummaryComplete();
+    } else {
+        host.contextStartIndex = msg.contextStartIndex || 0;
     }
     showToast(msg.isConversation ? "Conversation summarized" : "Turn summarized");
+}
+
+/** Restores the auto-summary prompt when a forced conversation summary fails. */
+function handleSummaryError(host: ChatContainer, msg: any) {
+    if (msg.isConversation) {
+        host.reopenAutoSummaryOnError();
+    }
 }
 
 /** Shows a toast with the current summarization progress. */
@@ -171,7 +183,9 @@ function handleAgentError(host: ChatContainer, msg: any) {
     host.agentToken = 0;
     host.hasTokenData = false;
 
-    host.errorModalContent = `${msg.exportedChat}${msg.errorMessage}`;
+    const errorMessage = (msg.errorMessage || "").trim().replace(/^--- ERROR ---\s*/, "");
+    const history = (msg.exportedChat || "").trim();
+    host.errorModalContent = `ERROR:\n${errorMessage}\n\nHISTORY:\n${history}`;
     host.showErrorModal = true;
     logWebview(`Agent error: ${msg.error?.message}`);
 }

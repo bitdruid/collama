@@ -14,6 +14,7 @@ export class SettingsModal extends BaseModal {
     @property({ type: Object }) config: ChatConfig = defaultChatConfig;
     @property({ type: Number }) snakeLoadingSpeed = DEFAULT_SNAKE_LOADING_SPEED;
     @property({ type: Boolean }) snakeEyecandyMode = false;
+    @property({ type: Boolean }) flatDesign = false;
 
     constructor() {
         super();
@@ -50,6 +51,16 @@ export class SettingsModal extends BaseModal {
         );
     };
 
+    private updateFlatDesign = (event: Event) => {
+        this.dispatchEvent(
+            new CustomEvent("flat-design-update", {
+                detail: { value: (event.target as HTMLInputElement).checked },
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    };
+
     protected renderContent() {
         return html`
             <section class="settings-section">
@@ -69,6 +80,7 @@ export class SettingsModal extends BaseModal {
             </section>
             <section class="settings-section">
                 <h4>Style</h4>
+                ${this.renderStyleToggle("Flat Design", this.flatDesign, this.updateFlatDesign)}
                 ${this.renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this.updateSnakeEyecandy)}
                 <div class="setting-row slider-row">
                     <div class="slider-heading">
@@ -99,7 +111,7 @@ export class SettingsModal extends BaseModal {
         return html`
             <label class="setting-row toggle">
                 <span class="setting-text">
-                    ${showWarning ? html`<span class="setting-warning">${icons.alertTriangle}</span>` : ""}
+                    ${showWarning ? html`<span class="setting-danger">${icons.alertTriangle}</span>` : ""}
                     <span class="setting-title">${label}</span>
                 </span>
                 <input

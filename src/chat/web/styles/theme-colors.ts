@@ -14,12 +14,15 @@ const cssOf = (c: Color) => (typeof c === "string" ? c : c.cssText);
 const darken = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - var(--theme-tint, 1) * ${n}))`);
 const contrast = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - sign(l - 50) * ${n}))`);
 
-const getBorder = (color: Color) => contrast(color, 11);
+const getBorder = (color: Color) =>
+    unsafeCSS(
+        `color-mix(in srgb, ${cssOf(color)} calc(var(--theme-flat, 0) * 100%), ${contrast(color, 11).cssText} calc((1 - var(--theme-flat, 0)) * 100%))`,
+    );
 const getHover = (color: Color) => contrast(color, 6);
 
 export const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
 const defaultColor = contrast(baseColor, 6);
-const dimmColor = darken(baseColor, 2);
+const dimmColor = darken(baseColor, 3);
 //const backDarkColor = darken(defaultColor, 7);
 
 /**
@@ -83,6 +86,10 @@ export const themeColors = {
     outOfContextBackground: unsafeCSS("rgba(255, 60, 60, 0.08)"),
     outOfContextBorder: unsafeCSS("rgba(255, 60, 60, 0.25)"),
 
+    /* Notification */
+    uiNotification: defaultColor,
+    uiNotificationBorder: getBorder(defaultColor),
+
     /* Usage Bar Colors */
     usagePrimary: unsafeCSS("#4ec9b0"),
     usageWarning: unsafeCSS("#cca700"),
@@ -96,6 +103,7 @@ export const themeColors = {
     placeholder: contrast(defaultColor, 20),
     disabled: unsafeCSS("#555"),
     cleanWhite: unsafeCSS("#fff"),
+    cleanBlack: unsafeCSS("#000"),
     focus: contrast(defaultColor, 45),
 
     /* Font */

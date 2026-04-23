@@ -1,6 +1,23 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.6.7] - 2026-04-23
+
+### Added
+- Auto-summary — when context usage reaches high levels, a modal prompts you to summarize the conversation
+- Context notifications — warns when context is nearly full or when messages have left the LLM context
+- Flat design style option — toggle between flat and dimensional UI styles in settings
+- Reusable action button components (accept/cancel) for consistent modal styling
+
+### Changed
+- Improved error modal formatting with cleaner error message display
+- Better context tracking — context usage now accurately reflects only the messages in the LLM context
+- Optimized message reindexing during context trimming
+
+### Fixed
+- Context trimming now properly accounts for previous context boundaries
+- Summary operations correctly update context state after completion
+
 ## [1.6.6] - 2026-04-22
 
 ### Added

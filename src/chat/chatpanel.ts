@@ -3,12 +3,11 @@ import * as vscode from "vscode";
 import { shouldDeduplicateToolResult } from "../agent/tools";
 import { resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { ChatContext, ChatHistory } from "../common/context-chat";
-import { checkPredictFitsContextLength } from "../common/models";
-import { populateMsgTokens } from "../common/tokenizer";
 import { buildInstructionOptions, ToolCall } from "../common/types-llm";
 import { userConfig } from "../config";
 import { logMsg } from "../logging";
 import { AgentRunner } from "./agent-runner";
+import { recomputeContextState, trimMessagesForContext } from "./context-state";
 import { handleContextAddFile, handleContextSearch } from "./handlers/context-handlers";
 import { SessionHandlers } from "./handlers/session-handlers";
 import { handleSummarizeRequest } from "./handlers/summary-handlers";
@@ -103,7 +102,7 @@ export class ChatPanel {
             sessions: mapSessionsToSummaries(this.sessionManager.sessions),
             activeSessionId: this.sessionManager.activeSessionId,
             history: sanitizeMessages(messages),
-            contextUsed: activeSession?.messages.sumTokens() ?? 0,
+            contextUsed: activeSession?.messages.sumTokensFrom(activeSession.contextStartIndex) ?? 0,
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
             config: createConfigSnapshot(userConfig),
@@ -135,12 +134,14 @@ export class ChatPanel {
     /**
      * Handles deleting a turn from a session's message history.
      */
-    private handleDeleteMessages(msg: { turnStart: number; turnEnd: number; sessionId: string }) {
+    private async handleDeleteMessages(msg: { turnStart: number; turnEnd: number; sessionId: string }) {
         const { turnStart, turnEnd, sessionId } = msg;
         const session = this.sessionManager.sessions.find((s) => s.id === sessionId)!;
         const approxTokensFreed = session.messages.sumTokensInRange(turnStart, turnEnd);
+        session.messages.removeRange(turnStart, turnEnd);
+        const { contextStartIndex } = await recomputeContextState(session.messages);
         this.sessionManager.updateSession(session, (s) => {
-            s.messages.removeRange(turnStart, turnEnd);
+            s.contextStartIndex = contextStartIndex;
             if (!s.customTitle) {
                 s.title = SessionManager.generateSessionTitle(s.messages.getMessages());
             }
@@ -223,9 +224,10 @@ export class ChatPanel {
                 });
             }
         }
+        const activeAfterCancel = this.sessionManager.getActiveSession();
         webview.postMessage({
             type: "chat-complete",
-            contextUsed: this.sessionManager.getActiveSession()?.messages.sumTokens() ?? 0,
+            contextUsed: activeAfterCancel?.messages.sumTokensFrom(activeAfterCancel.contextStartIndex) ?? 0,
         });
     }
 
@@ -250,10 +252,12 @@ export class ChatPanel {
         const options = buildInstructionOptions();
 
         // Trim old turns if context limit is exceeded
+        const previousContextStartIndex = session.contextStartIndex || 0;
         const { trimmedMessages, turnsRemoved, tokensFreed, messagesRemoved } = await trimMessagesForContext(
             messages,
             options.num_predict,
             userConfig.apiTokenContextLenInstruct,
+            previousContextStartIndex,
         );
 
         // Persist and notify webview of current context boundary
@@ -347,69 +351,17 @@ export class ChatPanel {
             },
         });
 
-        // Tokenize any new messages (assistant + tool) that don't have msgTokens yet
-        await populateMsgTokens(session.messages.getMessages());
+        const { contextStartIndex: completedContextStartIndex, contextUsed } = await recomputeContextState(session.messages);
+        this.sessionManager.updateSession(session, (s) => {
+            s.contextStartIndex = completedContextStartIndex;
+        });
         this.sessionManager.saveSessions();
 
         // Notify webview that chat is complete
-        webview.postMessage({ type: "chat-complete", contextUsed: session.messages.sumTokens() });
+        webview.postMessage({ type: "chat-complete", contextUsed });
 
         // Update sessions list after response completes
         this.sessionManager.sendSessionsUpdate();
     }
 
-}
-
-/**
- * Trims user+assistant message pairs from the beginning of the conversation
- * until the predicted response fits within the remaining context window.
- * Uses {@link checkPredictFitsContextLength} to account for num_predict and overhead buffers.
- * Always keeps at least the last message pair (the new user message + empty assistant).
- *
- * @param messages - The full message array.
- * @param numPredict - The number of tokens reserved for the model response.
- * @param contextMax - The maximum context length in tokens.
- * @returns The trimmed messages and info about what was removed.
- */
-async function trimMessagesForContext(
-    messages: ChatHistory[],
-    numPredict: number,
-    contextMax: number,
-): Promise<{ trimmedMessages: ChatHistory[]; turnsRemoved: number; tokensFreed: number; messagesRemoved: number }> {
-    await populateMsgTokens(messages);
-    const tokenCounts = messages.map((msg) => msg.customKeys!.msgTokens!);
-    let totalTokens = tokenCounts.reduce((sum, count) => sum + count, 0);
-
-    if (checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
-        return { trimmedMessages: messages, turnsRemoved: 0, tokensFreed: 0, messagesRemoved: 0 };
-    }
-
-    const ctx = new ChatContext();
-    ctx.setMessages(messages);
-
-    let turnsRemoved = 0;
-    let tokensFreed = 0;
-    let startIndex = 0;
-
-    // Remove full turns from the beginning, keeping at least the last turn.
-    while (!checkPredictFitsContextLength(numPredict, totalTokens, contextMax)) {
-        const turnEnd = ctx.getTurnEnd(startIndex);
-        // Keep at least the last turn
-        if (turnEnd >= messages.length) {
-            break;
-        }
-        for (let i = startIndex; i < turnEnd; i++) {
-            totalTokens -= tokenCounts[i];
-            tokensFreed += tokenCounts[i];
-        }
-        startIndex = turnEnd;
-        turnsRemoved++;
-    }
-
-    return {
-        trimmedMessages: messages.slice(startIndex),
-        turnsRemoved,
-        tokensFreed,
-        messagesRemoved: startIndex,
-    };
 }

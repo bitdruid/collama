@@ -3,12 +3,15 @@ import { customElement, property, query, state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import { defaultChatConfig, type ChatConfig, type ChatSession, type ToolConfirmRequest } from "../../types";
+import "../chat-modal/acquire-modal/acquire-modal";
 import "../chat-modal/settings-modal/settings-modal";
 import "../chat-modal/tool-confirm-modal/tool-confirm-modal";
+import "../chat-notification/context-notification/context-notification";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAutoAccept,
+    onAcquireAutoSummaryAccept,
     onCancel,
     onClearChat,
     onContextAddFile,
@@ -63,11 +66,15 @@ export class ChatContainer extends LitElement {
     @state() messages: ChatHistory[] = [];
     @state() showScrollButton: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
+    @state() showAcquireModal = false;
+    @state() acquireModalTitle = "";
+    @state() acquireModalDescription = "";
     @state() showErrorModal = false;
     @state() errorModalContent = "";
     @state() showSettingsModal = false;
     @state() snakeLoadingSpeed = 1800;
     @state() snakeEyecandyMode = false;
+    @state() flatDesign = false;
 
     // Reference to store's ChatContext (single source of truth)
     // Public so handlers can access it
@@ -76,6 +83,9 @@ export class ChatContainer extends LitElement {
     private _inputResizeObserver: ResizeObserver | null = null;
     private _lastInputHeight = 0;
     private _messageHandler: ((e: MessageEvent) => void) | null = null;
+    private _wasContextAtAutoSummaryThreshold = false;
+    private _autoSummaryInProgress = false;
+    private _autoSummaryWaitingForContextUsage = false;
 
     @query("collama-chatinput")
     private chatInput!: HTMLElement;
@@ -100,6 +110,7 @@ export class ChatContainer extends LitElement {
     private handleConvertToGhost = () => onConvertToGhost();
     private handleClearChat = () => onClearChat(this);
     private handleSummarizeConversation = () => onSummarizeConversation(this);
+    private handleAcquireAutoSummaryAccept = () => onAcquireAutoSummaryAccept(this);
     private handleContextCleared = (e: CustomEvent) => onContextCleared(this, e);
     private handleToolConfirmAccept = (e: CustomEvent) => onToolConfirmAccept(this, e);
     private handleToolConfirmAcceptAll = (e: CustomEvent) => onToolConfirmAcceptAll(this, e);
@@ -133,6 +144,11 @@ export class ChatContainer extends LitElement {
         this.snakeEyecandyMode = Boolean(e.detail?.value);
         const state = window.vscode.getState?.() || {};
         window.vscode.setState?.({ ...state, snakeEyecandyMode: this.snakeEyecandyMode });
+    };
+    private handleFlatDesignUpdate = (e: CustomEvent) => {
+        this.flatDesign = Boolean(e.detail?.value);
+        const state = window.vscode.getState?.() || {};
+        window.vscode.setState?.({ ...state, flatDesign: this.flatDesign });
     };
 
     /** Creates a fresh array snapshot from store's ChatContext to trigger a Lit re-render. */
@@ -175,6 +191,9 @@ export class ChatContainer extends LitElement {
         }
         if (typeof state.snakeEyecandyMode === "boolean") {
             this.snakeEyecandyMode = state.snakeEyecandyMode;
+        }
+        if (typeof state.flatDesign === "boolean") {
+            this.flatDesign = state.flatDesign;
         }
         // Get ChatContext reference from store (not a copy)
         // Note: May be undefined initially until backend sends init message
@@ -234,6 +253,90 @@ export class ChatContainer extends LitElement {
         ChatSessionStore.instance.removeEventListener("change", this._onStoreChange);
     }
 
+    updated(changed: Map<string, unknown>) {
+        super.updated(changed);
+        if (changed.has("activeSessionId")) {
+            this._wasContextAtAutoSummaryThreshold = false;
+            this.showAcquireModal = false;
+        }
+        if (
+            changed.has("contextUsed") ||
+            changed.has("contextMax") ||
+            changed.has("isLoading") ||
+            changed.has("activeSessionId")
+        ) {
+            this._autoSummarizeAtContextThreshold();
+        }
+        if (changed.has("flatDesign")) {
+            this.style.setProperty("--theme-flat", this.flatDesign ? "1" : "0");
+        }
+    }
+
+    private _getContextUsageRatio(): number {
+        if (this.contextMax <= 0) {
+            return 0;
+        }
+        return this.contextUsed / this.contextMax;
+    }
+
+    private _autoSummarizeAtContextThreshold() {
+        if (!this._shouldShowAutoSummaryConfirm()) {
+            this._wasContextAtAutoSummaryThreshold = false;
+            return;
+        }
+
+        if (this._wasContextAtAutoSummaryThreshold || this.isLoading || this.showAcquireModal) {
+            return;
+        }
+
+        this._wasContextAtAutoSummaryThreshold = true;
+        this._showAcquireModal("Auto-Summary", "Accept to summarize the conversation.");
+    }
+
+    private _showAcquireModal(title: string, description: string) {
+        this.acquireModalTitle = title;
+        this.acquireModalDescription = description;
+        this.showAcquireModal = true;
+    }
+
+    beginAutoSummary() {
+        this._autoSummaryInProgress = true;
+        this._autoSummaryWaitingForContextUsage = true;
+    }
+
+    markAutoSummaryComplete() {
+        this._autoSummaryInProgress = false;
+    }
+
+    completeAutoSummaryContextUpdate() {
+        if (!this._autoSummaryWaitingForContextUsage) {
+            return;
+        }
+
+        this._autoSummaryWaitingForContextUsage = false;
+        this._wasContextAtAutoSummaryThreshold = this._shouldShowAutoSummaryConfirm();
+        if (this._wasContextAtAutoSummaryThreshold) {
+            this._showAcquireModal("Auto-Summary", "Accept to summarize the conversation.");
+        }
+    }
+
+    reopenAutoSummaryOnError() {
+        if (!this._autoSummaryInProgress) {
+            return;
+        }
+        this._autoSummaryInProgress = false;
+        this._autoSummaryWaitingForContextUsage = false;
+        this._showAcquireModal("Auto-Summary", "Accept to summarize the conversation.");
+    }
+
+    private _shouldShowContextNotification(): boolean {
+        return this._getContextUsageRatio() >= 0.85;
+    }
+
+    private _shouldShowAutoSummaryConfirm(): boolean {
+        return this._getContextUsageRatio() >= 0.95;
+    }
+
     /**
      * Renders the main chat interface layout.
      *
@@ -241,6 +344,10 @@ export class ChatContainer extends LitElement {
      * the input area, and the loading indicator.
      */
     render() {
+        const hasOutOfContextMessages = this.contextStartIndex > 0;
+        const showContextNotification = hasOutOfContextMessages || this._shouldShowContextNotification();
+        const contextNotificationKind = hasOutOfContextMessages ? "out-of-context" : "threshold";
+
         return html`
             <collama-chatsessions
                 .sessions=${this.sessions}
@@ -267,6 +374,14 @@ export class ChatContainer extends LitElement {
                         @summarize-turn=${this.handleSummarizeTurn}
                         @near-bottom-changed=${this.handleNearBottomChanged}
                     ></collama-chatoutput>
+                    ${showContextNotification
+                        ? html`<collama-context-notification
+                              autoShow
+                              .kind=${contextNotificationKind}
+                              .contextUsed=${this.contextUsed}
+                              .contextMax=${this.contextMax}
+                          ></collama-context-notification>`
+                        : ""}
                     <collama-scroll-down
                         .visible=${this.showScrollButton}
                         @scroll-down=${this.handleScrollDown}
@@ -288,19 +403,31 @@ export class ChatContainer extends LitElement {
                           @tool-confirm-cancel=${this.handleToolConfirmCancel}
                       ></collama-tool-confirm-modal>`
                     : ""}
+                ${this.showAcquireModal
+                    ? html`<collama-acquire-modal
+                          autoShow
+                          .title=${this.acquireModalTitle}
+                          .description=${this.acquireModalDescription}
+                          @acquire-accept=${this.handleAcquireAutoSummaryAccept}
+                      ></collama-acquire-modal>`
+                    : ""}
                 ${this.showSettingsModal
                     ? html`<collama-settings-modal
                           autoShow
                           .config=${this.config}
                           .snakeLoadingSpeed=${this.snakeLoadingSpeed}
                           .snakeEyecandyMode=${this.snakeEyecandyMode}
+                          .flatDesign=${this.flatDesign}
                           @overlay-close=${this.handleSettingsModalClose}
                           @settings-update=${this.handleSettingsUpdate}
                           @snake-speed-update=${this.handleSnakeSpeedUpdate}
                           @snake-eyecandy-update=${this.handleSnakeEyecandyUpdate}
+                          @flat-design-update=${this.handleFlatDesignUpdate}
                       ></collama-settings-modal>`
                     : ""}
                 <collama-chatinput
+                    ?inert=${this.showAcquireModal}
+                    aria-disabled=${this.showAcquireModal ? "true" : "false"}
                     @submit=${this.handleSubmit}
                     @cancel=${this.handleCancel}
                     @convert-to-ghost=${this.handleConvertToGhost}

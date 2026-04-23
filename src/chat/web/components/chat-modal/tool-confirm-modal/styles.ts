@@ -45,31 +45,11 @@ export const toolConfirmStyles = css`
         color: ${themeColors.cleanWhite};
     }
 
-    .btn-accept {
-        background: ${themeColors.submit};
-    }
-    .btn-accept:hover {
-        background: ${themeColors.submitHover};
-    }
-    .btn-accept:active {
-        background: ${themeColors.submitActive};
-    }
-
     .btn-accept-all {
         background: ${themeColors.context};
     }
     .btn-accept-all:hover {
         background: ${themeColors.contextHover};
-    }
-
-    .btn-cancel {
-        background: ${themeColors.cancel};
-    }
-    .btn-cancel:hover {
-        background: ${themeColors.cancelHover};
-    }
-    .btn-cancel:active {
-        background: ${themeColors.cancelActive};
     }
 
     .btn-send {

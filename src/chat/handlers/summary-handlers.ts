@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 
-import { ChatContext, ChatHistory, sumMsgTokens } from "../../common/context-chat";
+import { ChatContext, ChatHistory } from "../../common/context-chat";
 import { chatSummarize_Template } from "../../common/prompt";
 import { populateMsgTokens } from "../../common/tokenizer";
 import { AgentRunner } from "../agent-runner";
+import { recomputeContextState } from "../context-state";
 
 /**
  * Runs the agent on the given messages and returns the raw summary text.
@@ -12,17 +13,17 @@ async function summarizeText(
     agentRunner: AgentRunner,
     webview: vscode.Webview,
     sourceMessages: ChatHistory[],
-): Promise<string> {
+): Promise<string | null> {
     const prompt = [...sourceMessages, { role: "user" as const, content: chatSummarize_Template }];
     let text = "";
-    await agentRunner.run({
+    const ok = await agentRunner.run({
         webview,
         messages: new ChatContext(prompt),
         onChunk: (chunk) => {
             text += chunk;
         },
     });
-    return text;
+    return ok ? text : null;
 }
 
 /**
@@ -34,7 +35,7 @@ async function summarizeContent(
     sourceMessages: ChatHistory[],
     promptTemplate: string,
     label: string,
-): Promise<ChatHistory[]> {
+): Promise<ChatHistory[] | null> {
     if (label === "Conversation") {
         const messages = new ChatContext(sourceMessages);
         const turnSummaries: string[] = [];
@@ -49,6 +50,9 @@ async function summarizeContent(
             const turnMsgs = sourceMessages.slice(i, end);
             webview.postMessage({ type: "summary-progress", current: turnNum, total: totalTurns });
             const text = await summarizeText(agentRunner, webview, turnMsgs);
+            if (text === null) {
+                return null;
+            }
             turnSummaries.push(`# Turn ${turnNum}\n${text}`);
             turnNum++;
             i = end;
@@ -66,13 +70,16 @@ async function summarizeContent(
     const summaryPrompt = [...sourceMessages, { role: "user" as const, content: promptTemplate }];
     let summaryContent = "";
 
-    await agentRunner.run({
+    const ok = await agentRunner.run({
         webview,
         messages: new ChatContext(summaryPrompt),
         onChunk: (chunk) => {
             summaryContent += chunk;
         },
     });
+    if (!ok) {
+        return null;
+    }
 
     const fenced = `\`\`\`Summary: ${label}\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
     const result: ChatHistory[] = [
@@ -104,18 +111,31 @@ export async function handleSummarizeRequest(
     const label = isConversation ? "Conversation" : "Turn";
     const sourceMessages = session.messages.getMessages().slice(turnStart, turnEnd);
     const summarized = await summarizeContent(agentRunner, webview, sourceMessages, chatSummarize_Template, label);
+    if (summarized === null) {
+        webview.postMessage({ type: "summary-error", isConversation });
+        webview.postMessage({ type: "chat-complete", contextUsed: session.messages.sumTokensFrom(session.contextStartIndex) });
+        return;
+    }
 
     sessionManager.updateSession(session, (s) => {
         if (isConversation) {
             s.messages.setMessages(summarized);
-            s.contextStartIndex = 0;
         } else {
             s.messages.replaceRange(turnStart, turnEnd, summarized);
         }
     });
+    const { contextStartIndex, contextUsed } = await recomputeContextState(session.messages);
+    sessionManager.updateSession(session, (s) => {
+        s.contextStartIndex = contextStartIndex;
+    });
 
     const allMessages = isConversation ? summarized : session.messages.getMessages();
-    webview.postMessage({ type: "summary-complete", messages: allMessages, isConversation });
-    webview.postMessage({ type: "chat-complete", contextUsed: sumMsgTokens(allMessages) });
+    webview.postMessage({
+        type: "summary-complete",
+        messages: allMessages,
+        isConversation,
+        contextStartIndex: session.contextStartIndex,
+    });
+    webview.postMessage({ type: "chat-complete", contextUsed });
     sessionManager.sendSessionsUpdate();
 }

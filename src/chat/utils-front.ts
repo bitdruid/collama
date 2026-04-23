@@ -558,4 +558,19 @@ export const icons = {
     >
         <polyline points="20 6 9 17 4 12"></polyline>
     </svg>`,
+
+    /** Check check - used for accept all actions */
+    checkCheck: html`<svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    >
+        <path d="M18 6 7 17l-5-5"></path>
+        <path d="m22 10-7.5 7.5L13 16"></path>
+    </svg>`,
 };

@@ -25,42 +25,4 @@ export const convertGhostConfirmStyles = css`
         justify-content: center;
         gap: 8px;
     }
-
-    .confirm-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-    }
-
-    .cancel-btn {
-        background-color: ${themeColors.cancel};
-        color: ${themeColors.cleanWhite};
-    }
-
-    .cancel-btn:hover {
-        background-color: ${themeColors.cancelHover};
-    }
-
-    .cancel-btn:active {
-        background-color: ${themeColors.cancelActive};
-    }
-
-    .ok-btn {
-        background-color: ${themeColors.ghostChat};
-        color: ${themeColors.cleanWhite};
-    }
-
-    .ok-btn:hover {
-        background-color: ${themeColors.ghostChatHover};
-    }
-
-    .ok-btn:active {
-        background-color: ${themeColors.ghostChatActive};
-    }
 `;
