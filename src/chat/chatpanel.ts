@@ -4,7 +4,7 @@ import { shouldDeduplicateToolResult } from "../agent/tools";
 import { resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { buildInstructionOptions, ToolCall } from "../common/types-llm";
-import { userConfig } from "../config";
+import { getUserConfigSnapshot, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { AgentRunner } from "./agent-runner";
 import { recomputeContextState, trimMessagesForContext } from "./context-state";
@@ -12,7 +12,7 @@ import { handleContextAddFile, handleContextSearch } from "./handlers/context-ha
 import { SessionHandlers } from "./handlers/session-handlers";
 import { handleSummarizeRequest } from "./handlers/summary-handlers";
 import { SessionManager } from "./session-manager";
-import { createConfigSnapshot, mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils-back";
+import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils-back";
 import { StartPage } from "./web/components/chat-start";
 
 /**
@@ -105,7 +105,7 @@ export class ChatPanel {
             contextUsed: activeSession?.messages.sumTokensFrom(activeSession.contextStartIndex) ?? 0,
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
-            config: createConfigSnapshot(userConfig),
+            config: getUserConfigSnapshot(),
         });
     }
 

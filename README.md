@@ -53,6 +53,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Export chat history to JSON for backup and sharing
 - Auto-accept all toggle for edits and creates to streamline workflow
 - Summarize individual turns or entire conversations to reduce context usage
+- **AGENTS.md support** — define custom agent rules by placing an `AGENTS.md` file in your project root
 
 **AI Agent with Tool Calling**
 - File system tools: read, grep, glob, create, write, delete files

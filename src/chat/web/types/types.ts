@@ -54,6 +54,7 @@ export interface ChatConfig {
     apiTokenContextLenInstruct: number;
     apiTokenPredictCompletion: number;
     apiTokenPredictInstruct: number;
+    agentsMdActive: boolean;
 }
 
 export const defaultChatConfig: ChatConfig = {
@@ -73,4 +74,5 @@ export const defaultChatConfig: ChatConfig = {
     apiTokenContextLenInstruct: 4096,
     apiTokenPredictCompletion: 400,
     apiTokenPredictInstruct: 4096,
+    agentsMdActive: false,
 };

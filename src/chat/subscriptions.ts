@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 
 import { EditorContext } from "../common/context-editor";
+import { openAgentsMdDraft } from "../common/agents-md";
 import { logMsg } from "../logging";
 import { ChatPanel } from "./chatpanel";
 import { receiveCurrentContext } from "./handlers/context-handlers";
@@ -53,6 +54,12 @@ export function registerOpenFileCommand(extContext: vscode.ExtensionContext) {
             logMsg(`collama.openFile: failed to open ${filePath}: ${(err as Error).message}`);
         }
     });
+    extContext.subscriptions.push(disposable);
+}
+
+/** Registers the command which opens an unsaved workspace-root AGENTS.md draft. */
+export function registerCreateAgentsMdDraftCommand(extContext: vscode.ExtensionContext) {
+    const disposable = vscode.commands.registerCommand("collama.createAgentsMdDraft", openAgentsMdDraft);
     extContext.subscriptions.push(disposable);
 }
 

@@ -15,15 +15,10 @@ export function getWebview(): vscode.Webview | null {
     return _webview;
 }
 
-/** Creates a plain snapshot suitable for posting to the webview. */
-export function createConfigSnapshot<T extends object>(config: T): T {
-    return { ...config };
-}
-
 /** Broadcasts the current config to the webview. */
-export function broadcastConfig<T extends object>(config: T): void {
+export function postConfigToWebview<T extends object>(config: T): void {
     if (_webview) {
-        _webview.postMessage({ type: "config-update", config: createConfigSnapshot(config) });
+        _webview.postMessage({ type: "config-update", config });
     }
 }
 

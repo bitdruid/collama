@@ -96,8 +96,8 @@ export const themeColors = {
     usageDanger: unsafeCSS("#f14c4c"),
 
     /* Shadow Colors */
-    shadowDark: unsafeCSS("rgba(0, 0, 0, 0.8)"),
-    shadowLight: unsafeCSS("rgba(0, 0, 0, 0.3)"),
+    shadowDark: unsafeCSS("rgba(34, 119, 168, 0.8)"),
+    shadowLight: unsafeCSS("rgba(34, 119, 168, 0.3)"),
 
     /* User interactive element Colors */
     placeholder: contrast(defaultColor, 20),

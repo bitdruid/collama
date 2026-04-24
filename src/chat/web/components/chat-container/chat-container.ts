@@ -10,8 +10,8 @@ import "../chat-notification/context-notification/context-notification";
 import { ChatSessionStore } from "../chat-session/chat-session-store";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
-    onAutoAccept,
     onAcquireAutoSummaryAccept,
+    onAutoAccept,
     onCancel,
     onClearChat,
     onContextAddFile,
@@ -75,6 +75,7 @@ export class ChatContainer extends LitElement {
     @state() snakeLoadingSpeed = 1800;
     @state() snakeEyecandyMode = false;
     @state() flatDesign = false;
+    @state() agentsMdActive = false;
 
     // Reference to store's ChatContext (single source of truth)
     // Public so handlers can access it
@@ -418,6 +419,7 @@ export class ChatContainer extends LitElement {
                           .snakeLoadingSpeed=${this.snakeLoadingSpeed}
                           .snakeEyecandyMode=${this.snakeEyecandyMode}
                           .flatDesign=${this.flatDesign}
+                          .agentsMdActive=${this.agentsMdActive}
                           @overlay-close=${this.handleSettingsModalClose}
                           @settings-update=${this.handleSettingsUpdate}
                           @snake-speed-update=${this.handleSnakeSpeedUpdate}

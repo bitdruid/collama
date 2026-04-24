@@ -1,4 +1,5 @@
 import { userConfig } from "../config";
+import { getAgentsMdContent } from "./agents-md";
 
 /**
  * Parameters for constructing a prompt string.
@@ -157,6 +158,12 @@ export function getAgentTemplate(): string {
         "",
         `OUTPUT LIMIT: Keep your response under approximately ${tokenLimit} tokens (~${Math.floor(tokenLimit * 4)} characters).`,
     );
+
+    // Append AGENTS.md content if present
+    const agentsMd = getAgentsMdContent();
+    if (agentsMd) {
+        lines.push("", "===== PROJECT AGENT RULES (AGENTS.md) =====", agentsMd);
+    }
 
     return lines.join("\n");
 }

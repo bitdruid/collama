@@ -1,8 +1,14 @@
 import * as vscode from "vscode";
 
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
-import { registerChatProvider, registerOpenFileCommand, registerSendToChatCommand } from "./chat/subscriptions";
+import {
+    registerChatProvider,
+    registerCreateAgentsMdDraftCommand,
+    registerOpenFileCommand,
+    registerSendToChatCommand,
+} from "./chat/subscriptions";
 import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
+import { loadAgentsMdContent, registerAgentsMdWatcher } from "./common/agents-md";
 import { initTokenizer } from "./common/tokenizer";
 import { registerConfigAutoUpdateCommand, updateVSConfig } from "./config";
 import {
@@ -32,6 +38,9 @@ export async function activate(extContext: vscode.ExtensionContext) {
     await updateVSConfig();
     registerConfigAutoUpdateCommand(extContext);
 
+    await loadAgentsMdContent();
+    registerAgentsMdWatcher(extContext);
+
     setStatusbar(extContext);
 
     registerWriteDocstringsCommand(extContext);
@@ -45,6 +54,7 @@ export async function activate(extContext: vscode.ExtensionContext) {
     registerChatProvider(extContext);
     registerSendToChatCommand(extContext);
     registerOpenFileCommand(extContext);
+    registerCreateAgentsMdDraftCommand(extContext);
 
     registerRequestCommitMessageCommand(extContext);
 

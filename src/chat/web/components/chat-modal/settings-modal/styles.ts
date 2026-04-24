@@ -137,4 +137,36 @@ export const settingsModalStyles = css`
     .slider-labels span:nth-child(3) {
         text-align: right;
     }
+
+    .info-row {
+        font-size: ${themeFonts.medium};
+    }
+
+    .agents-md-active,
+    .agents-md-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .agents-md-active {
+        color: ${themeColors.submit};
+    }
+
+    .agents-md-create {
+        color: ${themeColors.placeholder};
+    }
+
+    .agents-md-active:hover,
+    .agents-md-create:hover {
+        color: ${themeColors.uiFont};
+    }
+
+    .agents-md-check {
+        display: inline-flex;
+        align-items: center;
+    }
+
 `;

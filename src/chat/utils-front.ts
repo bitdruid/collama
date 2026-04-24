@@ -96,6 +96,11 @@ export function buildOpenFileCommandUri(filePath: string, lineAnchor?: string): 
     return `command:collama.openFile?${encodeURIComponent(JSON.stringify(args))}`;
 }
 
+/** Builds a command URI for opening an unsaved workspace-root AGENTS.md draft. */
+export function buildCreateAgentsMdDraftCommandUri(): string {
+    return "command:collama.createAgentsMdDraft";
+}
+
 /** Escape a string for safe use inside HTML attributes. */
 export function escapeAttr(s: string): string {
     return s

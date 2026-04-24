@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 
+import { postConfigToWebview } from "./chat/utils-back";
+import { isAgentsMdActive } from "./common/agents-md";
 import { requestAnthropic, requestOllama, requestOpenAI } from "./common/requests";
-import { broadcastConfig } from "./chat/utils-back";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 
@@ -60,6 +61,14 @@ export const userConfig = {
     apiTokenPredictCompletion: 400,
     apiTokenPredictInstruct: 4096,
 };
+
+export function getUserConfigSnapshot() {
+    return { ...userConfig, agentsMdActive: isAgentsMdActive() };
+}
+
+export function broadcastUserConfig(): void {
+    postConfigToWebview(getUserConfigSnapshot());
+}
 
 /**
  * System configuration values that are not exposed to the user.
@@ -145,7 +154,7 @@ export async function updateVSConfig() {
 
     if (Object.keys(changed).length > 0) {
         logMsg(`🔄 Config changed: ${JSON.stringify(changed)}`);
-        broadcastConfig(userConfig);
+        broadcastUserConfig();
     }
 
     // Apply TLS settings before any network calls

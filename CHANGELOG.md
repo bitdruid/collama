@@ -1,6 +1,14 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.6.9] - 2026-04-23
+
+### Added
+- AGENTS.md support — place an `AGENTS.md` file in your project root to define custom agent rules and behavior guidelines
+
+### Changed
+- Settings modal displays AGENTS.md status (active/not found) for transparency
+
 ## [1.6.8] - 2026-04-23
 
 ### Added

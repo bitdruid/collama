@@ -70,6 +70,9 @@ function applyConfig(host: ChatContainer, msg: any) {
         ...host.config,
         ...(msg.config || legacyConfigFromMessage(msg)),
     };
+    if (msg.config?.agentsMdActive !== undefined) {
+        host.agentsMdActive = msg.config.agentsMdActive;
+    }
 }
 
 /** Initializes the component with session history, context usage, and session list from the host. */

@@ -1,11 +1,12 @@
 import { html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../../utils-front";
+import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri, icons } from "../../../../utils-front";
 import { defaultChatConfig, type ChatConfig } from "../../../types";
 import { BaseModal } from "../../template-components/modal/base-modal";
 import { settingsModalStyles } from "./styles";
 
 const DEFAULT_SNAKE_LOADING_SPEED = 1800;
+const AGENTS_MD_PATH = "AGENTS.md";
 const VERBOSITY_MODES = ["compact", "medium", "detailed"] as const;
 type VerbosityMode = (typeof VERBOSITY_MODES)[number];
 
@@ -17,6 +18,7 @@ export class SettingsModal extends BaseModal {
     @property({ type: Number }) snakeLoadingSpeed = DEFAULT_SNAKE_LOADING_SPEED;
     @property({ type: Boolean }) snakeEyecandyMode = false;
     @property({ type: Boolean }) flatDesign = false;
+    @property({ type: Boolean }) agentsMdActive = false;
 
     constructor() {
         super();
@@ -115,6 +117,10 @@ export class SettingsModal extends BaseModal {
                     />
                 </div>
             </section>
+            <section class="settings-section">
+                <h4>Project</h4>
+                ${this.renderAgentsMdIndicator()}
+            </section>
         `;
     }
 
@@ -142,6 +148,35 @@ export class SettingsModal extends BaseModal {
                     <span>Medium</span>
                     <span>Detailed</span>
                 </div>
+            </div>
+        `;
+    }
+
+    private renderAgentsMdIndicator() {
+        if (this.agentsMdActive) {
+            return html`
+                <div class="setting-row info-row">
+                    <span class="setting-title">AGENTS.md</span>
+                    <a
+                        class="agents-md-active"
+                        href="${buildOpenFileCommandUri(AGENTS_MD_PATH)}"
+                        title="${AGENTS_MD_PATH}"
+                    >
+                        <span class="agents-md-check">${icons.check}</span>
+                        active
+                    </a>
+                </div>
+            `;
+        }
+        return html`
+            <div class="setting-row info-row">
+                <span class="setting-title">AGENTS.md</span>
+                <a
+                    class="agents-md-create"
+                    href="${buildCreateAgentsMdDraftCommandUri()}"
+                    title="Create AGENTS.md draft"
+                    >create</a
+                >
             </div>
         `;
     }
