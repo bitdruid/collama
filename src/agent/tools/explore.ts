@@ -4,17 +4,20 @@ import path from "path";
 import { logAgent, logMsg } from "../../logging";
 import { isWithinRoot, secureWorkspace } from "../tools";
 
-/**
- * Returns true if the pattern contains path traversal segments (`..`).
- */
+/** Returns true if the pattern contains '..' path segments. */
 function hasPathTraversal(pattern: string): boolean {
     return pattern.split(/[/\\]/).includes("..");
 }
 
 /**
- * Executes the read-tool operation.
- * Reads the content of a file from the workspace. Supports reading specific line ranges
- * via startLine and endLine arguments (1-based indexing).
+ * Reads a workspace file and returns selected lines with 1-based line numbers.
+ * Returns a JSON error if the file doesn't exist, is outside workspace bounds,
+ * or is too large (>~10k tokens).
+ *
+ * @param args.filePath - File path relative to workspace root
+ * @param args.startLine - Optional 1-based starting line (inclusive)
+ * @param args.endLine - Optional 1-based ending line (inclusive)
+ * @returns Formatted string with numbered lines, or JSON error string
  */
 export async function read_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
     logMsg(
@@ -31,36 +34,37 @@ export async function read_exec(args: { filePath: string; startLine?: number; en
     }
 
     const content = fs.readFileSync(ws.fullPath, "utf-8");
-
-    if (args.startLine === undefined && args.endLine === undefined) {
-        return content;
-    }
-
     const lines = content.split("\n");
     const start = (args.startLine ?? 1) - 1;
     const end = args.endLine ?? lines.length;
+    const slice = lines.slice(start, end);
 
-    return lines.slice(start, end).join("\n");
+    const numbered = slice.map((line, i) => `${start + i + 1}\t${line}`).join("\n");
+
+    if (numbered.length > 10_000 * 4) {
+        return JSON.stringify({
+            error: `Read exceeds ~10k tokens. File has ${lines.length} lines total. Use startLine/endLine to read a smaller range.`,
+            lineCount: lines.length,
+        });
+    }
+
+    return `${numbered}\n[lines ${start + 1}-${end} of ${lines.length}]`;
 }
-export const read_prompt = "read tool: Read file contents. Prefer reading files over grep.";
+
 export const read_def = {
     type: "function" as const,
     function: {
         name: "read",
         description:
-            'Read the contents of a file in the workspace. Optionally provide startLine and endLine to read a range. Read in 100-line chunks (1-100, 101-200, 201-300, etc.). Use separate numeric fields like {"startLine":1,"endLine":100}. If no range is provided, reads the entire file.',
+            "Read file contents with line numbers. If no range given, reads the entire file. " +
+            "If output exceeds ~10k tokens, returns an error with total lineCount — use that to pick a smaller startLine/endLine range. " +
+            "For large files read in chunks e.g. 1-200, 201-400.",
         parameters: {
             type: "object",
             properties: {
                 filePath: { type: "string", description: "Path to the file" },
-                startLine: {
-                    type: "number",
-                    description: "Starting line (optional, 1-based). Prefer chunk boundaries: 1, 101, 201, …",
-                },
-                endLine: {
-                    type: "number",
-                    description: "Ending line (optional, 1-based). Prefer chunk boundaries: 100, 200, 300, …",
-                },
+                startLine: { type: "number", description: "Starting line (1-based, inclusive)" },
+                endLine: { type: "number", description: "Ending line (1-based, inclusive)" },
             },
             required: ["filePath"],
         },
@@ -68,13 +72,12 @@ export const read_def = {
 };
 
 /**
- * Executes the grep-tool operation.
- * Searches file contents for a regex pattern and returns matching lines.
+ * Searches file contents for a regex pattern across files matched by an optional glob.
+ * Returns results in `file:line:content` format, or "No matches found." if no matches exist.
  *
- * @param args - The arguments for the operation.
- * @param args.pattern - Regex pattern to search for.
- * @param args.glob - Optional glob pattern to restrict search scope.
- * @returns A JSON string containing the search matches, or an error object.
+ * @param args.pattern - Regex pattern to search for
+ * @param args.glob - Optional glob pattern to restrict search scope
+ * @returns Matching lines in `file:line:content` format, or JSON error string on failure
  */
 export async function grep_exec(args: { pattern: string; glob?: string }): Promise<string> {
     logMsg(`Agent - use grep-tool pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
@@ -150,13 +153,11 @@ export const grep_def = {
 };
 
 /**
- * Executes the glob operation.
+ * Finds files and folders matching a glob pattern within the workspace.
+ * Simple filenames are normalized for recursive matching.
  *
- * @param args - The arguments for the operation.
- * @param args.pattern - The glob pattern to search for.
- * @returns A JSON string containing the matched paths, the original pattern,
- *          and the total count. If an error occurs (e.g., invalid pattern or
- *          workspace error), the JSON string will contain an `error` property.
+ * @param args.pattern - Glob pattern (e.g. "*.ts", "src/.*.js", "file.ts")
+ * @returns JSON string with matches (sorted array), pattern, and total count
  */
 export async function glob_exec(args: { pattern: string }): Promise<string> {
     logMsg(`Agent - use glob-tool pattern=${args.pattern}`);

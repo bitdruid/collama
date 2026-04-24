@@ -100,13 +100,12 @@ type VerbosityMode = "compact" | "medium" | "detailed";
 
 const VERBOSITY_PROMPTS: Record<VerbosityMode, string[]> = {
     compact: [
-        "- No filler words where possible.",
-        "- No politeness.",
-        "- No grammar if not needed. Short sentences.",
-        "- No repetition. No long explanations unless asked.",
-        "- Prefer symbols (→, =, vs, ×).",
-        "- Compress aggressively. Assume user is expert.",
-        "- Output = shortest correct answer possible.",
+        "- Respond like a smart caveman. Trim language, keep technical information.",
+        "- No filler words, no articles.",
+        "- No politeness, no grammar, short sentences.",
+        "- No grammar, short sentences.",
+        "- Use symbols (→, =, vs, ×).",
+        "- Technical information kept. Code blocks kept.",
     ],
     medium: [
         "- Be direct and concise. No preamble, no sign-off.",
@@ -151,10 +150,10 @@ export function getAgentTemplate(): string {
     }
 
     lines.push(
+        ...(VERBOSITY_PROMPTS[configuredVerbosity] ?? VERBOSITY_PROMPTS.medium),
         "- Never repeat yourself. Instead move on to the next step.",
         "- Do not re-check conditions you have already confirmed.",
         "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",
-        ...(VERBOSITY_PROMPTS[configuredVerbosity] ?? VERBOSITY_PROMPTS.medium),
         "",
         `OUTPUT LIMIT: Keep your response under approximately ${tokenLimit} tokens (~${Math.floor(tokenLimit * 4)} characters).`,
     );
