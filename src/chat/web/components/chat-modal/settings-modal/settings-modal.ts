@@ -3,9 +3,10 @@ import { customElement, property } from "lit/decorators.js";
 import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri, icons } from "../../../../utils-front";
 import { defaultChatConfig, type ChatConfig } from "../../../types";
 import { BaseModal } from "../../template-components/modal/base-modal";
+import "../../template-components/slider";
 import { settingsModalStyles } from "./styles";
 
-const DEFAULT_SNAKE_LOADING_SPEED = 1800;
+const DEFAULT_SNAKE_LOADING_SPEED = 1500;
 const AGENTS_MD_PATH = "AGENTS.md";
 const VERBOSITY_MODES = ["compact", "medium", "detailed"] as const;
 type VerbosityMode = (typeof VERBOSITY_MODES)[number];
@@ -26,9 +27,10 @@ export class SettingsModal extends BaseModal {
     }
 
     private updateBoolean(key: "agentic" | "enableEditTools" | "enableShellTool", event: Event) {
+        const value = Number((event.target as HTMLInputElement).value);
         this.dispatchEvent(
             new CustomEvent("settings-update", {
-                detail: { key, value: (event.target as HTMLInputElement).checked },
+                detail: { key, value: value === 1 },
                 bubbles: true,
                 composed: true,
             }),
@@ -59,9 +61,10 @@ export class SettingsModal extends BaseModal {
     };
 
     private updateSnakeEyecandy = (event: Event) => {
+        const value = Number((event.target as HTMLInputElement).value) === 1;
         this.dispatchEvent(
             new CustomEvent("snake-eyecandy-update", {
-                detail: { value: (event.target as HTMLInputElement).checked },
+                detail: { value },
                 bubbles: true,
                 composed: true,
             }),
@@ -69,9 +72,10 @@ export class SettingsModal extends BaseModal {
     };
 
     private updateFlatDesign = (event: Event) => {
+        const value = Number((event.target as HTMLInputElement).value) === 1;
         this.dispatchEvent(
             new CustomEvent("flat-design-update", {
-                detail: { value: (event.target as HTMLInputElement).checked },
+                detail: { value },
                 bubbles: true,
                 composed: true,
             }),
@@ -100,22 +104,16 @@ export class SettingsModal extends BaseModal {
                 <h4>Style</h4>
                 ${this.renderStyleToggle("Flat Design", this.flatDesign, this.updateFlatDesign)}
                 ${this.renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this.updateSnakeEyecandy)}
-                <div class="setting-row slider-row">
-                    <div class="slider-heading">
-                        <span class="setting-title"
-                            >Snake loading animation speed <em>(default ${DEFAULT_SNAKE_LOADING_SPEED})</em></span
-                        >
-                        <span class="setting-value">${this.snakeLoadingSpeed} px/s</span>
-                    </div>
-                    <input
-                        type="range"
-                        min="500"
-                        max="5000"
-                        step="100"
-                        .value=${String(this.snakeLoadingSpeed)}
-                        @input=${this.updateSnakeSpeed}
-                    />
-                </div>
+                <collama-slider
+                    label="Snake loading animation speed (default ${DEFAULT_SNAKE_LOADING_SPEED})"
+                    value-label="${this.snakeLoadingSpeed} px/s"
+                    min="500"
+                    max="5000"
+                    step="100"
+                    .value=${this.snakeLoadingSpeed}
+                    marks="4"
+                    @input=${this.updateSnakeSpeed}
+                ></collama-slider>
             </section>
             <section class="settings-section">
                 <h4>Project</h4>
@@ -129,26 +127,16 @@ export class SettingsModal extends BaseModal {
         const index = VERBOSITY_MODES.indexOf(value as VerbosityMode);
 
         return html`
-            <div class="setting-row slider-row">
-                <div class="slider-heading">
-                    <span class="setting-title">Verbosity</span>
-                    <span class="setting-value">${value}</span>
-                </div>
-                <input
-                    type="range"
-                    min="0"
-                    max="2"
-                    step="1"
-                    .value=${String(index < 0 ? 1 : index)}
-                    @input=${this.updateVerbosityMode}
-                    aria-label="Verbosity"
-                />
-                <div class="slider-labels" aria-hidden="true">
-                    <span>Compact</span>
-                    <span>Medium</span>
-                    <span>Detailed</span>
-                </div>
-            </div>
+            <collama-slider
+                label="Agent Verbosity"
+                value-label=${value}
+                min="0"
+                max="2"
+                step="1"
+                .value=${index < 0 ? 1 : index}
+                marks="3"
+                @input=${this.updateVerbosityMode}
+            ></collama-slider>
         `;
     }
 
@@ -188,31 +176,33 @@ export class SettingsModal extends BaseModal {
         showWarning = false,
     ) {
         return html`
-            <label class="setting-row toggle">
-                <span class="setting-text">
-                    ${showWarning ? html`<span class="setting-danger">${icons.alertTriangle}</span>` : ""}
-                    <span class="setting-title">${label}</span>
-                </span>
-                <input
-                    class="switch-input"
-                    type="checkbox"
-                    .checked=${checked}
-                    @change=${(e: Event) => this.updateBoolean(key, e)}
-                />
-                <span class="switch" aria-hidden="true"></span>
-            </label>
+            <collama-slider
+                label=${label}
+                value-label=${checked ? "On" : "Off"}
+                min="0"
+                max="1"
+                step="1"
+                .value=${checked ? 1 : 0}
+                marks="2"
+                @input=${(event: Event) => this.updateBoolean(key, event)}
+            >
+                ${showWarning ? html`<span slot="prefix">${icons.alertTriangle}</span>` : ""}
+            </collama-slider>
         `;
     }
 
     private renderStyleToggle(label: string, checked: boolean, onChange: (event: Event) => void) {
         return html`
-            <label class="setting-row toggle">
-                <span class="setting-text">
-                    <span class="setting-title">${label}</span>
-                </span>
-                <input class="switch-input" type="checkbox" .checked=${checked} @change=${onChange} />
-                <span class="switch" aria-hidden="true"></span>
-            </label>
+            <collama-slider
+                label=${label}
+                value-label=${checked ? "On" : "Off"}
+                min="0"
+                max="1"
+                step="1"
+                .value=${checked ? 1 : 0}
+                marks="2"
+                @input=${onChange}
+            ></collama-slider>
         `;
     }
 }

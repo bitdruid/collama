@@ -72,7 +72,7 @@ export class ChatContainer extends LitElement {
     @state() showErrorModal = false;
     @state() errorModalContent = "";
     @state() showSettingsModal = false;
-    @state() snakeLoadingSpeed = 1800;
+    @state() snakeLoadingSpeed = 1500;
     @state() snakeEyecandyMode = false;
     @state() flatDesign = false;
     @state() agentsMdActive = false;

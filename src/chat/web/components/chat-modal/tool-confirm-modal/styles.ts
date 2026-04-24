@@ -65,7 +65,7 @@ export const toolConfirmStyles = css`
         background: ${themeColors.cancelHover};
     }
     .btn-send:active {
-        background: ${themeColors.cancelActive};
+        background: ${themeColors.cancel};
     }
 
     .confirm-filepath {

@@ -74,7 +74,7 @@ export const headerStyles = css`
     }
 
     .new-chat-button:active {
-        background-color: ${themeColors.submitActive};
+        background-color: ${themeColors.submit};
     }
 
     .new-ghost-chat-button {
@@ -96,6 +96,6 @@ export const headerStyles = css`
     }
 
     .new-ghost-chat-button:active {
-        background-color: ${themeColors.ghostChatActive};
+        background-color: ${themeColors.ghostChat};
     }
 `;

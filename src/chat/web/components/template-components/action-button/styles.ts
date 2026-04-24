@@ -41,7 +41,7 @@ export const actionButtonStyles = css`
     }
 
     .accept:active:not(:disabled) {
-        background: ${themeColors.submitActive};
+        background: ${themeColors.submit};
     }
 
     .cancel {
@@ -53,6 +53,6 @@ export const actionButtonStyles = css`
     }
 
     .cancel:active:not(:disabled) {
-        background: ${themeColors.cancelActive};
+        background: ${themeColors.cancel};
     }
 `;

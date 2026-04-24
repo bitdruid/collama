@@ -1,6 +1,17 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.6.10] - 2026-04-24
+
+### Added
+- Reusable `collama-slider` component with value labels, progress fill, and optional tick marks
+
+### Changed
+- Settings modal now uses compact slider controls for toggles, verbosity, and snake loading speed
+- Refactored loading pulse and shadow styles into shared theme helpers
+- Shortened displayed tool target paths to the last two path segments
+- Updated default snake loading animation speed to 1500 px/s
+
 ## [1.6.9] - 2026-04-23
 
 ### Added

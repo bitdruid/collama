@@ -1,6 +1,7 @@
 import { css } from "lit";
 import { themeColors } from "../../../styles/theme-colors";
 import { themeFonts } from "../../../styles/theme-fonts";
+import { themeStyles } from "../../../styles/theme-styles";
 
 export const baseNotificationStyles = css`
     :host {
@@ -24,7 +25,7 @@ export const baseNotificationStyles = css`
         border: 2px solid ${themeColors.uiBorder};
         border-radius: 8px;
         background: ${themeColors.uiBackground};
-        box-shadow: 0 4px 16px ${themeColors.shadowLight};
+        ${themeStyles.boxShadow}
         color: ${themeColors.uiFont};
         font-family: ${themeFonts.family}, sans-serif;
         font-size: ${themeFonts.small};

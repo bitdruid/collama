@@ -120,7 +120,7 @@ export const editStyles = css`
     }
 
     .edit-send:active {
-        background: ${themeColors.submitActive};
+        background: ${themeColors.submit};
     }
 
     .edit-cancel {
@@ -132,6 +132,6 @@ export const editStyles = css`
     }
 
     .edit-cancel:active {
-        background: ${themeColors.cancelActive};
+        background: ${themeColors.cancel};
     }
 `;

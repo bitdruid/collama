@@ -34,47 +34,38 @@ export const themeColors = {
     /* Submit Button Colors */
     submit: unsafeCSS("#2277a8"),
     submitHover: unsafeCSS("#185d86"),
-    submitActive: unsafeCSS("#0d3d52"),
 
     /* Context Button Colors */
     context: unsafeCSS("#3a9a40"),
     contextHover: unsafeCSS("#2c8232"),
-    contextActive: unsafeCSS("#1e5221"),
 
     /* Cancel Button Colors */
     cancel: unsafeCSS("#a82222"),
     cancelHover: unsafeCSS("#861818"),
-    cancelActive: unsafeCSS("#4d0d0d"),
 
     /* Compress Button Colors */
     compress: unsafeCSS("#d99839"),
     compressHover: unsafeCSS("#b98a2d"),
-    compressActive: unsafeCSS("#8f6a1f"),
 
     /* Gallery Button Colors */
     gallery: unsafeCSS("#9b59b6"),
     galleryHover: unsafeCSS("#8e44ad"),
-    galleryActive: unsafeCSS("#6c3483"),
 
     /* Auto-Accept Button Colors */
     autoAccept: unsafeCSS("#d87979"),
     autoAcceptHover: unsafeCSS("#b86565"),
-    autoAcceptActive: unsafeCSS("#ff6b6b"),
 
     /* Ghost Chat Button Colors */
     ghostChat: unsafeCSS("#7a9bb5"),
     ghostChatHover: unsafeCSS("#6388a3"),
-    ghostChatActive: unsafeCSS("#8bb8d6"),
 
     /* Clear Chat Button Colors */
     clearChat: unsafeCSS("#b07070"),
     clearChatHover: unsafeCSS("#995c5c"),
-    clearChatActive: unsafeCSS("#d09090"),
 
     /* Settings Button Colors */
     settings: unsafeCSS("#7a828c"),
     settingsHover: unsafeCSS("#646b74"),
-    settingsActive: unsafeCSS("#99a2ad"),
 
     /* Role Colors */
     system: unsafeCSS("#9b59b6"),
@@ -95,9 +86,8 @@ export const themeColors = {
     usageWarning: unsafeCSS("#cca700"),
     usageDanger: unsafeCSS("#f14c4c"),
 
-    /* Shadow Colors */
-    shadowDark: unsafeCSS("rgba(34, 119, 168, 0.8)"),
-    shadowLight: unsafeCSS("rgba(34, 119, 168, 0.3)"),
+    /* Shadow Color */
+    uiShadow: defaultColor,
 
     /* User interactive element Colors */
     placeholder: contrast(defaultColor, 20),

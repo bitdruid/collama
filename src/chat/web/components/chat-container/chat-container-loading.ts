@@ -74,7 +74,7 @@ export class ChatContainerLoading extends LitElement {
 
     @property({ type: Boolean, reflect: true }) active = false;
     @property({ type: Boolean, reflect: true }) eyecandy = false;
-    @property({ type: Number }) speed = 1800;
+    @property({ type: Number }) speed = 1500;
 
     private _resizeObserver: ResizeObserver | null = null;
 

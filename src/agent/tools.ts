@@ -28,8 +28,8 @@ function formatToolTargetValue(key: string, raw: unknown): string {
     // Truncate file paths to the last 6 parts.
     if (key !== "pattern" && key !== "branch") {
         const parts = value.split("/");
-        if (parts.length > 3) {
-            return ".../" + parts.slice(-3).join("/");
+        if (parts.length > 2) {
+            return ".../" + parts.slice(-2).join("/");
         }
     }
     return value;

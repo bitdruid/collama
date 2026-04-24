@@ -1,5 +1,6 @@
 import { css } from "lit";
 import { themeColors } from "../../../styles/theme-colors";
+import { themeStyles } from "../../../styles/theme-styles";
 
 export const basePopupStyles = css`
     :host {
@@ -17,7 +18,7 @@ export const basePopupStyles = css`
         background: ${themeColors.uiBackgroundDimm};
         border: 2px solid ${themeColors.uiBorderDimm};
         border-radius: 8px;
-        box-shadow: 0 4px 16px ${themeColors.shadowDark};
+        ${themeStyles.boxShadow}
         overflow: hidden;
         opacity: 0;
         transition: opacity 0.2s ease-in-out;

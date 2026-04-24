@@ -64,7 +64,9 @@ export const galleryStyles = css`
         pointer-events: none;
         opacity: 0;
         transform: translateX(6px);
-        transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+        transition:
+            opacity 0.15s ease-out,
+            transform 0.15s ease-out;
         background: linear-gradient(
             to right,
             transparent 0%,
@@ -152,7 +154,7 @@ export const galleryButtonStyles = css`
         background: ${themeColors.submitHover};
     }
     .prompt-btn:active {
-        background: ${themeColors.submitActive};
+        background: ${themeColors.submit};
     }
 
     .cancel-btn {
@@ -162,6 +164,6 @@ export const galleryButtonStyles = css`
         background: ${themeColors.cancelHover};
     }
     .cancel-btn:active {
-        background: ${themeColors.cancelActive};
+        background: ${themeColors.cancel};
     }
 `;

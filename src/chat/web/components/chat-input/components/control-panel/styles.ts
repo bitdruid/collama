@@ -32,6 +32,8 @@ export const controlPanelStyles = css`
 `;
 
 export const controlPanelButtonStyles = css`
+    ${themeStyles.loadingAnimations}
+
     :host {
         display: block;
         overflow: visible;
@@ -69,9 +71,6 @@ export const controlPanelButtonStyles = css`
     button-submit:hover {
         background-color: ${themeColors.submitHover};
     }
-    button-submit:active {
-        background-color: ${themeColors.submitActive};
-    }
 
     button-context {
         background-color: ${themeColors.context};
@@ -79,9 +78,6 @@ export const controlPanelButtonStyles = css`
     }
     button-context:hover {
         background-color: ${themeColors.contextHover};
-    }
-    button-context:active {
-        background-color: ${themeColors.contextActive};
     }
 
     .button-badge {
@@ -99,35 +95,14 @@ export const controlPanelButtonStyles = css`
         font-size: 10px;
         font-weight: bold;
         line-height: 1;
-        box-shadow: 0 1px 3px ${themeColors.shadowLight};
+        box-shadow: 0 1px 3px ${themeColors.uiShadow};
     }
 
     button-cancel {
-        background-color: ${themeColors.cancel};
-        box-shadow:
-            0 0 0 2px ${themeColors.cleanWhite},
-            0 0 0 4px ${themeColors.cancel};
-        animation: cancel-pulse 2s infinite;
+        ${themeStyles.loadingPulse(themeColors.cancel)}
     }
     button-cancel:hover {
         background-color: ${themeColors.cancelHover};
-    }
-    button-cancel:active {
-        background-color: ${themeColors.cancelActive};
-    }
-
-    @keyframes cancel-pulse {
-        0%,
-        100% {
-            box-shadow:
-                0 0 0 2px ${themeColors.cleanWhite},
-                0 0 0 4px ${themeColors.cancel};
-        }
-        50% {
-            box-shadow:
-                0 0 0 2px ${themeColors.cleanWhite},
-                0 0 0 8px ${themeColors.cancel};
-        }
     }
 
     button-compress {
@@ -136,18 +111,12 @@ export const controlPanelButtonStyles = css`
     button-compress:hover {
         background-color: ${themeColors.compressHover};
     }
-    button-compress:active {
-        background-color: ${themeColors.compressActive};
-    }
 
     button-gallery {
         background-color: ${themeColors.gallery};
     }
     button-gallery:hover {
         background-color: ${themeColors.galleryHover};
-    }
-    button-gallery:active {
-        background-color: ${themeColors.galleryActive};
     }
 
     button-auto-accept {
@@ -156,30 +125,9 @@ export const controlPanelButtonStyles = css`
     button-auto-accept:hover {
         background-color: ${themeColors.autoAcceptHover};
     }
-    button-auto-accept:active {
-        background-color: ${themeColors.autoAcceptActive};
-    }
 
     button-auto-accept[active] {
-        background-color: ${themeColors.autoAcceptActive};
-        box-shadow:
-            0 0 0 2px ${themeColors.cleanWhite},
-            0 0 0 4px ${themeColors.autoAcceptActive};
-        animation: auto-accept-pulse 2s infinite;
-    }
-
-    @keyframes auto-accept-pulse {
-        0%,
-        100% {
-            box-shadow:
-                0 0 0 2px ${themeColors.cleanWhite},
-                0 0 0 4px ${themeColors.autoAcceptActive};
-        }
-        50% {
-            box-shadow:
-                0 0 0 2px ${themeColors.cleanWhite},
-                0 0 0 8px ${themeColors.autoAcceptActive};
-        }
+        ${themeStyles.loadingPulse(themeColors.autoAccept)}
     }
 
     button-ghost-chat {
@@ -188,30 +136,9 @@ export const controlPanelButtonStyles = css`
     button-ghost-chat:hover {
         background-color: ${themeColors.ghostChatHover};
     }
-    button-ghost-chat:active {
-        background-color: ${themeColors.ghostChatActive};
-    }
 
     button-ghost-chat[active] {
-        background-color: ${themeColors.ghostChatActive};
-        box-shadow:
-            0 0 0 2px ${themeColors.cleanWhite},
-            0 0 0 4px ${themeColors.ghostChatActive};
-        animation: ghost-chat-pulse 2s infinite;
-    }
-
-    @keyframes ghost-chat-pulse {
-        0%,
-        100% {
-            box-shadow:
-                0 0 0 2px ${themeColors.cleanWhite},
-                0 0 0 4px ${themeColors.ghostChatActive};
-        }
-        50% {
-            box-shadow:
-                0 0 0 2px ${themeColors.cleanWhite},
-                0 0 0 8px ${themeColors.ghostChatActive};
-        }
+        ${themeStyles.loadingPulse(themeColors.ghostChat)}
     }
 
     button-clear-chat {
@@ -220,9 +147,6 @@ export const controlPanelButtonStyles = css`
     button-clear-chat:hover {
         background-color: ${themeColors.clearChatHover};
     }
-    button-clear-chat:active {
-        background-color: ${themeColors.clearChatActive};
-    }
 
     button-settings {
         background-color: ${themeColors.settings};
@@ -230,9 +154,6 @@ export const controlPanelButtonStyles = css`
     }
     button-settings:hover {
         background-color: ${themeColors.settingsHover};
-    }
-    button-settings:active {
-        background-color: ${themeColors.settingsActive};
     }
 
     button-token-counter,
