@@ -208,6 +208,27 @@ export class ChatPanel {
     }
 
     /**
+     * Removes the incomplete assistant/tool tail from the most recent user turn.
+     */
+    private removeActiveRunTail(session: NonNullable<ReturnType<SessionManager["getActiveSession"]>>) {
+        const msgs = session.messages.getMessages();
+        let lastUserIdx = -1;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+            if (msgs[i].role === "user") {
+                lastUserIdx = i;
+                break;
+            }
+        }
+
+        if (lastUserIdx >= 0 && lastUserIdx + 1 < session.messages.length()) {
+            session.messages.removeRange(lastUserIdx + 1, session.messages.length());
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Handles cancelling the current chat request.
      */
     private handleChatCancel(webview: vscode.Webview) {
@@ -219,18 +240,8 @@ export class ChatPanel {
             if (active) {
                 // Strip the incomplete assistant/tool tail produced by the cancelled run,
                 // keeping the user message so they can see/retry their prompt.
-                const msgs = active.messages.getMessages();
-                let lastUserIdx = -1;
-                for (let i = msgs.length - 1; i >= 0; i--) {
-                    if (msgs[i].role === "user") {
-                        lastUserIdx = i;
-                        break;
-                    }
-                }
                 this.sessionManager.updateSession(active, (s) => {
-                    if (lastUserIdx >= 0 && lastUserIdx + 1 < s.messages.length()) {
-                        s.messages.removeRange(lastUserIdx + 1, s.messages.length());
-                    }
+                    this.removeActiveRunTail(s);
                     s.messages.push({ role: "assistant" as const, content: "**Interrupted**" });
                 });
                 webview.postMessage({
@@ -286,9 +297,10 @@ export class ChatPanel {
             logMsg(`Context limit exceeded: removed ${turnsRemoved} turn(s) (~${tokensFreed} tokens) from LLM context`);
         }
 
-        await this.agentRunner.run({
+        const completed = await this.agentRunner.run({
             webview,
             messages: new ChatContext(trimmedMessages),
+            errorMessages: () => session.messages.getMessages(),
             onChunk: (chunk) => {
                 this.sessionManager.updateSession(session, (s) => {
                     s.messages.appendContent(currentIndex, chunk);
@@ -365,6 +377,23 @@ export class ChatPanel {
                 }
             },
         });
+
+        if (!completed) {
+            this.sessionManager.updateSession(session, (s) => {
+                this.removeActiveRunTail(s);
+            });
+            const { contextStartIndex, contextUsed } = await recomputeContextState(session.messages);
+            this.sessionManager.updateSession(session, (s) => {
+                s.contextStartIndex = contextStartIndex;
+            });
+            webview.postMessage({
+                type: "history-replace",
+                messages: sanitizeMessages(session.messages.getMessages()),
+            });
+            webview.postMessage({ type: "chat-complete", contextUsed });
+            this.sessionManager.sendSessionsUpdate();
+            return;
+        }
 
         const { contextStartIndex: completedContextStartIndex, contextUsed } = await recomputeContextState(session.messages);
         this.sessionManager.updateSession(session, (s) => {

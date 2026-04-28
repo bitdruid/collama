@@ -100,25 +100,27 @@ type VerbosityMode = "compact" | "medium" | "detailed";
 
 const VERBOSITY_PROMPTS: Record<VerbosityMode, string[]> = {
     compact: [
-        "- No filler words where possible.",
-        "- No politeness.",
-        "- No grammar if not needed. Short sentences.",
-        "- No repetition. No long explanations unless asked.",
-        "- Prefer symbols (→, =, vs, ×).",
-        "- Compress aggressively. Assume user is expert.",
-        "- Output = shortest correct answer possible.",
+        "You are a smart caveman in a study session.",
+        "- Compress your answer aggressively and explain minimal.",
+        "- No filler words, no articles, no politeness.",
+        "- No grammar, short sentences, use symbols (→, =, vs, ×).",
+        "- Keep technical information. Keep code blocks.",
     ],
     medium: [
-        "- Be direct and concise. No preamble, no sign-off.",
-        "- Answer first, explain only if essential.",
-        "- Use prose, not bullets unless structure genuinely helps.",
-        "- Skip edge cases unless asked.",
+        "You are a software engineer in a code review.",
+        "- Be concise but explain briefly.",
+        "- Keep your answer near the request and add relevant context.",
+        "- Reason essential informations.",
+        "- Keep technical information. Keep code blocks.",
     ],
     detailed: [
+        "You are a computer scientist in a conference.",
+        "- Be verbose and explain every detail.",
         "- Provide thorough responses with context and reasoning.",
-        "- Include relevant edge cases, alternatives, and at least one example.",
-        "- Use structure (headers/bullets) when it aids clarity.",
-        "- Don't omit important nuance.",
+        "- Explain why and how something works, not just what it does.",
+        "- Give alternatives, always use examples, pros and cons.",
+        "- Use headers and bullets do structure your answer.",
+        "- Use and explain code-output when possible.",
     ],
 };
 
@@ -127,15 +129,23 @@ const VERBOSITY_PROMPTS: Record<VerbosityMode, string[]> = {
  * Guides the LLM on how to use tools effectively and when to stop.
  */
 export function getAgentTemplate(): string {
-    const tokenLimit = userConfig.apiTokenPredictInstruct;
+    // const tokenLimit = userConfig.apiTokenPredictInstruct;
     const configuredVerbosity = userConfig.verbosityMode as VerbosityMode;
-    const lines: string[] = ["Guidelines:", ""];
-    lines.push("You are a senior software engineer.");
+    const lines: string[] = [];
+
+    lines.push(
+        ...(VERBOSITY_PROMPTS[configuredVerbosity] ?? VERBOSITY_PROMPTS.medium),
+        "- Never repeat yourself. Move on to the next step.",
+        "- Do not re-check conditions you have already confirmed.",
+        "- <llm-info> tags contain internal metadata. Never mention them to the user.",
+        "",
+        // `OUTPUT LIMIT: Keep your response under ~${Math.floor(tokenLimit * 4)} characters).`,
+    );
 
     if (userConfig.agentic) {
         lines.push(
-            "- Only use tools when the user's request requires direct interaction with files.",
-            "- For general questions, greetings, or conversations respond directly without tools.",
+            "- Only use tools when the user's request requires interaction with files.",
+            "- For general questions, greetings, or conversations respond without tools.",
             "- Grep and Glob efficient.",
             "",
         );
@@ -149,15 +159,6 @@ export function getAgentTemplate(): string {
             "",
         );
     }
-
-    lines.push(
-        "- Never repeat yourself. Instead move on to the next step.",
-        "- Do not re-check conditions you have already confirmed.",
-        "- <llm-info> tags contain internal metadata. Use them silently for context — never mention or repeat them to the user.",
-        ...(VERBOSITY_PROMPTS[configuredVerbosity] ?? VERBOSITY_PROMPTS.medium),
-        "",
-        `OUTPUT LIMIT: Keep your response under approximately ${tokenLimit} tokens (~${Math.floor(tokenLimit * 4)} characters).`,
-    );
 
     // Append AGENTS.md content if present
     const agentsMd = getAgentsMdContent();

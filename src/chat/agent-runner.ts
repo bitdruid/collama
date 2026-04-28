@@ -1,12 +1,13 @@
 import * as vscode from "vscode";
 
 import { Agent, AgentEvent } from "../agent/agent";
-import { ChatContext } from "../common/context-chat";
+import { ChatContext, ChatHistory } from "../common/context-chat";
 import { buildExportData } from "./utils-back";
 
 export interface AgentRunnerRunOptions {
     webview: vscode.Webview;
     messages: ChatContext;
+    errorMessages?: () => ChatHistory[];
     onChunk: (chunk: string) => void;
     onEvent?: (event: AgentEvent) => void;
 }
@@ -34,7 +35,7 @@ export class AgentRunner {
      * never produces a first chunk or event; any inbound activity clears it. Callers
      * are responsible for sending `chat-complete` after post-processing.
      */
-    async run({ webview, messages, onChunk, onEvent }: AgentRunnerRunOptions): Promise<boolean> {
+    async run({ webview, messages, errorMessages, onChunk, onEvent }: AgentRunnerRunOptions): Promise<boolean> {
         const agent = new Agent();
         this.currentAgent = agent;
         const timeout = setTimeout(() => {
@@ -62,7 +63,12 @@ export class AgentRunner {
                 stack: error instanceof Error ? error.stack : undefined,
                 name: error instanceof Error ? error.name : "Error",
             };
-            const exportedChat = JSON.stringify(buildExportData(this.extContext, messages.getMessages()), null, 2);
+            // Export live session history before the caller prunes the failed run tail.
+            const exportedChat = JSON.stringify(
+                buildExportData(this.extContext, errorMessages?.() ?? messages.getMessages()),
+                null,
+                2,
+            );
             const errorMessage = `\n\n--- ERROR ---\n\nname:\n${errorInfo.name}\n\nmessage:\n${errorInfo.message}\n\nstack:\n${errorInfo.stack || "N/A"}`;
             webview.postMessage({
                 type: "agent-error",
