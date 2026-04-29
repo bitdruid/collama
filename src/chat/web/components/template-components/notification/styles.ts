@@ -1,4 +1,5 @@
 import { css } from "lit";
+import { themeAnimations } from "../../../styles/theme-animations";
 import { themeColors } from "../../../styles/theme-colors";
 import { themeFonts } from "../../../styles/theme-fonts";
 import { themeStyles } from "../../../styles/theme-styles";
@@ -30,17 +31,16 @@ export const baseNotificationStyles = css`
         font-family: ${themeFonts.family}, sans-serif;
         font-size: ${themeFonts.small};
         text-align: center;
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
+        ${themeAnimations.fadeAnimate}
         pointer-events: auto;
     }
 
     .notification-content.fade-in {
-        opacity: 1;
+        ${themeAnimations.fadeIn}
     }
 
     .notification-content.fade-out {
-        opacity: 0;
+        ${themeAnimations.fadeOut}
     }
 
     .notification-heading {

@@ -1,4 +1,5 @@
 import { css } from "lit";
+import { themeAnimations } from "../../../../styles/theme-animations";
 import { themeColors } from "../../../../styles/theme-colors";
 import { themeFonts } from "../../../../styles/theme-fonts";
 import { themeStyles } from "../../../../styles/theme-styles";
@@ -32,7 +33,7 @@ export const controlPanelStyles = css`
 `;
 
 export const controlPanelButtonStyles = css`
-    ${themeStyles.loadingAnimations}
+    ${themeAnimations.loadingAnimations}
 
     :host {
         display: block;
@@ -98,7 +99,7 @@ export const controlPanelButtonStyles = css`
     }
 
     button-cancel {
-        ${themeStyles.loadingPulse(themeColors.cancel)}
+        ${themeAnimations.loadingPulse(themeColors.cancel)}
     }
     button-cancel:hover {
         background-color: ${themeColors.cancelHover};
@@ -126,7 +127,7 @@ export const controlPanelButtonStyles = css`
     }
 
     button-auto-accept[active] {
-        ${themeStyles.loadingPulse(themeColors.autoAccept)}
+        ${themeAnimations.loadingPulse(themeColors.autoAccept)}
     }
 
     button-ghost-chat {
@@ -137,7 +138,7 @@ export const controlPanelButtonStyles = css`
     }
 
     button-ghost-chat[active] {
-        ${themeStyles.loadingPulse(themeColors.ghostChat)}
+        ${themeAnimations.loadingPulse(themeColors.ghostChat)}
     }
 
     button-clear-chat {

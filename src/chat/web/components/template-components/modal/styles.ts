@@ -1,4 +1,5 @@
 import { css } from "lit";
+import { themeAnimations } from "../../../styles/theme-animations";
 import { themeColors } from "../../../styles/theme-colors";
 import { themeFonts } from "../../../styles/theme-fonts";
 
@@ -19,16 +20,15 @@ export const baseModalStyles = css`
         border-radius: 8px;
         border: 2px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackgroundDimm};
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
+        ${themeAnimations.fadeAnimate}
     }
 
     .modal-content.fade-in {
-        opacity: 1;
+        ${themeAnimations.fadeIn}
     }
 
     .modal-content.fade-out {
-        opacity: 0;
+        ${themeAnimations.fadeOut}
     }
 
     .modal-header {

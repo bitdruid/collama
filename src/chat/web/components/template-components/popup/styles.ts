@@ -1,4 +1,5 @@
 import { css } from "lit";
+import { themeAnimations } from "../../../styles/theme-animations";
 import { themeColors } from "../../../styles/theme-colors";
 import { themeStyles } from "../../../styles/theme-styles";
 
@@ -20,15 +21,14 @@ export const basePopupStyles = css`
         border-radius: 8px;
         ${themeStyles.boxShadow}
         overflow: hidden;
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
+        ${themeAnimations.fadeAnimate}
     }
 
     .popup-content.fade-in {
-        opacity: 1;
+        ${themeAnimations.fadeIn}
     }
 
     .popup-content.fade-out {
-        opacity: 0;
+        ${themeAnimations.fadeOut}
     }
 `;
