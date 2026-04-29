@@ -2,18 +2,25 @@ import { css } from "lit";
 import { themeColors } from "../../../styles/theme-colors";
 import { themeFonts } from "../../../styles/theme-fonts";
 
-export const settingsModalStyles = css`
+export const settingsDropdownStyles = css`
+    :host {
+        --dropdown-open-max-height: min(72vh, 640px);
+    }
+
+    .dropdown-content {
+        padding: 8px;
+        min-width: 0;
+    }
+
     .settings-section {
         display: flex;
         flex-direction: column;
         gap: 2px;
         padding: 8px;
-        border: 1px solid ${themeColors.uiBorder};
-        border-radius: 6px;
     }
 
     .settings-section + .settings-section {
-        margin-top: 8px;
+        border-top: 1px solid ${themeColors.uiBorder};
     }
 
     h4 {
@@ -35,61 +42,9 @@ export const settingsModalStyles = css`
         font-size: ${themeFonts.medium};
     }
 
-    .setting-row.toggle {
-        cursor: pointer;
-    }
-
-    .setting-text {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        min-width: 0;
-    }
-
     .setting-title {
         display: inline;
         line-height: 1.3;
-    }
-
-    .switch-input {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .switch {
-        position: relative;
-        flex: 0 0 auto;
-        width: 34px;
-        height: 18px;
-        border: 1px solid ${themeColors.uiBorder};
-        border-radius: 999px;
-        background: ${themeColors.uiBackground};
-        transition:
-            background 0.15s ease,
-            border-color 0.15s ease;
-    }
-
-    .switch::after {
-        content: "";
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: ${themeColors.uiFont};
-        transition: transform 0.15s ease;
-    }
-
-    .switch-input:checked + .switch {
-        border-color: ${themeColors.submit};
-        background: ${themeColors.submit};
-    }
-
-    .switch-input:checked + .switch::after {
-        transform: translateX(16px);
-        background: ${themeColors.cleanWhite};
     }
 
     .info-row {

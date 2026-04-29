@@ -1,8 +1,8 @@
 import { html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import { ChatSession } from "../../../../types";
-import { BaseDropdown } from "../../../template-components/dropdown/base-dropdown";
+import { ChatSession } from "../../../types";
+import { BaseDropdown } from "../../template-components/dropdown/base-dropdown";
 import "./session-empty";
 import "./session-item";
 
@@ -72,7 +72,7 @@ export class SessionDropdown extends BaseDropdown {
                       sorted,
                       (session: ChatSession) => session.id,
                       (session: ChatSession) => html`
-                          <collama-chat-session-item
+                          <collama-session-item
                               .session=${session}
                               .isActive=${session.id === this.activeSessionId}
                               @select=${() => this.handleSelect(session)}
@@ -80,7 +80,7 @@ export class SessionDropdown extends BaseDropdown {
                               @rename=${this.handleRename}
                               @copy=${() => this.handleCopy(session)}
                               @export=${() => this.handleExport(session)}
-                          ></collama-chat-session-item>
+                          ></collama-session-item>
                       `,
                   )}
         `;

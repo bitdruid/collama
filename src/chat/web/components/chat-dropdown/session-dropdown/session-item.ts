@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { ChatSession } from "../../../../types";
+import { ChatSession } from "../../../types";
 import { sessionItemStyles } from "./styles";
 
 function formatDate(timestamp: number): string {
@@ -21,8 +21,8 @@ function formatDate(timestamp: number): string {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-@customElement("collama-chat-session-item")
-export class ChatSessionItem extends LitElement {
+@customElement("collama-session-item")
+export class SessionItem extends LitElement {
     @property({ type: Object }) session!: ChatSession;
     @property({ type: Boolean }) isActive = false;
 

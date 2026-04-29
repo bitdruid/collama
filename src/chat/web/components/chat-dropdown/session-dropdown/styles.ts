@@ -1,6 +1,6 @@
 import { css } from "lit";
-import { themeColors } from "../../../../styles/theme-colors";
-import { themeFonts } from "../../../../styles/theme-fonts";
+import { themeColors } from "../../../styles/theme-colors";
+import { themeFonts } from "../../../styles/theme-fonts";
 
 export const sessionItemStyles = css`
     .session-item {

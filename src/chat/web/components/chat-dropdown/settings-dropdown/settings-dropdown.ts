@@ -1,129 +1,97 @@
-import { html } from "lit";
+import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../../utils-front";
 import { icons } from "../../../styles/theme-icons";
 import { defaultChatConfig, type ChatConfig } from "../../../types";
-import { BaseModal } from "../../template-components/modal/base-modal";
+import { BaseDropdown } from "../../template-components/dropdown/base-dropdown";
+import { baseDropdownStyles } from "../../template-components/dropdown/styles";
 import "../../template-components/slider";
-import { settingsModalStyles } from "./styles";
+import { settingsDropdownStyles } from "./styles";
 
 const DEFAULT_SNAKE_LOADING_SPEED = 1500;
 const AGENTS_MD_PATH = "AGENTS.md";
 const VERBOSITY_MODES = ["compact", "medium", "detailed"] as const;
 type VerbosityMode = (typeof VERBOSITY_MODES)[number];
 
-@customElement("collama-settings-modal")
-export class SettingsModal extends BaseModal {
-    static styles = [...BaseModal.styles, settingsModalStyles];
+function emit(el: HTMLElement, name: string, detail?: unknown) {
+    el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+}
+
+@customElement("collama-settings-dropdown")
+export class SettingsDropdown extends BaseDropdown {
+    static override styles = css`
+        ${baseDropdownStyles}
+        ${settingsDropdownStyles}
+    `;
 
     @property({ type: Object }) config: ChatConfig = defaultChatConfig;
-    @property({ type: Number }) snakeLoadingSpeed = DEFAULT_SNAKE_LOADING_SPEED;
+    @property({ type: Number }) snakeLoadingSpeed = 1500;
     @property({ type: Boolean }) snakeEyecandyMode = false;
     @property({ type: Boolean }) flatDesign = false;
     @property({ type: Boolean }) agentsMdActive = false;
 
-    constructor() {
-        super();
-        this.title = "Settings";
-    }
-
-    private updateBoolean(key: "agentic" | "enableEditTools" | "enableShellTool", event: Event) {
+    private _updateBoolean(key: "agentic" | "enableEditTools" | "enableShellTool", event: Event) {
         const value = Number((event.target as HTMLInputElement).value);
-        this.dispatchEvent(
-            new CustomEvent("settings-update", {
-                detail: { key, value: value === 1 },
-                bubbles: true,
-                composed: true,
-            }),
-        );
+        emit(this, "settings-update", { key, value: value === 1 });
     }
 
-    private updateVerbosityMode = (event: Event) => {
+    private _updateVerbosityMode = (event: Event) => {
         const index = Number((event.target as HTMLInputElement).value);
         const value = VERBOSITY_MODES[index] ?? "medium";
-
-        this.dispatchEvent(
-            new CustomEvent("settings-update", {
-                detail: { key: "verbosityMode", value },
-                bubbles: true,
-                composed: true,
-            }),
-        );
+        emit(this, "settings-update", { key: "verbosityMode", value });
     };
 
-    private updateSnakeSpeed = (event: Event) => {
-        this.dispatchEvent(
-            new CustomEvent("snake-speed-update", {
-                detail: { value: Number((event.target as HTMLInputElement).value) },
-                bubbles: true,
-                composed: true,
-            }),
-        );
+    private _updateSnakeSpeed = (event: Event) => {
+        emit(this, "snake-speed-update", { value: Number((event.target as HTMLInputElement).value) });
     };
 
-    private updateSnakeEyecandy = (event: Event) => {
+    private _updateSnakeEyecandy = (event: Event) => {
         const value = Number((event.target as HTMLInputElement).value) === 1;
-        this.dispatchEvent(
-            new CustomEvent("snake-eyecandy-update", {
-                detail: { value },
-                bubbles: true,
-                composed: true,
-            }),
-        );
+        emit(this, "snake-eyecandy-update", { value });
     };
 
-    private updateFlatDesign = (event: Event) => {
+    private _updateFlatDesign = (event: Event) => {
         const value = Number((event.target as HTMLInputElement).value) === 1;
-        this.dispatchEvent(
-            new CustomEvent("flat-design-update", {
-                detail: { value },
-                bubbles: true,
-                composed: true,
-            }),
-        );
+        emit(this, "flat-design-update", { value });
     };
 
-    protected renderContent() {
+    protected override renderContent() {
         return html`
             <section class="settings-section">
                 <h4>Extension</h4>
-                ${this.renderToggle("Agentic-Mode", "agentic", this.config.agentic)}
-                ${this.renderToggle(
+                ${this._renderToggle("Agentic-Mode", "agentic", this.config.agentic)}
+                ${this._renderToggle(
                     "Edit Tools",
                     "enableEditTools",
                     this.config.enableEditTools,
                     this.config.agentic && !this.config.enableEditTools,
                 )}
-                ${this.renderToggle(
-                    "Shell Tool (Only testing; npm & python)",
-                    "enableShellTool",
-                    this.config.enableShellTool,
-                )}
-                ${this.renderVerbosityMode()}
+                ${this._renderToggle("Shell Tool", "enableShellTool", this.config.enableShellTool)}
+                ${this._renderVerbosityMode()}
             </section>
             <section class="settings-section">
                 <h4>Style</h4>
-                ${this.renderStyleToggle("Flat Design", this.flatDesign, this.updateFlatDesign)}
-                ${this.renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this.updateSnakeEyecandy)}
+                ${this._renderStyleToggle("Flat Design", this.flatDesign, this._updateFlatDesign)}
+                ${this._renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this._updateSnakeEyecandy)}
                 <collama-slider
-                    label="Snake loading animation speed (default ${DEFAULT_SNAKE_LOADING_SPEED})"
+                    label="Snake speed (def. ${DEFAULT_SNAKE_LOADING_SPEED})"
                     value-label="${this.snakeLoadingSpeed} px/s"
                     min="500"
                     max="5000"
                     step="100"
                     .value=${this.snakeLoadingSpeed}
                     marks="4"
-                    @input=${this.updateSnakeSpeed}
+                    @input=${this._updateSnakeSpeed}
                 ></collama-slider>
             </section>
             <section class="settings-section">
                 <h4>Project</h4>
-                ${this.renderAgentsMdIndicator()}
+                ${this._renderAgentsMdIndicator()}
             </section>
         `;
     }
 
-    private renderVerbosityMode() {
+    private _renderVerbosityMode() {
         const value = this.config.verbosityMode ?? "medium";
         const index = VERBOSITY_MODES.indexOf(value as VerbosityMode);
 
@@ -136,12 +104,12 @@ export class SettingsModal extends BaseModal {
                 step="1"
                 .value=${index < 0 ? 1 : index}
                 marks="3"
-                @input=${this.updateVerbosityMode}
+                @input=${this._updateVerbosityMode}
             ></collama-slider>
         `;
     }
 
-    private renderAgentsMdIndicator() {
+    private _renderAgentsMdIndicator() {
         if (this.agentsMdActive) {
             return html`
                 <div class="setting-row info-row">
@@ -170,7 +138,7 @@ export class SettingsModal extends BaseModal {
         `;
     }
 
-    private renderToggle(
+    private _renderToggle(
         label: string,
         key: "agentic" | "enableEditTools" | "enableShellTool",
         checked: boolean,
@@ -185,14 +153,14 @@ export class SettingsModal extends BaseModal {
                 step="1"
                 .value=${checked ? 1 : 0}
                 marks="2"
-                @input=${(event: Event) => this.updateBoolean(key, event)}
+                @input=${(event: Event) => this._updateBoolean(key, event)}
             >
                 ${showWarning ? html`<span slot="prefix">${icons.alertTriangle}</span>` : ""}
             </collama-slider>
         `;
     }
 
-    private renderStyleToggle(label: string, checked: boolean, onChange: (event: Event) => void) {
+    private _renderStyleToggle(label: string, checked: boolean, onChange: (event: Event) => void) {
         return html`
             <collama-slider
                 label=${label}
