@@ -1,7 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory } from "../../../../../common/context-chat";
-import { icons } from "../../../../utils-front";
+import { icons } from "../../../styles/theme-icons";
 import "./edit";
 
 export interface UserMessageHost {
@@ -24,6 +24,7 @@ export interface UserRenderOptions {
     messages: ChatHistory[];
     msg: ChatHistory;
     index: number;
+    isGenerating: boolean;
     outOfContextClass: string;
     warningIcon: TemplateResult | string;
     getCachedMarkdown: (content: string, isStreaming: boolean) => string;
@@ -89,7 +90,7 @@ function handleEditSend(host: UserMessageHost, e: CustomEvent) {
 }
 
 export function renderUserMessage(opts: UserRenderOptions) {
-    const { host, messages, msg, index, outOfContextClass, warningIcon } = opts;
+    const { host, messages, msg, index, isGenerating, outOfContextClass, warningIcon } = opts;
     return html`
         <div class="message user ${outOfContextClass}">
             <div class="bubble bubble-user">
@@ -100,11 +101,17 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             class="summarize-button"
                             @click=${() => handleSummarize(host, index)}
                             title="Summarize this turn"
+                            ?disabled=${isGenerating}
                         >
                             ${icons.fileText}
                             <span>Summarize</span>
                         </button>
-                        <button class="edit-button" @click=${() => handleEdit(host, index)} title="Edit and resend">
+                        <button
+                            class="edit-button"
+                            @click=${() => handleEdit(host, index)}
+                            title="Edit and resend"
+                            ?disabled=${isGenerating}
+                        >
                             ${icons.pencil}
                             <span>Edit</span>
                         </button>
@@ -112,6 +119,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             class="resend-button"
                             @click=${() => handleResend(host, index)}
                             title="Resend from here"
+                            ?disabled=${isGenerating}
                         >
                             ${icons.enter}
                             <span>Resend</span>
@@ -120,6 +128,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             class="delete-button"
                             @click=${() => handleDelete(host, index)}
                             title="Delete this turn (~${getTurnTokens(messages, index)} tokens freed)"
+                            ?disabled=${isGenerating}
                         >
                             ${icons.trash}
                             <span>Delete</span>

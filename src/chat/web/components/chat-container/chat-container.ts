@@ -3,11 +3,11 @@ import { customElement, property, query, state } from "lit/decorators.js";
 
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import { defaultChatConfig, type ChatConfig, type ChatSession, type ToolConfirmRequest } from "../../types";
+import { ChatSessionStore } from "../chat-header/chat-session-store";
 import "../chat-modal/acquire-modal/acquire-modal";
 import "../chat-modal/settings-modal/settings-modal";
 import "../chat-modal/tool-confirm-modal/tool-confirm-modal";
 import "../chat-notification/context-notification/context-notification";
-import { ChatSessionStore } from "../chat-session/chat-session-store";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAcquireAutoSummaryAccept,
@@ -52,7 +52,7 @@ export class ChatContainer extends LitElement {
 
     @property({ type: Array }) sessions: ChatSession[] = [];
     @property({ type: Boolean }) hasTokenData: boolean = false;
-    @property({ type: Boolean, reflect: true }) isLoading: boolean = false;
+    @property({ type: Boolean, reflect: true }) isGenerating: boolean = false;
     @property({ type: Number }) agentToken: number = 0;
     @property({ type: Number }) contextMax: number = 0;
     @property({ type: Number }) contextUsed: number = 0;
@@ -263,7 +263,7 @@ export class ChatContainer extends LitElement {
         if (
             changed.has("contextUsed") ||
             changed.has("contextMax") ||
-            changed.has("isLoading") ||
+            changed.has("isGenerating") ||
             changed.has("activeSessionId")
         ) {
             this._autoSummarizeAtContextThreshold();
@@ -286,7 +286,7 @@ export class ChatContainer extends LitElement {
             return;
         }
 
-        if (this._wasContextAtAutoSummaryThreshold || this.isLoading || this.showAcquireModal) {
+        if (this._wasContextAtAutoSummaryThreshold || this.isGenerating || this.showAcquireModal) {
             return;
         }
 
@@ -348,13 +348,13 @@ export class ChatContainer extends LitElement {
         const hasOutOfContextMessages = this.contextStartIndex > 0;
         const showContextNotification = hasOutOfContextMessages || this._shouldShowContextNotification();
         const contextNotificationKind = hasOutOfContextMessages ? "out-of-context" : "threshold";
-
         return html`
-            <collama-chatsessions
+            <collama-chatheader
                 .sessions=${this.sessions}
                 .activeSessionId=${this.activeSessionId}
                 .contextUsed=${this.contextUsed}
                 .contextMax=${this.contextMax}
+                .isGenerating=${this.isGenerating}
                 @export-session=${this.handleExportSession}
                 @new-chat=${onNewChat}
                 @new-ghost-chat=${onNewGhostChat}
@@ -362,13 +362,13 @@ export class ChatContainer extends LitElement {
                 @delete-session=${this.handleDeleteSession}
                 @rename-session=${this.handleRenameSession}
                 @copy-session=${onCopySession}
-            ></collama-chatsessions>
+            ></collama-chatheader>
             <div class="chat-area">
                 <div class="output-wrapper">
                     <collama-chatoutput
                         .messages=${this.messages}
                         .contextStartIndex=${this.contextStartIndex}
-                        .isGenerating=${this.isLoading}
+                        .isGenerating=${this.isGenerating}
                         @resend-message=${this.handleResendMessage}
                         @edit-message=${this.handleEditMessage}
                         @delete-message=${this.handleDeleteMessage}
@@ -429,7 +429,6 @@ export class ChatContainer extends LitElement {
                     : ""}
                 <collama-chatinput
                     ?inert=${this.showAcquireModal}
-                    aria-disabled=${this.showAcquireModal ? "true" : "false"}
                     @submit=${this.handleSubmit}
                     @cancel=${this.handleCancel}
                     @convert-to-ghost=${this.handleConvertToGhost}
@@ -441,7 +440,7 @@ export class ChatContainer extends LitElement {
                     @context-search=${onContextSearch}
                     @context-add-file=${onContextAddFile}
                     .contexts=${this.currentContexts}
-                    .isLoading=${this.isLoading}
+                    .isGenerating=${this.isGenerating}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}
@@ -450,7 +449,7 @@ export class ChatContainer extends LitElement {
                 ></collama-chatinput>
             </div>
             <collama-loading-snake
-                .active=${this.isLoading}
+                .isGenerating=${this.isGenerating}
                 .speed=${this.snakeLoadingSpeed}
                 .eyecandy=${this.snakeEyecandyMode}
             ></collama-loading-snake>

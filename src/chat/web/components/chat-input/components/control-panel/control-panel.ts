@@ -16,7 +16,7 @@ export class ControlPanel extends LitElement {
 
     @property({ type: String }) userInput = "";
     @property({ type: Array }) contexts: AttachedContext[] = [];
-    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Boolean }) isGenerating = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
@@ -29,7 +29,7 @@ export class ControlPanel extends LitElement {
     //  Lifecycle
 
     updated(changedProperties: PropertyValues) {
-        if (changedProperties.has("isLoading") && !this.isLoading) {
+        if (changedProperties.has("isGenerating") && !this.isGenerating) {
             this.updateComplete.then(() => this._focusTextarea());
         }
         if (changedProperties.has("userInput")) {
@@ -52,7 +52,7 @@ export class ControlPanel extends LitElement {
     }
 
     private _handleSubmit() {
-        if (this.isLoading) {
+        if (this.isGenerating) {
             return;
         }
         emit(this, "submit", { value: this.userInput, contexts: this.contexts });
@@ -85,12 +85,12 @@ export class ControlPanel extends LitElement {
                     @input=${this._handleInput}
                     @keydown=${this._handleKeyDown}
                     placeholder="Chat with AI..."
-                    ?disabled=${this.isLoading}
+                    ?disabled=${this.isGenerating}
                 ></textarea>
 
                 <collama-control-panel-buttons
                     .contexts=${this.contexts}
-                    .isLoading=${this.isLoading}
+                    .isGenerating=${this.isGenerating}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.isGhost}

@@ -1,9 +1,11 @@
 import { html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 
-import { buildOpenFileCommandUri, icons } from "../../../../utils-front";
+import { buildOpenFileCommandUri } from "../../../../utils-front";
+import { icons } from "../../../styles/theme-icons";
 import type { ToolConfirmRequest } from "../../../types";
 import "../../template-components/action-button";
+import "../../template-components/banner";
 import { BaseModal } from "../../template-components/modal/base-modal";
 import { toolConfirmStyles } from "./styles";
 
@@ -108,6 +110,9 @@ export class ToolConfirmModal extends BaseModal {
 
         return html`
             <div class="confirm-content">
+                ${this.request.explanation
+                    ? html`<collama-info-banner .description=${this.request.explanation}></collama-info-banner>`
+                    : null}
                 <div class="confirm-summary">
                     <span class="confirm-action"><b>${this.request.action}</b></span>
                     <a

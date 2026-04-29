@@ -10,7 +10,7 @@ export class ChatInput extends LitElement {
     static styles = chatInputStyles;
 
     @property({ type: Array }) contexts: AttachedContext[] = [];
-    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Boolean }) isGenerating = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
@@ -32,7 +32,7 @@ export class ChatInput extends LitElement {
             <collama-control-panel
                 class="panel active"
                 .contexts=${this.contexts}
-                .isLoading=${this.isLoading}
+                .isGenerating=${this.isGenerating}
                 .agentToken=${this.agentToken}
                 .hasTokenData=${this.hasTokenData}
                 .isGhost=${this.isGhost}

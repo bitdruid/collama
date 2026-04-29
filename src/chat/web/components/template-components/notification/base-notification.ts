@@ -1,6 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../../utils-front";
+import { icons } from "../../../styles/theme-icons";
 import { BaseOverlay } from "../overlay/base-overlay";
 import { baseNotificationStyles } from "./styles";
 

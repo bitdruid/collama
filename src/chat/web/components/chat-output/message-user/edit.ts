@@ -1,6 +1,7 @@
 import { LitElement, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { adjustTextareaRows, icons } from "../../../../utils-front";
+import { adjustTextareaRows } from "../../../../utils-front";
+import { icons } from "../../../styles/theme-icons";
 import { editStyles } from "./styles";
 
 /**

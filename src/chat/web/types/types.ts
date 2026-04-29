@@ -32,6 +32,7 @@ export interface ToolConfirmRequest {
     id: string;
     action: string;
     filePath: string;
+    explanation: string;
 }
 
 /**

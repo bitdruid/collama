@@ -65,6 +65,21 @@ export const userStyles = css`
     .summarize-button:hover {
         background: ${themeColors.compressHover};
     }
+
+    .resend-button:disabled,
+    .delete-button:disabled,
+    .edit-button:disabled,
+    .summarize-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+    }
+
+    .resend-button:hover:disabled,
+    .delete-button:hover:disabled,
+    .edit-button:hover:disabled,
+    .summarize-button:hover:disabled {
+        background: transparent;
+    }
 `;
 
 export const editStyles = css`

@@ -1,7 +1,7 @@
 import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
-import { icons } from "../../../../../utils-front";
+import { icons } from "../../../../styles/theme-icons";
 import { defaultChatConfig, type ChatConfig, type ContextSearchResult } from "../../../../types";
 import "./clear-chat-confirm/clear-chat-confirm";
 import "./convert-ghost-confirm/convert-ghost-confirm";
@@ -16,7 +16,7 @@ export class ControlPanelButtons extends LitElement {
     static styles = controlPanelButtonStyles;
 
     @property({ type: Array }) contexts: AttachedContext[] = [];
-    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Boolean }) isGenerating = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
@@ -88,11 +88,11 @@ export class ControlPanelButtons extends LitElement {
     }
 
     override willUpdate(changedProperties: Map<PropertyKey, unknown>) {
-        if (changedProperties.has("isLoading")) {
+        if (changedProperties.has("isGenerating")) {
             if (this._durationInterval) {
                 clearInterval(this._durationInterval);
             }
-            if (this.isLoading) {
+            if (this.isGenerating) {
                 this.agentDuration = 0;
                 this._durationInterval = window.setInterval(() => this.agentDuration++, 1000);
             } else {
@@ -214,7 +214,7 @@ export class ControlPanelButtons extends LitElement {
     }
 
     private _renderSettings() {
-        const showBadge = this.config.agentic && !this.config.enableEditTools /* || !this.config.enableShellTool */;
+        const showBadge = this.config.agentic && !this.config.enableEditTools; /* || !this.config.enableShellTool */
         return html`
             <button-settings title="Open settings" data-base-overlay-anchor @click=${this.handleOpenSettings}>
                 ${icons.settings} ${showBadge ? html`<span class="button-badge">!</span>` : ""}
@@ -235,7 +235,7 @@ export class ControlPanelButtons extends LitElement {
     }
 
     render() {
-        if (this.isLoading) {
+        if (this.isGenerating) {
             return html`
                 <button-row>
                     <span class="spacer"></span>

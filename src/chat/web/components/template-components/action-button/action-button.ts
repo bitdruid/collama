@@ -1,7 +1,7 @@
 import { html, LitElement, type PropertyValues } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 
-import { icons } from "../../../../utils-front";
+import { icons } from "../../../styles/theme-icons";
 import { actionButtonStyles, type ActionButtonVariant } from "./styles";
 
 export class ActionButton extends LitElement {

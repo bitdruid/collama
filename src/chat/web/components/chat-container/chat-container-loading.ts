@@ -14,7 +14,7 @@ export class ChatContainerLoading extends LitElement {
             transition: opacity 0.3s;
         }
 
-        :host([active]) {
+        :host([isloading]) {
             opacity: 1;
         }
 
@@ -72,7 +72,7 @@ export class ChatContainerLoading extends LitElement {
         }
     `;
 
-    @property({ type: Boolean, reflect: true }) active = false;
+    @property({ type: Boolean, reflect: true }) isGenerating = false;
     @property({ type: Boolean, reflect: true }) eyecandy = false;
     @property({ type: Number }) speed = 1500;
 
@@ -96,7 +96,7 @@ export class ChatContainerLoading extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         this._resizeObserver = new ResizeObserver(() => {
-            if (this.active) {
+            if (this.isGenerating) {
                 this._updatePerimeter();
             }
         });
@@ -110,7 +110,7 @@ export class ChatContainerLoading extends LitElement {
     }
 
     updated(changed: Map<string, unknown>) {
-        if ((changed.has("active") || changed.has("speed")) && this.active) {
+        if ((changed.has("isGenerating") || changed.has("speed")) && this.isGenerating) {
             this._updatePerimeter();
         }
     }

@@ -1,10 +1,21 @@
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { html as staticHtml, unsafeStatic } from "lit/static-html.js";
 
-import { highlightCodeBlock, icons } from "../../../utils-front";
+import { highlightCodeBlock } from "../../../utils-front";
+import { icons } from "../../styles/theme-icons";
 import { accordionStyles } from "./styles";
 
 export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group" | "context";
+
+const bannerTags: Record<AccordionType, string> = {
+    think: "collama-think-banner",
+    summary: "collama-summary-banner",
+    code: "collama-code-banner",
+    tool: "collama-tool-banner",
+    "tool-group": "collama-tool-group-banner",
+    context: "collama-context-banner",
+};
 
 /**
  * A collapsible accordion component for displaying structured chat content.
@@ -127,28 +138,6 @@ export class ChatAccordion extends LitElement {
     }
 
     /**
-     * Returns the SVG icon corresponding to the current accordion type.
-     * @returns The SVG string or null if no icon matches.
-     */
-    private _renderIcon() {
-        switch (this.type) {
-            case "think":
-                return icons.thinking;
-            case "summary":
-                return icons.summary;
-            case "tool":
-            case "tool-group":
-                return icons.tool;
-            case "context":
-                return icons.paperclip;
-            case "code":
-                return icons.code;
-            default:
-                return null;
-        }
-    }
-
-    /**
      * Renders the copy button if the type is 'code' or 'summary' and code is present.
      * @returns A template result for the button or null.
      */
@@ -157,28 +146,32 @@ export class ChatAccordion extends LitElement {
             return null;
         }
         return html`
-            <button class="copy-btn" @click=${this._handleCopy} title="Copy code">
+            <button slot="actions" class="copy-btn" @click=${this._handleCopy} title="Copy code">
                 ${icons.copy}
                 <span>${this._copyText}</span>
             </button>
         `;
     }
 
+    private _renderBanner() {
+        const tag = unsafeStatic(bannerTags[this.type]);
+
+        return staticHtml`
+            <${tag}
+                .label=${this.label}
+                .description=${this.description}
+                @click=${this._toggle}
+            >
+                <span slot="slot1">${this._renderCopyButton()}</span>
+                <span slot="slot2" class="banner-arrow ${this.expanded ? "expanded" : ""}">${icons.chevronDown}</span>
+            </${tag}>
+        `;
+    }
+
     render() {
         return html`
             <div class="accordion type-${this.type}">
-                <button class="accordion-header" @click=${this._toggle}>
-                    <span class="accordion-icon">${this._renderIcon()}</span>
-                    <span class="accordion-label"
-                        >${this.label}${this.description
-                            ? html`<span class="accordion-description">${this.description}</span>`
-                            : ""}</span
-                    >
-                    <span class="accordion-actions">
-                        ${this._renderCopyButton()}
-                        <span class="accordion-arrow ${this.expanded ? "expanded" : ""}"> ${icons.chevronDown} </span>
-                    </span>
-                </button>
+                ${this._renderBanner()}
                 <div class="accordion-content-wrapper ${this.expanded ? "expanded" : ""}">
                     <div class="accordion-content">
                         <div class="accordion-content-inner">

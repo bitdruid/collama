@@ -1,7 +1,7 @@
 import type { ToolCall } from "../../../../common/types-llm";
 import { logWebview, showToast } from "../../../utils-front";
 import type { ChatConfig } from "../../types";
-import { ChatSessionStore } from "../chat-session/chat-session-store";
+import { ChatSessionStore } from "../chat-header/chat-session-store";
 import type { ChatContainer } from "./chat-container";
 
 /** Creates a dispatcher function that routes inbound host messages to their handlers. */
@@ -127,7 +127,7 @@ function handleAgentTokens(host: ChatContainer, msg: any) {
 
 /** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
 function handleChatComplete(host: ChatContainer, msg: any) {
-    host.isLoading = false;
+    host.isGenerating = false;
     host.agentToken = 0;
     host.hasTokenData = false;
     host.contextUsed = msg.contextUsed ?? 0;
@@ -171,7 +171,7 @@ function handleContextTrimmed(host: ChatContainer, msg: any) {
 
 /** Shows the tool confirmation modal when the backend requests user approval. */
 function handleToolConfirmRequest(host: ChatContainer, msg: any) {
-    host.toolConfirmRequest = { id: msg.id, action: msg.action, filePath: msg.filePath };
+    host.toolConfirmRequest = { id: msg.id, action: msg.action, filePath: msg.filePath, explanation: msg.explanation };
     logWebview(`Tool confirm request: ${msg.action} ${msg.filePath}`);
     host.updateComplete.then(() => {
         requestAnimationFrame(() => {
@@ -182,7 +182,7 @@ function handleToolConfirmRequest(host: ChatContainer, msg: any) {
 
 /** Displays the error modal with exported chat and error details when the agent throws. */
 function handleAgentError(host: ChatContainer, msg: any) {
-    host.isLoading = false;
+    host.isGenerating = false;
     host.agentToken = 0;
     host.hasTokenData = false;
 

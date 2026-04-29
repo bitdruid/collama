@@ -9,7 +9,7 @@ export const chatContainerStyles = css`
         overflow: hidden;
     }
 
-    collama-chatsessions {
+    collama-chatheader {
         flex: 0 0 auto;
         border-bottom: 2px solid ${themeColors.uiBorderDimm};
     }
@@ -51,4 +51,5 @@ export const chatContainerStyles = css`
         pointer-events: none;
         user-select: none;
     }
+
 `;

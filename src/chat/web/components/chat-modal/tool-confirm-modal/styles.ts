@@ -22,7 +22,7 @@ export const toolConfirmStyles = css`
         font-size: ${themeFonts.medium};
         padding: 6px 12px;
         border-radius: 4px;
-        background: ${themeColors.submit};
+        background: ${themeColors.settings};
         color: ${themeColors.cleanWhite};
         text-transform: capitalize;
     }
@@ -72,7 +72,7 @@ export const toolConfirmStyles = css`
         flex: 1;
         min-width: 0;
         font-family: ${themeFonts.family}, monospace;
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.small};
         color: ${themeColors.uiFont};
         padding: 6px 8px;
         border-radius: 4px;

@@ -7,15 +7,15 @@ export interface AssistantRenderOptions {
     outOfContextClass: string;
     warningIcon: TemplateResult | string;
     isStreaming: boolean;
-    isLoading: boolean;
+    isGenerating: boolean;
     getCachedMarkdown: (content: string, isStreaming: boolean) => string;
 }
 
 export function renderAssistantMessage(opts: AssistantRenderOptions) {
-    const { msg, outOfContextClass, warningIcon, isStreaming, isLoading } = opts;
+    const { msg, outOfContextClass, warningIcon, isStreaming, isGenerating } = opts;
 
     // Hide empty assistant messages (e.g. LLM returned only tool calls)
-    if (!msg.content && !isLoading && !isStreaming) {
+    if (!msg.content && !isGenerating && !isStreaming) {
         return html``;
     }
 
@@ -25,7 +25,7 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
                 <!-- <div class="role-header role-assistant">
                     <span class="role-label">${warningIcon}Assistant</span>
                 </div> -->
-                ${isLoading
+                ${isGenerating
                     ? html`<span class="loading">Generating response<span class="dots"></span>&nbsp</span>`
                     : unsafeHTML(opts.getCachedMarkdown(msg.content, isStreaming))}
             </div>

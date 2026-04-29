@@ -27,7 +27,7 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
     host.chatContext?.push({ role: "assistant", content: "" });
     host.syncMessages();
 
-    host.isLoading = true;
+    host.isGenerating = true;
 
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
     host.updateComplete.then(() => {
@@ -39,7 +39,7 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
 
 /** Signals the host to abort the in-flight LLM request. */
 export function onCancel(host: ChatContainer) {
-    if (!host.isLoading) {
+    if (!host.isGenerating) {
         return;
     }
     backendApi.cancel();
@@ -47,13 +47,13 @@ export function onCancel(host: ChatContainer) {
 
 /** Appends a summarization prompt and sends the full history for conversation summarization. */
 export function onSummarizeConversation(host: ChatContainer) {
-    if (host.isLoading || !host.chatContext || host.chatContext.length() === 0) {
+    if (host.isGenerating || !host.chatContext || host.chatContext.length() === 0) {
         return;
     }
 
     const totalMessages = host.chatContext.length();
 
-    host.isLoading = true;
+    host.isGenerating = true;
 
     showToast("Summarizing conversation...");
     backendApi.summarize(0, totalMessages, host.activeSessionId);
@@ -68,6 +68,9 @@ export function onAcquireAutoSummaryAccept(host: ChatContainer) {
 
 /** Truncates history after the selected user message and re-sends from that point. */
 export function onResendMessage(host: ChatContainer, e: CustomEvent) {
+    if (host.isGenerating) {
+        return;
+    }
     const messageIndex = e.detail.messageIndex;
     const msgs = host.chatContext?.getMessages() || [];
     if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
@@ -79,7 +82,7 @@ export function onResendMessage(host: ChatContainer, e: CustomEvent) {
     host.chatContext?.push({ role: "assistant", content: "" });
     host.syncMessages();
 
-    host.isLoading = true;
+    host.isGenerating = true;
 
     logWebview(`Resending from message ${messageIndex}`);
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
@@ -87,6 +90,9 @@ export function onResendMessage(host: ChatContainer, e: CustomEvent) {
 
 /** Replaces a user message with edited text, re-embeds its original contexts, and re-sends. */
 export function onEditMessage(host: ChatContainer, e: CustomEvent) {
+    if (host.isGenerating) {
+        return;
+    }
     const { messageIndex, newContent } = e.detail;
     const msgs = host.chatContext?.getMessages() || [];
     if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
@@ -106,7 +112,7 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
     host.chatContext?.push({ role: "assistant", content: "" });
     host.syncMessages();
 
-    host.isLoading = true;
+    host.isGenerating = true;
 
     logWebview(`Editing and resending message ${messageIndex}`);
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
@@ -114,6 +120,9 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
 
 /** Removes a user message and its entire turn (assistant + tool responses), then notifies the host. */
 export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
+    if (host.isGenerating) {
+        return;
+    }
     const messageIndex = e.detail.messageIndex;
     const msgs = host.chatContext?.getMessages() || [];
     if (!msgs[messageIndex] || msgs[messageIndex].role !== "user") {
@@ -133,7 +142,7 @@ export function onDeleteMessage(host: ChatContainer, e: CustomEvent) {
 
 /** Sends a single turn (user message + responses) to the backend for summarization. */
 export function onSummarizeTurn(host: ChatContainer, e: CustomEvent) {
-    if (host.isLoading) {
+    if (host.isGenerating) {
         return;
     }
     const messageIndex = e.detail.messageIndex;
@@ -144,7 +153,7 @@ export function onSummarizeTurn(host: ChatContainer, e: CustomEvent) {
 
     const turnEnd = host.chatContext?.getTurnEnd(messageIndex) ?? messageIndex;
 
-    host.isLoading = true;
+    host.isGenerating = true;
 
     showToast("Summarizing turn...");
     logWebview(`Summarizing turn at index ${messageIndex}`);
@@ -207,7 +216,7 @@ export function onConvertToGhost() {
 
 /** Clears all messages from the active session. */
 export function onClearChat(host: ChatContainer) {
-    if (host.isLoading || !host.chatContext || host.chatContext.length() === 0) {
+    if (host.isGenerating || !host.chatContext || host.chatContext.length() === 0) {
         return;
     }
     backendApi.clearChat();

@@ -1,9 +1,11 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../utils-front";
 import { themeColors } from "../../styles/theme-colors";
+import { bannerStyles } from "../template-components/banner/styles";
 
 export const accordionStyles = [
     ...hljsStyles,
+    bannerStyles,
     css`
         :host {
             display: block;
@@ -17,62 +19,6 @@ export const accordionStyles = [
             border-radius: 6px;
             overflow: hidden;
             position: relative;
-        }
-
-        .accordion-header {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            background: ${themeColors.uiBackgroundDimm};
-            color: ${themeColors.uiFont};
-            cursor: pointer;
-            user-select: none;
-            font-size: 0.9em;
-            border: none;
-            width: 100%;
-            text-align: left;
-            transition: background 0.15s;
-        }
-
-        .accordion-header:hover {
-            background: ${themeColors.uiBackgroundHoverDimm};
-        }
-
-        .accordion-arrow {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 16px;
-            transition: transform 0.2s ease;
-        }
-
-        .accordion-arrow.expanded {
-            transform: rotate(180deg);
-        }
-
-        .accordion-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 16px;
-        }
-
-        .accordion-label {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-weight: 600;
-        }
-
-        .accordion-description {
-            font-weight: 400;
-            font-style: italic;
-            opacity: 0.85;
-            margin-left: 4px;
         }
 
         /* Smooth animation using CSS grid trick */
@@ -136,23 +82,7 @@ export const accordionStyles = [
             white-space: pre-wrap;
         }
 
-        /* Type-specific styling */
-        .accordion.type-think .accordion-header {
-            border-left: 3px solid ${themeColors.submit};
-        }
-
-        .accordion.type-summary .accordion-header {
-            border-left: 3px solid ${themeColors.compress};
-        }
-
-        .accordion.type-tool .accordion-header {
-            border-left: 3px solid ${themeColors.autoAccept};
-        }
-
-        .accordion.type-tool-group .accordion-header {
-            border-left: 3px solid ${themeColors.autoAccept};
-        }
-
+        /* Type-specific content overrides */
         .accordion.type-tool-group .accordion-content-inner {
             max-height: min(500px, 60vh);
             padding: 0;
@@ -172,39 +102,12 @@ export const accordionStyles = [
             border-top: none;
         }
 
-        .accordion.type-code .accordion-header {
-            border-left: none;
+        .banner-arrow {
+            transition: transform 0.2s ease;
         }
 
-        .accordion.type-context .accordion-header {
-            border-left: 3px solid ${themeColors.context};
-        }
-
-        .accordion-actions {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .copy-btn {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: transparent;
-            border: none;
-            color: ${themeColors.uiFont};
-            cursor: pointer;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            transition:
-                background 0.15s,
-                color 0.15s;
-        }
-
-        .copy-btn:hover {
-            background: ${themeColors.uiBackgroundHoverDimm};
-            color: ${themeColors.uiFont};
+        .banner-arrow.expanded {
+            transform: rotate(180deg);
         }
     `,
 ];

@@ -2,7 +2,7 @@ import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import { icons } from "../../../utils-front";
+import { icons } from "../../styles/theme-icons";
 import { chatMarkdown } from "./markdown";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
@@ -240,6 +240,7 @@ export class ChatOutput extends LitElement {
                                 messages,
                                 msg,
                                 index,
+                                isGenerating: this.isGenerating,
                                 outOfContextClass,
                                 warningIcon,
                                 getCachedMarkdown: this._getCachedMarkdown,
@@ -247,13 +248,13 @@ export class ChatOutput extends LitElement {
                         }
 
                         if (msg.role === "assistant") {
-                            const isGeneratingThis = this.isGenerating && index === lastAssistantIndex;
+                            const isLoadingThis = this.isGenerating && index === lastAssistantIndex;
                             return renderAssistantMessage({
                                 msg,
                                 outOfContextClass,
                                 warningIcon,
-                                isLoading: isGeneratingThis && !msg.content,
-                                isStreaming: isGeneratingThis && !!msg.content,
+                                isGenerating: isLoadingThis && !msg.content,
+                                isStreaming: isLoadingThis && !!msg.content,
                                 getCachedMarkdown: this._getCachedMarkdown,
                             });
                         }

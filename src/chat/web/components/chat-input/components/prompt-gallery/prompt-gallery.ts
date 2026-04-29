@@ -1,6 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
-import { icons } from "../../../../../utils-front";
+import { icons } from "../../../../styles/theme-icons";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
 

@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../../../utils-front";
+import { icons } from "../../../../styles/theme-icons";
 import { galleryButtonStyles } from "./styles";
 
 @customElement("prompt-gallery-buttons")
@@ -18,35 +18,35 @@ export class PromptGalleryButtons extends LitElement {
         if (this.index !== undefined) {
             return html`
                 <div class="row-actions">
-                <button
-                    class="gallery-btn edit-btn"
-                    title="Edit prompt"
-                    @click=${() =>
-                        this.dispatchEvent(
-                            new CustomEvent("edit-prompt", {
-                                detail: { index: this.index },
-                                bubbles: true,
-                                composed: true,
-                            }),
-                        )}
-                >
-                    ${icons.pencil}
-                </button>
+                    <button
+                        class="gallery-btn edit-btn"
+                        title="Edit prompt"
+                        @click=${() =>
+                            this.dispatchEvent(
+                                new CustomEvent("edit-prompt", {
+                                    detail: { index: this.index },
+                                    bubbles: true,
+                                    composed: true,
+                                }),
+                            )}
+                    >
+                        ${icons.pencil}
+                    </button>
 
-                <button
-                    class="gallery-btn delete-btn"
-                    title="Delete prompt"
-                    @click=${() =>
-                        this.dispatchEvent(
-                            new CustomEvent("delete-prompt", {
-                                detail: { index: this.index },
-                                bubbles: true,
-                                composed: true,
-                            }),
-                        )}
-                >
-                    ${icons.trash}
-                </button>
+                    <button
+                        class="gallery-btn delete-btn"
+                        title="Delete prompt"
+                        @click=${() =>
+                            this.dispatchEvent(
+                                new CustomEvent("delete-prompt", {
+                                    detail: { index: this.index },
+                                    bubbles: true,
+                                    composed: true,
+                                }),
+                            )}
+                    >
+                        ${icons.trash}
+                    </button>
                 </div>
             `;
         }

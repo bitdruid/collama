@@ -1,6 +1,7 @@
 import { html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri, icons } from "../../../../utils-front";
+import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../../utils-front";
+import { icons } from "../../../styles/theme-icons";
 import { defaultChatConfig, type ChatConfig } from "../../../types";
 import { BaseModal } from "../../template-components/modal/base-modal";
 import "../../template-components/slider";
