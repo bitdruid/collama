@@ -69,7 +69,10 @@ export class Agent {
                 resetAutoAcceptEdits();
                 const signal = this.abortController.signal;
 
-                const initMessages: ChatHistory[] = [{ role: "system", content: getAgentTemplate() }, ...messages.getMessages()];
+                const initMessages: ChatHistory[] = [
+                    { role: "system", content: getAgentTemplate() },
+                    ...messages.getMessages(),
+                ];
                 const history = new AgentContext(initMessages);
 
                 try {
