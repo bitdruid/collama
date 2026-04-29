@@ -57,7 +57,7 @@ export class ControlPanelButtons extends LitElement {
     private handlePopupClose = () => (this.showContextTree = false);
     private handleGalleryPopupClose = () => (this.showGallery = false);
     private handleContextSearch = (e: CustomEvent) => emit(this, "context-search", { query: e.detail.query });
-    private handleContextAddFile = (e: CustomEvent) => emit(this, "context-add-file", e.detail);
+    private handleContextAdd = (e: CustomEvent) => emit(this, "context-add", e.detail);
     private handleContextRemoveFile = (e: CustomEvent) => {
         const index = this.contexts.findIndex((ctx) => ctx.filePath === e.detail.filePath);
         if (index !== -1) {
@@ -154,7 +154,7 @@ export class ControlPanelButtons extends LitElement {
                       .contexts=${this.contexts}
                       @overlay-close=${this.handlePopupClose}
                       @context-search=${this.handleContextSearch}
-                      @context-add-file=${this.handleContextAddFile}
+                      @context-add=${this.handleContextAdd}
                       @context-remove-file=${this.handleContextRemoveFile}
                   ></collama-context-search>`
                 : ""}

@@ -12,7 +12,7 @@ import { contextTreeStyles } from "./styles";
  *
  * @element collama-context-search
  * @fires context-search - Dispatched when a search query is submitted (debounced).
- * @fires context-add-file - Dispatched when a file or folder is added to the context.
+ * @fires context-add - Dispatched when a file or folder is added to the context.
  * @fires overlay-close - Dispatched (via BasePopup) when the overlay closes.
  */
 @customElement("collama-context-search")
@@ -81,7 +81,7 @@ export class ContextTree extends BasePopup {
         } else {
             // Add context
             this.dispatchEvent(
-                new CustomEvent("context-add-file", {
+                new CustomEvent("context-add", {
                     detail: { filePath: result.filePath, isFolder: result.isFolder },
                     bubbles: true,
                     composed: true,

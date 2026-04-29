@@ -13,7 +13,7 @@ import {
     onAutoAccept,
     onCancel,
     onClearChat,
-    onContextAddFile,
+    onContextAdd,
     onContextCleared,
     onContextSearch,
     onConvertToGhost,
@@ -499,7 +499,7 @@ export class ChatContainer extends LitElement {
                     @auto-accept=${onAutoAccept}
                     @context-cleared=${this.handleContextCleared}
                     @context-search=${onContextSearch}
-                    @context-add-file=${onContextAddFile}
+                    @context-add=${onContextAdd}
                     .contexts=${this.currentContexts}
                     .isGenerating=${this.isGenerating}
                     .agentToken=${this.agentToken}

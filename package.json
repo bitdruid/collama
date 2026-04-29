@@ -6,7 +6,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.6.10",
+    "version": "1.7.0",
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -197,6 +197,12 @@
                     "when": "activeEditor"
                 }
             ],
+            "explorer/context": [
+                {
+                    "submenu": "collama.submenu1",
+                    "group": "0_collama"
+                }
+            ],
             "collama.submenu1": [
                 {
                     "command": "collama.writeDocstrings",
@@ -225,8 +231,7 @@
                 },
                 {
                     "command": "collama.sendToChat",
-                    "group": "3_send",
-                    "when": "activeEditor"
+                    "group": "3_send"
                 }
             ],
             "scm/title": [

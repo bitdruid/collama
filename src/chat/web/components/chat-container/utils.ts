@@ -49,7 +49,8 @@ export const backendApi = {
     toolConfirmResponse: (id: string, value: string, reason: string) =>
         window.vscode.postMessage({ type: "tool-confirm-response", id, value, reason }),
     contextSearch: (query: string) => window.vscode.postMessage({ type: "context-search", query }),
-    contextAddFile: (filePath: string, isFolder: boolean) =>
-        window.vscode.postMessage({ type: "context-add-file", filePath, isFolder }),
-    updateConfig: (key: string, value: unknown) => window.vscode.postMessage({ type: "config-update-request", key, value }),
+    contextAdd: (filePath: string, isFolder?: boolean) =>
+        window.vscode.postMessage({ type: "context-add", filePath, isFolder }),
+    updateConfig: (key: string, value: unknown) =>
+        window.vscode.postMessage({ type: "config-update-request", key, value }),
 };

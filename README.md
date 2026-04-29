@@ -47,6 +47,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Temporary chat sessions — create unlisted, non-persisted sessions for quick experiments
 - Send selected code/files as context with file references
 - **Search and attach files/folders directly from the chat input** - easily browse and add workspace files to your conversation context
+- **Send to chat from file tree** — right-click files/folders in VSCode explorer to add them as context
 - **Chat search functionality** — find messages in your conversation history
 - Real-time context usage bar with automatic trimming
 - Edit messages, copy sessions, scroll navigation

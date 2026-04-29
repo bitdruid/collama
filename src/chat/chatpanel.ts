@@ -8,7 +8,7 @@ import { getUserConfigSnapshot, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { AgentRunner } from "./agent-runner";
 import { recomputeContextState, trimMessagesForContext } from "./context-state";
-import { handleContextAddFile, handleContextSearch } from "./handlers/context-handlers";
+import { handleContextAdd, handleContextSearch } from "./handlers/context-handlers";
 import { SessionHandlers } from "./handlers/session-handlers";
 import { handleSummarizeRequest } from "./handlers/summary-handlers";
 import { SessionManager } from "./session-manager";
@@ -22,6 +22,8 @@ export class ChatPanel {
     private sessionManager: SessionManager;
     private sessionHandlers: SessionHandlers;
     private agentRunner: AgentRunner;
+    private webviewReady = false;
+    private pendingContextAdds: Array<{ filePath: string; isFolder?: boolean }> = [];
 
     get webview(): vscode.Webview {
         return this.webviewView.webview;
@@ -64,7 +66,7 @@ export class ChatPanel {
             handleSummarizeRequest(msg, webview, this.sessionManager, this.agentRunner),
         "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
         "context-search": (msg, webview) => handleContextSearch(msg, webview),
-        "context-add-file": (msg, webview) => handleContextAddFile(msg, webview),
+        "context-add": (msg) => this.addContext(msg.filePath, msg.isFolder),
         "config-update-request": (msg, webview) => this.handleConfigUpdateRequest(msg, webview),
         log: (msg) => logMsg(`WEBVIEW - ${msg.message}`),
     };
@@ -76,6 +78,7 @@ export class ChatPanel {
         const page = new StartPage(this.extContext, this.webviewView);
         const webview = this.webviewView.webview;
 
+        this.webviewReady = false;
         webview.html = page.generate();
         setWebview(webview);
 
@@ -89,10 +92,20 @@ export class ChatPanel {
 
     // ==================== Message Handlers ====================
 
+    async addContext(filePath: string, isFolder?: boolean) {
+        if (!this.webviewReady) {
+            this.pendingContextAdds.push({ filePath, isFolder });
+            return;
+        }
+
+        await handleContextAdd({ filePath, isFolder }, this.webview);
+    }
+
     /**
      * Handles the chat-ready message by sending initial state to the webview.
      */
-    private handleChatReady(webview: vscode.Webview) {
+    private async handleChatReady(webview: vscode.Webview) {
+        this.webviewReady = true;
         const activeSession = this.sessionManager.getActiveSession();
         const messages = activeSession?.messages.getMessages() || [];
         const contextMax = userConfig.apiTokenContextLenInstruct;
@@ -107,6 +120,11 @@ export class ChatPanel {
             contextStartIndex: activeSession?.contextStartIndex || 0,
             config: getUserConfigSnapshot(),
         });
+
+        const pending = this.pendingContextAdds.splice(0);
+        for (const contextAdd of pending) {
+            await handleContextAdd(contextAdd, webview);
+        }
     }
 
     /**
@@ -395,7 +413,9 @@ export class ChatPanel {
             return;
         }
 
-        const { contextStartIndex: completedContextStartIndex, contextUsed } = await recomputeContextState(session.messages);
+        const { contextStartIndex: completedContextStartIndex, contextUsed } = await recomputeContextState(
+            session.messages,
+        );
         this.sessionManager.updateSession(session, (s) => {
             s.contextStartIndex = completedContextStartIndex;
         });
@@ -407,5 +427,4 @@ export class ChatPanel {
         // Update sessions list after response completes
         this.sessionManager.sendSessionsUpdate();
     }
-
 }

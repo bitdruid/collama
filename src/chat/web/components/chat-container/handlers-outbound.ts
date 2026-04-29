@@ -238,8 +238,8 @@ export function onContextSearch(e: CustomEvent) {
 }
 
 /** Requests the backend to read and attach a file/folder as context. */
-export function onContextAddFile(e: CustomEvent) {
-    backendApi.contextAddFile(e.detail.filePath, e.detail.isFolder);
+export function onContextAdd(e: CustomEvent) {
+    backendApi.contextAdd(e.detail.filePath, e.detail.isFolder);
 }
 
 /** Responds to a tool confirmation with "accept". */

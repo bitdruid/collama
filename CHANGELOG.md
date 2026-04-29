@@ -1,6 +1,25 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.0] - 2026-04-29
+
+### Added
+- Reusable banner component
+- Chat-header component (renamed from chat-session)
+- Further testing shell tool
+- Send to chat from file tree — right-click files/folders in VSCode explorer to add them as context to the chat
+
+### Changed
+- Extract animations to dedicated theme-animations module
+- Move settings button to chat header and simplify session management
+- Consolidate modal and dropdown state into activeModal/activeDropdown
+- Convert settings modal to dropdown and reorganize chat components
+- Add explanation parameter to all agent tools
+- Consolidate UI state naming, component structure, and icons
+
+### Fixed
+- Use Node path module for cross-platform path handling
+
 ## [1.6.10] - 2026-04-24
 
 ### Added

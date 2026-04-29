@@ -61,14 +61,25 @@ export async function handleContextSearch(msg: { query: string }, webview: vscod
 
 /**
  * Reads a file or folder and sends it as an attached context to the webview.
+ * Auto-detects if the path is a file or folder if isFolder is not specified.
  */
-export async function handleContextAddFile(msg: { filePath: string; isFolder: boolean }, webview: vscode.Webview) {
-    const { filePath, isFolder } = msg;
+export async function handleContextAdd(msg: { filePath: string; isFolder?: boolean }, webview: vscode.Webview) {
+    const inputPath = msg.filePath;
 
     try {
-        const uri = vscode.Uri.file(filePath);
+        const uri = /^[a-z][a-z0-9+.-]*:\/\//i.test(inputPath) || inputPath.startsWith("file:")
+            ? vscode.Uri.parse(inputPath)
+            : vscode.Uri.file(inputPath);
+        const filePath = uri.fsPath;
         const fileName = path.basename(filePath);
         const relativePath = getRelativePath(uri);
+
+        // Auto-detect file type if not provided
+        let isFolder = msg.isFolder;
+        if (isFolder === undefined) {
+            const stat = await vscode.workspace.fs.stat(uri);
+            isFolder = stat.type === vscode.FileType.Directory;
+        }
 
         if (isFolder) {
             // For folders, list the directory contents as the context
@@ -113,7 +124,7 @@ export async function handleContextAddFile(msg: { filePath: string; isFolder: bo
             },
         });
     } catch (err) {
-        logMsg(`Failed to read context file: ${filePath} - ${err}`);
+        logMsg(`Failed to read context: ${inputPath} - ${err}`);
     }
 }
 

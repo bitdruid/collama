@@ -8,22 +8,53 @@ import { receiveCurrentContext } from "./handlers/context-handlers";
 
 let panel: ChatPanel | null = null;
 
+async function revealChatPanel(): Promise<ChatPanel | null> {
+    await vscode.commands.executeCommand("workbench.view.extension.collama_chat");
+    if (!panel) {
+        logMsg("SendToChat ignored: chat panel is not available");
+    }
+    return panel;
+}
+
+function getExplorerUris(resource?: vscode.Uri, selectedResources?: vscode.Uri[]): vscode.Uri[] {
+    const uris = selectedResources?.length ? selectedResources : resource ? [resource] : [];
+    const unique = new Map<string, vscode.Uri>();
+    for (const uri of uris) {
+        unique.set(uri.toString(), uri);
+    }
+    return [...unique.values()];
+}
+
 /**
  * Registers the command that sends the current selection to the chat view.
  *
  * @param context - The extension context used to register the command.
  */
 export function registerSendToChatCommand(extContext: vscode.ExtensionContext) {
-    const disposable = vscode.commands.registerCommand("collama.sendToChat", async () => {
-        if (panel) {
+    const disposable = vscode.commands.registerCommand(
+        "collama.sendToChat",
+        async (resource?: vscode.Uri, selectedResources?: vscode.Uri[]) => {
+            const chatPanel = await revealChatPanel();
+            if (!chatPanel) {
+                return;
+            }
+
+            const explorerUris = getExplorerUris(resource, selectedResources);
+            if (explorerUris.length > 0) {
+                logMsg(`Explorer: SendToChat triggered (${explorerUris.length} item(s))`);
+                for (const uri of explorerUris) {
+                    await chatPanel.addContext(uri.toString());
+                }
+                return;
+            }
+
             logMsg("Edit (Selection): SendToChat triggered");
-            await vscode.commands.executeCommand("workbench.view.extension.collama_chat");
             const currentContext = await EditorContext.create();
             if (currentContext) {
-                receiveCurrentContext(panel.webview, currentContext);
+                receiveCurrentContext(chatPanel.webview, currentContext);
             }
-        }
-    });
+        },
+    );
     extContext.subscriptions.push(disposable);
 }
 
