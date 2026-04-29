@@ -17,10 +17,9 @@ export class SessionButton extends LitElement {
                 @click=${this._handleClick}
                 title="Toggle chat history"
                 ?disabled=${this.disabled}
-                data-base-dropdown-anchor
+                data-base-overlay-anchor
             >
                 <span class="session-icon">${icons.history}</span>
-                <span class="toggle-icon">${icons.chevronDown}</span>
             </button>
         `;
     }

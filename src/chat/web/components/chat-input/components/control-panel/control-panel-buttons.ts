@@ -2,7 +2,7 @@ import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { icons } from "../../../../styles/theme-icons";
-import { defaultChatConfig, type ChatConfig, type ContextSearchResult } from "../../../../types";
+import { type ContextSearchResult } from "../../../../types";
 import "./clear-chat-confirm/clear-chat-confirm";
 import "./convert-ghost-confirm/convert-ghost-confirm";
 import { controlPanelButtonStyles } from "./styles";
@@ -21,7 +21,6 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
-    @property({ type: Object }) config: ChatConfig = defaultChatConfig;
 
     @state() private autoAccept = false;
     @state() private showContextTree = false;
@@ -50,7 +49,6 @@ export class ControlPanelButtons extends LitElement {
     private handleClearChat = () => (this.showClearConfirm = true);
     private handleClearChatConfirmed = () => emit(this, "clear-chat");
     private handleClearConfirmClose = () => (this.showClearConfirm = false);
-    private handleOpenSettings = () => emit(this, "open-settings");
     private handleToggleContextTree = () => this._toggleContextTree();
     private handleCancel = () => emit(this, "cancel");
     private handleToggleGallery = () => (this.showGallery = true);
@@ -213,15 +211,6 @@ export class ControlPanelButtons extends LitElement {
         `;
     }
 
-    private _renderSettings() {
-        const showBadge = this.config.agentic && !this.config.enableEditTools; /* || !this.config.enableShellTool */
-        return html`
-            <button-settings title="Open settings" data-base-overlay-anchor @click=${this.handleOpenSettings}>
-                ${icons.settings} ${showBadge ? html`<span class="button-badge">!</span>` : ""}
-            </button-settings>
-        `;
-    }
-
     private _renderCompress() {
         return html`
             <button-compress title="Summarize conversation" @click=${this.handleSummarizeConversation}>
@@ -247,8 +236,7 @@ export class ControlPanelButtons extends LitElement {
 
         return html`
             <button-row>
-                ${this._renderGhostChat()} ${this._renderClearChat()} ${this._renderSettings()}
-                <span class="spacer"></span>
+                ${this._renderGhostChat()} ${this._renderClearChat()} <span class="spacer"></span>
                 ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
                 ${this._renderAutoAccept()} ${this._renderSubmit()}
             </button-row>

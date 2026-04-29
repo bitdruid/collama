@@ -2,7 +2,7 @@ import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
 import { adjustTextareaRows } from "../../../../../utils-front";
-import { defaultChatConfig, type ChatConfig, type ContextSearchResult } from "../../../../types";
+import { type ContextSearchResult } from "../../../../types";
 import "./control-panel-buttons";
 import { controlPanelStyles } from "./styles";
 
@@ -21,7 +21,6 @@ export class ControlPanel extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
-    @property({ type: Object }) config: ChatConfig = defaultChatConfig;
 
     @query("textarea")
     private textarea!: HTMLTextAreaElement;
@@ -95,7 +94,6 @@ export class ControlPanel extends LitElement {
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.isGhost}
                     .contextSearchResults=${this.contextSearchResults}
-                    .config=${this.config}
                     @submit-click=${this._handleSubmit}
                 ></collama-control-panel-buttons>
             </div>

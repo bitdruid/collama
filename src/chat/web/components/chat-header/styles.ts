@@ -7,6 +7,14 @@ export const chatHeaderStyles = css`
         justify-content: space-between;
         align-items: center;
         padding: 8px;
+        gap: 8px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
     }
 
     .usage-icon {

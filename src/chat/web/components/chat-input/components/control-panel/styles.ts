@@ -47,7 +47,6 @@ export const controlPanelButtonStyles = css`
     button-auto-accept,
     button-ghost-chat,
     button-clear-chat,
-    button-settings,
     button-token-counter,
     button-duration-counter {
         display: inline-flex;
@@ -146,14 +145,6 @@ export const controlPanelButtonStyles = css`
     }
     button-clear-chat:hover {
         background-color: ${themeColors.clearChatHover};
-    }
-
-    button-settings {
-        background-color: ${themeColors.settings};
-        position: relative;
-    }
-    button-settings:hover {
-        background-color: ${themeColors.settingsHover};
     }
 
     button-token-counter,
