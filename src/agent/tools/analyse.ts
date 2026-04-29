@@ -117,8 +117,6 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
     }
 }
 
-export const getDiagnostics_prompt =
-    "getDiagnostics tool: Get diagnostics (errors, warnings) from the language server.";
 export const getDiagnostics_def = {
     type: "function" as const,
     function: {
@@ -128,6 +126,10 @@ export const getDiagnostics_def = {
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence explaining why this tool call is needed for the user's request.",
+                },
                 filePath: {
                     type: "string",
                     description:
@@ -140,7 +142,7 @@ export const getDiagnostics_def = {
                         "Minimum severity level to include. 'error' shows only errors, 'warning' shows errors and warnings (default), 'hint' shows everything.",
                 },
             },
-            required: [],
+            required: ["explanation"],
         },
     },
 };

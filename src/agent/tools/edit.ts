@@ -23,6 +23,7 @@ export function resolveToolConfirm(id: string, value: string, reason: string): v
 export function requestToolConfirm(
     action: string,
     filePath: string,
+    explanation: string,
 ): Promise<{ value: string | null; reason: string }> {
     const webview = getWebview();
     if (!webview) {
@@ -31,7 +32,7 @@ export function requestToolConfirm(
     const id = String(++_idCounter);
     return new Promise((resolve) => {
         _pending.set(id, resolve);
-        webview.postMessage({ type: "tool-confirm-request", id, action, filePath });
+        webview.postMessage({ type: "tool-confirm-request", id, action, filePath, explanation });
     });
 }
 
@@ -175,6 +176,7 @@ async function closePreviewTabs(previewUri: vscode.Uri, originalUri?: vscode.Uri
 async function handleChanges(
     filePath: string,
     newContent: string,
+    explanation: string,
     options: {
         /** Present → edit/diff mode. Absent → create mode. */
         originalContent?: string;
@@ -223,7 +225,7 @@ async function handleChanges(
                 const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, filePath) : filePath;
 
                 const action = isEdit ? "edit" : "create";
-                const { value, reason } = await requestToolConfirm(action, relativePath);
+                const { value, reason } = await requestToolConfirm(action, relativePath, explanation);
 
                 if (!value) {
                     await closePreviewTabs(previewUri, originalUri);
@@ -271,7 +273,12 @@ async function handleChanges(
  * @param args.oldString - The exact string to find in the file (must match uniquely).
  * @param args.newString - The replacement string.
  */
-export async function edit_exec(args: { filePath: string; oldString: string; newString: string }): Promise<string> {
+export async function edit_exec(args: {
+    filePath: string;
+    oldString: string;
+    newString: string;
+    explanation: string;
+}): Promise<string> {
     logMsg(`Agent - use edit-tool file=${args.filePath}`);
 
     const ws = secureWorkspace(args.filePath, "edit");
@@ -328,7 +335,7 @@ export async function edit_exec(args: { filePath: string; oldString: string; new
             });
         }
 
-        const result = await handleChanges(ws.fullPath, newContent, {
+        const result = await handleChanges(ws.fullPath, newContent, args.explanation, {
             originalContent: content,
             title: `collama – Edit: ${args.filePath}`,
             progressMessage: `collama: Editing ${args.filePath}…`,
@@ -347,7 +354,6 @@ export async function edit_exec(args: { filePath: string; oldString: string; new
     }
 }
 
-export const edit_prompt = "edit tool: Edit a file by replacing exact string matches.";
 export const edit_def = {
     type: "function" as const,
     function: {
@@ -357,6 +363,10 @@ export const edit_def = {
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence describing what the command does in the repo.",
+                },
                 filePath: {
                     type: "string",
                     description: "Path to the file to edit (relative to workspace root).",
@@ -371,7 +381,7 @@ export const edit_def = {
                     description: "The replacement string.",
                 },
             },
-            required: ["filePath", "oldString", "newString"],
+            required: ["explanation", "filePath", "oldString", "newString"],
         },
     },
 };
@@ -383,7 +393,7 @@ export const edit_def = {
  * @param args.filePath - Relative path to the file or folder to create.
  * @param args.content - File content. If omitted, creates a folder instead.
  */
-export async function create_exec(args: { filePath: string; content?: string }): Promise<string> {
+export async function create_exec(args: { filePath: string; content?: string; explanation: string }): Promise<string> {
     const isFolder = args.content === undefined;
     logMsg(`Agent - use create-tool ${isFolder ? "folder" : "file"}=${args.filePath}`);
 
@@ -417,7 +427,7 @@ export async function create_exec(args: { filePath: string; content?: string }):
                 });
             }
 
-            const { value, reason } = await requestToolConfirm("create folder", args.filePath);
+            const { value, reason } = await requestToolConfirm("create folder", args.filePath, args.explanation);
 
             if (!value) {
                 return JSON.stringify({
@@ -453,7 +463,7 @@ export async function create_exec(args: { filePath: string; content?: string }):
         }
 
         // Create file with preview
-        const result = await handleChanges(ws.fullPath, args.content!, {
+        const result = await handleChanges(ws.fullPath, args.content!, args.explanation, {
             title: `collama – New File: ${args.filePath}`,
             progressMessage: `collama: Creating ${args.filePath}…`,
         });
@@ -471,7 +481,6 @@ export async function create_exec(args: { filePath: string; content?: string }):
     }
 }
 
-export const create_prompt = "create tool: Create a new file or folder.";
 export const create_def = {
     type: "function" as const,
     function: {
@@ -481,6 +490,10 @@ export const create_def = {
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence describing what the command does in the repo.",
+                },
                 filePath: {
                     type: "string",
                     description: "Path to the new file or folder (relative to workspace root).",
@@ -490,7 +503,7 @@ export const create_def = {
                     description: "File content. Omit to create a folder instead.",
                 },
             },
-            required: ["filePath"],
+            required: ["explanation", "filePath"],
         },
     },
 };
@@ -500,7 +513,7 @@ export const create_def = {
  *
  * @param args.filePath - Relative path to the file or folder to delete.
  */
-export async function delete_exec(args: { filePath: string }): Promise<string> {
+export async function delete_exec(args: { filePath: string; explanation: string }): Promise<string> {
     logMsg(`Agent - use delete-tool file=${args.filePath}`);
 
     const ws = secureWorkspace(args.filePath, "delete");
@@ -533,7 +546,7 @@ export async function delete_exec(args: { filePath: string }): Promise<string> {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
         const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, ws.fullPath) : ws.fullPath;
 
-        const { value, reason } = await requestToolConfirm("delete", relativePath);
+        const { value, reason } = await requestToolConfirm("delete", relativePath, args.explanation);
 
         if (!value) {
             return JSON.stringify({
@@ -563,7 +576,6 @@ export async function delete_exec(args: { filePath: string }): Promise<string> {
     }
 }
 
-export const delete_prompt = "delete tool: Delete a file or folder from the workspace.";
 export const delete_def = {
     type: "function" as const,
     function: {
@@ -572,12 +584,16 @@ export const delete_def = {
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence describing what the command does in the repo.",
+                },
                 filePath: {
                     type: "string",
                     description: "Path to the file or folder to delete (relative to workspace root).",
                 },
             },
-            required: ["filePath"],
+            required: ["explanation", "filePath"],
         },
     },
 };

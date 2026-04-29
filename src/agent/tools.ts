@@ -1,3 +1,4 @@
+import os from "os";
 import path from "path";
 import * as vscode from "vscode";
 import { userConfig } from "../config";
@@ -13,11 +14,12 @@ import {
     resetAutoAcceptEdits,
 } from "./tools/edit";
 import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
+// import { fetch_def, fetch_exec } from "./tools/fetch";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
-import { debug_def, debug_exec } from "./tools/shell";
+import { shell_def, shell_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
-export type ToolCategory = "explore" | "git" | "edit" | "analyse" | "shell";
+export type ToolCategory = "explore" | "git" | "edit" | "analyse" | "shell"; // | "fetch";
 export type ToolHistoryPolicy = "dedupeExactArgs" | "keepAll";
 
 function formatToolTargetValue(key: string, raw: unknown): string {
@@ -178,7 +180,19 @@ export function isWithinRoot(root: string, resolvedPath: string): boolean {
 }
 
 /**
+ * Returns true if the given resolvedPath is within allowed temp directories.
+ * Allowed: os.tmpdir()
+ */
+export function isWithinAllowedTemp(resolvedPath: string): boolean {
+    const normalizedPath = path.resolve(resolvedPath);
+    const tmpDir = os.tmpdir();
+    const normalizedTmp = path.resolve(tmpDir);
+    return normalizedPath === normalizedTmp || normalizedPath.startsWith(normalizedTmp + path.sep);
+}
+
+/**
  * Resolves a relative path against the workspace root and validates it doesn't escape.
+ * Also allows explore tools to access os.tmpdir() files (e.g., from fetch tool).
  * Returns { root, fullPath } on success, or { error } (a ready-to-return JSON string) on failure.
  */
 export function secureWorkspace(relPath: string, toolName: string): { root: string; fullPath: string; error: string } {
@@ -188,11 +202,15 @@ export function secureWorkspace(relPath: string, toolName: string): { root: stri
         return { root: "", fullPath: "", error: JSON.stringify({ error: "No workspace root" }) };
     }
     const fullPath = path.resolve(root, relPath);
-    if (!isWithinRoot(root, fullPath)) {
-        logAgent(`[${toolName}] Path must not escape the workspace root: ${relPath}`);
-        return { root: "", fullPath: "", error: JSON.stringify({ error: "Path must not escape the workspace root" }) };
+    if (isWithinRoot(root, fullPath)) {
+        return { root, fullPath, error: "" };
     }
-    return { root, fullPath, error: "" };
+    // Explore tools are read-only and may inspect temporary files. Edit tools stay workspace-bound.
+    if (toolRegistry[toolName]?.category === "explore" && isWithinAllowedTemp(fullPath)) {
+        return { root: os.tmpdir(), fullPath, error: "" };
+    }
+    logAgent(`[${toolName}] Path must not escape the workspace root: ${relPath}`);
+    return { root: "", fullPath: "", error: JSON.stringify({ error: "Path must not escape the workspace root" }) };
 }
 
 /**
@@ -268,13 +286,20 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         },
         execute: gitDiff_exec,
     },
-    Debug: {
+    shell: {
         category: "shell",
         historyPolicy: "keepAll",
-        definition: debug_def,
+        definition: shell_def,
         targetKey: (args) => formatToolTargetValue("command", args.command),
-        execute: debug_exec,
+        execute: shell_exec,
     },
+    // fetch: {
+    //     category: "fetch",
+    //     historyPolicy: "dedupeExactArgs",
+    //     definition: fetch_def,
+    //     targetKey: (args) => formatToolTargetValue("url", args.url),
+    //     execute: fetch_exec,
+    // },
     edit: {
         category: "edit",
         historyPolicy: "keepAll",

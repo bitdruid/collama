@@ -1,12 +1,43 @@
 import fs from "fs";
 import { globby } from "globby";
+import os from "os";
 import path from "path";
 import { logAgent, logMsg } from "../../logging";
-import { isWithinRoot, secureWorkspace } from "../tools";
+import { isWithinAllowedTemp, isWithinRoot, secureWorkspace } from "../tools";
 
 /** Returns true if the pattern contains '..' path segments. */
 function hasPathTraversal(pattern: string): boolean {
     return pattern.split(/[/\\]/).includes("..");
+}
+
+function isAbsolutePattern(pattern: string): boolean {
+    return path.isAbsolute(pattern);
+}
+
+function resolveExplorePatternRoot(
+    pattern: string,
+    toolName: "grep" | "glob",
+): { root: string; pattern: string; error: string } {
+    if (!isAbsolutePattern(pattern)) {
+        const ws = secureWorkspace(".", toolName);
+        return { root: ws.root, pattern, error: ws.error };
+    }
+
+    const normalizedPattern = path.resolve(pattern);
+    if (!isWithinAllowedTemp(normalizedPattern)) {
+        logAgent(`[explore-tool] Absolute pattern must stay within temp dir: ${pattern}`);
+        return {
+            root: "",
+            pattern: "",
+            error: JSON.stringify({ error: "Absolute pattern must stay within temp dir" }),
+        };
+    }
+
+    return { root: os.tmpdir(), pattern: path.relative(os.tmpdir(), normalizedPattern) || ".", error: "" };
+}
+
+function formatExplorePath(root: string, file: string): string {
+    return path.resolve(root) === path.resolve(os.tmpdir()) ? path.join(root, file) : file;
 }
 
 /**
@@ -56,17 +87,21 @@ export const read_def = {
     function: {
         name: "read",
         description:
-            "Read file contents with line numbers. If no range given, reads the entire file. " +
+            "Read file contents with line numbers. To read the full file skip line numbers. " +
             "If output exceeds ~10k tokens, returns an error with total lineCount — use that to pick a smaller startLine/endLine range. " +
-            "For large files read in chunks e.g. 1-200, 201-400.",
+            "For large files read in large chunks e.g. 1-200.",
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence explaining why this tool call is needed for the user's request.",
+                },
                 filePath: { type: "string", description: "Path to the file" },
                 startLine: { type: "number", description: "Starting line (1-based, inclusive)" },
                 endLine: { type: "number", description: "Ending line (1-based, inclusive)" },
             },
-            required: ["filePath"],
+            required: ["explanation", "filePath"],
         },
     },
 };
@@ -82,11 +117,6 @@ export const read_def = {
 export async function grep_exec(args: { pattern: string; glob?: string }): Promise<string> {
     logMsg(`Agent - use grep-tool pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
 
-    const ws = secureWorkspace(".", "grep");
-    if (ws.error) {
-        return ws.error;
-    }
-
     let regex: RegExp;
     try {
         regex = new RegExp(args.pattern);
@@ -99,19 +129,27 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
         return JSON.stringify({ error: "Glob must not contain path traversal (..)" });
     }
 
+    const ws =
+        args.glob !== undefined && isAbsolutePattern(args.glob)
+            ? resolveExplorePatternRoot(args.glob, "grep")
+            : { ...secureWorkspace(".", "grep"), pattern: args.glob ?? "**/*" };
+    if (ws.error) {
+        return ws.error;
+    }
+
     const files = (
-        await globby(args.glob ?? "**/*", {
+        await globby(ws.pattern, {
             cwd: ws.root,
             dot: false,
             gitignore: true,
             onlyFiles: true,
             ignore: ["**/node_modules/**", "**/.git/**", "**/.venv/**", "**/venv/**", "**/.DS_Store"],
         })
-    ).filter((f) => isWithinRoot(ws.root, path.join(ws.root, f)));
+    ).filter((f) => isWithinRoot(ws.root, path.resolve(ws.root, f)));
 
     const results: string[] = [];
     for (const file of files) {
-        const fullPath = path.join(ws.root, file);
+        const fullPath = path.resolve(ws.root, file);
         let content: string;
         try {
             content = fs.readFileSync(fullPath, "utf-8");
@@ -121,23 +159,26 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
         const lines = content.split("\n");
         for (let i = 0; i < lines.length; i++) {
             if (regex.test(lines[i])) {
-                results.push(`${file}:${i + 1}:${lines[i].trim()}`);
+                results.push(`${formatExplorePath(ws.root, file)}:${i + 1}:${lines[i].trim()}`);
             }
         }
     }
 
     return results.length > 0 ? results.join("\n") : "No matches found.";
 }
-export const grep_prompt = "grep tool: Grep file contents for a regex pattern.";
 export const grep_def = {
     type: "function" as const,
     function: {
         name: "grep",
         description:
-            "Grep file contents for a regex pattern. STRATEGY: Start with broad, common patterns (e.g., a function name, variable name, or keyword), then use complex patterns. If no results, try a simpler pattern once, then stop.",
+            "Grep file contents for a regex pattern. Returns filenames with exact line of the pattern. Use to locate strings.",
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence explaining why this tool call is needed for the user's request.",
+                },
                 pattern: {
                     type: "string",
                     description: "Valid regex pattern to search for.",
@@ -147,7 +188,7 @@ export const grep_def = {
                     description: "Optional glob pattern to restrict files (e.g. '**/*.ts'). Defaults to all files.",
                 },
             },
-            required: ["pattern"],
+            required: ["explanation", "pattern"],
         },
     },
 };
@@ -162,15 +203,10 @@ export const grep_def = {
 export async function glob_exec(args: { pattern: string }): Promise<string> {
     logMsg(`Agent - use glob-tool pattern=${args.pattern}`);
 
-    const ws = secureWorkspace(".", "glob");
-    if (ws.error) {
-        return ws.error;
-    }
-
     let pattern = args.pattern;
 
     // 🔧 Normalize simple filenames → **/filename
-    if (!pattern.includes("/") && !pattern.includes("*")) {
+    if (!isAbsolutePattern(pattern) && !pattern.includes("/") && !pattern.includes("*")) {
         pattern = `**/${pattern}`;
     }
 
@@ -179,10 +215,17 @@ export async function glob_exec(args: { pattern: string }): Promise<string> {
         return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
     }
 
+    const ws = isAbsolutePattern(pattern)
+        ? resolveExplorePatternRoot(pattern, "glob")
+        : { ...secureWorkspace(".", "glob"), pattern };
+    if (ws.error) {
+        return ws.error;
+    }
+
     let matches: string[];
     try {
         matches = (
-            await globby(pattern, {
+            await globby(ws.pattern, {
                 cwd: ws.root,
                 dot: false,
                 gitignore: true,
@@ -190,7 +233,9 @@ export async function glob_exec(args: { pattern: string }): Promise<string> {
                 markDirectories: true,
                 ignore: ["**/node_modules/**", "**/.git/**", "**/.venv/**", "**/venv/**", "**/.DS_Store"],
             })
-        ).filter((f) => isWithinRoot(ws.root, path.join(ws.root, f)));
+        )
+            .filter((f) => isWithinRoot(ws.root, path.resolve(ws.root, f)))
+            .map((f) => formatExplorePath(ws.root, f));
     } catch {
         return JSON.stringify({ error: `Invalid glob pattern: ${args.pattern}` });
     }
@@ -202,7 +247,6 @@ export async function glob_exec(args: { pattern: string }): Promise<string> {
     });
 }
 
-export const glob_prompt = "glob tool: Find files and folders by glob pattern.";
 export const glob_def = {
     type: "function" as const,
     function: {
@@ -211,12 +255,16 @@ export const glob_def = {
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence explaining why this tool call is needed for the user's request.",
+                },
                 pattern: {
                     type: "string",
                     description: "Glob pattern (e.g. '**/*.ts', 'src/**/*.js', or just 'file.ts' to search anywhere).",
                 },
             },
-            required: ["pattern"],
+            required: ["explanation", "pattern"],
         },
     },
 };

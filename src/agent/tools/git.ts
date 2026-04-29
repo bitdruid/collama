@@ -116,7 +116,6 @@ export async function gitLog_exec(args: {
     }
 }
 
-export const gitLog_prompt = "gitLog tool: Get git log info — commits or branches.";
 export const gitLog_def = {
     type: "function" as const,
     function: {
@@ -125,6 +124,10 @@ export const gitLog_def = {
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence explaining why this tool call is needed for the user's request.",
+                },
                 mode: {
                     type: "string",
                     description: "'commits' (default) to list commits, 'branches' to list branches.",
@@ -147,7 +150,7 @@ export const gitLog_def = {
                     description: "Include remote branches (default false). Only for mode 'branches'.",
                 },
             },
-            required: [],
+            required: ["explanation"],
         },
     },
 };
@@ -246,7 +249,6 @@ export async function gitDiff_exec(args: {
     }
 }
 
-export const gitDiff_prompt = "gitDiff tool: Get a git diff of working tree or between commits.";
 export const gitDiff_def = {
     type: "function" as const,
     function: {
@@ -256,6 +258,10 @@ export const gitDiff_def = {
         parameters: {
             type: "object",
             properties: {
+                explanation: {
+                    type: "string",
+                    description: "One sentence explaining why this tool call is needed for the user's request.",
+                },
                 fromCommit: {
                     type: "string",
                     description: "Starting commit hash or branch name. If omitted, shows working tree changes instead.",
@@ -273,7 +279,7 @@ export const gitDiff_def = {
                     description: "Filter the diff to a specific file.",
                 },
             },
-            required: [],
+            required: ["explanation"],
         },
     },
 };
