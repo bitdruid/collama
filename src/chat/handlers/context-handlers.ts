@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import path from "path";
 import { EditorContext, getRelativePath } from "../../common/context-editor";
 import { logMsg } from "../../logging";
 
@@ -22,23 +23,24 @@ export async function handleContextSearch(msg: { query: string }, webview: vscod
 
         const results = uris.map((uri) => {
             const fullPath = uri.fsPath;
-            const relativePath = workspaceRoot ? fullPath.replace(workspaceRoot + "/", "") : fullPath;
-            const fileName = fullPath.split("/").pop() || fullPath;
+            const relativePath = workspaceRoot ? path.relative(workspaceRoot, fullPath) : fullPath;
+            const fileName = path.basename(fullPath);
             return { fileName, filePath: fullPath, relativePath, isFolder: false };
         });
 
         // Also search for matching folders
         const folderUris = await vscode.workspace.findFiles(`${pattern}/**/*`, excludePattern, 50);
         const seenFolders = new Set<string>();
+        const sep = path.sep;
         for (const uri of folderUris) {
-            const parts = uri.fsPath.split("/");
+            const parts = uri.fsPath.split(sep);
             // Walk up the path to find folders matching the query
             for (let i = parts.length - 2; i >= 0; i--) {
                 if (parts[i].toLowerCase().includes(query.toLowerCase())) {
-                    const folderPath = parts.slice(0, i + 1).join("/");
+                    const folderPath = parts.slice(0, i + 1).join(sep);
                     if (!seenFolders.has(folderPath) && folderPath !== workspaceRoot) {
                         seenFolders.add(folderPath);
-                        const relativePath = workspaceRoot ? folderPath.replace(workspaceRoot + "/", "") : folderPath;
+                        const relativePath = workspaceRoot ? path.relative(workspaceRoot, folderPath) : folderPath;
                         results.unshift({
                             fileName: parts[i],
                             filePath: folderPath,
@@ -65,7 +67,7 @@ export async function handleContextAddFile(msg: { filePath: string; isFolder: bo
 
     try {
         const uri = vscode.Uri.file(filePath);
-        const fileName = filePath.split("/").pop() || filePath;
+        const fileName = path.basename(filePath);
         const relativePath = getRelativePath(uri);
 
         if (isFolder) {
