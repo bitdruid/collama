@@ -14,7 +14,7 @@ export class ChatContainerLoading extends LitElement {
             transition: opacity 0.3s;
         }
 
-        :host([isloading]) {
+        :host([isgenerating]) {
             opacity: 1;
         }
 

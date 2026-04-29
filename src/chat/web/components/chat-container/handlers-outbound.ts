@@ -61,7 +61,7 @@ export function onSummarizeConversation(host: ChatContainer) {
 
 /** Accepts the forced auto-summary prompt and starts conversation summarization. */
 export function onAcquireAutoSummaryAccept(host: ChatContainer) {
-    host.showAcquireModal = false;
+    host.activeModal = "";
     host.beginAutoSummary();
     onSummarizeConversation(host);
 }
@@ -246,6 +246,7 @@ export function onContextAddFile(e: CustomEvent) {
 export function onToolConfirmAccept(host: ChatContainer, e: CustomEvent) {
     const id = e.detail.id;
     host.toolConfirmRequest = null;
+    host.activeModal = "";
     logWebview(`Tool confirm accept: ${id}`);
     backendApi.toolConfirmResponse(id, "accept", "User accepted the action");
 }
@@ -254,6 +255,7 @@ export function onToolConfirmAccept(host: ChatContainer, e: CustomEvent) {
 export function onToolConfirmAcceptAll(host: ChatContainer, e: CustomEvent) {
     const id = e.detail.id;
     host.toolConfirmRequest = null;
+    host.activeModal = "";
     logWebview(`Tool confirm accept-all: ${id}`);
     backendApi.toolConfirmResponse(id, "acceptAll", "User accepted all actions");
 }
@@ -262,6 +264,7 @@ export function onToolConfirmAcceptAll(host: ChatContainer, e: CustomEvent) {
 export function onToolConfirmCancel(host: ChatContainer, e: CustomEvent) {
     const { id, reason } = e.detail;
     host.toolConfirmRequest = null;
+    host.activeModal = "";
     logWebview(`Tool confirm cancel: ${id}`);
     backendApi.toolConfirmResponse(id, "cancel", reason);
 }

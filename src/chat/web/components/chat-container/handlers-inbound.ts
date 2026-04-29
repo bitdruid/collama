@@ -172,6 +172,7 @@ function handleContextTrimmed(host: ChatContainer, msg: any) {
 /** Shows the tool confirmation modal when the backend requests user approval. */
 function handleToolConfirmRequest(host: ChatContainer, msg: any) {
     host.toolConfirmRequest = { id: msg.id, action: msg.action, filePath: msg.filePath, explanation: msg.explanation };
+    host.activeModal = "toolConfirm";
     logWebview(`Tool confirm request: ${msg.action} ${msg.filePath}`);
     host.updateComplete.then(() => {
         requestAnimationFrame(() => {
@@ -189,7 +190,7 @@ function handleAgentError(host: ChatContainer, msg: any) {
     const errorMessage = (msg.errorMessage || "").trim().replace(/^--- ERROR ---\s*/, "");
     const history = (msg.exportedChat || "").trim();
     host.errorModalContent = `ERROR:\n${errorMessage}\n\nHISTORY:\n${history}`;
-    host.showErrorModal = true;
+    host.activeModal = "error";
     logWebview(`Agent error: ${msg.error?.message}`);
 }
 

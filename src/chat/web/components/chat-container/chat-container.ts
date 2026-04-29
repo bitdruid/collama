@@ -1,13 +1,12 @@
 import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-
 import { AttachedContext, ChatContext, ChatHistory } from "../../../../common/context-chat";
 import { defaultChatConfig, type ChatConfig, type ChatSession, type ToolConfirmRequest } from "../../types";
+import "../chat-dropdown";
 import { ChatSessionStore } from "../chat-header/chat-session-store";
-import "../chat-modal/acquire-modal/acquire-modal";
-import "../chat-modal/settings-modal/settings-modal";
-import "../chat-modal/tool-confirm-modal/tool-confirm-modal";
+import "../chat-modal";
 import "../chat-notification/context-notification/context-notification";
+import { BaseDropdown } from "../template-components/dropdown/base-dropdown";
 import { createInboundDispatcher } from "./handlers-inbound";
 import {
     onAcquireAutoSummaryAccept,
@@ -39,6 +38,9 @@ import {
 import { chatContainerStyles } from "./styles";
 import { backendApi } from "./utils";
 
+type ActiveDropdown = "" | "session" | "settings";
+type ActiveModal = "" | "error" | "toolConfirm" | "acquire";
+
 /**
  * Root webview component that orchestrates the chat UI.
  *
@@ -66,16 +68,15 @@ export class ChatContainer extends LitElement {
     @state() messages: ChatHistory[] = [];
     @state() showScrollButton: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
-    @state() showAcquireModal = false;
     @state() acquireModalTitle = "";
     @state() acquireModalDescription = "";
-    @state() showErrorModal = false;
     @state() errorModalContent = "";
-    @state() showSettingsModal = false;
+    @state() activeModal: ActiveModal = "";
     @state() snakeLoadingSpeed = 1500;
     @state() snakeEyecandyMode = false;
     @state() flatDesign = false;
     @state() agentsMdActive = false;
+    @state() activeDropdown: ActiveDropdown = "";
 
     // Reference to store's ChatContext (single source of truth)
     // Public so handlers can access it
@@ -96,6 +97,9 @@ export class ChatContainer extends LitElement {
 
     @query("collama-scroll-down")
     private scrollDown!: HTMLElement;
+
+    @query("collama-session-dropdown, collama-settings-dropdown")
+    private activeDropdownElement?: BaseDropdown;
 
     private handleExportSession = (e: CustomEvent) => onExportSession(this, e);
     private handleSelectSession = (e: CustomEvent) => onSelectSession(e);
@@ -118,14 +122,8 @@ export class ChatContainer extends LitElement {
     private handleToolConfirmCancel = (e: CustomEvent) => onToolConfirmCancel(this, e);
     private handleScrollDown = () => this.scrollToBottom();
     private handleErrorModalClose = () => {
-        this.showErrorModal = false;
+        this.activeModal = "";
         this.errorModalContent = "";
-    };
-    private handleOpenSettings = () => {
-        this.showSettingsModal = true;
-    };
-    private handleSettingsModalClose = () => {
-        this.showSettingsModal = false;
     };
     private handleSettingsUpdate = (e: CustomEvent) => {
         const { key, value } = e.detail as { key: keyof ChatConfig; value: ChatConfig[keyof ChatConfig] };
@@ -150,6 +148,11 @@ export class ChatContainer extends LitElement {
         this.flatDesign = Boolean(e.detail?.value);
         const state = window.vscode.getState?.() || {};
         window.vscode.setState?.({ ...state, flatDesign: this.flatDesign });
+    };
+    private handleToggleSessionDropdown = () => this.toggleDropdown("session");
+    private handleToggleSettingsDropdown = () => this.toggleDropdown("settings");
+    private handleDropdownClose = () => {
+        this.activeDropdown = "";
     };
 
     /** Creates a fresh array snapshot from store's ChatContext to trigger a Lit re-render. */
@@ -177,9 +180,14 @@ export class ChatContainer extends LitElement {
     }
 
     private _onStoreChange = () => {
+        const store = ChatSessionStore.instance;
         // Refresh ChatContext reference when store changes
         // This handles the case where chatContext was undefined initially
-        this.chatContext = ChatSessionStore.instance.getActiveChatContext();
+        this.chatContext = store.getActiveChatContext();
+        this.sessions = [...store.sessions];
+        this.activeSessionId = store.activeSessionId;
+        this.contextUsed = store.contextUsed;
+        this.contextMax = store.contextMax;
         this.syncMessages();
     };
 
@@ -258,8 +266,9 @@ export class ChatContainer extends LitElement {
         super.updated(changed);
         if (changed.has("activeSessionId")) {
             this._wasContextAtAutoSummaryThreshold = false;
-            this.showAcquireModal = false;
+            this.activeModal = "";
         }
+
         if (
             changed.has("contextUsed") ||
             changed.has("contextMax") ||
@@ -286,7 +295,7 @@ export class ChatContainer extends LitElement {
             return;
         }
 
-        if (this._wasContextAtAutoSummaryThreshold || this.isGenerating || this.showAcquireModal) {
+        if (this._wasContextAtAutoSummaryThreshold || this.isGenerating || this.activeModal === "acquire") {
             return;
         }
 
@@ -297,7 +306,7 @@ export class ChatContainer extends LitElement {
     private _showAcquireModal(title: string, description: string) {
         this.acquireModalTitle = title;
         this.acquireModalDescription = description;
-        this.showAcquireModal = true;
+        this.activeModal = "acquire";
     }
 
     beginAutoSummary() {
@@ -338,6 +347,93 @@ export class ChatContainer extends LitElement {
         return this._getContextUsageRatio() >= 0.95;
     }
 
+    private toggleDropdown(kind: ActiveDropdown) {
+        if (!kind) {
+            return;
+        }
+        this.activeDropdown = kind;
+        this.activeDropdownElement?.toggle();
+    }
+
+    private get showSettingsBadge(): boolean {
+        return this.config.agentic && !this.config.enableEditTools;
+    }
+
+    private renderActiveDropdown() {
+        if (this.activeDropdown === "session") {
+            return html`
+                <collama-session-dropdown
+                    .autoShow=${true}
+                    .sessions=${this.sessions}
+                    .activeSessionId=${this.activeSessionId}
+                    @dropdown-close=${this.handleDropdownClose}
+                    @export-session=${this.handleExportSession}
+                    @select-session=${this.handleSelectSession}
+                    @delete-session=${this.handleDeleteSession}
+                    @rename-session=${this.handleRenameSession}
+                    @copy-session=${onCopySession}
+                ></collama-session-dropdown>
+            `;
+        }
+
+        if (this.activeDropdown === "settings") {
+            return html`
+                <collama-settings-dropdown
+                    .autoShow=${true}
+                    .config=${this.config}
+                    .snakeLoadingSpeed=${this.snakeLoadingSpeed}
+                    .snakeEyecandyMode=${this.snakeEyecandyMode}
+                    .flatDesign=${this.flatDesign}
+                    .agentsMdActive=${this.agentsMdActive}
+                    @dropdown-close=${this.handleDropdownClose}
+                    @settings-update=${this.handleSettingsUpdate}
+                    @snake-speed-update=${this.handleSnakeSpeedUpdate}
+                    @snake-eyecandy-update=${this.handleSnakeEyecandyUpdate}
+                    @flat-design-update=${this.handleFlatDesignUpdate}
+                ></collama-settings-dropdown>
+            `;
+        }
+
+        return "";
+    }
+
+    private renderActiveModal() {
+        if (this.activeModal === "error") {
+            return html`
+                <collama-error-modal
+                    autoShow
+                    .content=${this.errorModalContent}
+                    @overlay-close=${this.handleErrorModalClose}
+                ></collama-error-modal>
+            `;
+        }
+
+        if (this.activeModal === "toolConfirm" && this.toolConfirmRequest) {
+            return html`
+                <collama-tool-confirm-modal
+                    autoShow
+                    .request=${this.toolConfirmRequest}
+                    @tool-confirm-accept=${this.handleToolConfirmAccept}
+                    @tool-confirm-accept-all=${this.handleToolConfirmAcceptAll}
+                    @tool-confirm-cancel=${this.handleToolConfirmCancel}
+                ></collama-tool-confirm-modal>
+            `;
+        }
+
+        if (this.activeModal === "acquire") {
+            return html`
+                <collama-acquire-modal
+                    autoShow
+                    .title=${this.acquireModalTitle}
+                    .description=${this.acquireModalDescription}
+                    @acquire-accept=${this.handleAcquireAutoSummaryAccept}
+                ></collama-acquire-modal>
+            `;
+        }
+
+        return "";
+    }
+
     /**
      * Renders the main chat interface layout.
      *
@@ -350,14 +446,17 @@ export class ChatContainer extends LitElement {
         const contextNotificationKind = hasOutOfContextMessages ? "out-of-context" : "threshold";
         return html`
             <collama-chatheader
-                .sessions=${this.sessions}
-                .activeSessionId=${this.activeSessionId}
                 .contextUsed=${this.contextUsed}
                 .contextMax=${this.contextMax}
                 .isGenerating=${this.isGenerating}
+                .sessionDropdownOpen=${this.activeDropdown === "session"}
+                .settingsDropdownOpen=${this.activeDropdown === "settings"}
+                .showSettingsBadge=${this.showSettingsBadge}
                 @export-session=${this.handleExportSession}
                 @new-chat=${onNewChat}
                 @new-ghost-chat=${onNewGhostChat}
+                @toggle-session-dropdown=${this.handleToggleSessionDropdown}
+                @toggle-settings-dropdown=${this.handleToggleSettingsDropdown}
                 @select-session=${this.handleSelectSession}
                 @delete-session=${this.handleDeleteSession}
                 @rename-session=${this.handleRenameSession}
@@ -365,6 +464,7 @@ export class ChatContainer extends LitElement {
             ></collama-chatheader>
             <div class="chat-area">
                 <div class="output-wrapper">
+                    ${this.renderActiveDropdown()}
                     <collama-chatoutput
                         .messages=${this.messages}
                         .contextStartIndex=${this.contextStartIndex}
@@ -388,52 +488,13 @@ export class ChatContainer extends LitElement {
                         @scroll-down=${this.handleScrollDown}
                     ></collama-scroll-down>
                 </div>
-                ${this.showErrorModal
-                    ? html`<collama-error-modal
-                          autoShow
-                          .content=${this.errorModalContent}
-                          @overlay-close=${this.handleErrorModalClose}
-                      ></collama-error-modal>`
-                    : ""}
-                ${this.toolConfirmRequest
-                    ? html`<collama-tool-confirm-modal
-                          autoShow
-                          .request=${this.toolConfirmRequest}
-                          @tool-confirm-accept=${this.handleToolConfirmAccept}
-                          @tool-confirm-accept-all=${this.handleToolConfirmAcceptAll}
-                          @tool-confirm-cancel=${this.handleToolConfirmCancel}
-                      ></collama-tool-confirm-modal>`
-                    : ""}
-                ${this.showAcquireModal
-                    ? html`<collama-acquire-modal
-                          autoShow
-                          .title=${this.acquireModalTitle}
-                          .description=${this.acquireModalDescription}
-                          @acquire-accept=${this.handleAcquireAutoSummaryAccept}
-                      ></collama-acquire-modal>`
-                    : ""}
-                ${this.showSettingsModal
-                    ? html`<collama-settings-modal
-                          autoShow
-                          .config=${this.config}
-                          .snakeLoadingSpeed=${this.snakeLoadingSpeed}
-                          .snakeEyecandyMode=${this.snakeEyecandyMode}
-                          .flatDesign=${this.flatDesign}
-                          .agentsMdActive=${this.agentsMdActive}
-                          @overlay-close=${this.handleSettingsModalClose}
-                          @settings-update=${this.handleSettingsUpdate}
-                          @snake-speed-update=${this.handleSnakeSpeedUpdate}
-                          @snake-eyecandy-update=${this.handleSnakeEyecandyUpdate}
-                          @flat-design-update=${this.handleFlatDesignUpdate}
-                      ></collama-settings-modal>`
-                    : ""}
+                ${this.renderActiveModal()}
                 <collama-chatinput
-                    ?inert=${this.showAcquireModal}
+                    ?inert=${this.activeModal === "acquire"}
                     @submit=${this.handleSubmit}
                     @cancel=${this.handleCancel}
                     @convert-to-ghost=${this.handleConvertToGhost}
                     @clear-chat=${this.handleClearChat}
-                    @open-settings=${this.handleOpenSettings}
                     @summarize-conversation=${this.handleSummarizeConversation}
                     @auto-accept=${onAutoAccept}
                     @context-cleared=${this.handleContextCleared}
@@ -445,7 +506,6 @@ export class ChatContainer extends LitElement {
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}
                     .contextSearchResults=${this.contextSearchResults}
-                    .config=${this.config}
                 ></collama-chatinput>
             </div>
             <collama-loading-snake
