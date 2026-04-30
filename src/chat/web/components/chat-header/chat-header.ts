@@ -41,11 +41,9 @@ export class ChatHeader extends LitElement {
                 <div class="header-left">
                     <collama-session-button
                         .disabled=${this.isGenerating}
-                        .expanded=${this.sessionDropdownOpen}
                     ></collama-session-button>
                     <collama-settings-button
                         .disabled=${this.isGenerating}
-                        .expanded=${this.settingsDropdownOpen}
                         .showBadge=${this.showSettingsBadge}
                     ></collama-settings-button>
                 </div>

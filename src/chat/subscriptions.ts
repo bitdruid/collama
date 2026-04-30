@@ -25,6 +25,22 @@ function getExplorerUris(resource?: vscode.Uri, selectedResources?: vscode.Uri[]
     return [...unique.values()];
 }
 
+function isExplorerInvocation(selectedResources?: vscode.Uri[]): boolean {
+    return Array.isArray(selectedResources) && selectedResources.length > 0;
+}
+
+async function getActiveEditorContext(): Promise<EditorContext | null> {
+    return vscode.window.activeTextEditor ? EditorContext.create() : null;
+}
+
+function canUseActiveEditorSelection(resource?: vscode.Uri, selectedResources?: vscode.Uri[]): boolean {
+    if (isExplorerInvocation(selectedResources)) {
+        return false;
+    }
+    const activeUri = vscode.window.activeTextEditor?.document.uri.toString();
+    return !resource || resource.toString() === activeUri;
+}
+
 /**
  * Registers the command that sends the current selection to the chat view.
  *
@@ -39,6 +55,15 @@ export function registerSendToChatCommand(extContext: vscode.ExtensionContext) {
                 return;
             }
 
+            const currentContext = canUseActiveEditorSelection(resource, selectedResources)
+                ? await getActiveEditorContext()
+                : null;
+            if (currentContext?.selectionText.length) {
+                logMsg("Edit (Selection): SendToChat triggered");
+                receiveCurrentContext(chatPanel.webview, currentContext);
+                return;
+            }
+
             const explorerUris = getExplorerUris(resource, selectedResources);
             if (explorerUris.length > 0) {
                 logMsg(`Explorer: SendToChat triggered (${explorerUris.length} item(s))`);
@@ -49,9 +74,9 @@ export function registerSendToChatCommand(extContext: vscode.ExtensionContext) {
             }
 
             logMsg("Edit (Selection): SendToChat triggered");
-            const currentContext = await EditorContext.create();
-            if (currentContext) {
-                receiveCurrentContext(chatPanel.webview, currentContext);
+            const fallbackContext = currentContext ?? (await EditorContext.create());
+            if (fallbackContext) {
+                receiveCurrentContext(chatPanel.webview, fallbackContext);
             }
         },
     );

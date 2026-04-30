@@ -3,8 +3,11 @@ import { themeColors } from "../../../../styles/theme-colors";
 
 export const sessionButtonStyles = css`
     .session-button {
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
         padding: 0;
         border: none;
         background: transparent;
@@ -25,8 +28,11 @@ export const sessionButtonStyles = css`
     }
 
     .session-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 1;
-        min-width: 20px;
+        min-width: 18px;
         color: ${themeColors.uiFont};
         white-space: nowrap;
         overflow: hidden;
@@ -34,6 +40,7 @@ export const sessionButtonStyles = css`
     }
 
     .session-icon svg {
+        display: block;
         width: 18px;
         height: 18px;
     }

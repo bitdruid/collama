@@ -8,13 +8,12 @@ export class SettingsButton extends LitElement {
     static styles = [settingsButtonStyles];
 
     @property({ type: Boolean }) disabled = false;
-    @property({ type: Boolean }) expanded = false;
     @property({ type: Boolean }) showBadge = false;
 
     render() {
         return html`
             <button
-                class="settings-button ${this.expanded ? "expanded" : ""}"
+                class="settings-button"
                 title="Settings"
                 ?disabled=${this.disabled}
                 data-base-overlay-anchor
@@ -22,7 +21,6 @@ export class SettingsButton extends LitElement {
             >
                 <span class="settings-icon">${icons.settings}</span>
                 ${this.showBadge ? html`<span class="button-badge">!</span>` : ""}
-                <span class="toggle-icon">${icons.chevronDown}</span>
             </button>
         `;
     }

@@ -6,14 +6,13 @@ import { sessionButtonStyles } from "./styles";
 @customElement("collama-session-button")
 export class SessionButton extends LitElement {
     @property({ type: Boolean }) disabled = false;
-    @property({ type: Boolean }) expanded = false;
 
     static styles = [sessionButtonStyles];
 
     render() {
         return html`
             <button
-                class="session-button ${this.expanded ? "expanded" : ""}"
+                class="session-button"
                 @click=${this._handleClick}
                 title="Toggle chat history"
                 ?disabled=${this.disabled}

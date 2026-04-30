@@ -13,17 +13,28 @@ export const chatHeaderStyles = css`
     .header-left {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 0;
         flex-shrink: 0;
     }
 
     .usage-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         color: ${themeColors.uiFont};
         flex-shrink: 1;
-        min-width: 20px;
+        width: 18px;
+        height: 18px;
+        transform: translateY(1px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .usage-icon svg {
+        display: block;
+        width: 16px;
+        height: 16px;
     }
 
     .header-actions {

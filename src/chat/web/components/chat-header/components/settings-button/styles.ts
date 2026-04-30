@@ -6,10 +6,9 @@ export const settingsButtonStyles = css`
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 2px;
-        min-width: 40px;
+        min-width: 28px;
         height: 28px;
-        padding: 0 4px;
+        padding: 0;
         border: none;
         background: transparent;
         color: ${themeColors.uiFont};
@@ -39,29 +38,10 @@ export const settingsButtonStyles = css`
         height: 18px;
     }
 
-    .toggle-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: ${themeColors.uiFont};
-        opacity: 0.6;
-        transition: transform 0.2s ease;
-    }
-
-    .toggle-icon svg {
-        display: block;
-        width: 14px;
-        height: 14px;
-    }
-
-    .settings-button.expanded .toggle-icon {
-        transform: rotate(180deg);
-    }
-
     .button-badge {
         position: absolute;
         top: 1px;
-        right: 12px;
+        right: 1px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
