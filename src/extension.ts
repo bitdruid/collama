@@ -17,7 +17,7 @@ import {
     registerFixSyntaxCommand,
     registerSimplifyCommand,
     registerWriteDocstringsCommand,
-} from "./context/subscriptions";
+} from "./actions/subscriptions";
 import { logMsg } from "./logging";
 import { initSecrets, registerSetBearerCompletionCommand, registerSetBearerInstructCommand } from "./secrets";
 import { setStatusbar } from "./statusbar";

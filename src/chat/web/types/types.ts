@@ -1,4 +1,5 @@
 import { ChatContext } from "../../../common/context-chat";
+import type { ExtensionConfig } from "../../../config";
 
 /**
  * Chat session data structure
@@ -38,23 +39,7 @@ export interface ToolConfirmRequest {
 /**
  * Chat-facing extension configuration snapshot.
  */
-export interface ChatConfig {
-    apiEndpointCompletion: string;
-    apiEndpointInstruct: string;
-    apiModelCompletion: string;
-    apiModelInstruct: string;
-    agentic: boolean;
-    autoComplete: boolean;
-    suggestMode: string;
-    verbosityMode: "compact" | "medium" | "detailed";
-    suggestDelay: number;
-    enableEditTools: boolean;
-    enableShellTool: boolean;
-    tlsRejectUnauthorized: boolean;
-    apiTokenContextLenCompletion: number;
-    apiTokenContextLenInstruct: number;
-    apiTokenPredictCompletion: number;
-    apiTokenPredictInstruct: number;
+export interface ChatConfig extends ExtensionConfig {
     agentsMdActive: boolean;
 }
 

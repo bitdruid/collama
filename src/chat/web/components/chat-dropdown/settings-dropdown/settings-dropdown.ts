@@ -10,8 +10,8 @@ import { settingsDropdownStyles } from "./styles";
 
 const DEFAULT_SNAKE_LOADING_SPEED = 1500;
 const AGENTS_MD_PATH = "AGENTS.md";
-const VERBOSITY_MODES = ["compact", "medium", "detailed"] as const;
-type VerbosityMode = (typeof VERBOSITY_MODES)[number];
+type VerbosityMode = ChatConfig["verbosityMode"];
+const VERBOSITY_MODES: readonly VerbosityMode[] = ["compact", "medium", "detailed"];
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
     el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));

@@ -24,7 +24,6 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 
 - **[Ollama](https://ollama.com)** - local
 - **[OpenAI compatible](https://ai-sdk.dev/providers/openai-compatible-providers)** — local / cloud
-- **[Anthropic](https://www.anthropic.com)** — cloud (this feature was only added as poc testing / better use claude ext)
 
 > **Status:** This project is in heavy active development. Please note that the output may sometimes be unexpected or unusual. If you have any ideas to improve the quality just let me know and contribute!
 

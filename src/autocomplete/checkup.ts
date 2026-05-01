@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { getSupportedModels, modelsMatch } from "../common/models";
-import { requestOllama, requestOpenAI } from "../common/requests";
+import { requestOllama, requestOpenAI } from "../common/client";
 import { sysConfig, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { getBearerCompletion } from "../secrets";

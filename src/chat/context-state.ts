@@ -1,7 +1,7 @@
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { checkPredictFitsContextLength } from "../common/models";
 import { populateMsgTokens } from "../common/tokenizer";
-import { buildInstructionOptions } from "../common/types-llm";
+import { buildInstructionOptions } from "../common/client";
 import { userConfig } from "../config";
 
 export interface ContextState {

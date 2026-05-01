@@ -9,7 +9,7 @@ import {
     requestSimplifyCode,
     requestWriteDocstrings,
 } from "../common/requests";
-import { registerContextCommand } from "./utils-context";
+import { logMsg } from "../logging";
 
 /**
  * Virtual document provider for diff previews.
@@ -125,40 +125,43 @@ export async function handleSelectionWithDiff(callback: (currentContext: EditorC
     });
 }
 
+/**
+ * Registers an action command that processes the current selection with a diff preview.
+ *
+ * @param extContext - The extension context.
+ * @param commandId - The full command ID (for example, "collama.writeDocstrings").
+ * @param logName - The name to use in log messages.
+ * @param handler - The async function that processes the editor context and returns modified text.
+ */
+function registerActionCommand(
+    extContext: vscode.ExtensionContext,
+    commandId: string,
+    logName: string,
+    handler: (ctx: EditorContext) => Promise<string>,
+): void {
+    const disposable = vscode.commands.registerCommand(commandId, async () => {
+        logMsg(`Edit (Selection): ${logName} triggered`);
+        handleSelectionWithDiff(handler);
+    });
+    extContext.subscriptions.push(disposable);
+}
+
 export function registerWriteDocstringsCommand(extContext: vscode.ExtensionContext) {
-    registerContextCommand(
-        extContext,
-        "collama.writeDocstrings",
-        "WriteDocstrings",
-        requestWriteDocstrings,
-        handleSelectionWithDiff,
-    );
+    registerActionCommand(extContext, "collama.writeDocstrings", "WriteDocstrings", requestWriteDocstrings);
 }
 
 export function registerExtractFunctionsCommand(extContext: vscode.ExtensionContext) {
-    registerContextCommand(
-        extContext,
-        "collama.extractFunctions",
-        "ExtractFunctions",
-        requestExtractFunctions,
-        handleSelectionWithDiff,
-    );
+    registerActionCommand(extContext, "collama.extractFunctions", "ExtractFunctions", requestExtractFunctions);
 }
 
 export function registerSimplifyCommand(extContext: vscode.ExtensionContext) {
-    registerContextCommand(
-        extContext,
-        "collama.simplifyCode",
-        "Simplify",
-        requestSimplifyCode,
-        handleSelectionWithDiff,
-    );
+    registerActionCommand(extContext, "collama.simplifyCode", "Simplify", requestSimplifyCode);
 }
 
 export function registerFixSyntaxCommand(extContext: vscode.ExtensionContext) {
-    registerContextCommand(extContext, "collama.fixSyntax", "FixSyntax", requestFixSyntax, handleSelectionWithDiff);
+    registerActionCommand(extContext, "collama.fixSyntax", "FixSyntax", requestFixSyntax);
 }
 
 export function registerEditManualCommand(extContext: vscode.ExtensionContext) {
-    registerContextCommand(extContext, "collama.editManual", "EditManual", requestEditManual, handleSelectionWithDiff);
+    registerActionCommand(extContext, "collama.editManual", "EditManual", requestEditManual);
 }

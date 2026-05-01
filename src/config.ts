@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { postConfigToWebview } from "./chat/utils-back";
 import { isAgentsMdActive } from "./common/agents-md";
-import { requestAnthropic, requestOllama, requestOpenAI } from "./common/requests";
+import { requestOllama, requestOpenAI, type LlmBackendType } from "./common/client";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 
@@ -36,14 +36,26 @@ export function registerConfigAutoUpdateCommand(extContext: vscode.ExtensionCont
     extContext.subscriptions.push(disposable);
 }
 
-/**
- * Default configuration values that can be overridden by the user.
- * These values are used to initialize the extension and are updated
- * when the workspace configuration changes.
- *
- * Note: Bearer tokens are stored via SecretStorage, not in config.
- */
-export const userConfig = {
+export interface ExtensionConfig {
+    apiEndpointCompletion: string;
+    apiEndpointInstruct: string;
+    apiModelCompletion: string;
+    apiModelInstruct: string;
+    agentic: boolean;
+    autoComplete: boolean;
+    suggestMode: string;
+    verbosityMode: "compact" | "medium" | "detailed";
+    suggestDelay: number;
+    enableEditTools: boolean;
+    enableShellTool: boolean;
+    tlsRejectUnauthorized: boolean;
+    apiTokenContextLenCompletion: number;
+    apiTokenContextLenInstruct: number;
+    apiTokenPredictCompletion: number;
+    apiTokenPredictInstruct: number;
+}
+
+export const defaultExtensionConfig: ExtensionConfig = {
     apiEndpointCompletion: "http://127.0.0.1:11434",
     apiEndpointInstruct: "http://127.0.0.1:11434",
     apiModelCompletion: "qwen2.5-coder:3b",
@@ -61,6 +73,14 @@ export const userConfig = {
     apiTokenPredictCompletion: 400,
     apiTokenPredictInstruct: 4096,
 };
+
+/**
+ * Mutable runtime configuration initialized from shared defaults.
+ * Values are synchronized from VS Code workspace configuration by updateVSConfig().
+ *
+ * Note: Bearer tokens are stored via SecretStorage, not in config.
+ */
+export const userConfig: ExtensionConfig = { ...defaultExtensionConfig };
 
 export function getUserConfigSnapshot() {
     return { ...userConfig, agentsMdActive: isAgentsMdActive() };
@@ -223,7 +243,6 @@ function scheduleRetry() {
     }, DELAY);
 }
 
-type LlmBackendType = "ollama" | "openai" | "anthropic" | "";
 const DETECTION_TIMEOUT_MS = 5000;
 
 async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBackendType> {
@@ -246,14 +265,6 @@ async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBacke
         return "openai";
     } catch (err) {
         errors.push(`OpenAI: ${err instanceof Error ? err.message : String(err)}`);
-    }
-
-    try {
-        const anthropic = requestAnthropic(apiBase, bearer);
-        await Promise.race([anthropic.models.list(), createTimeout(DETECTION_TIMEOUT_MS)]);
-        return "anthropic";
-    } catch (err) {
-        errors.push(`Anthropic: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     logMsg(`Backend detection failed for ${apiBase}:\n  ${errors.join("\n  ")}`);

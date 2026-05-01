@@ -1,5 +1,8 @@
 import { userConfig } from "../config";
+import type { ExtensionConfig } from "../config";
 import { getAgentsMdContent } from "./agents-md";
+
+type VerbosityMode = ExtensionConfig["verbosityMode"];
 
 /**
  * Parameters for constructing a prompt string.
@@ -96,8 +99,6 @@ export const chatSummarize_Template: string = [
     "- Never mention summary",
 ].join("\n");
 
-type VerbosityMode = "compact" | "medium" | "detailed";
-
 const VERBOSITY_PROMPTS: Record<VerbosityMode, string[]> = {
     compact: [
         "You are a smart caveman in a study session.",
@@ -130,7 +131,7 @@ const VERBOSITY_PROMPTS: Record<VerbosityMode, string[]> = {
  */
 export function getAgentTemplate(): string {
     // const tokenLimit = userConfig.apiTokenPredictInstruct;
-    const configuredVerbosity = userConfig.verbosityMode as VerbosityMode;
+    const configuredVerbosity = userConfig.verbosityMode;
     const lines: string[] = [];
 
     lines.push(

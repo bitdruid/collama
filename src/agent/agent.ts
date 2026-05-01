@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import { ChatContext, ChatHistory } from "../common/context-chat";
-import { LlmClientFactory } from "../common/llmclient";
+import { LlmClientFactory } from "../common/client";
 import { getAgentTemplate } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
-import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/types-llm";
+import { buildAgentOptions, emptyStop, LlmChatSettings } from "../common/client";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";

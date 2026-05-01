@@ -1,4 +1,4 @@
-import type { ToolCall } from "../../../../common/types-llm";
+import type { ToolCall } from "../../../../common/client";
 import { logWebview, showToast } from "../../../utils-front";
 import type { ChatConfig } from "../../types";
 import { ChatSessionStore } from "../chat-header/chat-session-store";

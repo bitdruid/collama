@@ -1,4 +1,4 @@
-import { ToolCall } from "./types-llm";
+import { ToolCall } from "./client";
 
 export interface AttachedContext {
     fileName: string;

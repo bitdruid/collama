@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { shouldDeduplicateToolResult } from "../agent/tools";
 import { resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { ChatContext, ChatHistory } from "../common/context-chat";
-import { buildInstructionOptions, ToolCall } from "../common/types-llm";
+import { buildInstructionOptions, ToolCall } from "../common/client";
 import { getUserConfigSnapshot, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { AgentRunner } from "./agent-runner";
