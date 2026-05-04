@@ -132,7 +132,7 @@ export async function fetch_exec(args: FetchInput): Promise<string> {
         );
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - fetch-tool error: ${msg}`);
+        logAgent(`[fetch-tool] Failed to fetch: ${msg}`);
         return JSON.stringify({ error: msg });
     }
 }

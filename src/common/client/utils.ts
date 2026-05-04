@@ -2,7 +2,7 @@ import nodeFetch from "node-fetch";
 import { Readable } from "node:stream";
 import * as vscode from "vscode";
 
-import { logMsg } from "../../logging";
+import { logIO, logMsg } from "../../logging";
 import type { Options, Stop } from "./types";
 
 const { showWarningMessage } = vscode.window;
@@ -72,11 +72,17 @@ export function logRequest(url: string, model: string, options: Options, stop: S
     logMsg(`Requesting to ${url}; Model: ${model};`);
     logMsg(`Options:\n${JSON.stringify(options, null, 2)}`);
     logMsg(`Stop:\n${JSON.stringify([...stop.userStop, ...stop.modelStop], null, 2)}`);
-    logMsg(`Input:\n${input}`);
+    logMsg(`Input:\n${input.length > 50 ? `${input.slice(0, 250)}... [${input.length} chars]` : input}`);
+    logIO(JSON.stringify(input, null, 2));
 }
 
 /** Logs model output throughput and warns when a response hits the configured token cap. */
-export function logPerformance(tokenLimit: number, resultTokens: number, resultDurationNano: number, result: string): void {
+export function logPerformance(
+    tokenLimit: number,
+    resultTokens: number,
+    resultDurationNano: number,
+    result: string,
+): void {
     const resultDuration = (resultDurationNano / 1_000_000_000).toFixed(3);
     const resultTPS = resultDurationNano > 0 ? (resultTokens / (resultDurationNano / 1_000_000_000)).toFixed(1) : "0";
     logMsg(`Output:\n${result}`);

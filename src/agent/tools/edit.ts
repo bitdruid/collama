@@ -72,12 +72,17 @@ let frontendAutoAcceptActive = false;
  * Sets all auto-accept flags at once. Called by the frontend
  * "auto-accept all" toggle button.
  */
+export function getAutoAcceptAll(): boolean {
+    return frontendAutoAcceptActive;
+}
+
 export function setAutoAcceptAll(enabled: boolean): void {
     frontendAutoAcceptActive = enabled;
     autoAcceptEdits = enabled;
     autoAcceptFileCreates = enabled;
     autoAcceptFolderCreates = enabled;
     autoAcceptDeletes = enabled;
+    logMsg(`Auto-accept ${enabled ? "enabled" : "disabled"}`);
 }
 
 /**
@@ -349,7 +354,6 @@ export async function edit_exec(args: {
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         logAgent(`[edit-tool] Failed to edit file: ${args.filePath} - ${msg}`);
-        logMsg(`Agent - edit-tool error: ${msg}`);
         return JSON.stringify({ error: `Failed to edit file: ${msg}` });
     }
 }
@@ -476,7 +480,6 @@ export async function create_exec(args: { filePath: string; content?: string; ex
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         logAgent(`[create] Failed to create ${isFolder ? "folder" : "file"}: ${args.filePath} - ${msg}`);
-        logMsg(`Agent - create error: ${msg}`);
         return JSON.stringify({ error: `Failed to create ${isFolder ? "folder" : "file"}: ${msg}` });
     }
 }
@@ -571,7 +574,6 @@ export async function delete_exec(args: { filePath: string; explanation: string 
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         logAgent(`[delete-tool] Failed to delete file/folder: ${args.filePath} - ${msg}`);
-        logMsg(`Agent - delete-tool error: ${msg}`);
         return JSON.stringify({ error: `Failed to delete file/folder: ${msg}` });
     }
 }

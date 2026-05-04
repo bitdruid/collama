@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { logMsg } from "../../logging";
+import { logAgent, logMsg } from "../../logging";
 import { getWorkspaceRoot } from "../tools";
 
 const execFileAsync = promisify(execFile);
@@ -70,7 +70,7 @@ export async function gitLog_exec(args: {
             return JSON.stringify({ branches });
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            logMsg(`Agent - gitLog-tool error: ${msg}`);
+            logAgent(`[gitLog-tool] Failed to list branches: ${msg}`);
             return JSON.stringify({ error: `Failed to list branches: ${msg}` });
         }
     }
@@ -111,7 +111,7 @@ export async function gitLog_exec(args: {
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - gitLog-tool error: ${msg}`);
+        logAgent(`[gitLog-tool] Failed to get commits: ${msg}`);
         return JSON.stringify({ error: `Failed to get commits: ${msg}` });
     }
 }
@@ -206,7 +206,7 @@ export async function gitDiff_exec(args: {
             });
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            logMsg(`Agent - gitDiff-tool error: ${msg}`);
+            logAgent(`[gitDiff-tool] Failed to get working tree diff: ${msg}`);
             return JSON.stringify({ error: `Failed to get working tree diff: ${msg}` });
         }
     }
@@ -244,7 +244,7 @@ export async function gitDiff_exec(args: {
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - gitDiff-tool error: ${msg}`);
+        logAgent(`[gitDiff-tool] Failed to get commit diff: ${msg}`);
         return JSON.stringify({ error: `Failed to get commit diff: ${msg}` });
     }
 }

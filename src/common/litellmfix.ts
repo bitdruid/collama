@@ -55,10 +55,6 @@ export class ToolCallAccumulator {
             type: "function" as const,
             function: { name: tc.name, arguments: this.sanitizeArgs(tc.args) },
         }));
-
-        if (toolCalls.length > 0) {
-            logAgent(`[tool_calls] ${JSON.stringify(toolCalls)}`);
-        }
         return toolCalls;
     }
 

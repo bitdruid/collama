@@ -22,7 +22,7 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
-    @state() private autoAccept = false;
+    @property({ type: Boolean }) autoAccept = false;
     @state() private showContextTree = false;
     @state() private showGallery = false;
     @state() private showClearConfirm = false;

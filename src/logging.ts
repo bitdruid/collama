@@ -42,3 +42,8 @@ export function logAgent(message: string) {
     const channel = getChannel("collama-agent", { log: true }) as vscode.LogOutputChannel;
     channel.info(message);
 }
+
+export function logIO(message: string) {
+    const channel = getChannel("collama-io", { log: true }) as vscode.LogOutputChannel;
+    channel.info(message);
+}

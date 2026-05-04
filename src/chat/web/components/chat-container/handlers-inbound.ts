@@ -75,10 +75,17 @@ function applyConfig(host: ChatContainer, msg: any) {
     }
 }
 
+function applyState(host: ChatContainer, msg: any) {
+    if (msg.autoAcceptAll !== undefined) {
+        host.autoAccept = msg.autoAcceptAll;
+    }
+}
+
 /** Initializes the component with session history, context usage, and session list from the host. */
 function handleInit(host: ChatContainer, msg: any) {
     applySessionState(host, msg);
     applyConfig(host, msg);
+    applyState(host, msg);
     logWebview(`${host.sessions.length} sessions total, active: ${host.activeSessionId}`);
 }
 

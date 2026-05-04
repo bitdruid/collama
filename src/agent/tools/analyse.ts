@@ -112,7 +112,6 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         logAgent(`[getDiagnostics-tool] Failed to get diagnostics: ${msg}`);
-        logMsg(`Agent - getDiagnostics-tool error: ${msg}`);
         return JSON.stringify({ error: `Failed to get diagnostics: ${msg}` });
     }
 }

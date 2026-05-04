@@ -21,6 +21,7 @@ export class ControlPanel extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
+    @property({ type: Boolean }) autoAccept = false;
 
     @query("textarea")
     private textarea!: HTMLTextAreaElement;
@@ -94,6 +95,7 @@ export class ControlPanel extends LitElement {
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.isGhost}
                     .contextSearchResults=${this.contextSearchResults}
+                    .autoAccept=${this.autoAccept}
                     @submit-click=${this._handleSubmit}
                 ></collama-control-panel-buttons>
             </div>

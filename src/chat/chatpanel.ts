@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { shouldDeduplicateToolResult } from "../agent/tools";
-import { resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
+import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { buildInstructionOptions, ToolCall } from "../common/client";
 import { getUserConfigSnapshot, userConfig } from "../config";
@@ -119,6 +119,7 @@ export class ChatPanel {
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
             config: getUserConfigSnapshot(),
+            autoAcceptAll: getAutoAcceptAll(),
         });
 
         const pending = this.pendingContextAdds.splice(0);

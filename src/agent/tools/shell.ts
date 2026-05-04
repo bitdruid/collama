@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { logMsg } from "../../logging";
+import { logAgent, logMsg } from "../../logging";
 import { getWorkspaceRoot } from "../tools";
 import { requestToolConfirm } from "./edit";
 
@@ -108,7 +108,7 @@ export async function shell_exec(args: ShellInput): Promise<string> {
         return JSON.stringify({ output: trimmedOutput, ...(message && { message }) }, null, 2);
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logMsg(`Agent - Shell-tool error: ${msg}`);
+        logAgent(`[Shell-tool] Failed to execute: ${msg}`);
         return JSON.stringify({ error: msg });
     }
 }

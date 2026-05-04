@@ -76,6 +76,7 @@ export class ChatContainer extends LitElement {
     @state() snakeEyecandyMode = false;
     @state() flatDesign = false;
     @state() agentsMdActive = false;
+    @state() autoAccept = false;
     @state() activeDropdown: ActiveDropdown = "";
 
     // Reference to store's ChatContext (single source of truth)
@@ -506,6 +507,7 @@ export class ChatContainer extends LitElement {
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}
                     .contextSearchResults=${this.contextSearchResults}
+                    .autoAccept=${this.autoAccept}
                 ></collama-chatinput>
             </div>
             <collama-loading-snake

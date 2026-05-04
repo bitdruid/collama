@@ -15,6 +15,7 @@ export class ChatInput extends LitElement {
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
+    @property({ type: Boolean }) autoAccept = false;
 
     @query("collama-control-panel")
     private controlPanel!: HTMLElement;
@@ -36,6 +37,7 @@ export class ChatInput extends LitElement {
                 .hasTokenData=${this.hasTokenData}
                 .isGhost=${this.isGhost}
                 .contextSearchResults=${this.contextSearchResults}
+                .autoAccept=${this.autoAccept}
                 @submit-prompt=${this._handlePrompt}
             ></collama-control-panel>
         `;
