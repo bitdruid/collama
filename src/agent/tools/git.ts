@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { logAgent, logMsg } from "../../logging";
-import { getWorkspaceRoot } from "../tools";
+import { logMsg } from "../../logging";
+import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
 
 const execFileAsync = promisify(execFile);
 
@@ -41,13 +41,21 @@ export async function gitLog_exec(args: {
     limit?: number;
     filePath?: string;
     includeRemote?: boolean;
-}): Promise<string> {
+}): Promise<
+    ToolAnswer<{
+        branches?: Array<{ name: string; isCurrent: boolean; commit: string }>;
+        commits?: Array<{ hash: string; authorName: string; authorEmail: string; authorDate: string; message: string }>;
+        branch?: string;
+        limit?: number;
+        filePath?: string;
+    }>
+> {
     const mode = args.mode ?? "commits";
     logMsg(`Agent - use gitLog-tool mode=${mode}`);
 
     const root = getWorkspaceRoot();
     if (!root) {
-        return JSON.stringify({ error: "No workspace root found" });
+        return toolError("No workspace root found");
     }
 
     if (mode === "branches") {
@@ -67,11 +75,10 @@ export async function gitLog_exec(args: {
                     return { name, isCurrent: head === "*", commit };
                 });
 
-            return JSON.stringify({ branches });
+            return toolSuccess({ branches });
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            logAgent(`[gitLog-tool] Failed to list branches: ${msg}`);
-            return JSON.stringify({ error: `Failed to list branches: ${msg}` });
+            return toolError(`Failed to list branches: ${msg}`);
         }
     }
 
@@ -103,16 +110,15 @@ export async function gitLog_exec(args: {
             });
         }
 
-        return JSON.stringify({
+        return toolSuccess({
             commits,
             branch: args.branch ?? "HEAD",
             limit,
-            filePath: args.filePath ?? null,
+            filePath: args.filePath,
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[gitLog-tool] Failed to get commits: ${msg}`);
-        return JSON.stringify({ error: `Failed to get commits: ${msg}` });
+        return toolError(`Failed to get commits: ${msg}`);
     }
 }
 
@@ -167,14 +173,22 @@ export async function gitDiff_exec(args: {
     toCommit?: string;
     staged?: boolean;
     filePath?: string;
-}): Promise<string> {
+}): Promise<
+    ToolAnswer<{
+        diff?: string;
+        staged?: boolean;
+        files?: Array<{ path: string; status: string }>;
+        fromCommit?: string;
+        toCommit?: string;
+    }>
+> {
     logMsg(
         `Agent - use gitDiff-tool${args.fromCommit ? ` from=${args.fromCommit}` : ""}${args.toCommit ? ` to=${args.toCommit}` : ""}${args.staged ? " staged" : ""}${args.filePath ? ` file=${args.filePath}` : ""}`,
     );
 
     const root = getWorkspaceRoot();
     if (!root) {
-        return JSON.stringify({ error: "No workspace root found" });
+        return toolError("No workspace root found");
     }
 
     // Working tree diff (no commits specified)
@@ -191,23 +205,16 @@ export async function gitDiff_exec(args: {
             const diff = await runGit(gitArgs, root);
 
             if (!diff || diff.trim().length === 0) {
-                return JSON.stringify({
-                    diff: "",
-                    staged: args.staged ?? false,
-                    filePath: args.filePath ?? null,
-                    message: args.staged ? "No staged changes" : "No unstaged changes",
-                });
+                return toolSuccess(
+                    { diff: "", staged: args.staged ?? false, filePath: args.filePath },
+                    args.staged ? "No staged changes" : "No unstaged changes",
+                );
             }
 
-            return JSON.stringify({
-                diff,
-                staged: args.staged ?? false,
-                filePath: args.filePath ?? null,
-            });
+            return toolSuccess({ diff, staged: args.staged ?? false, filePath: args.filePath });
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            logAgent(`[gitDiff-tool] Failed to get working tree diff: ${msg}`);
-            return JSON.stringify({ error: `Failed to get working tree diff: ${msg}` });
+            return toolError(`Failed to get working tree diff: ${msg}`);
         }
     }
 
@@ -216,12 +223,7 @@ export async function gitDiff_exec(args: {
     try {
         if (args.filePath) {
             const diff = await runGit(["diff", "--no-ext-diff", args.fromCommit, toCommit, "--", args.filePath], root);
-            return JSON.stringify({
-                diff,
-                fromCommit: args.fromCommit,
-                toCommit,
-                filePath: args.filePath,
-            });
+            return toolSuccess({ diff, fromCommit: args.fromCommit, toCommit, filePath: args.filePath });
         }
 
         const changes = await runGit(["diff", "--name-status", args.fromCommit, toCommit], root);
@@ -237,15 +239,10 @@ export async function gitDiff_exec(args: {
                 };
             });
 
-        return JSON.stringify({
-            files,
-            fromCommit: args.fromCommit,
-            toCommit,
-        });
+        return toolSuccess({ files, fromCommit: args.fromCommit, toCommit });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[gitDiff-tool] Failed to get commit diff: ${msg}`);
-        return JSON.stringify({ error: `Failed to get commit diff: ${msg}` });
+        return toolError(`Failed to get commit diff: ${msg}`);
     }
 }
 

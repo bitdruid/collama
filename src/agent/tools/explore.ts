@@ -2,8 +2,8 @@ import fs from "fs";
 import { globby } from "globby";
 import os from "os";
 import path from "path";
-import { logAgent, logMsg } from "../../logging";
-import { isWithinAllowedTemp, isWithinRoot, secureWorkspace } from "../tools";
+import { logMsg } from "../../logging";
+import { ToolAnswer, isWithinAllowedTemp, isWithinRoot, secureWorkspace, toolError, toolSuccess } from "../tools";
 
 /** Returns true if the pattern contains '..' path segments. */
 function hasPathTraversal(pattern: string): boolean {
@@ -25,12 +25,7 @@ function resolveExplorePatternRoot(
 
     const normalizedPattern = path.resolve(pattern);
     if (!isWithinAllowedTemp(normalizedPattern)) {
-        logAgent(`[explore-tool] Absolute pattern must stay within temp dir: ${pattern}`);
-        return {
-            root: "",
-            pattern: "",
-            error: JSON.stringify({ error: "Absolute pattern must stay within temp dir" }),
-        };
+        return { root: "", pattern: "", error: "Absolute pattern must stay within temp dir" };
     }
 
     return { root: os.tmpdir(), pattern: path.relative(os.tmpdir(), normalizedPattern) || ".", error: "" };
@@ -50,18 +45,21 @@ function formatExplorePath(root: string, file: string): string {
  * @param args.endLine - Optional 1-based ending line (inclusive)
  * @returns Formatted string with numbered lines, or JSON error string
  */
-export async function read_exec(args: { filePath: string; startLine?: number; endLine?: number }): Promise<string> {
+export async function read_exec(args: {
+    filePath: string;
+    startLine?: number;
+    endLine?: number;
+}): Promise<ToolAnswer<{ content: string; lineCount: number }>> {
     logMsg(
         `Agent - use read-tool file=${args.filePath}${args.startLine !== undefined ? ` startLine=${args.startLine}` : ""}${args.endLine !== undefined ? ` endLine=${args.endLine}` : ""}`,
     );
     const ws = secureWorkspace(args.filePath, "read");
     if (ws.error) {
-        return ws.error;
+        return toolError(ws.error);
     }
 
     if (!fs.existsSync(ws.fullPath)) {
-        logAgent(`[read-tool] File not found: ${args.filePath}`);
-        return JSON.stringify({ error: `File not found: ${args.filePath}` });
+        return toolError(`File not found: ${args.filePath}`);
     }
 
     const content = fs.readFileSync(ws.fullPath, "utf-8");
@@ -73,13 +71,15 @@ export async function read_exec(args: { filePath: string; startLine?: number; en
     const numbered = slice.map((line, i) => `${start + i + 1}\t${line}`).join("\n");
 
     if (numbered.length > 10_000 * 4) {
-        return JSON.stringify({
-            error: `Read exceeds ~10k tokens. File has ${lines.length} lines total. Use startLine/endLine to read a smaller range.`,
-            lineCount: lines.length,
-        });
+        return toolError(
+            `Read exceeds ~10k tokens. File has ${lines.length} lines total. Use startLine/endLine to read a smaller range.`,
+        );
     }
 
-    return `${numbered}\n[lines ${start + 1}-${end} of ${lines.length}]`;
+    return toolSuccess({
+        content: `${numbered}\n[lines ${start + 1}-${end} of ${lines.length}]`,
+        lineCount: lines.length,
+    });
 }
 
 export const read_def = {
@@ -114,7 +114,7 @@ export const read_def = {
  * @param args.glob - Optional glob pattern to restrict search scope
  * @returns Matching lines in `file:line:content` format, or JSON error string on failure
  */
-export async function grep_exec(args: { pattern: string; glob?: string }): Promise<string> {
+export async function grep_exec(args: { pattern: string; glob?: string }): Promise<ToolAnswer<{ results: string[] }>> {
     logMsg(`Agent - use grep-tool pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
 
     let regex: RegExp;
@@ -125,8 +125,7 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
     }
 
     if (args.glob !== undefined && hasPathTraversal(args.glob)) {
-        logAgent(`[grep-tool] Glob must not contain path traversal (..): ${args.glob}`);
-        return JSON.stringify({ error: "Glob must not contain path traversal (..)" });
+        return toolError("Glob must not contain path traversal (..)");
     }
 
     const ws =
@@ -134,7 +133,7 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
             ? resolveExplorePatternRoot(args.glob, "grep")
             : { ...secureWorkspace(".", "grep"), pattern: args.glob ?? "**/*" };
     if (ws.error) {
-        return ws.error;
+        return toolError(ws.error);
     }
 
     const files = (
@@ -154,7 +153,7 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
         try {
             content = fs.readFileSync(fullPath, "utf-8");
         } catch {
-            continue; // skip binary or unreadable files
+            continue;
         }
         const lines = content.split("\n");
         for (let i = 0; i < lines.length; i++) {
@@ -164,7 +163,7 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
         }
     }
 
-    return results.length > 0 ? results.join("\n") : "No matches found.";
+    return results.length > 0 ? toolSuccess({ results }) : toolSuccess({ results: [] }, "No matches found.");
 }
 export const grep_def = {
     type: "function" as const,
@@ -200,26 +199,26 @@ export const grep_def = {
  * @param args.pattern - Glob pattern (e.g. "*.ts", "src/.*.js", "file.ts")
  * @returns JSON string with matches (sorted array), pattern, and total count
  */
-export async function glob_exec(args: { pattern: string }): Promise<string> {
+export async function glob_exec(args: {
+    pattern: string;
+}): Promise<ToolAnswer<{ matches: string[]; pattern: string; total: number }>> {
     logMsg(`Agent - use glob-tool pattern=${args.pattern}`);
 
     let pattern = args.pattern;
 
-    // 🔧 Normalize simple filenames → **/filename
     if (!isAbsolutePattern(pattern) && !pattern.includes("/") && !pattern.includes("*")) {
         pattern = `**/${pattern}`;
     }
 
     if (hasPathTraversal(pattern)) {
-        logAgent(`[glob-tool] Pattern must not contain path traversal (..): ${pattern}`);
-        return JSON.stringify({ error: "Pattern must not contain path traversal (..)" });
+        return toolError("Pattern must not contain path traversal (..)");
     }
 
     const ws = isAbsolutePattern(pattern)
         ? resolveExplorePatternRoot(pattern, "glob")
         : { ...secureWorkspace(".", "glob"), pattern };
     if (ws.error) {
-        return ws.error;
+        return toolError(ws.error);
     }
 
     let matches: string[];
@@ -237,14 +236,10 @@ export async function glob_exec(args: { pattern: string }): Promise<string> {
             .filter((f) => isWithinRoot(ws.root, path.resolve(ws.root, f)))
             .map((f) => formatExplorePath(ws.root, f));
     } catch {
-        return JSON.stringify({ error: `Invalid glob pattern: ${args.pattern}` });
+        return toolError(`Invalid glob pattern: ${args.pattern}`);
     }
 
-    return JSON.stringify({
-        matches: matches.sort(),
-        pattern: args.pattern,
-        total: matches.length,
-    });
+    return toolSuccess({ matches: matches.sort(), pattern: args.pattern, total: matches.length });
 }
 
 export const glob_def = {

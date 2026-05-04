@@ -22,6 +22,23 @@ export { resetAutoAcceptEdits };
 export type ToolCategory = "explore" | "git" | "edit" | "analyse" | "shell"; // | "fetch";
 export type ToolHistoryPolicy = "dedupeExactArgs" | "keepAll";
 
+export interface ToolAnswer<TOutput = unknown> {
+    success: boolean;
+    output?: TOutput;
+    error?: string;
+    message?: string;
+}
+
+export function toolSuccess<TOutput>(output: TOutput, message?: string): ToolAnswer<TOutput> {
+    return { success: true, output, ...(message && { message }) };
+}
+
+export function toolError(error: string): ToolAnswer<never> {
+    const caller = new Error().stack?.split("\n")[2]?.match(/at\s+(.*)\s/)?.[1] ?? "unknown";
+    logAgent(`[${caller}-tool] ${error}`);
+    return { success: false, error };
+}
+
 function formatToolTargetValue(key: string, raw: unknown): string {
     if (!raw) {
         return "";
@@ -61,9 +78,9 @@ export function getToolTarget(toolName: string, args: Record<string, any>): stri
 /**
  * Represents a tool that can be executed by the agent.
  * @template TInput The type of input arguments the tool accepts.
- * @template TOutput The type of output the tool returns (usually a JSON string).
+ * @template TData The type of data returned on success.
  */
-export interface Tool<TInput = any, TOutput = any> {
+export interface Tool<TInput = any, TData = unknown> {
     category: ToolCategory;
     historyPolicy: ToolHistoryPolicy;
     definition: {
@@ -76,7 +93,7 @@ export interface Tool<TInput = any, TOutput = any> {
     };
     /** The args key or formatter whose value identifies this tool's primary target (shown in UI). */
     targetKey?: string | ((args: Record<string, any>) => string);
-    execute: (input: TInput) => Promise<TOutput>;
+    execute: (input: TInput) => Promise<ToolAnswer<TData>>;
 }
 
 /**
@@ -140,20 +157,21 @@ export function shouldDeduplicateToolResult(toolName: string): boolean {
  * @returns A JSON string representing the result of the tool execution.
  * @throws Error if the tool name is not found in the registry or if validation fails.
  */
-export async function executeTool(name: string, args: unknown) {
+export async function executeTool(name: string, args: unknown): Promise<string> {
     const tool = toolRegistry[name];
     if (!tool) {
-        return JSON.stringify({ error: `Unknown tool: ${name}`, available: getToolNames() });
+        return JSON.stringify(toolError(`Unknown tool: ${name}. Available: ${getToolNames().join(", ")}`));
     }
     if (!getAvailableTools().includes(tool)) {
-        return JSON.stringify({ error: `Tool is disabled: ${name}`, available: getToolNames() });
+        return JSON.stringify(toolError(`Tool is disabled: ${name}. Available: ${getToolNames().join(", ")}`));
     }
     try {
-        return await tool.execute(args);
+        const result = await tool.execute(args);
+        return JSON.stringify(result);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         logMsg(`Agent - tool error ${name}: ${msg}`);
-        return JSON.stringify({ error: msg });
+        return JSON.stringify(toolError(msg));
     }
 }
 
@@ -199,7 +217,7 @@ export function secureWorkspace(relPath: string, toolName: string): { root: stri
     const root = getWorkspaceRoot();
     if (!root) {
         logAgent(`[${toolName}] No workspace root`);
-        return { root: "", fullPath: "", error: JSON.stringify({ error: "No workspace root" }) };
+        return { root: "", fullPath: "", error: "No workspace root" };
     }
     const fullPath = path.resolve(root, relPath);
     if (isWithinRoot(root, fullPath)) {
@@ -210,7 +228,7 @@ export function secureWorkspace(relPath: string, toolName: string): { root: stri
         return { root: os.tmpdir(), fullPath, error: "" };
     }
     logAgent(`[${toolName}] Path must not escape the workspace root: ${relPath}`);
-    return { root: "", fullPath: "", error: JSON.stringify({ error: "Path must not escape the workspace root" }) };
+    return { root: "", fullPath: "", error: "Path must not escape the workspace root" };
 }
 
 /**

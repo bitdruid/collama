@@ -1,7 +1,7 @@
 import path from "path";
 import * as vscode from "vscode";
-import { logAgent, logMsg } from "../../logging";
-import { getWorkspaceRoot, isWithinRoot } from "../tools";
+import { logMsg } from "../../logging";
+import { ToolAnswer, getWorkspaceRoot, isWithinRoot, toolError, toolSuccess } from "../tools";
 
 /**
  * Severity string mapping for VS Code DiagnosticSeverity.
@@ -21,13 +21,36 @@ const DIAGNOSTIC_SEVERITY: Record<number, string> = {
  * @param args.filePath - Optional. File to get diagnostics for. If omitted, returns all workspace diagnostics.
  * @param args.severity - Optional. Filter by minimum severity: "error", "warning", "info", "hint". Defaults to "warning".
  */
-export async function getDiagnostics_exec(args: { filePath?: string; severity?: string }): Promise<string> {
+export async function getDiagnostics_exec(args: { filePath?: string; severity?: string }): Promise<
+    ToolAnswer<{
+        diagnostics?: Array<{
+            line: number;
+            character: number;
+            severity: string;
+            message: string;
+            source?: string;
+            code?: string;
+        }>;
+        diagnosticsByFile?: Record<
+            string,
+            Array<{
+                line: number;
+                character: number;
+                severity: string;
+                message: string;
+                source?: string;
+                code?: string;
+            }>
+        >;
+        count: number;
+        fileCount?: number;
+    }>
+> {
     logMsg(`Agent - use getDiagnostics-tool file=${args.filePath ?? "all"} severity=${args.severity ?? "warning"}`);
 
     const root = getWorkspaceRoot();
     if (!root) {
-        logAgent(`[getDiagnostics-tool] No workspace root`);
-        return JSON.stringify({ error: "No workspace root" });
+        return toolError("No workspace root");
     }
 
     const severityMap: Record<string, number> = { error: 0, warning: 1, info: 2, hint: 3 };
@@ -38,8 +61,7 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
             // Single file diagnostics
             const fullPath = path.resolve(root, args.filePath);
             if (!isWithinRoot(root, fullPath)) {
-                logAgent(`[getDiagnostics-tool] Path must not escape the workspace root: ${args.filePath}`);
-                return JSON.stringify({ error: "Path must not escape the workspace root" });
+                return toolError("Path must not escape the workspace root");
             }
 
             const uri = vscode.Uri.file(fullPath);
@@ -59,11 +81,7 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
                     code: d.code !== undefined ? String(typeof d.code === "object" ? d.code.value : d.code) : undefined,
                 }));
 
-            return JSON.stringify({
-                filePath: args.filePath,
-                diagnostics: filtered,
-                count: filtered.length,
-            });
+            return toolSuccess({ diagnostics: filtered, count: filtered.length });
         }
 
         // All workspace diagnostics
@@ -104,15 +122,14 @@ export async function getDiagnostics_exec(args: { filePath?: string; severity?: 
             }
         }
 
-        return JSON.stringify({
+        return toolSuccess({
             diagnosticsByFile,
             count: totalCount,
             fileCount: Object.keys(diagnosticsByFile).length,
         });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[getDiagnostics-tool] Failed to get diagnostics: ${msg}`);
-        return JSON.stringify({ error: `Failed to get diagnostics: ${msg}` });
+        return toolError(`Failed to get diagnostics: ${msg}`);
     }
 }
 

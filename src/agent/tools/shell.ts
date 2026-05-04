@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { logAgent, logMsg } from "../../logging";
-import { getWorkspaceRoot } from "../tools";
+import { logMsg } from "../../logging";
+import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
 import { requestToolConfirm } from "./edit";
 
 type ShellType = "bash" | "powershell";
@@ -23,13 +23,15 @@ function trimOutput(output: string): { output: string; message?: string } {
     return { output: output.slice(0, MAX_OUTPUT_CHARS), message: "Output was trimmed to 10k tokens." };
 }
 
-async function runBash(command: string, cwd: string): Promise<string> {
-    const parts = command.trim().split(/\s+/);
-    const [bin, ...cmdArgs] = parts;
-
+async function runBash(command: string, cwd: string): Promise<{ output: string; exitCode: number }> {
     return new Promise((resolve, reject) => {
-        const child = spawn(bin, cmdArgs, { cwd, shell: false, env: { ...process.env, FORCE_COLOR: "0", CI: "true" } });
+        const child = spawn("/bin/bash", ["-c", command], {
+            cwd,
+            shell: false,
+            env: { ...process.env, FORCE_COLOR: "0", CI: "true" },
+        });
         let output = "";
+        let exitCode = 0;
 
         const timeout = setTimeout(() => {
             child.kill();
@@ -42,9 +44,10 @@ async function runBash(command: string, cwd: string): Promise<string> {
         child.stderr.on("data", (chunk: Buffer) => {
             output += chunk.toString();
         });
-        child.on("close", () => {
+        child.on("close", (code) => {
             clearTimeout(timeout);
-            resolve(output.trimEnd());
+            exitCode = code ?? 0;
+            resolve({ output: output.trimEnd(), exitCode });
         });
         child.on("error", (err) => {
             clearTimeout(timeout);
@@ -53,7 +56,7 @@ async function runBash(command: string, cwd: string): Promise<string> {
     });
 }
 
-async function runPowerShell(command: string, cwd: string): Promise<string> {
+async function runPowerShell(command: string, cwd: string): Promise<{ output: string; exitCode: number }> {
     const powershellBin = process.platform === "win32" ? "powershell.exe" : "pwsh";
 
     return new Promise((resolve, reject) => {
@@ -63,6 +66,7 @@ async function runPowerShell(command: string, cwd: string): Promise<string> {
             env: { ...process.env, CI: "true" },
         });
         let output = "";
+        let exitCode = 0;
 
         const timeout = setTimeout(() => {
             child.kill();
@@ -75,9 +79,10 @@ async function runPowerShell(command: string, cwd: string): Promise<string> {
         child.stderr.on("data", (chunk: Buffer) => {
             output += chunk.toString();
         });
-        child.on("close", () => {
+        child.on("close", (code) => {
             clearTimeout(timeout);
-            resolve(output.trimEnd());
+            exitCode = code ?? 0;
+            resolve({ output: output.trimEnd(), exitCode });
         });
         child.on("error", (err) => {
             clearTimeout(timeout);
@@ -86,38 +91,50 @@ async function runPowerShell(command: string, cwd: string): Promise<string> {
     });
 }
 
-export async function shell_exec(args: ShellInput): Promise<string> {
+export async function shell_exec(args: ShellInput): Promise<ToolAnswer<{ output: string }>> {
     const shellType = getDefaultShellType();
     const command = args.command.trim();
     const explanation = args.explanation.trim();
     logMsg(`Agent - use Shell-tool shellType=${shellType} command="${command}" explanation="${explanation}"`);
 
+    // matches `cd` at start or after &&, ;, | separators
+    if (/(?:^|[;&|])\s*cd\b/.test(command)) {
+        return toolError("cd is not allowed. The shell always runs with the workspace root as cwd.");
+    }
+
     const root = getWorkspaceRoot();
     if (!root) {
-        return JSON.stringify({ error: "No workspace root found" });
+        return toolError("No workspace root found");
     }
 
     const { value, reason } = await requestToolConfirm(`Shell:${shellType}`, command, explanation);
     if (!value) {
-        return JSON.stringify({ success: false, message: reason });
+        return { success: false, message: reason };
     }
 
     try {
-        const output = shellType === "bash" ? await runBash(command, root) : await runPowerShell(command, root);
-        const { output: trimmedOutput, message } = trimOutput(output);
-        return JSON.stringify({ output: trimmedOutput, ...(message && { message }) }, null, 2);
+        const result = shellType === "bash" ? await runBash(command, root) : await runPowerShell(command, root);
+
+        if (result.exitCode !== 0) {
+            return toolError(result.output);
+        }
+
+        const { output: trimmedOutput, message } = trimOutput(result.output);
+        return toolSuccess({ output: trimmedOutput }, message);
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[Shell-tool] Failed to execute: ${msg}`);
-        return JSON.stringify({ error: msg });
+        return toolError(msg);
     }
 }
+const shellType = getDefaultShellType();
+const shellName = shellType === "bash" ? "bash" : "PowerShell";
+
 export const shell_def = {
     type: "function" as const,
     function: {
         name: "shell",
         description:
-            "Run shell commands and uses workspace root as cwd. " +
+            `Run ${shellName} commands and uses workspace root as cwd; cd is never allowed. ` +
             "IMPORTANT: Prefer other tools. " +
             "Use as a last resort — prefer just for debugging and testing. " +
             "Restrictive, simple command logics.",
@@ -130,7 +147,7 @@ export const shell_def = {
                 },
                 command: {
                     type: "string",
-                    description: "The full shell command to execute.",
+                    description: `The full ${shellName} command to execute.`,
                 },
             },
             required: ["explanation", "command"],

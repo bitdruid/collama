@@ -2,8 +2,8 @@ import fs from "fs";
 import path from "path";
 import * as vscode from "vscode";
 import { getWebview } from "../../chat/utils-back";
-import { logAgent, logMsg } from "../../logging";
-import { secureWorkspace } from "../tools";
+import { logMsg } from "../../logging";
+import { ToolAnswer, secureWorkspace, toolError, toolSuccess } from "../tools";
 
 // -- Tool confirmation via webview --
 
@@ -283,12 +283,12 @@ export async function edit_exec(args: {
     oldString: string;
     newString: string;
     explanation: string;
-}): Promise<string> {
+}): Promise<ToolAnswer<{ filePath: string }>> {
     logMsg(`Agent - use edit-tool file=${args.filePath}`);
 
     const ws = secureWorkspace(args.filePath, "edit");
     if (ws.error) {
-        return ws.error;
+        return toolError(ws.error);
     }
 
     try {
@@ -298,33 +298,27 @@ export async function edit_exec(args: {
         if (content === "" && args.oldString === "") {
             // Insert into an empty file
             if (!args.newString) {
-                logAgent(`[edit-tool] newString must not be empty when inserting into an empty file: ${args.filePath}`);
-                return JSON.stringify({ error: "newString must not be empty when inserting into an empty file." });
+                return toolError("newString must not be empty when inserting into an empty file.");
             }
             newContent = args.newString;
         } else {
             // Validate that oldString exists and is unique
             const firstIndex = content.indexOf(args.oldString);
             if (firstIndex === -1) {
-                logAgent(`[edit-tool] oldString not found in file: ${args.filePath}`);
-                return JSON.stringify({
-                    error: "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
-                    filePath: args.filePath,
-                });
+                return toolError(
+                    "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
+                );
             }
 
             const secondIndex = content.indexOf(args.oldString, firstIndex + 1);
             if (secondIndex !== -1) {
-                logAgent(`[edit-tool] oldString matches multiple locations in file: ${args.filePath}`);
-                return JSON.stringify({
-                    error: "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
-                    filePath: args.filePath,
-                });
+                return toolError(
+                    "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
+                );
             }
 
             if (args.oldString === args.newString) {
-                logAgent(`[edit-tool] oldString and newString are identical: ${args.filePath}`);
-                return JSON.stringify({ error: "oldString and newString are identical. No changes to apply." });
+                return toolError("oldString and newString are identical. No changes to apply.");
             }
 
             newContent = content.replace(args.oldString, args.newString);
@@ -333,11 +327,7 @@ export async function edit_exec(args: {
         // Auto-accept: apply without diff preview
         if (autoAcceptEdits) {
             await applyFileChanges(vscode.Uri.file(ws.fullPath), newContent);
-            return JSON.stringify({
-                success: true,
-                message: "Changes applied (auto-accepted).",
-                filePath: args.filePath,
-            });
+            return toolSuccess({ filePath: args.filePath }, "Changes applied (auto-accepted).");
         }
 
         const result = await handleChanges(ws.fullPath, newContent, args.explanation, {
@@ -346,15 +336,10 @@ export async function edit_exec(args: {
             progressMessage: `collama: Editing ${args.filePath}…`,
         });
 
-        return JSON.stringify({
-            success: result.success,
-            message: result.message,
-            filePath: args.filePath,
-        });
+        return { success: result.success, output: { filePath: args.filePath }, message: result.message };
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[edit-tool] Failed to edit file: ${args.filePath} - ${msg}`);
-        return JSON.stringify({ error: `Failed to edit file: ${msg}` });
+        return toolError(`Failed to edit file: ${msg}`);
     }
 }
 
@@ -397,13 +382,17 @@ export const edit_def = {
  * @param args.filePath - Relative path to the file or folder to create.
  * @param args.content - File content. If omitted, creates a folder instead.
  */
-export async function create_exec(args: { filePath: string; content?: string; explanation: string }): Promise<string> {
+export async function create_exec(args: {
+    filePath: string;
+    content?: string;
+    explanation: string;
+}): Promise<ToolAnswer<{ filePath: string }>> {
     const isFolder = args.content === undefined;
     logMsg(`Agent - use create-tool ${isFolder ? "folder" : "file"}=${args.filePath}`);
 
     const ws = secureWorkspace(args.filePath, "create");
     if (ws.error) {
-        return ws.error;
+        return toolError(ws.error);
     }
 
     try {
@@ -411,11 +400,9 @@ export async function create_exec(args: { filePath: string; content?: string; ex
         try {
             const stat = await vscode.workspace.fs.stat(vscode.Uri.file(ws.fullPath));
             if (stat.type === vscode.FileType.Directory) {
-                logAgent(`[create-tool] Folder already exists: ${args.filePath}`);
-                return JSON.stringify({ error: `Folder already exists: ${args.filePath}` });
+                return toolError(`Folder already exists: ${args.filePath}`);
             }
-            logAgent(`[create-tool] File already exists: ${args.filePath}`);
-            return JSON.stringify({ error: `File already exists: ${args.filePath}` });
+            return toolError(`File already exists: ${args.filePath}`);
         } catch {
             // Doesn't exist, which is what we want
         }
@@ -424,46 +411,30 @@ export async function create_exec(args: { filePath: string; content?: string; ex
             // Auto-accept: create folder without confirmation
             if (autoAcceptFolderCreates) {
                 await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
-                return JSON.stringify({
-                    success: true,
-                    message: "Folder created (auto-created).",
-                    filePath: args.filePath,
-                });
+                return toolSuccess({ filePath: args.filePath }, "Folder created (auto-created).");
             }
 
             const { value, reason } = await requestToolConfirm("create folder", args.filePath, args.explanation);
 
             if (!value) {
-                return JSON.stringify({
-                    success: false,
-                    message: reason,
-                    filePath: args.filePath,
-                });
+                return { success: false, output: { filePath: args.filePath }, message: reason };
             }
 
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
 
             if (value === "acceptAll") {
                 autoAcceptFolderCreates = true;
-                return JSON.stringify({
-                    success: true,
-                    message: "Folder created. Auto-creating future folders.",
-                    filePath: args.filePath,
-                });
+                return toolSuccess({ filePath: args.filePath }, "Folder created. Auto-creating future folders.");
             }
 
-            return JSON.stringify({ success: true, message: "Folder created.", filePath: args.filePath });
+            return toolSuccess({ filePath: args.filePath }, "Folder created.");
         }
 
         // Auto-accept: create without preview
         if (autoAcceptFileCreates) {
             const encoder = new TextEncoder();
             await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), encoder.encode(args.content!));
-            return JSON.stringify({
-                success: true,
-                message: "File created (auto-created).",
-                filePath: args.filePath,
-            });
+            return toolSuccess({ filePath: args.filePath }, "File created (auto-created).");
         }
 
         // Create file with preview
@@ -472,15 +443,10 @@ export async function create_exec(args: { filePath: string; content?: string; ex
             progressMessage: `collama: Creating ${args.filePath}…`,
         });
 
-        return JSON.stringify({
-            success: result.success,
-            message: result.message,
-            filePath: args.filePath,
-        });
+        return { success: result.success, output: { filePath: args.filePath }, message: result.message };
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[create] Failed to create ${isFolder ? "folder" : "file"}: ${args.filePath} - ${msg}`);
-        return JSON.stringify({ error: `Failed to create ${isFolder ? "folder" : "file"}: ${msg}` });
+        return toolError(`Failed to create ${isFolder ? "folder" : "file"}: ${msg}`);
     }
 }
 
@@ -516,12 +482,15 @@ export const create_def = {
  *
  * @param args.filePath - Relative path to the file or folder to delete.
  */
-export async function delete_exec(args: { filePath: string; explanation: string }): Promise<string> {
+export async function delete_exec(args: {
+    filePath: string;
+    explanation: string;
+}): Promise<ToolAnswer<{ filePath: string }>> {
     logMsg(`Agent - use delete-tool file=${args.filePath}`);
 
     const ws = secureWorkspace(args.filePath, "delete");
     if (ws.error) {
-        return ws.error;
+        return toolError(ws.error);
     }
 
     try {
@@ -531,18 +500,13 @@ export async function delete_exec(args: { filePath: string; explanation: string 
         try {
             await vscode.workspace.fs.stat(uri);
         } catch {
-            logAgent(`[delete-tool] File/folder not found: ${args.filePath}`);
-            return JSON.stringify({ error: `File/folder not found: ${args.filePath}` });
+            return toolError(`File/folder not found: ${args.filePath}`);
         }
 
         // Auto-accept: delete without confirmation
         if (autoAcceptDeletes) {
             await vscode.workspace.fs.delete(uri);
-            return JSON.stringify({
-                success: true,
-                message: "File/folder deleted (auto-deleted).",
-                filePath: args.filePath,
-            });
+            return toolSuccess({ filePath: args.filePath }, "File/folder deleted (auto-deleted).");
         }
 
         // Calculate relative path from workspace root for display
@@ -552,29 +516,20 @@ export async function delete_exec(args: { filePath: string; explanation: string 
         const { value, reason } = await requestToolConfirm("delete", relativePath, args.explanation);
 
         if (!value) {
-            return JSON.stringify({
-                success: false,
-                message: reason,
-                filePath: args.filePath,
-            });
+            return { success: false, output: { filePath: args.filePath }, message: reason };
         }
 
         await vscode.workspace.fs.delete(uri);
 
         if (value === "acceptAll") {
             autoAcceptDeletes = true;
-            return JSON.stringify({
-                success: true,
-                message: "File/folder deleted. Auto-deleting future files.",
-                filePath: args.filePath,
-            });
+            return toolSuccess({ filePath: args.filePath }, "File/folder deleted. Auto-deleting future files.");
         }
 
-        return JSON.stringify({ success: true, message: "File/folder deleted.", filePath: args.filePath });
+        return toolSuccess({ filePath: args.filePath }, "File/folder deleted.");
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[delete-tool] Failed to delete file/folder: ${args.filePath} - ${msg}`);
-        return JSON.stringify({ error: `Failed to delete file/folder: ${msg}` });
+        return toolError(`Failed to delete file/folder: ${msg}`);
     }
 }
 

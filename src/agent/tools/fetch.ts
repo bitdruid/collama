@@ -1,7 +1,8 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { logAgent, logMsg } from "../../logging";
+import { logMsg } from "../../logging";
+import { ToolAnswer, toolError, toolSuccess } from "../tools";
 import { requestToolConfirm } from "./edit";
 
 type FetchInput = {
@@ -78,7 +79,9 @@ async function fetchText(url: URL): Promise<{ content: string; contentType: stri
     }
 }
 
-export async function fetch_exec(args: FetchInput): Promise<string> {
+export async function fetch_exec(
+    args: FetchInput,
+): Promise<ToolAnswer<{ content?: string; filePath?: string; lineCount?: number; status: number }>> {
     const keys = Object.keys(args);
     const allowedKeys = new Set(["url", "explanation"]);
     if (
@@ -86,7 +89,7 @@ export async function fetch_exec(args: FetchInput): Promise<string> {
         typeof args.url !== "string" ||
         typeof args.explanation !== "string"
     ) {
-        return JSON.stringify({ error: "fetch only accepts url and explanation arguments" });
+        return toolError("fetch only accepts url and explanation arguments");
     }
 
     const rawUrl = args.url.trim();
@@ -94,13 +97,12 @@ export async function fetch_exec(args: FetchInput): Promise<string> {
 
     const url = validateUrl(rawUrl);
     if (typeof url === "string") {
-        logAgent(`[fetch-tool] ${url} url=${rawUrl}`);
-        return JSON.stringify({ error: url });
+        return toolError(url);
     }
 
     const { value, reason } = await requestToolConfirm("fetch", url.toString(), args.explanation);
     if (!value) {
-        return JSON.stringify({ success: false, message: reason });
+        return { success: false, message: reason };
     }
 
     try {
@@ -110,30 +112,16 @@ export async function fetch_exec(args: FetchInput): Promise<string> {
         if (content.length > MAX_INLINE_CHARS) {
             const filePath = tempFilePath(url);
             fs.writeFileSync(filePath, content, "utf-8");
-            return JSON.stringify(
-                {
-                    filePath,
-                    lineCount: countLines(content),
-                    status: result.status,
-                    message: "See temporary file.",
-                },
-                null,
-                2,
+            return toolSuccess(
+                { filePath, lineCount: countLines(content), status: result.status },
+                "See temporary file.",
             );
         }
 
-        return JSON.stringify(
-            {
-                content,
-                status: result.status,
-            },
-            null,
-            2,
-        );
+        return toolSuccess({ content, status: result.status });
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logAgent(`[fetch-tool] Failed to fetch: ${msg}`);
-        return JSON.stringify({ error: msg });
+        return toolError(msg);
     }
 }
 
