@@ -2,7 +2,7 @@ import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
-import { icons } from "../../styles/theme-icons";
+import { themeIcons } from "../../styles";
 import { chatMarkdown } from "./markdown";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
@@ -231,7 +231,7 @@ export class ChatOutput extends LitElement {
                         const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
                         const outOfContextClass = isOutOfContext ? "out-of-context" : "";
                         const warningIcon = isOutOfContext
-                            ? html`<span class="warning-icon" title="Not in context">${icons.alertTriangle}</span>`
+                            ? html`<span class="warning-icon" title="Not in context">${themeIcons.alertTriangle}</span>`
                             : "";
 
                         if (msg.role === "user") {

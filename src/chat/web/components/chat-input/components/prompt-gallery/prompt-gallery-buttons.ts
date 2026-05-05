@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../../styles/theme-icons";
+import { themeIcons } from "../../../../styles";
 import { galleryButtonStyles } from "./styles";
 
 @customElement("prompt-gallery-buttons")
@@ -30,7 +30,7 @@ export class PromptGalleryButtons extends LitElement {
                                 }),
                             )}
                     >
-                        ${icons.pencil}
+                        ${themeIcons.pencil}
                     </button>
 
                     <button
@@ -45,7 +45,7 @@ export class PromptGalleryButtons extends LitElement {
                                 }),
                             )}
                     >
-                        ${icons.trash}
+                        ${themeIcons.trash}
                     </button>
                 </div>
             `;
@@ -59,14 +59,14 @@ export class PromptGalleryButtons extends LitElement {
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("save-new-prompt", { bubbles: true, composed: true }))}
                     >
-                        ${icons.check}
+                        ${themeIcons.check}
                     </button>
                     <button
                         class="gallery-btn cancel-btn"
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("cancel-new-prompt", { bubbles: true, composed: true }))}
                     >
-                        ${icons.x}
+                        ${themeIcons.x}
                     </button>
                 </div>
             `;
@@ -78,14 +78,14 @@ export class PromptGalleryButtons extends LitElement {
                     class="gallery-btn prompt-btn"
                     @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
                 >
-                    ${icons.plus}
+                    ${themeIcons.plus}
                 </button>
                 <button
                     class="gallery-btn cancel-btn"
                     @click=${() =>
                         this.dispatchEvent(new CustomEvent("close-gallery", { bubbles: true, composed: true }))}
                 >
-                    ${icons.x}
+                    ${themeIcons.x}
                 </button>
             </div>
         `;

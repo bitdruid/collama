@@ -1,7 +1,7 @@
 import { LitElement, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { adjustTextareaRows } from "../../../../utils-front";
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import { editStyles } from "./styles";
 
 /**
@@ -105,10 +105,10 @@ export class ChatEditMessage extends LitElement {
             <textarea class="edit-textarea" rows=${this.rows} @input=${this.handleInput}>${this.content}</textarea>
             <div class="edit-actions">
                 <button class="edit-send" @mousedown=${this.handleMouseDown} @click=${this.handleSend}>
-                    ${icons.check}
+                    ${themeIcons.check}
                 </button>
                 <button class="edit-cancel" @mousedown=${this.handleMouseDown} @click=${this.handleCancel}>
-                    ${icons.x}
+                    ${themeIcons.x}
                 </button>
             </div>
         `;

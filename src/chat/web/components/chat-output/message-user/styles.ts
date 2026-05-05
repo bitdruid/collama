@@ -1,7 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../styles/theme-colors";
-import { themeFonts } from "../../../styles/theme-fonts";
-import { themeStyles } from "../../../styles/theme-styles";
+import { themeColors, themeFonts, themeStyles } from "../../../styles";
 
 export const userStyles = css`
     .message.user {

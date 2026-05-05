@@ -1,9 +1,9 @@
 import { html, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
-import { icons } from "../../../../styles/theme-icons";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
 
+import { themeIcons } from "../../../../styles";
 import "./prompt-gallery-buttons";
 import { galleryStyles } from "./styles";
 
@@ -103,7 +103,7 @@ export class PromptGallery extends BasePopup {
         return html`
             <div class="panel-header">
                 <h3>Prompt Gallery</h3>
-                <span class="close-btn" @click=${this.handleClose}>${icons.x}</span>
+                <span class="close-btn" @click=${this.handleClose}>${themeIcons.x}</span>
             </div>
 
             <div class="prompt-list">

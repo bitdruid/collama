@@ -1,6 +1,6 @@
 import { css, html, LitElement, svg } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { themeColors } from "../../styles/theme-colors";
+import { themeColors } from "../../styles";
 
 @customElement("collama-loading-snake")
 export class ChatContainerLoading extends LitElement {

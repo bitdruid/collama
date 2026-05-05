@@ -1,7 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import type { AttachedContext } from "../../../../../../common/context-chat";
-import { icons } from "../../../../styles/theme-icons";
+import { themeIcons } from "../../../../styles";
 import type { ContextSearchResult } from "../../../../types";
 import { BasePopup } from "../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../template-components/popup/styles";
@@ -137,7 +137,7 @@ export class ContextTree extends BasePopup {
                 ${this.searchQuery
                     ? html`
                           <button class="clear-btn" @click=${this.handleClearSearch} title="Clear search">
-                              ${icons.x}
+                              ${themeIcons.x}
                           </button>
                       `
                     : ""}
@@ -163,7 +163,7 @@ export class ContextTree extends BasePopup {
             <div class="result-item" @click=${() => this._handleAdd(result)}>
                 <div class="result-info">
                     <span class="result-name">
-                        ${result.isFolder ? html`<span class="folder-icon">${icons.folder}</span>` : ""}
+                        ${result.isFolder ? html`<span class="folder-icon">${themeIcons.folder}</span>` : ""}
                         ${result.fileName}
                     </span>
                     <span class="result-path">${result.relativePath}</span>
@@ -172,7 +172,7 @@ export class ContextTree extends BasePopup {
                     class="add-btn ${isAdded ? "added" : ""}"
                     title=${isAdded ? "Remove from context" : "Add as context"}
                 >
-                    ${isAdded ? icons.check : icons.plus}
+                    ${isAdded ? themeIcons.check : themeIcons.plus}
                 </button>
             </div>
         `;

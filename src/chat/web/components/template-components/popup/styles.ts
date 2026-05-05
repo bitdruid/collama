@@ -1,7 +1,5 @@
 import { css } from "lit";
-import { themeAnimations } from "../../../styles/theme-animations";
-import { themeColors } from "../../../styles/theme-colors";
-import { themeStyles } from "../../../styles/theme-styles";
+import { themeAnimations, themeColors, themeStyles } from "../../../styles";
 
 export const basePopupStyles = css`
     :host {

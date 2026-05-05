@@ -2,7 +2,7 @@ import { html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 
 import { buildOpenFileCommandUri } from "../../../../utils-front";
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import type { ToolConfirmRequest } from "../../../types";
 import "../../template-components/action-button";
 import "../../template-components/banner";
@@ -142,7 +142,7 @@ export class ToolConfirmModal extends BaseModal {
                 <div class="confirm-buttons">
                     <collama-accept-button title="Accept" @action=${this.handleAccept}></collama-accept-button>
                     <button class="confirm-btn btn-accept-all" @click=${this.handleAcceptAll} title="Accept All">
-                        ${icons.checkCheck}
+                        ${themeIcons.checkCheck}
                     </button>
                     <collama-cancel-button title="Cancel" @action=${this.handleCancel}></collama-cancel-button>
                 </div>

@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../../styles/theme-icons";
+import { themeIcons } from "../../../../styles";
 import { settingsButtonStyles } from "./styles";
 
 @customElement("collama-settings-button")
@@ -19,7 +19,7 @@ export class SettingsButton extends LitElement {
                 data-base-overlay-anchor
                 @click=${this._handleClick}
             >
-                <span class="settings-icon">${icons.settings}</span>
+                <span class="settings-icon">${themeIcons.settings}</span>
                 ${this.showBadge ? html`<span class="button-badge">!</span>` : ""}
             </button>
         `;

@@ -6,7 +6,7 @@ import { html } from "lit";
  * Centralized SVG icons for consistent use across components.
  * Returns Lit TemplateResult objects for direct use in templates.
  */
-export const icons = {
+export const themeIcons = {
     /** Paperclip - used for context/attachment button */
     paperclip: html`<svg
         width="14"

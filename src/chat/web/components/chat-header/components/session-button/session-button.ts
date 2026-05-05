@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../../styles/theme-icons";
+import { themeIcons } from "../../../../styles";
 import { sessionButtonStyles } from "./styles";
 
 @customElement("collama-session-button")
@@ -18,7 +18,7 @@ export class SessionButton extends LitElement {
                 ?disabled=${this.disabled}
                 data-base-overlay-anchor
             >
-                <span class="session-icon">${icons.history}</span>
+                <span class="session-icon">${themeIcons.history}</span>
             </button>
         `;
     }

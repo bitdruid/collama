@@ -1,7 +1,7 @@
 import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../../utils-front";
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import { defaultChatConfig, type ChatConfig } from "../../../types";
 import { BaseDropdown } from "../../template-components/dropdown/base-dropdown";
 import { baseDropdownStyles } from "../../template-components/dropdown/styles";
@@ -119,7 +119,7 @@ export class SettingsDropdown extends BaseDropdown {
                         href="${buildOpenFileCommandUri(AGENTS_MD_PATH)}"
                         title="${AGENTS_MD_PATH}"
                     >
-                        <span class="agents-md-check">${icons.check}</span>
+                        <span class="agents-md-check">${themeIcons.check}</span>
                         active
                     </a>
                 </div>
@@ -155,7 +155,7 @@ export class SettingsDropdown extends BaseDropdown {
                 marks="2"
                 @input=${(event: Event) => this._updateBoolean(key, event)}
             >
-                ${showWarning ? html`<span slot="prefix">${icons.alertTriangle}</span>` : ""}
+                ${showWarning ? html`<span slot="prefix">${themeIcons.alertTriangle}</span>` : ""}
             </collama-slider>
         `;
     }

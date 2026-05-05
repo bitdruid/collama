@@ -1,7 +1,5 @@
 import { css } from "lit";
-import { themeAnimations } from "../../../styles/theme-animations";
-import { themeColors } from "../../../styles/theme-colors";
-import { themeFonts } from "../../../styles/theme-fonts";
+import { themeAnimations, themeColors, themeFonts } from "../../../styles";
 
 export const baseModalStyles = css`
     :host {

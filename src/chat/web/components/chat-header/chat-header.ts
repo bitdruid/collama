@@ -2,12 +2,12 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-import { icons } from "../../styles/theme-icons";
 import "./components/context-usage-bar/context-usage-bar";
 import "./components/create-chat-button/create-chat-button";
-import "./components/settings-button/settings-button";
 import "./components/session-button/session-button";
+import "./components/settings-button/settings-button";
 
+import { themeIcons } from "../../styles";
 import { chatHeaderStyles } from "./styles";
 
 @customElement("collama-chatheader")
@@ -39,16 +39,14 @@ export class ChatHeader extends LitElement {
         return html`
             <div class="header-bar">
                 <div class="header-left">
-                    <collama-session-button
-                        .disabled=${this.isGenerating}
-                    ></collama-session-button>
+                    <collama-session-button .disabled=${this.isGenerating}></collama-session-button>
                     <collama-settings-button
                         .disabled=${this.isGenerating}
                         .showBadge=${this.showSettingsBadge}
                     ></collama-settings-button>
                 </div>
                 <div class="header-actions">
-                    <span class="usage-icon">${icons.brain}</span>
+                    <span class="usage-icon">${themeIcons.brain}</span>
                     <collama-context-usage-bar
                         .used=${this.contextUsed}
                         .max=${this.contextMax}
@@ -67,5 +65,4 @@ export class ChatHeader extends LitElement {
             </div>
         `;
     }
-
 }

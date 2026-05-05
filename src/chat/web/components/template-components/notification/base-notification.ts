@@ -1,6 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import { BaseOverlay } from "../overlay/base-overlay";
 import { baseNotificationStyles } from "./styles";
 
@@ -35,8 +35,8 @@ export class BaseNotification extends BaseOverlay {
         return html`
             <section class="notification-content ${this._visible ? "fade-in" : "fade-out"}">
                 <h3 class="notification-heading">
-                    <span class="notify-danger">${icons.alertTriangle}</span> ${this.heading}
-                    <span class="notify-danger">${icons.alertTriangle}</span>
+                    <span class="notify-danger">${themeIcons.alertTriangle}</span> ${this.heading}
+                    <span class="notify-danger">${themeIcons.alertTriangle}</span>
                 </h3>
                 ${this.renderContent()}
             </section>

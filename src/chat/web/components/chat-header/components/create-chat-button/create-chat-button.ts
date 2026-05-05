@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../../styles/theme-icons";
+import { themeIcons } from "../../../../styles";
 import { createChatButtonStyles } from "./styles";
 
 export type CreateChatButtonKind = "normal" | "ghost";
@@ -21,7 +21,7 @@ export class CreateChatButton extends LitElement {
                 title=${isGhost ? "New Temporary Chat" : "New Chat"}
                 ?disabled=${this.disabled}
             >
-                ${isGhost ? icons.ghostChat : icons.plus}
+                ${isGhost ? themeIcons.ghostChat : themeIcons.plus}
             </button>
         `;
     }

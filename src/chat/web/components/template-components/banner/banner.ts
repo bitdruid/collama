@@ -1,7 +1,7 @@
 import { html, LitElement, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import { bannerStyles } from "./styles";
 
 export type BannerType = "tool" | "think" | "summary" | "code" | "context" | "tool-group" | "info" | "banner";
@@ -49,48 +49,48 @@ export class Banner extends LitElement {
 @customElement("collama-tool-banner")
 export class ToolBanner extends Banner {
     override type: BannerType = "tool";
-    protected override icon = icons.tool;
+    protected override icon = themeIcons.tool;
     protected override heading = "Tool";
 }
 
 @customElement("collama-think-banner")
 export class ThinkBanner extends Banner {
     override type: BannerType = "think";
-    protected override icon = icons.thinking;
+    protected override icon = themeIcons.thinking;
     protected override heading = "Thinking";
 }
 
 @customElement("collama-summary-banner")
 export class SummaryBanner extends Banner {
     override type: BannerType = "summary";
-    protected override icon = icons.summary;
+    protected override icon = themeIcons.summary;
     protected override heading = "Summary";
 }
 
 @customElement("collama-code-banner")
 export class CodeBanner extends Banner {
     override type: BannerType = "code";
-    protected override icon = icons.code;
+    protected override icon = themeIcons.code;
     protected override heading = "";
 }
 
 @customElement("collama-context-banner")
 export class ContextBanner extends Banner {
     override type: BannerType = "context";
-    protected override icon = icons.paperclip;
+    protected override icon = themeIcons.paperclip;
     protected override heading = "Context";
 }
 
 @customElement("collama-tool-group-banner")
 export class ToolGroupBanner extends Banner {
     override type: BannerType = "tool-group";
-    protected override icon = icons.tool;
+    protected override icon = themeIcons.tool;
     protected override heading = "Tools";
 }
 
 @customElement("collama-info-banner")
 export class InfoBanner extends Banner {
     override type: BannerType = "info";
-    protected override icon = icons.lesson;
+    protected override icon = themeIcons.lesson;
     protected override heading = "Info";
 }

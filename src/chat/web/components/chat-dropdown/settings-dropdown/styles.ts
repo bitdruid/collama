@@ -1,6 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../styles/theme-colors";
-import { themeFonts } from "../../../styles/theme-fonts";
+import { themeColors, themeFonts } from "../../../styles";
 
 export const settingsDropdownStyles = css`
     :host {

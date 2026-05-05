@@ -1,8 +1,5 @@
 import { css } from "lit";
-import { themeAnimations } from "../../../styles/theme-animations";
-import { themeColors } from "../../../styles/theme-colors";
-import { themeFonts } from "../../../styles/theme-fonts";
-import { themeStyles } from "../../../styles/theme-styles";
+import { themeAnimations, themeColors, themeFonts, themeStyles } from "../../../styles";
 
 export const baseNotificationStyles = css`
     :host {

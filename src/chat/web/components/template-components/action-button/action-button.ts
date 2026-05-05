@@ -1,7 +1,7 @@
 import { html, LitElement, type PropertyValues } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import { actionButtonStyles, type ActionButtonVariant } from "./styles";
 
 export class ActionButton extends LitElement {
@@ -14,7 +14,7 @@ export class ActionButton extends LitElement {
     private button!: HTMLButtonElement;
 
     protected variant: ActionButtonVariant = "accept";
-    protected icon = icons.check;
+    protected icon = themeIcons.check;
     protected defaultTitle = "Accept";
 
     override connectedCallback() {
@@ -59,13 +59,13 @@ export class ActionButton extends LitElement {
 @customElement("collama-accept-button")
 export class AcceptButton extends ActionButton {
     protected override variant: ActionButtonVariant = "accept";
-    protected override icon = icons.check;
+    protected override icon = themeIcons.check;
     protected override defaultTitle = "Accept";
 }
 
 @customElement("collama-cancel-button")
 export class CancelButton extends ActionButton {
     protected override variant: ActionButtonVariant = "cancel";
-    protected override icon = icons.x;
+    protected override icon = themeIcons.x;
     protected override defaultTitle = "Cancel";
 }

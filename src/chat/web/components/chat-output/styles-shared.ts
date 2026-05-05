@@ -1,6 +1,6 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../utils-front";
-import { themeColors } from "../../styles/theme-colors";
+import { themeColors } from "../../styles";
 import { assistantStyles } from "./message-assistant/styles";
 import { toolStyles } from "./message-tool/styles";
 import { userStyles } from "./message-user/styles";

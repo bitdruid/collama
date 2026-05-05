@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../../../styles/theme-colors";
+import { themeColors } from "../../../../../styles";
 
 export const clearChatConfirmStyles = css`
     :host {

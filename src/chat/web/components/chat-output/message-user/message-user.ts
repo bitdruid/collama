@@ -1,7 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory } from "../../../../../common/context-chat";
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import "./edit";
 
 export interface UserMessageHost {
@@ -98,22 +98,12 @@ export function renderUserMessage(opts: UserRenderOptions) {
                     <span class="role-label">${warningIcon}User</span>
                     <div class="message-actions">
                         <button
-                            class="summarize-button"
-                            @click=${() => handleSummarize(host, index)}
-                            title="Summarize this turn"
-                            ?disabled=${isGenerating}
-                        >
-                            ${icons.fileText}
-                            <span>Summarize</span>
-                        </button>
-                        <button
                             class="edit-button"
                             @click=${() => handleEdit(host, index)}
                             title="Edit and resend"
                             ?disabled=${isGenerating}
                         >
-                            ${icons.pencil}
-                            <span>Edit</span>
+                            ${themeIcons.pencil}
                         </button>
                         <button
                             class="resend-button"
@@ -121,8 +111,15 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             title="Resend from here"
                             ?disabled=${isGenerating}
                         >
-                            ${icons.enter}
-                            <span>Resend</span>
+                            ${themeIcons.enter}
+                        </button>
+                        <button
+                            class="summarize-button"
+                            @click=${() => handleSummarize(host, index)}
+                            title="Summarize this turn"
+                            ?disabled=${isGenerating}
+                        >
+                            ${themeIcons.fileText}
                         </button>
                         <button
                             class="delete-button"
@@ -130,8 +127,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             title="Delete this turn (~${getTurnTokens(messages, index)} tokens freed)"
                             ?disabled=${isGenerating}
                         >
-                            ${icons.trash}
-                            <span>Delete</span>
+                            ${themeIcons.trash}
                         </button>
                     </div>
                 </div>

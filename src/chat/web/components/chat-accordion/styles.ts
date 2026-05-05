@@ -1,6 +1,6 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../utils-front";
-import { themeColors } from "../../styles/theme-colors";
+import { themeColors } from "../../styles";
 import { bannerStyles } from "../template-components/banner/styles";
 
 export const accordionStyles = [

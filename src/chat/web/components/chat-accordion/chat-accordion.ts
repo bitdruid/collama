@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { html as staticHtml, unsafeStatic } from "lit/static-html.js";
 
 import { highlightCodeBlock } from "../../../utils-front";
-import { icons } from "../../styles/theme-icons";
+import { themeIcons } from "../../styles";
 import { accordionStyles } from "./styles";
 
 export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group" | "context";
@@ -147,7 +147,7 @@ export class ChatAccordion extends LitElement {
         }
         return html`
             <button slot="actions" class="copy-btn" @click=${this._handleCopy} title="Copy code">
-                ${icons.copy}
+                ${themeIcons.copy}
                 <span>${this._copyText}</span>
             </button>
         `;
@@ -163,7 +163,7 @@ export class ChatAccordion extends LitElement {
                 @click=${this._toggle}
             >
                 <span slot="slot1">${this._renderCopyButton()}</span>
-                <span slot="slot2" class="banner-arrow ${this.expanded ? "expanded" : ""}">${icons.chevronDown}</span>
+                <span slot="slot2" class="banner-arrow ${this.expanded ? "expanded" : ""}">${themeIcons.chevronDown}</span>
             </${tag}>
         `;
     }

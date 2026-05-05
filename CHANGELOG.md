@@ -1,6 +1,37 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.5] - 2026-05-05
+
+### Added
+- Barrel export for styles module (`src/chat/web/styles/index.ts`)
+- User icon for message-user component role label
+
+### Changed
+- Reorder message action buttons (summarize moved between delete and resend)
+- Remove text labels from message action buttons (icons only)
+
+## [1.7.4] - 2026-05-04
+
+### Changed
+- Standardize tool responses with unified `ToolAnswer<T>` interface
+
+## [1.7.3] - 2026-05-04
+
+### Fixed
+- Auto-accept state control and logging for agent
+
+## [1.7.2] - 2026-05-01
+
+### Changed
+- Split LLM clients and clean config types
+
+## [1.7.1] - 2026-04-30
+
+### Fixed
+- Add context line x - y for better code location display
+- Fix button alignment in various components
+
 ## [1.7.0] - 2026-04-29
 
 ### Added

@@ -1,7 +1,7 @@
 import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../common/context-chat";
-import { icons } from "../../../../styles/theme-icons";
+import { themeIcons } from "../../../../styles";
 import { type ContextSearchResult } from "../../../../types";
 import "./clear-chat-confirm/clear-chat-confirm";
 import "./convert-ghost-confirm/convert-ghost-confirm";
@@ -113,7 +113,7 @@ export class ControlPanelButtons extends LitElement {
                 @click=${this.handleAutoAccept}
                 ?active=${this.autoAccept}
             >
-                ${this.autoAccept ? icons.alertTriangle : icons.checkCircle}
+                ${this.autoAccept ? themeIcons.alertTriangle : themeIcons.checkCircle}
             </button-auto-accept>
         `;
     }
@@ -138,14 +138,15 @@ export class ControlPanelButtons extends LitElement {
     }
 
     private _renderCancel() {
-        return html` <button-cancel title="Cancel" @click=${this.handleCancel}> ${icons.x} </button-cancel> `;
+        return html` <button-cancel title="Cancel" @click=${this.handleCancel}> ${themeIcons.x} </button-cancel> `;
     }
 
     private _renderContextButton() {
         const hasContext = this.contexts.length > 0;
         return html`
             <button-context title="Add context" data-base-overlay-anchor @click=${this.handleToggleContextTree}>
-                ${icons.paperclip} ${hasContext ? html`<span class="button-badge">${this.contexts.length}</span>` : ""}
+                ${themeIcons.paperclip}
+                ${hasContext ? html`<span class="button-badge">${this.contexts.length}</span>` : ""}
             </button-context>
             ${this.showContextTree
                 ? html`<collama-context-search
@@ -164,7 +165,7 @@ export class ControlPanelButtons extends LitElement {
     private _renderGallery() {
         return html`
             <button-gallery title="Open Prompt Gallery" data-base-overlay-anchor @click=${this.handleToggleGallery}>
-                ${icons.gallery}
+                ${themeIcons.gallery}
             </button-gallery>
             ${this.showGallery
                 ? html`<collama-prompt-gallery
@@ -184,7 +185,7 @@ export class ControlPanelButtons extends LitElement {
                 ?active=${this.isGhost}
                 @click=${this.handleConvertToGhost}
             >
-                ${icons.ghostChat}
+                ${themeIcons.ghostChat}
             </button-ghost-chat>
             ${this.showConvertGhostConfirm
                 ? html`<collama-convert-ghost-confirm
@@ -199,7 +200,7 @@ export class ControlPanelButtons extends LitElement {
     private _renderClearChat() {
         return html`
             <button-clear-chat title="Clear conversation" data-base-overlay-anchor @click=${this.handleClearChat}>
-                ${icons.trash}
+                ${themeIcons.trash}
             </button-clear-chat>
             ${this.showClearConfirm
                 ? html`<collama-clear-chat-confirm
@@ -214,13 +215,15 @@ export class ControlPanelButtons extends LitElement {
     private _renderCompress() {
         return html`
             <button-compress title="Summarize conversation" @click=${this.handleSummarizeConversation}>
-                ${icons.compress}
+                ${themeIcons.compress}
             </button-compress>
         `;
     }
 
     private _renderSubmit() {
-        return html` <button-submit title="Submit" @click=${this.handleSubmitClick}> ${icons.enter} </button-submit> `;
+        return html`
+            <button-submit title="Submit" @click=${this.handleSubmitClick}> ${themeIcons.enter} </button-submit>
+        `;
     }
 
     render() {

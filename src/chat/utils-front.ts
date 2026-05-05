@@ -2,9 +2,7 @@ import hljs from "highlight.js";
 import hljsdarkcss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
 import hljslightcss from "highlight.js/styles/atom-one-light.min.css";
 import { css, unsafeCSS } from "lit";
-import { themeColors } from "./web/styles/theme-colors";
-import { themeFonts } from "./web/styles/theme-fonts";
-export { icons } from "./web/styles/theme-icons";
+import { themeColors, themeFonts } from "./web/styles";
 
 /**
  * Auto-adjusts a textarea's row count to fit its content.

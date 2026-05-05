@@ -1,6 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { icons } from "../../../styles/theme-icons";
+import { themeIcons } from "../../../styles";
 import { BaseOverlay } from "../overlay/base-overlay";
 import { baseModalStyles } from "./styles";
 
@@ -47,7 +47,7 @@ export class BaseModal extends BaseOverlay {
             <div class="modal-content ${this._visible ? "fade-in" : "fade-out"}">
                 <div class="modal-header">
                     <h3>${this.title}</h3>
-                    <span class="close-btn" @click=${this.close}>${icons.x}</span>
+                    <span class="close-btn" @click=${this.close}>${themeIcons.x}</span>
                 </div>
                 <div class="modal-body">${this.renderContent()}</div>
             </div>
