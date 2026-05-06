@@ -1,11 +1,11 @@
 import { css } from "lit";
-import { themeColors, themeFonts } from "../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../styles";
 
 export const chatInputStyles = css`
     :host {
         display: block;
         overflow: visible;
-        border-radius: 8px;
+        ${themeStyles.borderRadius.large}
         border: 2px solid ${themeColors.uiBorder};
         background: ${themeColors.uiBackground};
     }

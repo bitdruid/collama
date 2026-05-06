@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeAnimations, themeColors, themeFonts } from "../../../styles";
+import { themeAnimations, themeColors, themeFonts, themeStyles } from "../../../styles";
 
 export const baseModalStyles = css`
     :host {
@@ -15,7 +15,7 @@ export const baseModalStyles = css`
         padding: 16px;
         margin-bottom: 8px;
         overflow: auto;
-        border-radius: 8px;
+        ${themeStyles.borderRadius.large}
         border: 2px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackgroundDimm};
         ${themeAnimations.fadeAnimate}

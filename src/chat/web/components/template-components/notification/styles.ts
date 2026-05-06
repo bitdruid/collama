@@ -21,7 +21,7 @@ export const baseNotificationStyles = css`
         max-width: 100%;
         padding: 10px 12px;
         border: 2px solid ${themeColors.uiBorder};
-        border-radius: 8px;
+        ${themeStyles.borderRadius.large}
         background: ${themeColors.uiBackground};
         ${themeStyles.boxShadow}
         color: ${themeColors.uiFont};

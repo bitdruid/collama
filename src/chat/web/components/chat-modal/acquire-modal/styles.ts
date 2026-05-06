@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors, themeFonts } from "../../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../../styles";
 
 export const acquireModalStyles = css`
     .acquire-content {
@@ -19,7 +19,7 @@ export const acquireModalStyles = css`
         min-width: 0;
         padding: 6px 8px;
         border: 1px solid ${themeColors.uiBorderDimm};
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.medium};

@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../../styles";
+import { themeColors, themeStyles } from "../../../../styles";
 
 export const settingsButtonStyles = css`
     .settings-button {
@@ -42,7 +42,7 @@ export const settingsButtonStyles = css`
         justify-content: center;
         width: 14px;
         height: 14px;
-        border-radius: 50%;
+        ${themeStyles.borderRadius.round}
         background-color: ${themeColors.usageDanger};
         color: ${themeColors.cleanWhite};
         font-size: 9px;

@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors, themeFonts } from "../../../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../../../styles";
 
 export const contextUsageBarStyles = css`
     :host {
@@ -19,7 +19,7 @@ export const contextUsageBarStyles = css`
         height: 10px;
         background: ${themeColors.uiBackgroundDimm};
         border: 1px solid ${themeColors.uiBorder};
-        border-radius: 5px;
+        ${themeStyles.borderRadius.medium}
         overflow: hidden;
         position: relative;
     }
@@ -27,7 +27,7 @@ export const contextUsageBarStyles = css`
     .context-bar {
         height: 100%;
         background: ${themeColors.usagePrimary};
-        border-radius: 2px;
+        ${themeStyles.borderRadius.small}
         transition: width 0.3s ease;
         min-width: 1px;
     }

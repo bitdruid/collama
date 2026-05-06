@@ -19,7 +19,7 @@ export const toolConfirmStyles = css`
         align-items: center;
         font-size: ${themeFonts.medium};
         padding: 6px 12px;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         background: ${themeColors.settings};
         color: ${themeColors.cleanWhite};
         text-transform: capitalize;
@@ -38,7 +38,7 @@ export const toolConfirmStyles = css`
         padding: 6px 12px;
         cursor: pointer;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         font-size: ${themeFonts.medium};
         color: ${themeColors.cleanWhite};
     }
@@ -55,7 +55,7 @@ export const toolConfirmStyles = css`
         padding: 6px 12px;
         cursor: pointer;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         font-size: ${themeFonts.medium};
         color: ${themeColors.cleanWhite};
     }
@@ -73,7 +73,7 @@ export const toolConfirmStyles = css`
         font-size: ${themeFonts.small};
         color: ${themeColors.uiFont};
         padding: 6px 8px;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackgroundDimm};
         border: 1px solid ${themeColors.uiBorderDimm};
         white-space: nowrap;

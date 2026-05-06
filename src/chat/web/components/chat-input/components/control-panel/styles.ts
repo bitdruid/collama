@@ -54,7 +54,7 @@ export const controlPanelButtonStyles = css`
         height: 28px;
         aspect-ratio: 1 / 1;
         padding: 0;
-        border-radius: 50%;
+        ${themeStyles.borderRadius.round}
         line-height: 1;
         color: ${themeColors.cleanWhite};
         border: none;
@@ -86,7 +86,7 @@ export const controlPanelButtonStyles = css`
         justify-content: center;
         width: 16px;
         height: 16px;
-        border-radius: 50%;
+        ${themeStyles.borderRadius.round}
         background-color: ${themeColors.usageDanger};
         color: ${themeColors.cleanWhite};
         font-size: 10px;
@@ -151,7 +151,7 @@ export const controlPanelButtonStyles = css`
         width: auto;
         aspect-ratio: auto;
         padding: 0 10px;
-        border-radius: 14px;
+        ${themeStyles.borderRadius.round}
         font-size: ${themeFonts.medium};
         font-weight: 600;
         cursor: default;

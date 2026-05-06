@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../styles";
+import { themeColors, themeStyles } from "../../../styles";
 
 export const baseDropdownStyles = css`
     :host {
@@ -16,7 +16,7 @@ export const baseDropdownStyles = css`
         max-height: var(--dropdown-open-max-height, 300px);
         background: ${themeColors.uiBackgroundDimm};
         border: 1px solid ${themeColors.uiBorderDimm};
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         overflow: hidden;
         clip-path: inset(0 0 100% 0);
         opacity: 0;

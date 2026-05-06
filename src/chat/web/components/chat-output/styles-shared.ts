@@ -1,6 +1,6 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../utils-front";
-import { themeColors } from "../../styles";
+import { themeColors, themeStyles } from "../../styles";
 import { assistantStyles } from "./message-assistant/styles";
 import { toolStyles } from "./message-tool/styles";
 import { userStyles } from "./message-user/styles";
@@ -24,7 +24,7 @@ export const outputStyles = [
             font-size: 1em;
             margin-bottom: 6px;
             padding: 2px 6px;
-            border-radius: 4px;
+            ${themeStyles.borderRadius.small}
             color: ${themeColors.cleanWhite};
         }
 
@@ -38,7 +38,7 @@ export const outputStyles = [
 
         .bubble {
             padding: 8px;
-            border-radius: 8px;
+            ${themeStyles.borderRadius.large}
             overflow-x: auto;
             max-width: 100%;
         }

@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../styles";
+import { themeColors, themeStyles } from "../../styles";
 
 export const scrollDownButtonStyles = css`
     :host {
@@ -17,7 +17,7 @@ export const scrollDownButtonStyles = css`
         justify-content: center;
         width: 32px;
         height: 32px;
-        border-radius: 50%;
+        ${themeStyles.borderRadius.round}
         border: 1px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};

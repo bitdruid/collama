@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../styles";
+import { themeColors, themeStyles } from "../../../styles";
 
 export const errorModalStyles = css`
     .error-content {
@@ -11,7 +11,7 @@ export const errorModalStyles = css`
         padding: 8px;
         margin: 8px 0;
         border: 1px solid ${themeColors.uiBorderDimm};
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
     }
@@ -26,7 +26,7 @@ export const errorModalStyles = css`
     .error-actions button {
         padding: 6px 16px;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         cursor: pointer;
         font-size: 13px;
         color: ${themeColors.cleanWhite};

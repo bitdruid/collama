@@ -1,6 +1,6 @@
 import { css } from "lit";
 
-import { themeColors } from "../../../styles";
+import { themeColors, themeStyles } from "../../../styles";
 
 export type ActionButtonVariant = "accept" | "cancel";
 
@@ -20,7 +20,7 @@ export const actionButtonStyles = css`
         height: 28px;
         padding: 0;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         color: ${themeColors.cleanWhite};
         cursor: pointer;
         transition: background-color 0.15s ease;

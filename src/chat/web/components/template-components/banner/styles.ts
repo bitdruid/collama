@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../styles";
+import { themeColors, themeStyles } from "../../../styles";
 
 export const bannerStyles = css`
     :host {
@@ -17,7 +17,7 @@ export const bannerStyles = css`
         user-select: none;
         font-size: 0.9em;
         border: 1px solid ${themeColors.uiBorderDimm};
-        border-radius: 6px;
+        ${themeStyles.borderRadius.medium}
         border-left: 3px solid;
         width: 100%;
         box-sizing: border-box;
@@ -100,7 +100,7 @@ export const bannerStyles = css`
         color: ${themeColors.uiFont};
         cursor: pointer;
         padding: 2px 6px;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         font-size: 0.85em;
         transition:
             background 0.15s,

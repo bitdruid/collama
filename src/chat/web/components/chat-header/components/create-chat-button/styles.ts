@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors } from "../../../../styles";
+import { themeColors, themeStyles } from "../../../../styles";
 
 export const createChatButtonStyles = css`
     .icon-button {
@@ -7,7 +7,7 @@ export const createChatButtonStyles = css`
         align-items: center;
         justify-content: center;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         background: transparent;
         cursor: pointer;
         transition: background 0.2s ease;

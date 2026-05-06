@@ -1,6 +1,6 @@
 import { css } from "lit";
 
-import { themeColors, themeFonts } from "../../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../../styles";
 
 export const sliderStyles = css`
     :host {
@@ -64,7 +64,7 @@ export const sliderStyles = css`
         margin: 0;
         padding: 0;
         border: 1px solid ${themeColors.uiBorder};
-        border-radius: 999px;
+        ${themeStyles.borderRadius.round}
         background: linear-gradient(
             to right,
             ${themeColors.submit} 0%,
@@ -78,7 +78,7 @@ export const sliderStyles = css`
 
     .slider-input::-webkit-slider-runnable-track {
         height: 10px;
-        border-radius: 999px;
+        ${themeStyles.borderRadius.round}
         background: transparent;
     }
 
@@ -87,7 +87,7 @@ export const sliderStyles = css`
         height: 12px;
         margin-top: -1px;
         border: 0;
-        border-radius: 50%;
+        ${themeStyles.borderRadius.round}
         background: ${themeColors.uiFont};
         appearance: none;
         transition:
@@ -97,7 +97,7 @@ export const sliderStyles = css`
 
     .slider-input::-moz-range-track {
         height: 10px;
-        border-radius: 999px;
+        ${themeStyles.borderRadius.round}
         background: transparent;
     }
 
@@ -105,7 +105,7 @@ export const sliderStyles = css`
         width: 12px;
         height: 12px;
         border: 0;
-        border-radius: 50%;
+        ${themeStyles.borderRadius.round}
         background: ${themeColors.uiFont};
         transition:
             background 0.15s ease,
@@ -137,7 +137,7 @@ export const sliderStyles = css`
         top: 50%;
         width: 4px;
         height: 4px;
-        border-radius: 50%;
+        ${themeStyles.borderRadius.round}
         background: ${themeColors.placeholder};
         opacity: 0.8;
         transform: translate(-50%, -50%);

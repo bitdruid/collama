@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors, themeFonts } from "../../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../../styles";
 
 export const sessionItemStyles = css`
     .session-item {
@@ -39,7 +39,7 @@ export const sessionItemStyles = css`
         width: 100%;
         padding: 2px 4px;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         outline: none;
@@ -70,7 +70,7 @@ export const sessionItemStyles = css`
     .action-button {
         padding: 4px 8px;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         cursor: pointer;
         font-size: ${themeFonts.medium};
         background: transparent;

@@ -31,7 +31,7 @@ export const userStyles = css`
         gap: 4px;
         padding: 2px 6px;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         background: transparent;
         color: ${themeColors.cleanWhite};
         font-size: ${themeFonts.small};
@@ -99,7 +99,7 @@ export const editStyles = css`
         justify-content: center;
         padding: 4px 12px;
         border: none;
-        border-radius: 4px;
+        ${themeStyles.borderRadius.small}
         font-size: ${themeFonts.medium};
         line-height: 1;
         vertical-align: middle;
