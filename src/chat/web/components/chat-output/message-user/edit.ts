@@ -105,10 +105,10 @@ export class ChatEditMessage extends LitElement {
             <textarea class="edit-textarea" rows=${this.rows} @input=${this.handleInput}>${this.content}</textarea>
             <div class="edit-actions">
                 <button class="edit-send" @mousedown=${this.handleMouseDown} @click=${this.handleSend}>
-                    ${themeIcons.check}
+                    ${themeIcons.check.medium}
                 </button>
                 <button class="edit-cancel" @mousedown=${this.handleMouseDown} @click=${this.handleCancel}>
-                    ${themeIcons.x}
+                    ${themeIcons.x.medium}
                 </button>
             </div>
         `;

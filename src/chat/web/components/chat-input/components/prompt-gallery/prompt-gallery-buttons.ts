@@ -30,7 +30,7 @@ export class PromptGalleryButtons extends LitElement {
                                 }),
                             )}
                     >
-                        ${themeIcons.pencil}
+                        ${themeIcons.pencil.medium}
                     </button>
 
                     <button
@@ -45,7 +45,7 @@ export class PromptGalleryButtons extends LitElement {
                                 }),
                             )}
                     >
-                        ${themeIcons.trash}
+                        ${themeIcons.trash.medium}
                     </button>
                 </div>
             `;
@@ -59,14 +59,14 @@ export class PromptGalleryButtons extends LitElement {
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("save-new-prompt", { bubbles: true, composed: true }))}
                     >
-                        ${themeIcons.check}
+                        ${themeIcons.check.medium}
                     </button>
                     <button
                         class="gallery-btn cancel-btn"
                         @click=${() =>
                             this.dispatchEvent(new CustomEvent("cancel-new-prompt", { bubbles: true, composed: true }))}
                     >
-                        ${themeIcons.x}
+                        ${themeIcons.x.medium}
                     </button>
                 </div>
             `;
@@ -78,14 +78,14 @@ export class PromptGalleryButtons extends LitElement {
                     class="gallery-btn prompt-btn"
                     @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
                 >
-                    ${themeIcons.plus}
+                    ${themeIcons.plus.medium}
                 </button>
                 <button
                     class="gallery-btn cancel-btn"
                     @click=${() =>
                         this.dispatchEvent(new CustomEvent("close-gallery", { bubbles: true, composed: true }))}
                 >
-                    ${themeIcons.x}
+                    ${themeIcons.x.medium}
                 </button>
             </div>
         `;

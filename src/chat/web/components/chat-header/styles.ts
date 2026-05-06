@@ -31,12 +31,6 @@ export const chatHeaderStyles = css`
         text-overflow: ellipsis;
     }
 
-    .usage-icon svg {
-        display: block;
-        width: 16px;
-        height: 16px;
-    }
-
     .header-actions {
         display: flex;
         align-items: center;

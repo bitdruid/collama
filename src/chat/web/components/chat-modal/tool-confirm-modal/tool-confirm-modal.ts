@@ -142,7 +142,7 @@ export class ToolConfirmModal extends BaseModal {
                 <div class="confirm-buttons">
                     <collama-accept-button title="Accept" @action=${this.handleAccept}></collama-accept-button>
                     <button class="confirm-btn btn-accept-all" @click=${this.handleAcceptAll} title="Accept All">
-                        ${themeIcons.checkCheck}
+                        ${themeIcons.checkCheck.medium}
                     </button>
                     <collama-cancel-button title="Cancel" @action=${this.handleCancel}></collama-cancel-button>
                 </div>

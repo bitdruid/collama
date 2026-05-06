@@ -47,13 +47,6 @@ export const contextTreeStyles = css`
         padding: 0;
     }
 
-    .clear-btn svg,
-    .folder-icon svg,
-    .add-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-
     .clear-btn:hover {
         background: ${themeColors.uiBackgroundHoverDimm};
         color: ${themeColors.uiFont};

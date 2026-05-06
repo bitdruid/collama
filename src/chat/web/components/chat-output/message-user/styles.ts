@@ -42,15 +42,6 @@ export const userStyles = css`
         transition: background 0.15s;
     }
 
-    .resend-button svg,
-    .delete-button svg,
-    .edit-button svg,
-    .summarize-button svg {
-        width: 14px;
-        height: 14px;
-        flex-shrink: 0;
-    }
-
     .resend-button:hover,
     .edit-button:hover {
         background: ${themeColors.submitHover};
@@ -114,14 +105,6 @@ export const editStyles = css`
         vertical-align: middle;
         cursor: pointer;
         color: ${themeColors.cleanWhite};
-    }
-
-    .edit-send svg,
-    .edit-cancel svg {
-        display: block;
-        width: 14px;
-        height: 14px;
-        flex-shrink: 0;
     }
 
     .edit-send {

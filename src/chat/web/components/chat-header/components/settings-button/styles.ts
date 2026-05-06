@@ -33,11 +33,6 @@ export const settingsButtonStyles = css`
         min-width: 18px;
     }
 
-    .settings-icon svg {
-        width: 18px;
-        height: 18px;
-    }
-
     .button-badge {
         position: absolute;
         top: 1px;

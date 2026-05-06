@@ -119,7 +119,7 @@ export class SettingsDropdown extends BaseDropdown {
                         href="${buildOpenFileCommandUri(AGENTS_MD_PATH)}"
                         title="${AGENTS_MD_PATH}"
                     >
-                        <span class="agents-md-check">${themeIcons.check}</span>
+                        <span class="agents-md-check">${themeIcons.check.medium}</span>
                         active
                     </a>
                 </div>
@@ -155,7 +155,7 @@ export class SettingsDropdown extends BaseDropdown {
                 marks="2"
                 @input=${(event: Event) => this._updateBoolean(key, event)}
             >
-                ${showWarning ? html`<span slot="prefix">${themeIcons.alertTriangle}</span>` : ""}
+                ${showWarning ? html`<span slot="prefix">${themeIcons.alertTriangle.medium}</span>` : ""}
             </collama-slider>
         `;
     }

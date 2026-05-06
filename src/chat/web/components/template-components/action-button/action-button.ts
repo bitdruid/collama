@@ -14,7 +14,7 @@ export class ActionButton extends LitElement {
     private button!: HTMLButtonElement;
 
     protected variant: ActionButtonVariant = "accept";
-    protected icon = themeIcons.check;
+    protected icon = themeIcons.check.medium;
     protected defaultTitle = "Accept";
 
     override connectedCallback() {
@@ -59,13 +59,13 @@ export class ActionButton extends LitElement {
 @customElement("collama-accept-button")
 export class AcceptButton extends ActionButton {
     protected override variant: ActionButtonVariant = "accept";
-    protected override icon = themeIcons.check;
+    protected override icon = themeIcons.check.medium;
     protected override defaultTitle = "Accept";
 }
 
 @customElement("collama-cancel-button")
 export class CancelButton extends ActionButton {
     protected override variant: ActionButtonVariant = "cancel";
-    protected override icon = themeIcons.x;
+    protected override icon = themeIcons.x.medium;
     protected override defaultTitle = "Cancel";
 }

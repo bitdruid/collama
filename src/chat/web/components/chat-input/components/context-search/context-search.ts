@@ -137,7 +137,7 @@ export class ContextTree extends BasePopup {
                 ${this.searchQuery
                     ? html`
                           <button class="clear-btn" @click=${this.handleClearSearch} title="Clear search">
-                              ${themeIcons.x}
+                              ${themeIcons.x.medium}
                           </button>
                       `
                     : ""}
@@ -163,7 +163,7 @@ export class ContextTree extends BasePopup {
             <div class="result-item" @click=${() => this._handleAdd(result)}>
                 <div class="result-info">
                     <span class="result-name">
-                        ${result.isFolder ? html`<span class="folder-icon">${themeIcons.folder}</span>` : ""}
+                        ${result.isFolder ? html`<span class="folder-icon">${themeIcons.folder.medium}</span>` : ""}
                         ${result.fileName}
                     </span>
                     <span class="result-path">${result.relativePath}</span>
@@ -172,7 +172,7 @@ export class ContextTree extends BasePopup {
                     class="add-btn ${isAdded ? "added" : ""}"
                     title=${isAdded ? "Remove from context" : "Add as context"}
                 >
-                    ${isAdded ? themeIcons.check : themeIcons.plus}
+                    ${isAdded ? themeIcons.check.medium : themeIcons.plus.medium}
                 </button>
             </div>
         `;

@@ -231,7 +231,9 @@ export class ChatOutput extends LitElement {
                         const isOutOfContext = this.contextStartIndex > 0 && index < this.contextStartIndex;
                         const outOfContextClass = isOutOfContext ? "out-of-context" : "";
                         const warningIcon = isOutOfContext
-                            ? html`<span class="warning-icon" title="Not in context">${themeIcons.alertTriangle}</span>`
+                            ? html`<span class="warning-icon" title="Not in context"
+                                  >${themeIcons.alertTriangle.medium}</span
+                              >`
                             : "";
 
                         if (msg.role === "user") {
@@ -248,13 +250,11 @@ export class ChatOutput extends LitElement {
                         }
 
                         if (msg.role === "assistant") {
-                            const isLoadingThis = this.isGenerating && index === lastAssistantIndex;
                             return renderAssistantMessage({
                                 msg,
                                 outOfContextClass,
                                 warningIcon,
-                                isGenerating: isLoadingThis && !msg.content,
-                                isStreaming: isLoadingThis && !!msg.content,
+                                isStreaming: this.isGenerating && index === lastAssistantIndex && !!msg.content,
                                 getCachedMarkdown: this._getCachedMarkdown,
                             });
                         }
@@ -267,6 +267,7 @@ export class ChatOutput extends LitElement {
                         });
                     },
                 )}
+                ${this.isGenerating ? html`<collama-loading-spinner></collama-loading-spinner>` : ""}
             </div>
         `;
     }

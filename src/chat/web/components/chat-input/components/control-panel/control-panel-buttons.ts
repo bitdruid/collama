@@ -113,7 +113,7 @@ export class ControlPanelButtons extends LitElement {
                 @click=${this.handleAutoAccept}
                 ?active=${this.autoAccept}
             >
-                ${this.autoAccept ? themeIcons.alertTriangle : themeIcons.checkCircle}
+                ${this.autoAccept ? themeIcons.alertTriangle.medium : themeIcons.circleCheckBig.medium}
             </button-auto-accept>
         `;
     }
@@ -138,14 +138,16 @@ export class ControlPanelButtons extends LitElement {
     }
 
     private _renderCancel() {
-        return html` <button-cancel title="Cancel" @click=${this.handleCancel}> ${themeIcons.x} </button-cancel> `;
+        return html`
+            <button-cancel title="Cancel" @click=${this.handleCancel}> ${themeIcons.x.medium} </button-cancel>
+        `;
     }
 
     private _renderContextButton() {
         const hasContext = this.contexts.length > 0;
         return html`
             <button-context title="Add context" data-base-overlay-anchor @click=${this.handleToggleContextTree}>
-                ${themeIcons.paperclip}
+                ${themeIcons.paperclip.medium}
                 ${hasContext ? html`<span class="button-badge">${this.contexts.length}</span>` : ""}
             </button-context>
             ${this.showContextTree
@@ -165,7 +167,7 @@ export class ControlPanelButtons extends LitElement {
     private _renderGallery() {
         return html`
             <button-gallery title="Open Prompt Gallery" data-base-overlay-anchor @click=${this.handleToggleGallery}>
-                ${themeIcons.gallery}
+                ${themeIcons.gallery.medium}
             </button-gallery>
             ${this.showGallery
                 ? html`<collama-prompt-gallery
@@ -185,7 +187,7 @@ export class ControlPanelButtons extends LitElement {
                 ?active=${this.isGhost}
                 @click=${this.handleConvertToGhost}
             >
-                ${themeIcons.ghostChat}
+                ${themeIcons.ghostChat.medium}
             </button-ghost-chat>
             ${this.showConvertGhostConfirm
                 ? html`<collama-convert-ghost-confirm
@@ -200,7 +202,7 @@ export class ControlPanelButtons extends LitElement {
     private _renderClearChat() {
         return html`
             <button-clear-chat title="Clear conversation" data-base-overlay-anchor @click=${this.handleClearChat}>
-                ${themeIcons.trash}
+                ${themeIcons.trash.medium}
             </button-clear-chat>
             ${this.showClearConfirm
                 ? html`<collama-clear-chat-confirm
@@ -215,14 +217,14 @@ export class ControlPanelButtons extends LitElement {
     private _renderCompress() {
         return html`
             <button-compress title="Summarize conversation" @click=${this.handleSummarizeConversation}>
-                ${themeIcons.compress}
+                ${themeIcons.compress.medium}
             </button-compress>
         `;
     }
 
     private _renderSubmit() {
         return html`
-            <button-submit title="Submit" @click=${this.handleSubmitClick}> ${themeIcons.enter} </button-submit>
+            <button-submit title="Submit" @click=${this.handleSubmitClick}> ${themeIcons.enter.medium} </button-submit>
         `;
     }
 

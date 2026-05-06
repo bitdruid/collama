@@ -18,7 +18,7 @@ export class SessionButton extends LitElement {
                 ?disabled=${this.disabled}
                 data-base-overlay-anchor
             >
-                <span class="session-icon">${themeIcons.history}</span>
+                <span class="session-icon">${themeIcons.history.large}</span>
             </button>
         `;
     }

@@ -39,9 +39,4 @@ export const sessionButtonStyles = css`
         text-overflow: ellipsis;
     }
 
-    .session-icon svg {
-        display: block;
-        width: 18px;
-        height: 18px;
-    }
 `;

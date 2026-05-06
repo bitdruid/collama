@@ -147,7 +147,7 @@ export class ChatAccordion extends LitElement {
         }
         return html`
             <button slot="actions" class="copy-btn" @click=${this._handleCopy} title="Copy code">
-                ${themeIcons.copy}
+                ${themeIcons.copy.medium}
                 <span>${this._copyText}</span>
             </button>
         `;
@@ -163,7 +163,7 @@ export class ChatAccordion extends LitElement {
                 @click=${this._toggle}
             >
                 <span slot="slot1">${this._renderCopyButton()}</span>
-                <span slot="slot2" class="banner-arrow ${this.expanded ? "expanded" : ""}">${themeIcons.chevronDown}</span>
+                <span slot="slot2" class="banner-arrow ${this.expanded ? "expanded" : ""}">${themeIcons.chevronDown.medium}</span>
             </${tag}>
         `;
     }

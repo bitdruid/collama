@@ -35,8 +35,8 @@ export class BaseNotification extends BaseOverlay {
         return html`
             <section class="notification-content ${this._visible ? "fade-in" : "fade-out"}">
                 <h3 class="notification-heading">
-                    <span class="notify-danger">${themeIcons.alertTriangle}</span> ${this.heading}
-                    <span class="notify-danger">${themeIcons.alertTriangle}</span>
+                    <span class="notify-danger">${themeIcons.alertTriangle.medium}</span> ${this.heading}
+                    <span class="notify-danger">${themeIcons.alertTriangle.medium}</span>
                 </h3>
                 ${this.renderContent()}
             </section>

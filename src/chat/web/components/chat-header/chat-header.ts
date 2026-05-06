@@ -46,7 +46,7 @@ export class ChatHeader extends LitElement {
                     ></collama-settings-button>
                 </div>
                 <div class="header-actions">
-                    <span class="usage-icon">${themeIcons.brain}</span>
+                    <span class="usage-icon">${themeIcons.brain.large}</span>
                     <collama-context-usage-bar
                         .used=${this.contextUsed}
                         .max=${this.contextMax}

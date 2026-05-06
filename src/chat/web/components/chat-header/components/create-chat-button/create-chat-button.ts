@@ -21,7 +21,7 @@ export class CreateChatButton extends LitElement {
                 title=${isGhost ? "New Temporary Chat" : "New Chat"}
                 ?disabled=${this.disabled}
             >
-                ${isGhost ? themeIcons.ghostChat : themeIcons.plus}
+                ${isGhost ? themeIcons.ghostChat.large : themeIcons.plus.large}
             </button>
         `;
     }

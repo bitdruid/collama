@@ -103,7 +103,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             title="Edit and resend"
                             ?disabled=${isGenerating}
                         >
-                            ${themeIcons.pencil}
+                            ${themeIcons.pencil.medium}
                         </button>
                         <button
                             class="resend-button"
@@ -111,7 +111,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             title="Resend from here"
                             ?disabled=${isGenerating}
                         >
-                            ${themeIcons.enter}
+                            ${themeIcons.enter.medium}
                         </button>
                         <button
                             class="summarize-button"
@@ -119,7 +119,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             title="Summarize this turn"
                             ?disabled=${isGenerating}
                         >
-                            ${themeIcons.fileText}
+                            ${themeIcons.fileText.medium}
                         </button>
                         <button
                             class="delete-button"
@@ -127,7 +127,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                             title="Delete this turn (~${getTurnTokens(messages, index)} tokens freed)"
                             ?disabled=${isGenerating}
                         >
-                            ${themeIcons.trash}
+                            ${themeIcons.trash.medium}
                         </button>
                     </div>
                 </div>

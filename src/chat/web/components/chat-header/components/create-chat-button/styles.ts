@@ -24,12 +24,6 @@ export const createChatButtonStyles = css`
         color: ${themeColors.cleanWhite};
     }
 
-    .create-chat-button svg {
-        display: block;
-        width: 14px;
-        height: 14px;
-    }
-
     .create-chat-button.normal {
         background-color: ${themeColors.submit};
     }
