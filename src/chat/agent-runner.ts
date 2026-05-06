@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { Agent, AgentEvent } from "../agent/agent";
+import { Agent, AgentEvent, AgentMode } from "../agent/agent";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { buildExportData } from "./utils-back";
 
@@ -10,6 +10,7 @@ export interface AgentRunnerRunOptions {
     errorMessages?: () => ChatHistory[];
     onChunk: (chunk: string) => void;
     onEvent?: (event: AgentEvent) => void;
+    mode?: AgentMode;
 }
 
 /**
@@ -35,8 +36,15 @@ export class AgentRunner {
      * never produces a first chunk or event; any inbound activity clears it. Callers
      * are responsible for sending `chat-complete` after post-processing.
      */
-    async run({ webview, messages, errorMessages, onChunk, onEvent }: AgentRunnerRunOptions): Promise<boolean> {
-        const agent = new Agent();
+    async run({
+        webview,
+        messages,
+        errorMessages,
+        onChunk,
+        onEvent,
+        mode = "default",
+    }: AgentRunnerRunOptions): Promise<boolean> {
+        const agent = new Agent(mode);
         this.currentAgent = agent;
         const timeout = setTimeout(() => {
             agent.cancel();

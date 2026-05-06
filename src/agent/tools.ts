@@ -103,7 +103,7 @@ export interface Tool<TInput = any, TData = unknown> {
  * @returns An array of tool definition objects containing type, name, description, and parameters.
  */
 export function getToolDefinitions() {
-    const filteredTools = getAvailableTools();
+    const filteredTools = getAllowedTools();
 
     return filteredTools.map((tool) => ({
         type: tool.definition.type,
@@ -116,33 +116,26 @@ export function getToolDefinitions() {
 }
 
 function getToolNames() {
-    return getAvailableTools().map((tool) => tool.definition.function.name);
+    return getAllowedTools().map((tool) => tool.definition.function.name);
 }
 
-function getAvailableTools() {
+function getAllowedTools() {
     const tools = Object.values(toolRegistry);
 
     return tools.filter((tool) => {
-        if (!userConfig.enableEditTools && isEditTool(tool.definition.function.name)) {
-            return false;
+        switch (tool.category) {
+            case "explore":
+            case "git":
+            case "analyse":
+                return true;
+            case "edit":
+                return userConfig.enableEditTools;
+            case "shell":
+                return userConfig.enableShellTool;
+            default:
+                return true;
         }
-        if (!userConfig.enableShellTool && isShellTool(tool.definition.function.name)) {
-            return false;
-        }
-        return true;
     });
-}
-
-/**
- * Checks if a tool is an edit tool (modifies files).
- * Edit tools are: edit, create, delete
- */
-function isEditTool(toolName: string): boolean {
-    return toolRegistry[toolName]?.category === "edit";
-}
-
-function isShellTool(toolName: string): boolean {
-    return toolRegistry[toolName]?.category === "shell";
 }
 
 export function shouldDeduplicateToolResult(toolName: string): boolean {
@@ -158,21 +151,24 @@ export function shouldDeduplicateToolResult(toolName: string): boolean {
  * @throws Error if the tool name is not found in the registry or if validation fails.
  */
 export async function executeTool(name: string, args: unknown): Promise<string> {
+    let response: ToolAnswer;
+
     const tool = toolRegistry[name];
     if (!tool) {
-        return JSON.stringify(toolError(`Unknown tool: ${name}. Available: ${getToolNames().join(", ")}`));
+        response = toolError(`Unknown tool: ${name}. Available: ${getToolNames().join(", ")}`);
+    } else if (!getAllowedTools().includes(tool)) {
+        response = toolError(`Tool is disabled: ${name}. Available: ${getToolNames().join(", ")}`);
+    } else {
+        try {
+            response = await tool.execute(args);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            logMsg(`Agent - tool error ${name}: ${msg}`);
+            response = toolError(msg);
+        }
     }
-    if (!getAvailableTools().includes(tool)) {
-        return JSON.stringify(toolError(`Tool is disabled: ${name}. Available: ${getToolNames().join(", ")}`));
-    }
-    try {
-        const result = await tool.execute(args);
-        return JSON.stringify(result);
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        logMsg(`Agent - tool error ${name}: ${msg}`);
-        return JSON.stringify(toolError(msg));
-    }
+
+    return JSON.stringify(response);
 }
 
 /**

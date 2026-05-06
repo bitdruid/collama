@@ -22,6 +22,7 @@ async function summarizeText(
         onChunk: (chunk) => {
             text += chunk;
         },
+        mode: "plain",
     });
     return ok ? text : null;
 }
@@ -76,6 +77,7 @@ async function summarizeContent(
         onChunk: (chunk) => {
             summaryContent += chunk;
         },
+        mode: "plain",
     });
     if (!ok) {
         return null;
@@ -113,7 +115,10 @@ export async function handleSummarizeRequest(
     const summarized = await summarizeContent(agentRunner, webview, sourceMessages, chatSummarize_Template, label);
     if (summarized === null) {
         webview.postMessage({ type: "summary-error", isConversation });
-        webview.postMessage({ type: "chat-complete", contextUsed: session.messages.sumTokensFrom(session.contextStartIndex) });
+        webview.postMessage({
+            type: "chat-complete",
+            contextUsed: session.messages.sumTokensFrom(session.contextStartIndex),
+        });
         return;
     }
 

@@ -16,6 +16,8 @@ import {
 
 export type AgentEvent = { type: string; [key: string]: unknown };
 
+export type AgentMode = "plain" | "default" | "sub";
+
 /**
  * This class manages the lifecycle of an agent task, including initializing the client,
  * maintaining conversation history via `AgentContext`, executing tool calls, and streaming
@@ -24,6 +26,29 @@ export type AgentEvent = { type: string; [key: string]: unknown };
 export class Agent {
     private client: LlmClientFactory | undefined;
     private abortController: AbortController | null = null;
+
+    constructor(private readonly mode: AgentMode = "default") {}
+
+    /**
+     * Prepares the agent by constructing the conversation history and tool definitions based on the current mode.
+     *
+     * @param messages - The current chat context containing existing messages.
+     * @returns An object containing the prepared `AgentContext` (`modeHistory`) and a list of tool definitions (`modeTools`).
+     */
+    private prepareAgent(messages: ChatContext): {
+        modeHistory: AgentContext;
+        modeTools: ReturnType<typeof getToolDefinitions>;
+    } {
+        const initial =
+            this.mode !== "plain"
+                ? [{ role: "system" as const, content: getAgentTemplate() }, ...messages.getMessages()]
+                : messages.getMessages();
+        const modeHistory = new AgentContext(initial);
+
+        const modeTools = this.mode === "default" && userConfig.agentic ? getToolDefinitions() : [];
+
+        return { modeHistory, modeTools };
+    }
 
     /**
      * Cancels the currently running agent task.
@@ -68,11 +93,9 @@ export class Agent {
                 resetAutoAcceptEdits();
                 const signal = this.abortController.signal;
 
-                const initMessages: ChatHistory[] = [
-                    { role: "system", content: getAgentTemplate() },
-                    ...messages.getMessages(),
-                ];
-                const history = new AgentContext(initMessages);
+                const modeSet = this.prepareAgent(messages);
+                const history = modeSet.modeHistory;
+                const tools = modeSet.modeTools;
 
                 try {
                     this.client = new LlmClientFactory("instruction");
@@ -81,7 +104,7 @@ export class Agent {
                         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
                         model: userConfig.apiModelInstruct,
                         messages: history.getMessages(),
-                        tools: userConfig.agentic ? getToolDefinitions() : [],
+                        tools: tools,
                         options: buildAgentOptions(),
                         stop: emptyStop(),
                         signal: signal,
@@ -102,7 +125,6 @@ export class Agent {
                             break;
                         }
 
-                        // agent internal history
                         history.push({
                             role: "assistant",
                             content: result.content,
