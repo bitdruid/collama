@@ -31,6 +31,12 @@ export async function proxyFetch(input: string | URL | Request, init?: RequestIn
  * common surrounding Markdown code fences added by chat-tuned models.
  */
 export function cleanupResult(result: string, resultTokens: number, options: Options): string {
+    // if result without newlines and whitespaces etc is empty then return empty
+    if (!result || !result.trim()) {
+        logIO("Empty output was stripped", "output");
+        return "";
+    }
+    // if result is too long then cut it off (autocomplete prevent incomplete lines)
     if (resultTokens === options.num_predict && result.includes("\n")) {
         logMsg("Output reached token limit - cutting last line (probably incomplete)");
         result = result.split("\n").slice(0, -1).join("\n");
@@ -72,8 +78,10 @@ export function logRequest(url: string, model: string, options: Options, stop: S
     logMsg(`Requesting to ${url}; Model: ${model};`);
     logMsg(`Options:\n${JSON.stringify(options, null, 2)}`);
     logMsg(`Stop:\n${JSON.stringify([...stop.userStop, ...stop.modelStop], null, 2)}`);
-    logMsg(`Input:\n${input.length > 50 ? `${input.slice(0, 250)}... [${input.length} chars]` : input}`);
-    logIO(JSON.stringify(input, null, 2));
+    logMsg(
+        `Input [${input.length} chars ~ ${Math.ceil(input.length / 4)} tokens]:\n${input.length > 50 ? `${input.slice(0, 250)}...` : input}`,
+    );
+    logIO(`\n${"-".repeat(18)}\n--- Input (plain):\n${"-".repeat(18)}\n${input}`, "input");
 }
 
 /** Logs model output throughput and warns when a response hits the configured token cap. */
@@ -85,8 +93,11 @@ export function logPerformance(
 ): void {
     const resultDuration = (resultDurationNano / 1_000_000_000).toFixed(3);
     const resultTPS = resultDurationNano > 0 ? (resultTokens / (resultDurationNano / 1_000_000_000)).toFixed(1) : "0";
-    logMsg(`Output:\n${result}`);
+    logMsg(
+        `Output [${result.length} chars ~ ${Math.ceil(result.length / 4)} tokens]:\n${result.length > 50 ? `${result.slice(0, 250)}...` : result}`,
+    );
     logMsg(`Receive: tokens [${resultTokens}]; duration seconds [${resultDuration}]; tokens/sec [${resultTPS}]`);
+    logIO(`\n${"-".repeat(18)}\n-- Output (plain):\n${"-".repeat(18)}\n${result}`, "output");
     if (tokenLimit === resultTokens) {
         const msg = "WARNING: Output token limit reached - Reduce input?";
         logMsg(msg);

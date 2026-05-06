@@ -45,7 +45,7 @@ export function registerAutoCompleteProvider(extContext: vscode.ExtensionContext
                     // request a completion object with the code context
                     const completion = new Completion();
                     await completion.generate();
-                    logMsg("\n---------------------------------------------------------------------------");
+                    logMsg("\n" + "-".repeat(70));
 
                     result.items.push({
                         insertText: new vscode.SnippetString(completion.snippet),

@@ -43,7 +43,7 @@ export function logAgent(message: string) {
     channel.info(message);
 }
 
-export function logIO(message: string) {
+export function logIO(message: string, direction: "input" | "output") {
     const channel = getChannel("collama-io", { log: true }) as vscode.LogOutputChannel;
-    channel.info(message);
+    channel.info(`[${direction.toUpperCase()}] ${message}`);
 }
