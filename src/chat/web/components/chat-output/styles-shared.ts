@@ -84,8 +84,12 @@ export const outputStyles = [
         }
 
         .output-container {
-            overflow-y: auto;
             scroll-behavior: smooth;
+        }
+
+        collama-loading-dots {
+            display: block;
+            margin: 24px 0 24px 8px;
         }
 
         .warning-icon {

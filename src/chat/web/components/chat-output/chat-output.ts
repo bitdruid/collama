@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
 import { themeIcons } from "../../styles";
+import "../chat-loading-animation/dots";
 import { chatMarkdown } from "./markdown";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
 import { renderToolMessage } from "./message-tool/message-tool";
@@ -161,7 +162,7 @@ export class ChatOutput extends LitElement {
     }
 
     updated(changed: Map<string, unknown>) {
-        if (changed.has("messages") && this._stickyScroll) {
+        if ((changed.has("messages") || changed.has("isGenerating")) && this._stickyScroll) {
             requestAnimationFrame(() => {
                 this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
             });
@@ -267,7 +268,7 @@ export class ChatOutput extends LitElement {
                         });
                     },
                 )}
-                ${this.isGenerating ? html`<collama-loading-spinner></collama-loading-spinner>` : ""}
+                ${this.isGenerating ? html`<collama-loading-dots visible></collama-loading-dots>` : ""}
             </div>
         `;
     }

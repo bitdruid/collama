@@ -1,18 +1,12 @@
 import { css } from "lit";
 import { themeColors, themeStyles } from "../../styles";
+import { bottomOverlayStyles } from "../template-components/overlay/bottom-overlay";
 
 export const scrollDownButtonStyles = css`
-    :host {
-        position: absolute;
-        bottom: 8px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10;
-        pointer-events: none;
-    }
+    ${bottomOverlayStyles}
 
     .scroll-btn {
-        display: none;
+        display: flex;
         align-items: center;
         justify-content: center;
         width: 32px;
@@ -22,14 +16,6 @@ export const scrollDownButtonStyles = css`
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         cursor: pointer;
-        pointer-events: auto;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .scroll-btn.visible {
-        display: flex;
-        opacity: 1;
     }
 
     .scroll-btn:hover {

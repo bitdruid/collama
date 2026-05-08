@@ -6,7 +6,7 @@ import { themeColors } from "../../styles";
 export class ChatContainerLoading extends LitElement {
     static styles = css`
         :host {
-            position: fixed;
+            position: absolute;
             inset: 0;
             z-index: 999;
             pointer-events: none;

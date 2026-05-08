@@ -20,31 +20,4 @@ export const assistantStyles = css`
         margin: 0;
     }
 
-    .loading {
-        font-style: italic;
-        opacity: 0.7;
-        padding-bottom: 12px;
-        display: block;
-    }
-
-    .loading .dots::after {
-        content: "";
-        animation: blink 1s steps(3, end) infinite;
-    }
-
-    @keyframes blink {
-        0%,
-        25% {
-            content: "";
-        }
-        50% {
-            content: ".";
-        }
-        75% {
-            content: "..";
-        }
-        100% {
-            content: "...";
-        }
-    }
 `;

@@ -17,6 +17,7 @@ export const baseDropdownStyles = css`
         background: ${themeColors.uiBackgroundDimm};
         border: 1px solid ${themeColors.uiBorderDimm};
         ${themeStyles.borderRadius.small}
+        ${themeStyles.boxShadow}
         overflow: hidden;
         clip-path: inset(0 0 100% 0);
         opacity: 0;

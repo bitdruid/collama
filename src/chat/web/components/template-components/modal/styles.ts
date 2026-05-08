@@ -18,6 +18,7 @@ export const baseModalStyles = css`
         ${themeStyles.borderRadius.large}
         border: 2px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackgroundDimm};
+        ${themeStyles.boxShadow}
         ${themeAnimations.fadeAnimate}
     }
 

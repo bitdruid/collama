@@ -232,9 +232,8 @@ export class ControlPanelButtons extends LitElement {
         if (this.isGenerating) {
             return html`
                 <button-row>
-                    <span class="spacer"></span>
-                    ${this._renderTokenCounter()} ${this._renderDurationCounter()} ${this._renderAutoAccept()}
-                    ${this._renderCancel()}
+                    <span class="spacer"></span> ${this._renderTokenCounter()} ${this._renderDurationCounter()}
+                    ${this._renderAutoAccept()} ${this._renderCancel()}
                 </button-row>
             `;
         }

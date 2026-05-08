@@ -3,6 +3,6 @@
  * Main orchestrator component that manages chat state and coordinates child components
  */
 
+export { ChatContainerLoading } from "../chat-loading-animation/snake";
 export { ChatContainer } from "./chat-container";
-export { ChatContainerLoading } from "./chat-container-loading";
 export { chatContainerStyles } from "./styles";
