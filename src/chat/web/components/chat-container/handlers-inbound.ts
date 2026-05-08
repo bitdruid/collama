@@ -8,22 +8,22 @@ import type { ChatContainer } from "./chat-container";
 export function createInboundDispatcher(host: ChatContainer) {
     const handlers: Record<string, (m: any) => void> = {
         init: (m) => handleInit(host, m),
-        "config-update": (m) => handleConfigUpdate(host, m),
-        "sessions-update": (m) => handleSessionsUpdate(host, m),
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
-        "agent-tool-calls": (m) => handleAgentToolCalls(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
-        "history-replace": (m) => handleHistoryReplace(host, m),
+        "agent-error": (m) => handleAgentError(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
+        "agent-tool-calls": (m) => handleAgentToolCalls(host, m),
         "chat-complete": (m) => handleChatComplete(host, m),
+        "config-update": (m) => handleConfigUpdate(host, m),
+        "context-search-results": (m) => handleContextSearchResults(host, m),
+        "context-trimmed": (m) => handleContextTrimmed(host, m),
+        "context-update": (m) => handleContextUpdate(host, m),
+        "history-replace": (m) => handleHistoryReplace(host, m),
+        "sessions-update": (m) => handleSessionsUpdate(host, m),
         "summary-complete": (m) => handleSummarized(host, m),
         "summary-error": (m) => handleSummaryError(host, m),
         "summary-progress": (m) => handleSummaryProgress(host, m),
-        "context-trimmed": (m) => handleContextTrimmed(host, m),
-        "context-update": (m) => handleContextUpdate(host, m),
-        "context-search-results": (m) => handleContextSearchResults(host, m),
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
-        "agent-error": (m) => handleAgentError(host, m),
     };
     return (msg: any) => handlers[msg.type]?.(msg);
 }
