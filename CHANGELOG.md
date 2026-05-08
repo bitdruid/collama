@@ -1,6 +1,22 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.6] - 2026-05-08
+
+### Added
+- Lucide dependency for shared web UI icons
+- Bottom overlay template component for loading and scroll controls
+
+### Changed
+- Migrate web UI icons from inline SVGs to Lucide icons with size variants
+- Centralize border-radius and loading animation styles in shared theme helpers
+- Consolidate chat loading animations, including snake and dots variants
+- Refactor agent modes, work loop, message dispatching, and IO logging internals
+- Improve chat container overflow handling
+
+### Fixed
+- Scroll to the latest message after resending or editing a chat message
+
 ## [1.7.5] - 2026-05-05
 
 ### Added
