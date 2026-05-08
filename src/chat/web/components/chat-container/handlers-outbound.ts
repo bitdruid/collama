@@ -3,6 +3,14 @@ import { logWebview, showToast } from "../../../utils-front";
 import type { ChatContainer } from "./chat-container";
 import { backendApi, buildUserContent } from "./utils";
 
+function scrollToBottomAfterRender(host: ChatContainer) {
+    host.updateComplete.then(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => host.scrollToBottom());
+        });
+    });
+}
+
 /** Builds user content with embedded contexts, sends the request, and adds a placeholder assistant message. */
 export function onSubmit(host: ChatContainer, e: CustomEvent) {
     const content = e.detail.value?.trim();
@@ -30,11 +38,7 @@ export function onSubmit(host: ChatContainer, e: CustomEvent) {
     host.isGenerating = true;
 
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
-    host.updateComplete.then(() => {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => host.scrollToBottom());
-        });
-    });
+    scrollToBottomAfterRender(host);
 }
 
 /** Signals the host to abort the in-flight LLM request. */
@@ -86,6 +90,7 @@ export function onResendMessage(host: ChatContainer, e: CustomEvent) {
 
     logWebview(`Resending from message ${messageIndex}`);
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
+    scrollToBottomAfterRender(host);
 }
 
 /** Replaces a user message with edited text, re-embeds its original contexts, and re-sends. */
@@ -116,6 +121,7 @@ export function onEditMessage(host: ChatContainer, e: CustomEvent) {
 
     logWebview(`Editing and resending message ${messageIndex}`);
     backendApi.sendChatRequest(messagesToSend, host.activeSessionId);
+    scrollToBottomAfterRender(host);
 }
 
 /** Removes a user message and its entire turn (assistant + tool responses), then notifies the host. */
