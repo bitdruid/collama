@@ -30,7 +30,8 @@ export const chatContainerStyles = css`
     collama-chatoutput {
         position: absolute;
         inset: 0;
-        overflow-y: scroll;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     collama-token-counter {
