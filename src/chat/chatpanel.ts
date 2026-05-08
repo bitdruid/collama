@@ -378,7 +378,7 @@ export class ChatPanel {
                     });
                 }
 
-                if (event.type === "agent-assistant-new") {
+                if (event.type === "agent-turn-start") {
                     currentIndex++;
 
                     this.sessionManager.updateSession(session, (s) => {

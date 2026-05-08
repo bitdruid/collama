@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { buildAgentOptions, emptyStop, LlmChatSettings, LlmClientFactory } from "../common/client";
+import { buildAgentOptions, emptyStop, LlmChatSettings, LlmClientFactory, ToolCall } from "../common/client";
 import { ChatContext, ChatHistory } from "../common/context-chat";
 import { getAgentTemplate } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
@@ -15,43 +15,28 @@ import {
 } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
-
 export type AgentMode = "plain" | "default" | "sub";
 
 /**
- * This class manages the lifecycle of an agent task, including initializing the client,
- * maintaining conversation history via `AgentContext`, executing tool calls, and streaming
- * generated text chunks. It supports cancellation of ongoing operations.
+ * Orchestrates the execution of an LLM-powered agent that can process messages,
+ * make tool calls, and manage conversation history.
  */
 export class Agent {
-    private client: LlmClientFactory | undefined;
+    private client: LlmClientFactory;
     private abortController: AbortController | null = null;
-
-    constructor(private readonly mode: AgentMode = "default") {}
+    private agentMode: AgentMode;
 
     /**
-     * Prepares the agent by constructing the conversation history and tool definitions based on the current mode.
-     *
-     * @param messages - The current chat context containing existing messages.
-     * @returns An object containing the prepared `AgentContext` (`modeHistory`) and a list of tool definitions (`modeTools`).
+     * Creates a new Agent instance.
+     * @param agentMode - The mode of the agent: "plain" (no system prompt or tools), "default" (full agent), or "sub" (sub-agent with system prompt but no tools).
      */
-    private prepareAgent(messages: ChatContext): {
-        modeHistory: AgentContext;
-        modeTools: ReturnType<typeof getToolDefinitions>;
-    } {
-        const initial =
-            this.mode !== "plain"
-                ? [{ role: "system" as const, content: getAgentTemplate() }, ...messages.getMessages()]
-                : messages.getMessages();
-        const modeHistory = new AgentContext(initial);
-
-        const modeTools = this.mode === "default" && userConfig.agentic ? getToolDefinitions() : [];
-
-        return { modeHistory, modeTools };
+    constructor(agentMode: AgentMode) {
+        this.agentMode = agentMode;
+        this.client = new LlmClientFactory("instruction");
     }
 
     /**
-     * Cancels the currently running agent task.
+     * Cancels the currently running agent work if any.
      */
     cancel() {
         if (this.abortController) {
@@ -62,28 +47,17 @@ export class Agent {
 
     /**
      * Checks if the agent is currently running.
+     * @returns True if the agent is running, false otherwise.
      */
     isRunning(): boolean {
         return this.abortController !== null;
     }
 
     /**
-     * Executes the agent task, managing the interaction loop with the LLM.
-     *
-     * Initializes the LLM client and processes the conversation history iteratively.
-     * The loop proceeds as follows:
-     * 1. Requests a completion from the LLM.
-     * 2. Streams generated text tokens via the `onChunk` callback.
-     * 3. If tool calls are detected, executes them, appends results to history,
-     *    and repeats the loop.
-     * 4. If no tool calls are present, the loop terminates.
-     *
-     * The operation can be cancelled externally via the `cancel` method.
-     *
-     * @param messages - The conversation history to send to the LLM.
-     * @param onChunk  - Callback invoked for every streamed text token.
-     * @param onEvent  - Optional callback for structured metadata events (e.g. token counts).
-     * @returns {Promise<void>}
+     * Executes the agent work loop, processing messages and handling tool calls.
+     * @param messages - The chat context containing conversation history.
+     * @param onChunk - Callback for streaming response chunks.
+     * @param onEvent - Optional callback for agent events (tool calls, token counts, etc.).
      */
     async work(messages: ChatContext, onChunk: (chunk: string) => void, onEvent?: (event: AgentEvent) => void) {
         await vscode.window.withProgress(
@@ -93,105 +67,32 @@ export class Agent {
                 resetAutoAcceptEdits();
                 const signal = this.abortController.signal;
 
-                const modeSet = this.prepareAgent(messages);
-                const history = modeSet.modeHistory;
-                const tools = modeSet.modeTools;
+                const { history, tools } = this.prepareAgent(messages);
 
                 try {
-                    this.client = new LlmClientFactory("instruction");
-
-                    const settings: LlmChatSettings = {
-                        apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
-                        model: userConfig.apiModelInstruct,
-                        messages: history.getMessages(),
-                        tools: tools,
-                        options: buildAgentOptions(),
-                        stop: emptyStop(),
-                        signal: signal,
-                    };
+                    const settings = await this.buildSettings(history, tools, signal);
 
                     while (true) {
                         if (signal.aborted) {
                             break;
                         }
 
-                        const result = await this.client.chat({ ...settings }, (chunk) => {
-                            if (!signal.aborted) {
-                                onChunk(chunk);
-                            }
-                        });
+                        const result = await this.executeTurn(settings, signal, onChunk);
 
                         if (result.toolCalls.length === 0) {
                             break;
                         }
 
-                        history.push({
-                            role: "assistant",
-                            content: result.content,
-                            tool_calls: result.toolCalls,
-                        });
+                        history.push({ role: "assistant", content: result.content, tool_calls: result.toolCalls });
+                        onEvent?.({ type: "agent-tool-calls", toolCalls: result.toolCalls });
 
-                        // push to webview history
-                        onEvent?.({
-                            type: "agent-tool-calls",
-                            toolCalls: result.toolCalls,
-                        });
-
-                        if (result.toolCalls.length > 0) {
-                            logAgent(`[tool_calls]\n${JSON.stringify(result.toolCalls, null, 2)}`);
-                        }
-
-                        for (const toolCall of result.toolCalls) {
-                            if (signal.aborted) {
-                                break;
-                            }
-
-                            const args = JSON.parse(toolCall.function.arguments);
-
-                            const hasArgs = Object.keys(args).length > 0;
-                            let argsBody = "";
-                            if (hasArgs) {
-                                argsBody = Object.entries(args)
-                                    .map(([key, value]) => `${key}:\n${value}`)
-                                    .join("\n");
-                            }
-                            const toolResult = await executeTool(toolCall.function.name, args);
-
-                            history.push({
-                                role: "tool",
-                                tool_call_id: toolCall.id,
-                                content: toolResult,
-                            });
-
-                            history.deduplicateToolResult(toolCall.id);
-
-                            onEvent?.({
-                                type: "agent-tool-done",
-                                toolCallId: toolCall.id,
-                                toolName: toolCall.function.name,
-                                toolArgs: argsBody,
-                                toolTarget: getToolTarget(toolCall.function.name, args),
-                                toolResult: toolResult,
-                            });
-                        }
-
-                        // Tokenize messages without customKeys (same as populateMsgTokens)
-                        const messagesWithoutCustomKeys = history.getMessages().map(stripCustomKeys);
-                        const toolTokens = await Tokenizer.calcTokens(JSON.stringify(messagesWithoutCustomKeys));
-                        logAgent(`Agent Tokens: ${toolTokens}`);
-                        onEvent?.({ type: "agent-tokens", tokens: toolTokens });
-
-                        if (toolTokens > userConfig.apiTokenContextLenInstruct) {
-                            throw new Error(
-                                `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
-                            );
-                        }
+                        await this.executeTools(result.toolCalls, history, signal, onEvent);
 
                         if (signal.aborted) {
                             break;
                         }
 
-                        onEvent?.({ type: "agent-assistant-new" });
+                        onEvent?.({ type: "agent-turn-start" });
                     }
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -204,24 +105,126 @@ export class Agent {
             },
         );
     }
+
+    /**
+     * Prepares the agent context and tool definitions based on the agent mode.
+     * @param messages - The chat context to initialize the agent with.
+     * @returns An object containing the initialized history and tool definitions.
+     */
+    private prepareAgent(messages: ChatContext): {
+        history: AgentContext;
+        tools: ReturnType<typeof getToolDefinitions>;
+    } {
+        const initial =
+            this.agentMode !== "plain"
+                ? [{ role: "system" as const, content: getAgentTemplate() }, ...messages.getMessages()]
+                : messages.getMessages();
+
+        return {
+            history: new AgentContext(initial),
+            tools: this.agentMode === "default" && userConfig.agentic ? getToolDefinitions() : [],
+        };
+    }
+
+    /**
+     * Builds the LLM chat settings for the current agent session.
+     * @param history - The agent's conversation history.
+     * @param tools - The tool definitions available to the agent.
+     * @param signal - The abort signal for cancellation.
+     * @returns The configured LLM chat settings.
+     */
+    private async buildSettings(
+        history: AgentContext,
+        tools: ReturnType<typeof getToolDefinitions>,
+        signal: AbortSignal,
+    ): Promise<LlmChatSettings> {
+        return {
+            apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
+            model: userConfig.apiModelInstruct,
+            messages: history.getMessages(),
+            tools,
+            options: buildAgentOptions(),
+            stop: emptyStop(),
+            signal,
+        };
+    }
+
+    /**
+     * Executes a single turn of the agent by calling the LLM.
+     * @param settings - The chat settings for the LLM call.
+     * @param signal - The abort signal for cancellation.
+     * @param onChunk - Callback for streaming response chunks.
+     * @returns The LLM response containing content and tool calls.
+     */
+    private async executeTurn(settings: LlmChatSettings, signal: AbortSignal, onChunk: (chunk: string) => void) {
+        return this.client.chat({ ...settings }, (chunk) => {
+            if (!signal.aborted) {
+                onChunk(chunk);
+            }
+        });
+    }
+
+    /**
+     * Executes the requested tool calls and updates the conversation history.
+     * @param toolCalls - The tool calls to execute.
+     * @param history - The agent's conversation history to update.
+     * @param signal - The abort signal for cancellation.
+     * @param onEvent - Optional callback for tool execution events.
+     */
+    private async executeTools(
+        toolCalls: ToolCall[],
+        history: AgentContext,
+        signal: AbortSignal,
+        onEvent?: (event: AgentEvent) => void,
+    ) {
+        logAgent(`[tool_calls]\n${JSON.stringify(toolCalls, null, 2)}`);
+
+        for (const toolCall of toolCalls) {
+            if (signal.aborted) {
+                break;
+            }
+
+            const args = JSON.parse(toolCall.function.arguments);
+            const argsBody = Object.entries(args)
+                .map(([k, v]) => `${k}:\n${v}`)
+                .join("\n");
+            const toolResult = await executeTool(toolCall.function.name, args);
+
+            history.push({ role: "tool", tool_call_id: toolCall.id, content: toolResult });
+            history.deduplicateToolResult(toolCall.id);
+
+            onEvent?.({
+                type: "agent-tool-done",
+                toolCallId: toolCall.id,
+                toolName: toolCall.function.name,
+                toolArgs: argsBody,
+                toolTarget: getToolTarget(toolCall.function.name, args),
+                toolResult,
+            });
+        }
+
+        const toolTokens = await Tokenizer.calcTokens(JSON.stringify(history.getMessages().map(stripCustomKeys)));
+        logAgent(`Agent Tokens: ${toolTokens}`);
+        onEvent?.({ type: "agent-tokens", tokens: toolTokens });
+
+        if (toolTokens > userConfig.apiTokenContextLenInstruct) {
+            throw new Error(
+                `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
+            );
+        }
+    }
 }
 
 /**
- * Manages the conversation history and context for the Agent.
- *
- * Wraps a ChatContext instance to handle message storage, retrieval,
- * and specific optimization logic.
- * TODO: read content is currently set to empty in the session
- * Agent needs to re-read on each request (save tokens in history).
- * Possible Solution:
- * Session does deduplication of the whole chat by itself
+ * Wrapper around ChatContext that provides agent-specific operations
+ * for managing conversation history and tool result deduplication.
  */
 class AgentContext {
     private context: ChatContext;
 
     /**
-     * Initializes a new AgentContext with a set of initial messages.
-     * @param messages - The initial conversation history.
+     * Creates a new AgentContext instance.
+     * @param messages - The initial messages to populate the context with.
      */
     constructor(messages: ChatHistory[]) {
         this.context = new ChatContext();
@@ -229,26 +232,26 @@ class AgentContext {
     }
 
     /**
-     * Retrieves the current list of messages in the conversation history.
-     * @returns An array of ChatHistory objects.
+     * Retrieves all messages in the conversation history.
+     * @returns An array of chat history entries.
      */
-    public getMessages(): ChatHistory[] {
+    getMessages(): ChatHistory[] {
         return this.context.getMessages();
     }
 
     /**
-     * Appends a new message to the conversation history.
-     * @param message - The message object to add.
+     * Adds a new message to the conversation history.
+     * @param message - The message to add.
      */
-    public push(message: ChatHistory): void {
+    push(message: ChatHistory): void {
         this.context.push(message);
     }
 
     /**
-     * Replaces stale non-mutating tool results with a short note when a tool is re-run
-     * with identical structured arguments.
+     * Deduplicates tool results in the conversation history for the given tool call ID.
+     * @param newToolCallId - The ID of the new tool call whose result should be checked for duplicates.
      */
-    public deduplicateToolResult(newToolCallId: string): void {
+    deduplicateToolResult(newToolCallId: string): void {
         this.context.deduplicateToolResult(newToolCallId, shouldDeduplicateToolResult);
     }
 }
