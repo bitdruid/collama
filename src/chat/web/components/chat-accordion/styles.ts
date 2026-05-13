@@ -44,6 +44,12 @@ export const accordionStyles = [
             overflow-x: auto;
         }
 
+        /* Code accordions get their padding on <code> (rule below).
+           For everything else (slot content, no <pre>), pad the inner. */
+        .accordion-content-inner:not(:has(pre)) {
+            padding: 8px 10px;
+        }
+
         .accordion-content-wrapper:not(.expanded) .accordion-content-inner {
             border-top: none;
         }
@@ -62,6 +68,11 @@ export const accordionStyles = [
 
         .accordion-content pre code.hljs {
             overflow-x: visible;
+        }
+
+        .accordion-content .plain-body {
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         /* think/summary: wrap prose, no horizontal scroll */
@@ -85,7 +96,6 @@ export const accordionStyles = [
         /* Type-specific content overrides */
         .accordion.type-tool-group .accordion-content-inner {
             max-height: min(500px, 60vh);
-            padding: 0;
         }
 
         .accordion.type-tool-group .accordion-content-inner collama-accordion {

@@ -30,7 +30,9 @@ const bannerTags: Record<AccordionType, string> = {
  * @property {string} description - Optional subtitle or description text.
  * @property {AccordionType} type - The type of accordion, dictating the icon and behavior.
  * @property {boolean} expanded - Whether the accordion content is currently visible.
- * @property {string} code - The raw code string to display and highlight (used instead of slot).
+ * @property {string} code - The raw code string to display and highlight (rendered as <pre><code>).
+ * @property {string} body - Plain-text body to display with preserved whitespace (rendered as <div>).
+ *                           If both `code` and `body` are empty, the default <slot> is used.
  * @property {string} copyCode - Specific text to copy when clicking the copy button (defaults to `code`).
  * @property {string} language - The language identifier for syntax highlighting (e.g., 'typescript', 'python').
  */
@@ -43,6 +45,7 @@ export class ChatAccordion extends LitElement {
     @property({ type: String }) type: AccordionType = "code";
     @state() expanded: boolean = false;
     @property({ type: String }) code: string = "";
+    @property({ type: String }) body: string = "";
     @property({ type: String }) copyCode: string = "";
     @property({ type: String }) language: string = "";
 
@@ -175,7 +178,11 @@ export class ChatAccordion extends LitElement {
                 <div class="accordion-content-wrapper ${this.expanded ? "expanded" : ""}">
                     <div class="accordion-content">
                         <div class="accordion-content-inner">
-                            ${this.code ? html`<pre><code>${this.code}</code></pre>` : html`<slot></slot>`}
+                            ${this.code
+                                ? html`<pre><code>${this.code}</code></pre>`
+                                : this.body
+                                  ? html`<div class="plain-body">${this.body}</div>`
+                                  : html`<slot></slot>`}
                         </div>
                     </div>
                 </div>

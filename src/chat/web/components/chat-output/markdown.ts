@@ -164,6 +164,7 @@ function createChatMarkdown(): MarkdownIt {
         let accordionType = "code";
         let expandedAttr = "expanded";
         let languageAttr = "";
+        let contentAttr = `code="${escapedCode}"`;
 
         let label = lang;
         let description = "";
@@ -171,6 +172,7 @@ function createChatMarkdown(): MarkdownIt {
         if (lang.startsWith("Think:")) {
             accordionType = "think";
             expandedAttr = "";
+            contentAttr = `body="${escapedCode}"`;
         } else if (lang.startsWith("Summary:")) {
             accordionType = "summary";
             expandedAttr = "";
@@ -186,7 +188,7 @@ function createChatMarkdown(): MarkdownIt {
             description = rest.join(":").trim();
         }
 
-        return `<collama-accordion type="${accordionType}" label="${label}" description="${escapeAttr(description)}" code="${escapedCode}" copyCode="${escapedCode}" ${languageAttr} ${expandedAttr}></collama-accordion>`;
+        return `<collama-accordion type="${accordionType}" label="${label}" description="${escapeAttr(description)}" ${contentAttr} copyCode="${escapedCode}" ${languageAttr} ${expandedAttr}></collama-accordion>`;
     };
 
     return md;

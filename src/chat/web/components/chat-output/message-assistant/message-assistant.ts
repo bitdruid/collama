@@ -30,11 +30,8 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
                           type="think"
                           label="Thinking"
                           description=${isStreaming && !msg.content ? "…" : ""}
-                      >
-                          <div class="thinking-body">
-                              ${unsafeHTML(opts.getCachedMarkdown(thinking, isStreaming))}
-                          </div>
-                      </collama-accordion>`
+                          .body=${thinking}
+                      ></collama-accordion>`
                     : ""}
                 ${msg.content ? unsafeHTML(opts.getCachedMarkdown(msg.content, isStreaming)) : ""}
             </div>
