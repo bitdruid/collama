@@ -12,7 +12,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![VS Code Version](https://img.shields.io/badge/VS%20Code-%5E1.109.0-blue)](https://code.visualstudio.com/)
 
-[Overview](#overview) • [Features](#features) • [Infos](#infos) • [Quick Start](#quick-start) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Usage](#usage) • [Contributing](#contributing)
+[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Usage](#usage) • [Contributing](#contributing)
 
 </div>
 
@@ -25,7 +25,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - **[Ollama](https://ollama.com)** - local
 - **[OpenAI compatible](https://ai-sdk.dev/providers/openai-compatible-providers)** — local / cloud
 
-> **Status:** This project is in heavy active development. Please note that the output may sometimes be unexpected or unusual. If you have any ideas to improve the quality just let me know and contribute!
+> **Status:** Heavy active development — output may occasionally be unexpected.
 
 ## Features
 
@@ -56,15 +56,9 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - **AGENTS.md support** — define custom agent rules by placing an `AGENTS.md` file in your project root
 
 **AI Agent with Tool Calling**
-- File system tools: read, grep, glob, create, write, delete files
-- Git tools: list commits/branches, view diffs
-- Code analysis: get diagnostics from language server
-- Security: path protection, workspace boundaries, .gitignore integration
-- Real-time tool execution feedback
-- Agent duration counter — track how long the agent has been running
-- Tool confirmation modal with Accept/Accept All/Cancel options
-- Cancel with reason: provide feedback to guide the agent
-- Read-only mode for safe exploration
+- Tools for filesystem, git, and code diagnostics (see [Available Tools](#ai-agent-usage))
+- Workspace-boundary and `.gitignore` protection; optional read-only mode
+- Confirmation flow with Accept / Accept All / Cancel-with-reason, plus a duration counter
 
 **Commit Messages**
 - AI-generated conventional commits from staged changes
@@ -75,15 +69,9 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Chat history optimization (tool results removed)
 - Token counter visualization in agent-loop / total usage
 
-## Quick Start
-
-### Prerequisites
-
-- **VS Code** 1.109.0 or higher
-- **Ollama** or **OpenAI compatible** running locally (or accessible on your network)
-- A supported code model (see [Models](#models))
-
 ## Installation
+
+**Prerequisites:** VS Code 1.109.0+, an Ollama or OpenAI-compatible endpoint (local or remote), and a supported code model (see [Models](#models)).
 
 Install the extension from the marketplace or build the vsix yourself, then configure an endpoint in settings.
 For authentication, set your API key as a bearer token — see [Bearer Tokens](#bearer-tokens-api-key).
@@ -111,6 +99,7 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 | `collama.autoComplete`                 | boolean | `true`                   | Enable auto-suggestions                                  |
 | `collama.suggestMode`                  | string  | `inline`                 | Suggestion style: `inline`, `multiline`, or `multiblock` |
 | `collama.suggestDelay`                 | number  | `1500`                   | Delay (ms) before requesting completion                  |
+| `collama.verbosityMode`                | string  | `medium`                 | Chat response detail: `compact`, `medium`, or `detailed` |
 | `collama.agentic`                      | boolean | `true`                   | Use tool-calling mode; recommended only for large models |
 | `collama.enableEditTools`              | boolean | `true`                   | Enable edit tools (read-only mode when disabled)         |
 | `collama.enableShellTool`              | boolean | `false`                  | Enable shell tool usage                                  |
@@ -170,9 +159,7 @@ Collama is tested primarily with the **Qwen Coder** for Completion and **liteLLM
 | starcoder     | —            | ⚠️           | Untested | May work           |
 | starcoder2    | 3B           | ✅           | Stable   | Like qwen2.5-coder |
 
-Note: FIM models are tested primarily with quantization level q4. Results may vary with other.
-
-Note: ChatML format is not supported - that means only true FIM models will work for autocomplete!
+Note: tested primarily at q4 quantization (results may vary with others), and ChatML-format models are not supported — only true FIM models will work for autocomplete.
 
 ## Usage
 

@@ -1,6 +1,20 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.7] - 2026-05-13
+
+### Added
+- Streaming reasoning/thinking support for chat responses
+- `body` property on accordions to render plain-text content alongside structured children
+- Bubble animation variant for the dots loader (randomly selected per chat instance)
+- Loading-snake toggle in the chat settings (default off)
+
+### Changed
+- Replace snake-loading speed slider with a simple on/off toggle
+- Move the empty-state component out of the session dropdown into chat-output
+- Simplify the session dropdown's empty state to a plain hint
+- Tighten `.vscodeignore` so only the icons/logo ship in the packaged `.vsix` (drops the `.gif` and `.kra` source)
+
 ## [1.7.6] - 2026-05-08
 
 ### Added
