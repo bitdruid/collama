@@ -3,7 +3,6 @@ import { customElement, property } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { ChatSession } from "../../../types";
 import { BaseDropdown } from "../../template-components/dropdown/base-dropdown";
-import "./session-empty";
 import "./session-item";
 
 @customElement("collama-session-dropdown")
@@ -67,7 +66,9 @@ export class SessionDropdown extends BaseDropdown {
 
         return html`
             ${sorted.length === 0
-                ? html`<collama-empty-state></collama-empty-state>`
+                ? html`<div style="padding: 1rem; text-align: center; opacity: 0.7;">
+                      Create a new chat to store a session
+                  </div>`
                 : repeat(
                       sorted,
                       (session: ChatSession) => session.id,

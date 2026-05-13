@@ -2,11 +2,14 @@
     "name": "collama",
     "displayName": "collama",
     "description": "Use code auto completion provided by a local ollama instance",
-    "repository": "https://github.com/bitdruid/collama",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bitdruid/collama.git"
+    },
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.7.6",
+    "version": "1.7.7",
     "engines": {
         "vscode": "^1.109.0"
     },

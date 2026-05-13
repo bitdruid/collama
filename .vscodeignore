@@ -1,5 +1,6 @@
 **
-!media
+!media/*.png
+!media/*.svg
 !package.json
 !dist
 !README.md

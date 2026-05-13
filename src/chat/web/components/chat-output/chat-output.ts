@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { ChatHistory, ToolMessage } from "../../../../common/context-chat";
 import { themeIcons } from "../../styles";
+import "./empty-state";
 import "../chat-loading-animation/dots";
 import { chatMarkdown } from "./markdown";
 import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";

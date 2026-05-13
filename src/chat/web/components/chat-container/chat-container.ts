@@ -72,7 +72,7 @@ export class ChatContainer extends LitElement {
     @state() acquireModalDescription = "";
     @state() errorModalContent = "";
     @state() activeModal: ActiveModal = "";
-    @state() snakeLoadingSpeed = 1500;
+    @state() snakeLoadingEnabled = false;
     @state() snakeEyecandyMode = false;
     @state() flatDesign = false;
     @state() agentsMdActive = false;
@@ -131,14 +131,10 @@ export class ChatContainer extends LitElement {
         this.config = { ...this.config, [key]: value };
         backendApi.updateConfig(key, value);
     };
-    private handleSnakeSpeedUpdate = (e: CustomEvent) => {
-        const value = Number(e.detail?.value);
-        if (!Number.isFinite(value)) {
-            return;
-        }
-        this.snakeLoadingSpeed = Math.min(5000, Math.max(500, value));
+    private handleSnakeLoadingEnabledUpdate = (e: CustomEvent) => {
+        this.snakeLoadingEnabled = Boolean(e.detail?.value);
         const state = window.vscode.getState?.() || {};
-        window.vscode.setState?.({ ...state, snakeLoadingSpeed: this.snakeLoadingSpeed });
+        window.vscode.setState?.({ ...state, snakeLoadingEnabled: this.snakeLoadingEnabled });
     };
     private handleSnakeEyecandyUpdate = (e: CustomEvent) => {
         this.snakeEyecandyMode = Boolean(e.detail?.value);
@@ -196,8 +192,8 @@ export class ChatContainer extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         const state = window.vscode.getState?.() || {};
-        if (typeof state.snakeLoadingSpeed === "number") {
-            this.snakeLoadingSpeed = Math.min(5000, Math.max(500, state.snakeLoadingSpeed));
+        if (typeof state.snakeLoadingEnabled === "boolean") {
+            this.snakeLoadingEnabled = state.snakeLoadingEnabled;
         }
         if (typeof state.snakeEyecandyMode === "boolean") {
             this.snakeEyecandyMode = state.snakeEyecandyMode;
@@ -382,13 +378,13 @@ export class ChatContainer extends LitElement {
                 <collama-settings-dropdown
                     .autoShow=${true}
                     .config=${this.config}
-                    .snakeLoadingSpeed=${this.snakeLoadingSpeed}
+                    .snakeLoadingEnabled=${this.snakeLoadingEnabled}
                     .snakeEyecandyMode=${this.snakeEyecandyMode}
                     .flatDesign=${this.flatDesign}
                     .agentsMdActive=${this.agentsMdActive}
                     @dropdown-close=${this.handleDropdownClose}
                     @settings-update=${this.handleSettingsUpdate}
-                    @snake-speed-update=${this.handleSnakeSpeedUpdate}
+                    @snake-loading-enabled-update=${this.handleSnakeLoadingEnabledUpdate}
                     @snake-eyecandy-update=${this.handleSnakeEyecandyUpdate}
                     @flat-design-update=${this.handleFlatDesignUpdate}
                 ></collama-settings-dropdown>
@@ -510,11 +506,12 @@ export class ChatContainer extends LitElement {
                     .autoAccept=${this.autoAccept}
                 ></collama-chatinput>
             </div>
-            <collama-loading-snake
-                .isGenerating=${this.isGenerating}
-                .speed=${this.snakeLoadingSpeed}
-                .eyecandy=${this.snakeEyecandyMode}
-            ></collama-loading-snake>
+            ${this.snakeLoadingEnabled
+                ? html`<collama-loading-snake
+                      .isGenerating=${this.isGenerating}
+                      .eyecandy=${this.snakeEyecandyMode}
+                  ></collama-loading-snake>`
+                : ""}
         `;
     }
 }

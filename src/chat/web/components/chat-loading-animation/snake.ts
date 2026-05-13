@@ -74,7 +74,8 @@ export class ChatContainerLoading extends LitElement {
 
     @property({ type: Boolean, reflect: true }) isGenerating = false;
     @property({ type: Boolean, reflect: true }) eyecandy = false;
-    @property({ type: Number }) speed = 1500;
+
+    private static readonly SNAKE_SPEED = 1500;
 
     private _resizeObserver: ResizeObserver | null = null;
 
@@ -87,10 +88,9 @@ export class ChatContainerLoading extends LitElement {
         const h = this.offsetHeight;
         const perimeter = 2 * (w + h);
         const segment = perimeter * 0.15;
-        const speed = Math.max(1, this.speed);
         rect.style.strokeDasharray = `${segment} ${perimeter - segment}`;
         this.style.setProperty("--snake-perimeter", `${-perimeter}`);
-        this.style.setProperty("--snake-duration", `${perimeter / speed}s`);
+        this.style.setProperty("--snake-duration", `${perimeter / ChatContainerLoading.SNAKE_SPEED}s`);
     }
 
     connectedCallback() {
@@ -110,7 +110,7 @@ export class ChatContainerLoading extends LitElement {
     }
 
     updated(changed: Map<string, unknown>) {
-        if ((changed.has("isGenerating") || changed.has("speed")) && this.isGenerating) {
+        if (changed.has("isGenerating") && this.isGenerating) {
             this._updatePerimeter();
         }
     }

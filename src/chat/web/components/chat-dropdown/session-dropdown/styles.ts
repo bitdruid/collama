@@ -96,10 +96,3 @@ export const sessionItemStyles = css`
     }
 `;
 
-export const emptyStateStyles = css`
-    .empty-state {
-        padding: 1rem;
-        text-align: center;
-        color: ${themeColors.uiFont};
-    }
-`;

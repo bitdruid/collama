@@ -1,10 +1,17 @@
-import { LitElement, html } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
-import { emptyStateStyles } from "./styles";
+import { themeColors } from "../../styles";
 
 @customElement("collama-empty-state")
 export class EmptyState extends LitElement {
-    static styles = [emptyStateStyles];
+    static styles = css`
+        .empty-state {
+            padding: 1rem;
+            text-align: center;
+            color: ${themeColors.uiFont};
+        }
+    `;
+
     message: string | undefined;
 
     connectedCallback() {

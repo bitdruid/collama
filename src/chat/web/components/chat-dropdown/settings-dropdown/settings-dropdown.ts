@@ -8,7 +8,6 @@ import { baseDropdownStyles } from "../../template-components/dropdown/styles";
 import "../../template-components/slider";
 import { settingsDropdownStyles } from "./styles";
 
-const DEFAULT_SNAKE_LOADING_SPEED = 1500;
 const AGENTS_MD_PATH = "AGENTS.md";
 type VerbosityMode = ChatConfig["verbosityMode"];
 const VERBOSITY_MODES: readonly VerbosityMode[] = ["compact", "medium", "detailed"];
@@ -25,7 +24,7 @@ export class SettingsDropdown extends BaseDropdown {
     `;
 
     @property({ type: Object }) config: ChatConfig = defaultChatConfig;
-    @property({ type: Number }) snakeLoadingSpeed = 1500;
+    @property({ type: Boolean }) snakeLoadingEnabled = false;
     @property({ type: Boolean }) snakeEyecandyMode = false;
     @property({ type: Boolean }) flatDesign = false;
     @property({ type: Boolean }) agentsMdActive = false;
@@ -41,8 +40,9 @@ export class SettingsDropdown extends BaseDropdown {
         emit(this, "settings-update", { key: "verbosityMode", value });
     };
 
-    private _updateSnakeSpeed = (event: Event) => {
-        emit(this, "snake-speed-update", { value: Number((event.target as HTMLInputElement).value) });
+    private _updateSnakeLoadingEnabled = (event: Event) => {
+        const value = Number((event.target as HTMLInputElement).value) === 1;
+        emit(this, "snake-loading-enabled-update", { value });
     };
 
     private _updateSnakeEyecandy = (event: Event) => {
@@ -72,17 +72,8 @@ export class SettingsDropdown extends BaseDropdown {
             <section class="settings-section">
                 <h4>Style</h4>
                 ${this._renderStyleToggle("Flat Design", this.flatDesign, this._updateFlatDesign)}
+                ${this._renderStyleToggle("Loading Snake", this.snakeLoadingEnabled, this._updateSnakeLoadingEnabled)}
                 ${this._renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this._updateSnakeEyecandy)}
-                <collama-slider
-                    label="Snake speed (def. ${DEFAULT_SNAKE_LOADING_SPEED})"
-                    value-label="${this.snakeLoadingSpeed} px/s"
-                    min="500"
-                    max="5000"
-                    step="100"
-                    .value=${this.snakeLoadingSpeed}
-                    marks="4"
-                    @input=${this._updateSnakeSpeed}
-                ></collama-slider>
             </section>
             <section class="settings-section">
                 <h4>Project</h4>
