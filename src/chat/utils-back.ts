@@ -34,6 +34,7 @@ export function buildExportData(extContext: vscode.ExtensionContext, messages: C
 export interface SessionSummary {
     id: string;
     title: string;
+    customTitle?: boolean;
     temporary?: boolean;
     ghost?: boolean;
     createdAt: number;
@@ -50,6 +51,7 @@ export function mapSessionToSummary<T extends SessionSummary>(session: T): Sessi
     return {
         id: session.id,
         title: session.title,
+        customTitle: session.customTitle,
         temporary: session.temporary,
         ghost: session.ghost,
         createdAt: session.createdAt,

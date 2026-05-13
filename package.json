@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.7.7",
+    "version": "1.7.8",
     "engines": {
         "vscode": "^1.109.0"
     },

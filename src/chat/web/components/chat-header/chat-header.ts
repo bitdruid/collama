@@ -21,14 +21,16 @@ export class ChatHeader extends LitElement {
     @property({ type: Boolean }) settingsDropdownOpen = false;
     @property({ type: Boolean }) showSettingsBadge = false;
 
-    private _handleNewGhostChat() {
+    private _handleNewGhostChat(event: Event) {
+        event.stopPropagation();
         if (this.isGenerating) {
             return;
         }
         this.dispatchEvent(new CustomEvent("new-ghost-chat", { bubbles: true, composed: true }));
     }
 
-    private _handleNewChat() {
+    private _handleNewChat(event: Event) {
+        event.stopPropagation();
         if (this.isGenerating) {
             return;
         }

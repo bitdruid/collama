@@ -168,30 +168,17 @@ export class ChatSessionStore extends EventTarget {
     }): void {
         const { sessions: sessionSummaries, activeSessionId, history, contextUsed, contextMax } = data;
 
-        // Update session metadata without losing ChatContext instances
-        sessionSummaries.forEach((summary) => {
-            const session = this.sessions.find((s) => s.id === summary.id);
-            if (session) {
-                // Update metadata, preserve ChatContext
-                session.title = summary.title;
-                session.customTitle = summary.customTitle;
-                session.temporary = summary.temporary;
-                session.ghost = summary.ghost;
-                session.createdAt = summary.createdAt;
-                session.updatedAt = summary.updatedAt;
-            } else {
-                // New session - create with ChatContext
-                this.sessions.push({
-                    ...summary,
-                    messages: new ChatContext(),
-                    contextStartIndex: 0,
-                });
-            }
+        // Rebuild session list with fresh references so Lit detects metadata changes
+        // (preserving each session's ChatContext instance and contextStartIndex).
+        const existingById = new Map(this.sessions.map((s) => [s.id, s]));
+        this.sessions = sessionSummaries.map((summary) => {
+            const existing = existingById.get(summary.id);
+            return {
+                ...summary,
+                messages: existing?.messages ?? new ChatContext(),
+                contextStartIndex: existing?.contextStartIndex ?? 0,
+            };
         });
-
-        // Remove sessions that no longer exist
-        const summaryIds = new Set(sessionSummaries.map((s) => s.id));
-        this.sessions = this.sessions.filter((s) => summaryIds.has(s.id));
 
         // Update the active session's messages from history
         if (activeSessionId) {

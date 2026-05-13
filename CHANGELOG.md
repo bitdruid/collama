@@ -1,6 +1,11 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.8] - 2026-05-13
+
+### Fixed
+- Renaming of chat sessions
+
 ## [1.7.7] - 2026-05-13
 
 ### Added
