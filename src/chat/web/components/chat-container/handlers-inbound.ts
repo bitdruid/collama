@@ -11,6 +11,7 @@ export function createInboundDispatcher(host: ChatContainer) {
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "agent-error": (m) => handleAgentError(host, m),
+        "agent-reasoning": (m) => handleAgentReasoning(host, m),
         "agent-tokens": (m) => handleAgentTokens(host, m),
         "agent-tool-calls": (m) => handleAgentToolCalls(host, m),
         "chat-complete": (m) => handleChatComplete(host, m),
@@ -123,6 +124,12 @@ function handleHistoryReplace(host: ChatContainer, msg: any) {
 /** Appends a streaming text chunk to the message at the given index. */
 function handleAgentChunk(host: ChatContainer, msg: any) {
     host.chatContext?.appendContent(msg.index, msg.chunk);
+    host.debounceSyncMessages();
+}
+
+/** Appends a streaming reasoning chunk to the message at the given index. */
+function handleAgentReasoning(host: ChatContainer, msg: any) {
+    host.chatContext?.appendThinking(msg.index, msg.chunk);
     host.debounceSyncMessages();
 }
 

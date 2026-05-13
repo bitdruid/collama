@@ -13,31 +13,31 @@ export class dots extends LitElement {
             height: 10px;
             margin: 0 20px;
             border-radius: 50%;
-            background-color: ${themeColors.uiBackground};
+            background-color: ${themeColors.uiBorder};
             box-shadow:
                 -20px 0 ${themeColors.uiFont},
-                20px 0 ${themeColors.uiBackground};
+                20px 0 ${themeColors.uiBorder};
             position: relative;
             animation: flash 0.8s linear infinite alternate;
         }
 
         @keyframes flash {
             0% {
-                background-color: ${themeColors.uiBackground};
+                background-color: ${themeColors.uiBorder};
                 box-shadow:
                     -20px 0 ${themeColors.uiFont},
-                    20px 0 ${themeColors.uiBackground};
+                    20px 0 ${themeColors.uiBorder};
             }
             50% {
                 background-color: ${themeColors.uiFont};
                 box-shadow:
-                    -20px 0 ${themeColors.uiBackground},
-                    20px 0 ${themeColors.uiBackground};
+                    -20px 0 ${themeColors.uiBorder},
+                    20px 0 ${themeColors.uiBorder};
             }
             100% {
-                background-color: ${themeColors.uiBackground};
+                background-color: ${themeColors.uiBorder};
                 box-shadow:
-                    -20px 0 ${themeColors.uiBackground},
+                    -20px 0 ${themeColors.uiBorder},
                     20px 0 ${themeColors.uiFont};
             }
         }

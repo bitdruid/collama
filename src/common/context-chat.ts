@@ -20,6 +20,7 @@ export interface CustomMessageKeys {
     loading?: boolean;
     msgTokens?: number;
     id?: string;
+    thinking?: string;
 }
 
 export type ChatHistory =
@@ -135,6 +136,20 @@ export class ChatContext {
         const msg = this.messages[index];
         if (msg) {
             msg.content += chunk;
+        }
+    }
+
+    /**
+     * Appends a reasoning/thinking chunk to the message at the given index.
+     * Stored in customKeys so it's never sent back to the LLM.
+     */
+    public appendThinking(index: number, chunk: string): void {
+        const msg = this.messages[index];
+        if (msg) {
+            msg.customKeys = {
+                ...msg.customKeys,
+                thinking: (msg.customKeys?.thinking ?? "") + chunk,
+            };
         }
     }
 

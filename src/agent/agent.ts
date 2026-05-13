@@ -77,7 +77,7 @@ export class Agent {
                             break;
                         }
 
-                        const result = await this.executeTurn(settings, signal, onChunk);
+                        const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
                         if (result.toolCalls.length === 0) {
                             break;
@@ -156,12 +156,25 @@ export class Agent {
      * @param onChunk - Callback for streaming response chunks.
      * @returns The LLM response containing content and tool calls.
      */
-    private async executeTurn(settings: LlmChatSettings, signal: AbortSignal, onChunk: (chunk: string) => void) {
-        return this.client.chat({ ...settings }, (chunk) => {
-            if (!signal.aborted) {
-                onChunk(chunk);
-            }
-        });
+    private async executeTurn(
+        settings: LlmChatSettings,
+        signal: AbortSignal,
+        onChunk: (chunk: string) => void,
+        onEvent?: (event: AgentEvent) => void,
+    ) {
+        return this.client.chat(
+            { ...settings },
+            (chunk) => {
+                if (!signal.aborted) {
+                    onChunk(chunk);
+                }
+            },
+            (chunk) => {
+                if (!signal.aborted) {
+                    onEvent?.({ type: "agent-reasoning", chunk });
+                }
+            },
+        );
     }
 
     /**

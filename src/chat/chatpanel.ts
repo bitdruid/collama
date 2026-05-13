@@ -327,6 +327,14 @@ export class ChatPanel {
                 webview.postMessage({ type: "agent-chunk", index: currentIndex, chunk });
             },
             onEvent: (event) => {
+                if (event.type === "agent-reasoning") {
+                    const chunk = event.chunk as string;
+                    this.sessionManager.updateSession(session, (s) => {
+                        s.messages.appendThinking(currentIndex, chunk);
+                    });
+                    webview.postMessage({ type: "agent-reasoning", index: currentIndex, chunk });
+                }
+
                 if (event.type === "agent-tokens") {
                     webview.postMessage({ type: "agent-tokens", tokens: event.tokens });
                 }

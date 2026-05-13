@@ -30,11 +30,15 @@ export class LlmClientFactory implements LlmClient {
     }
 
     /** Delegates chat requests to the selected provider client. */
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+    async chat(
+        settings: LlmChatSettings,
+        onChunk?: (chunk: string) => void,
+        onReasoning?: (chunk: string) => void,
+    ): Promise<ChatResult> {
         if (!this.factoryClient) {
             throw new Error(`LLM client not initialized for ${this.requestType}`);
         }
-        return this.factoryClient.chat(settings, onChunk);
+        return this.factoryClient.chat(settings, onChunk, onReasoning);
     }
 
     /** Checks prompt size against context length before delegating generation. */

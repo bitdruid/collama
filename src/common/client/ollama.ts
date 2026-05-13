@@ -43,7 +43,11 @@ function toOllamaMessages(messages: any[]): any[] {
 /** Provider implementation for Ollama chat and prompt generation APIs. */
 export class OllamaClient implements LlmClient {
     /** Streams a chat response and normalizes Ollama tool calls into the shared shape. */
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+    async chat(
+        settings: LlmChatSettings,
+        onChunk?: (chunk: string) => void,
+        _onReasoning?: (chunk: string) => void,
+    ): Promise<ChatResult> {
         try {
             const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
             logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));

@@ -12,9 +12,10 @@ export interface AssistantRenderOptions {
 
 export function renderAssistantMessage(opts: AssistantRenderOptions) {
     const { msg, outOfContextClass, warningIcon, isStreaming } = opts;
+    const thinking = msg.customKeys?.thinking;
 
-    // Hide empty assistant messages (e.g. LLM returned only tool calls)
-    if (!msg.content) {
+    // Hide empty assistant messages (e.g. LLM returned only tool calls and no thinking)
+    if (!msg.content && !thinking) {
         return html``;
     }
 
@@ -24,7 +25,18 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
                 <!-- <div class="role-header role-assistant">
                     <span class="role-label">${warningIcon}Assistant</span>
                 </div> -->
-                ${unsafeHTML(opts.getCachedMarkdown(msg.content, isStreaming))}
+                ${thinking
+                    ? html`<collama-accordion
+                          type="think"
+                          label="Thinking"
+                          description=${isStreaming && !msg.content ? "…" : ""}
+                      >
+                          <div class="thinking-body">
+                              ${unsafeHTML(opts.getCachedMarkdown(thinking, isStreaming))}
+                          </div>
+                      </collama-accordion>`
+                    : ""}
+                ${msg.content ? unsafeHTML(opts.getCachedMarkdown(msg.content, isStreaming)) : ""}
             </div>
         </div>
     `;

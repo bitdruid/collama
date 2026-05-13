@@ -8,7 +8,11 @@ export type LlmBackendType = "ollama" | "openai" | "";
 
 /** Common contract implemented by every provider-specific LLM client. */
 export interface LlmClient {
-    chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult>;
+    chat(
+        settings: LlmChatSettings,
+        onChunk?: (chunk: string) => void,
+        onReasoning?: (chunk: string) => void,
+    ): Promise<ChatResult>;
     generate(settings: LlmGenerateSettings): Promise<string>;
 }
 

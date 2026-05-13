@@ -25,7 +25,11 @@ export function requestOpenAI(url: string, bearer?: string): OpenAI {
 /** Provider implementation for OpenAI-compatible chat and completion APIs. */
 export class OpenAiClient implements LlmClient {
     /** Streams a chat response and accumulates incremental OpenAI tool-call deltas. */
-    async chat(settings: LlmChatSettings, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+    async chat(
+        settings: LlmChatSettings,
+        onChunk?: (chunk: string) => void,
+        onReasoning?: (chunk: string) => void,
+    ): Promise<ChatResult> {
         try {
             const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
             logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
@@ -52,11 +56,18 @@ export class OpenAiClient implements LlmClient {
                     break;
                 }
 
-                const delta = part.choices[0]?.delta;
+                const delta = part.choices[0]?.delta as
+                    | (typeof part.choices[0]["delta"] & { reasoning?: string; reasoning_content?: string })
+                    | undefined;
                 const chunk = delta?.content;
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
+                }
+
+                const reasoning = delta?.reasoning_content ?? delta?.reasoning;
+                if (reasoning) {
+                    onReasoning?.(reasoning);
                 }
 
                 if (delta?.tool_calls) {
