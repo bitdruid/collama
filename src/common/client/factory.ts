@@ -16,45 +16,49 @@ const { showErrorMessage } = vscode.window;
  * LlmClient interface for autocomplete, chat, edits, commits, and the agent.
  */
 export class LlmClientFactory implements LlmClient {
-    private factoryClient?: OllamaClient | OpenAiClient;
+    private generateClient?: OllamaClient | OpenAiClient;
+    private chatClient?: OpenAiClient;
 
     /** Creates a provider client from the currently detected backend in sysConfig. */
     constructor(private readonly requestType: RequestType) {
         const backend = requestType === "completion" ? sysConfig.backendCompletion : sysConfig.backendInstruct;
 
         if (backend === "ollama") {
-            this.factoryClient = new OllamaClient();
+            this.generateClient = new OllamaClient();
+            this.chatClient = new OpenAiClient();
         } else if (backend === "openai") {
-            this.factoryClient = new OpenAiClient();
+            const openai = new OpenAiClient();
+            this.generateClient = openai;
+            this.chatClient = openai;
         }
     }
 
-    /** Delegates chat requests to the selected provider client. */
+    /** Routes chat requests through the OpenAI client (Ollama is /v1-compatible). */
     async chat(
         settings: LlmChatSettings,
         onChunk?: (chunk: string) => void,
         onReasoning?: (chunk: string) => void,
     ): Promise<ChatResult> {
-        if (!this.factoryClient) {
+        if (!this.chatClient) {
             throw new Error(`LLM client not initialized for ${this.requestType}`);
         }
-        return this.factoryClient.chat(settings, onChunk, onReasoning);
+        return this.chatClient.chat(settings, onChunk, onReasoning);
     }
 
     /** Checks prompt size against context length before delegating generation. */
     async generate(settings: LlmGenerateSettings): Promise<string> {
-        if (!this.factoryClient) {
+        if (!this.generateClient) {
             throw new Error(`LLM client not initialized for ${this.requestType}`);
         }
 
         const promptTokens = await Tokenizer.calcTokens(settings.prompt);
-        if (!checkPredictFitsContextLength(settings.options.num_predict, promptTokens, settings.options.num_ctx)) {
+        if (!checkPredictFitsContextLength(settings.options.max_tokens, promptTokens, settings.num_ctx)) {
             showErrorMessage(
-                `Prompt (${promptTokens} tokens) exceeds available context window (${settings.options.num_ctx} tokens). Please reduce content.`,
+                `Prompt (${promptTokens} tokens) exceeds available context window (${settings.num_ctx} tokens). Please reduce content.`,
             );
             return "";
         }
 
-        return this.factoryClient.generate(settings);
+        return this.generateClient.generate(settings);
     }
 }

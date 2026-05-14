@@ -185,6 +185,11 @@ export async function updateVSConfig() {
         if (!updateConfig.apiEndpointCompletion) {
             sysConfig.backendCompletion = "";
             logMsg("⚠️ Completion endpoint cleared – backend reset");
+        } else if (!hasValidScheme(updateConfig.apiEndpointCompletion)) {
+            sysConfig.backendCompletion = "";
+            logMsg(
+                `⚠️ Completion endpoint missing protocol (got "${updateConfig.apiEndpointCompletion}") – include http:// or https:// in the setting`,
+            );
         } else {
             const bearer = await getBearerCompletion();
             const backend = await detectBackend(updateConfig.apiEndpointCompletion, bearer);
@@ -201,6 +206,11 @@ export async function updateVSConfig() {
         if (!updateConfig.apiEndpointInstruct) {
             sysConfig.backendInstruct = "";
             logMsg("⚠️ Instruct endpoint cleared – backend reset");
+        } else if (!hasValidScheme(updateConfig.apiEndpointInstruct)) {
+            sysConfig.backendInstruct = "";
+            logMsg(
+                `⚠️ Instruct endpoint missing protocol (got "${updateConfig.apiEndpointInstruct}") – include http:// or https:// in the setting`,
+            );
         } else {
             const bearer = await getBearerInstruct();
             const backend = await detectBackend(updateConfig.apiEndpointInstruct, bearer);
@@ -244,6 +254,11 @@ function scheduleRetry() {
 }
 
 const DETECTION_TIMEOUT_MS = 5000;
+
+/** Validates that an endpoint URL includes an http:// or https:// scheme. */
+function hasValidScheme(url: string): boolean {
+    return /^https?:\/\//i.test(url);
+}
 
 async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBackendType> {
     const createTimeout = (ms: number) =>

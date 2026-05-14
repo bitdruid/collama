@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.7.8",
+    "version": "1.7.9",
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -28,7 +28,7 @@
                     "collama.apiEndpointCompletion": {
                         "type": "string",
                         "default": "http://127.0.0.1:11434",
-                        "description": "API endpoint for auto-completion."
+                        "description": "API endpoint for auto-completion. Starts with http:// or https://."
                     },
                     "collama.apiModelCompletion": {
                         "type": "string",
@@ -53,7 +53,7 @@
                     "collama.apiEndpointInstruct": {
                         "type": "string",
                         "default": "http://127.0.0.1:11434",
-                        "description": "API endpoint for edit/chat."
+                        "description": "API endpoint for edit/chat. Starts with http:// or https://."
                     },
                     "collama.apiModelInstruct": {
                         "type": "string",

@@ -107,7 +107,7 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 
 ### Manual Token Settings
 
-Set token limits to match your model. Values are tokens, not characters.
+Set token limits to match your model or server configuration. Values are tokens, not characters.
 
 - `apiTokenContextLen*` - available context window
 - `apiTokenPredict*` - maximum generated tokens per request

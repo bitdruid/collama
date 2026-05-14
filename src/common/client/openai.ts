@@ -2,15 +2,7 @@ import OpenAI from "openai";
 
 import { ToolCallAccumulator } from "../litellmfix";
 import type { ChatResult, LlmChatSettings, LlmClient, LlmGenerateSettings } from "./types";
-import {
-    buildStopTokens,
-    cleanupResult,
-    handleError,
-    logPerformance,
-    logRequest,
-    optionsToOpenAI,
-    proxyFetch,
-} from "./utils";
+import { buildStopTokens, cleanupResult, handleError, logPerformance, logRequest, proxyFetch } from "./utils";
 
 /** Creates an OpenAI SDK client for OpenAI-compatible endpoints. */
 export function requestOpenAI(url: string, bearer?: string): OpenAI {
@@ -42,7 +34,7 @@ export class OpenAiClient implements LlmClient {
                 tools: tools.length > 0 ? tools : undefined,
                 tool_choice: tools.length > 0 ? "auto" : undefined,
                 stream: true,
-                ...optionsToOpenAI(options),
+                ...options,
                 stop: buildStopTokens(stop),
                 stream_options: { include_usage: true },
             });
@@ -80,7 +72,7 @@ export class OpenAiClient implements LlmClient {
                     const endTime = process.hrtime.bigint();
                     resultTokens = part.usage.completion_tokens ?? 0;
                     const resultDurationNano = endTime - startTime;
-                    logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
+                    logPerformance(options.max_tokens, resultTokens, Number(resultDurationNano), result);
                 }
             }
 
@@ -105,7 +97,7 @@ export class OpenAiClient implements LlmClient {
                 model,
                 prompt,
                 stream: false,
-                ...optionsToOpenAI(options),
+                ...options,
                 stop: buildStopTokens(stop),
             });
             const endTime = process.hrtime.bigint();
@@ -113,7 +105,7 @@ export class OpenAiClient implements LlmClient {
             const result = response.choices[0]?.text ?? "";
             const resultTokens = response.usage?.total_tokens ?? 0;
             const resultDurationNano = endTime - startTime;
-            logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
+            logPerformance(options.max_tokens, resultTokens, Number(resultDurationNano), result);
 
             return cleanupResult(result, resultTokens, options);
         } catch (err) {
