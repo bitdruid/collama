@@ -65,6 +65,7 @@ export class ChatOutput extends LitElement {
     @property({ type: Array }) messages: ChatHistory[] = [];
     @property({ type: Number }) contextStartIndex: number = 0;
     @property({ type: Boolean }) isGenerating: boolean = false;
+    @property({ type: Boolean }) showThinking: boolean = false;
     @state() editingIndex: number | null = null;
 
     // private highlightedBlocks = new WeakSet<Element>();
@@ -257,6 +258,7 @@ export class ChatOutput extends LitElement {
                                 outOfContextClass,
                                 warningIcon,
                                 isStreaming: this.isGenerating && index === lastAssistantIndex && !!msg.content,
+                                showThinking: this.showThinking,
                                 getCachedMarkdown: this._getCachedMarkdown,
                             });
                         }

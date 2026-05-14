@@ -27,6 +27,7 @@ export class SettingsDropdown extends BaseDropdown {
     @property({ type: Boolean }) snakeLoadingEnabled = false;
     @property({ type: Boolean }) snakeEyecandyMode = false;
     @property({ type: Boolean }) flatDesign = false;
+    @property({ type: Boolean }) showThinking = false;
     @property({ type: Boolean }) agentsMdActive = false;
 
     private _updateBoolean(key: "agentic" | "enableEditTools" | "enableShellTool", event: Event) {
@@ -55,6 +56,11 @@ export class SettingsDropdown extends BaseDropdown {
         emit(this, "flat-design-update", { value });
     };
 
+    private _updateShowThinking = (event: Event) => {
+        const value = Number((event.target as HTMLInputElement).value) === 1;
+        emit(this, "show-thinking-update", { value });
+    };
+
     protected override renderContent() {
         return html`
             <section class="settings-section">
@@ -67,6 +73,7 @@ export class SettingsDropdown extends BaseDropdown {
                     this.config.agentic && !this.config.enableEditTools,
                 )}
                 ${this._renderToggle("Shell Tool", "enableShellTool", this.config.enableShellTool)}
+                ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking)}
                 ${this._renderVerbosityMode()}
             </section>
             <section class="settings-section">

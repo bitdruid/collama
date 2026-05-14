@@ -75,6 +75,7 @@ export class ChatContainer extends LitElement {
     @state() snakeLoadingEnabled = false;
     @state() snakeEyecandyMode = false;
     @state() flatDesign = false;
+    @state() showThinking = false;
     @state() agentsMdActive = false;
     @state() autoAccept = false;
     @state() activeDropdown: ActiveDropdown = "";
@@ -146,6 +147,11 @@ export class ChatContainer extends LitElement {
         const state = window.vscode.getState?.() || {};
         window.vscode.setState?.({ ...state, flatDesign: this.flatDesign });
     };
+    private handleShowThinkingUpdate = (e: CustomEvent) => {
+        this.showThinking = Boolean(e.detail?.value);
+        const state = window.vscode.getState?.() || {};
+        window.vscode.setState?.({ ...state, showThinking: this.showThinking });
+    };
     private handleToggleSessionDropdown = () => this.toggleDropdown("session");
     private handleToggleSettingsDropdown = () => this.toggleDropdown("settings");
     private handleDropdownClose = () => {
@@ -200,6 +206,9 @@ export class ChatContainer extends LitElement {
         }
         if (typeof state.flatDesign === "boolean") {
             this.flatDesign = state.flatDesign;
+        }
+        if (typeof state.showThinking === "boolean") {
+            this.showThinking = state.showThinking;
         }
         // Get ChatContext reference from store (not a copy)
         // Note: May be undefined initially until backend sends init message
@@ -381,12 +390,14 @@ export class ChatContainer extends LitElement {
                     .snakeLoadingEnabled=${this.snakeLoadingEnabled}
                     .snakeEyecandyMode=${this.snakeEyecandyMode}
                     .flatDesign=${this.flatDesign}
+                    .showThinking=${this.showThinking}
                     .agentsMdActive=${this.agentsMdActive}
                     @dropdown-close=${this.handleDropdownClose}
                     @settings-update=${this.handleSettingsUpdate}
                     @snake-loading-enabled-update=${this.handleSnakeLoadingEnabledUpdate}
                     @snake-eyecandy-update=${this.handleSnakeEyecandyUpdate}
                     @flat-design-update=${this.handleFlatDesignUpdate}
+                    @show-thinking-update=${this.handleShowThinkingUpdate}
                 ></collama-settings-dropdown>
             `;
         }
@@ -466,6 +477,7 @@ export class ChatContainer extends LitElement {
                         .messages=${this.messages}
                         .contextStartIndex=${this.contextStartIndex}
                         .isGenerating=${this.isGenerating}
+                        .showThinking=${this.showThinking}
                         @resend-message=${this.handleResendMessage}
                         @edit-message=${this.handleEditMessage}
                         @delete-message=${this.handleDeleteMessage}
