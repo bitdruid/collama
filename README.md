@@ -131,6 +131,7 @@ Tokens are sent as `Authorization: Bearer <token>` and stored in VS Code's encry
 ### Recommended Models
 
 Collama is tested primarily with the **Qwen Coder** for Completion and **liteLLM frontier models** for Instructions.
+Small models may struggle with **verbosity** settings. Test it and keep the setting for the specific model.
 
 #### For Code Completion (FIM - Fill In Middle)
 

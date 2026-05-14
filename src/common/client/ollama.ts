@@ -46,7 +46,7 @@ export class OllamaClient implements LlmClient {
     async chat(
         settings: LlmChatSettings,
         onChunk?: (chunk: string) => void,
-        _onReasoning?: (chunk: string) => void,
+        onReasoning?: (chunk: string) => void,
     ): Promise<ChatResult> {
         try {
             const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
@@ -74,6 +74,11 @@ export class OllamaClient implements LlmClient {
                 if (chunk) {
                     result += chunk;
                     onChunk?.(chunk);
+                }
+
+                const thinking = part.message.thinking ?? "";
+                if (thinking) {
+                    onReasoning?.(thinking);
                 }
 
                 if (part.message.tool_calls) {

@@ -1,6 +1,21 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.11] - 2026-05-14
+
+### Added
+- Stream thinking from ollama
+
+## [1.7.10] - 2026-05-14
+
+### Fixed
+- Config endpoint protocol handling when the protocol is missing
+
+## [1.7.9] - 2026-05-14
+
+### Added
+- Hide/show thinking toggle in chat settings
+
 ## [1.7.8] - 2026-05-13
 
 ### Fixed
