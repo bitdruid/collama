@@ -37,7 +37,7 @@ export function cleanupResult(result: string, resultTokens: number, options: Opt
         return "";
     }
     // if result is too long then cut it off (autocomplete prevent incomplete lines)
-    if (resultTokens === options.max_tokens && result.includes("\n")) {
+    if (resultTokens === options.num_predict && result.includes("\n")) {
         logMsg("Output reached token limit - cutting last line (probably incomplete)");
         result = result.split("\n").slice(0, -1).join("\n");
     }
@@ -50,6 +50,27 @@ export function cleanupResult(result: string, resultTokens: number, options: Opt
     }
 
     return result.trim();
+}
+
+/** Converts provider-neutral options into OpenAI-compatible request fields. */
+export function optionsToOpenAI(options: Options): Record<string, any> {
+    const optionsOpenAI: Record<string, any> = {};
+    if (options.num_ctx !== undefined) {
+        optionsOpenAI.max_context_length = options.num_ctx;
+    }
+    if (options.num_predict !== undefined) {
+        optionsOpenAI.max_tokens = options.num_predict;
+    }
+    if (options.temperature !== undefined) {
+        optionsOpenAI.temperature = options.temperature;
+    }
+    if (options.top_p !== undefined) {
+        optionsOpenAI.top_p = options.top_p;
+    }
+    if (options.top_k !== undefined) {
+        optionsOpenAI.top_k = options.top_k;
+    }
+    return optionsOpenAI;
 }
 
 /** Logs request metadata and input for extension diagnostics. */

@@ -37,7 +37,6 @@ export async function requestCompletion(context: EditorContext): Promise<string>
             model: userConfig.apiModelCompletion,
             prompt: modelConfig.prompt,
             options: buildCompletionOptions(),
-            num_ctx: userConfig.apiTokenContextLenCompletion,
             stop: buildCompletionStop(modelConfig.stop),
         });
 

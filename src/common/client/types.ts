@@ -6,18 +6,14 @@ export type RequestType = "completion" | "instruction";
 /** Runtime backend detected for an endpoint. Empty means no supported backend is available yet. */
 export type LlmBackendType = "ollama" | "openai" | "";
 
-/** Contract for clients that support single-prompt generation (autocomplete). */
-export interface LlmGenerateClient {
-    generate(settings: LlmGenerateSettings): Promise<string>;
-}
-
-/** Common contract implemented by chat-capable LLM clients. */
-export interface LlmClient extends LlmGenerateClient {
+/** Common contract implemented by every provider-specific LLM client. */
+export interface LlmClient {
     chat(
         settings: LlmChatSettings,
         onChunk?: (chunk: string) => void,
         onReasoning?: (chunk: string) => void,
     ): Promise<ChatResult>;
+    generate(settings: LlmGenerateSettings): Promise<string>;
 }
 
 /** Normalized response returned from chat-style APIs. */
@@ -59,17 +55,17 @@ export interface LlmGenerateSettings {
     model: string;
     prompt: string;
     options: Options;
-    /** Per-request Ollama context window size; sourced from apiTokenContextLenCompletion. */
-    num_ctx: number;
     stop: Stop;
 }
 
-/** Generation options in OpenAI-compatible naming; passed verbatim to /v1 chat. */
+/** Provider-neutral generation options used by the client implementations. */
 export interface Options {
-    max_tokens: number;
+    num_ctx: number;
+    num_predict: number;
     temperature: number;
     top_k: number;
     top_p: number;
+    repeat_penalty?: number;
 }
 
 /** Stop token groups coming from model metadata and user/UI mode behavior. */
@@ -112,7 +108,8 @@ export function buildCompletionStop(modelStop: string[]): Stop {
 /** Builds generation options for autocomplete requests. */
 export function buildCompletionOptions(): Options {
     return {
-        max_tokens: calculateNumPredict(),
+        num_predict: calculateNumPredict(),
+        num_ctx: userConfig.apiTokenContextLenCompletion,
         temperature: 0.4,
         top_p: 0.8,
         top_k: 20,
@@ -122,7 +119,8 @@ export function buildCompletionOptions(): Options {
 /** Builds generation options for chat/edit instruction requests. */
 export function buildInstructionOptions(): Options {
     return {
-        max_tokens: userConfig.apiTokenPredictInstruct,
+        num_predict: userConfig.apiTokenPredictInstruct,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.8,
         top_p: 0.95,
         top_k: 40,
@@ -132,7 +130,8 @@ export function buildInstructionOptions(): Options {
 /** Builds generation options tuned for concise commit message generation. */
 export function buildCommitOptions(): Options {
     return {
-        max_tokens: userConfig.apiTokenPredictInstruct,
+        num_predict: userConfig.apiTokenPredictInstruct,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.3,
         top_p: 0.95,
         top_k: 40,
@@ -142,9 +141,11 @@ export function buildCommitOptions(): Options {
 /** Builds generation options for multi-step agent conversations with tool use. */
 export function buildAgentOptions(): Options {
     return {
-        max_tokens: userConfig.apiTokenPredictInstruct,
+        num_predict: userConfig.apiTokenPredictInstruct,
+        num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.1,
         top_p: 0.5,
         top_k: 40,
+        repeat_penalty: 1.1,
     };
 }

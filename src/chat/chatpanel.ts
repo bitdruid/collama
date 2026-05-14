@@ -300,7 +300,7 @@ export class ChatPanel {
         const previousContextStartIndex = session.contextStartIndex || 0;
         const { trimmedMessages, turnsRemoved, tokensFreed, messagesRemoved } = await trimMessagesForContext(
             messages,
-            options.max_tokens,
+            options.num_predict,
             userConfig.apiTokenContextLenInstruct,
             previousContextStartIndex,
         );

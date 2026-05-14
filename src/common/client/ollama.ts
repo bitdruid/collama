@@ -1,6 +1,7 @@
 import { Ollama } from "ollama";
 
-import type { LlmGenerateClient, LlmGenerateSettings } from "./types";
+import { nextToolId } from "../litellmfix";
+import type { ChatResult, LlmChatSettings, LlmClient, LlmGenerateSettings, ToolCall } from "./types";
 import { buildStopTokens, cleanupResult, handleError, logPerformance, logRequest, proxyFetch } from "./utils";
 
 /** Creates an Ollama SDK client for the configured host and optional bearer token. */
@@ -12,12 +13,95 @@ export function requestOllama(url: string, bearer?: string): Ollama {
     });
 }
 
-/** Provider implementation for Ollama's prompt generation API (used for autocomplete). */
-export class OllamaClient implements LlmGenerateClient {
+/**
+ * Converts internal OpenAI-compatible tool call messages into Ollama's format.
+ *
+ * The rest of the extension stores tool arguments as JSON strings, but Ollama
+ * expects plain objects in assistant tool call messages.
+ */
+function toOllamaMessages(messages: any[]): any[] {
+    return messages.map((msg) => {
+        if (msg.role === "assistant" && msg.tool_calls) {
+            return {
+                ...msg,
+                tool_calls: msg.tool_calls.map((tc: ToolCall) => ({
+                    ...tc,
+                    function: {
+                        ...tc.function,
+                        arguments:
+                            typeof tc.function.arguments === "string"
+                                ? JSON.parse(tc.function.arguments)
+                                : tc.function.arguments,
+                    },
+                })),
+            };
+        }
+        return msg;
+    });
+}
+
+/** Provider implementation for Ollama chat and prompt generation APIs. */
+export class OllamaClient implements LlmClient {
+    /** Streams a chat response and normalizes Ollama tool calls into the shared shape. */
+    async chat(
+        settings: LlmChatSettings,
+        onChunk?: (chunk: string) => void,
+        _onReasoning?: (chunk: string) => void,
+    ): Promise<ChatResult> {
+        try {
+            const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
+            logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
+
+            const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
+            const stream = await ollama.chat({
+                model,
+                messages: toOllamaMessages(messages),
+                ...(tools.length > 0 ? { tools } : {}),
+                stream: true,
+                options: { ...options, stop: buildStopTokens(stop) },
+            });
+
+            let result = "";
+            let resultTokens = 0;
+            const toolCalls: ToolCall[] = [];
+
+            for await (const part of stream) {
+                if (signal?.aborted) {
+                    break;
+                }
+
+                const chunk = part.message.content ?? "";
+                if (chunk) {
+                    result += chunk;
+                    onChunk?.(chunk);
+                }
+
+                if (part.message.tool_calls) {
+                    for (const tc of part.message.tool_calls) {
+                        toolCalls.push({
+                            id: nextToolId(),
+                            type: "function",
+                            function: { name: tc.function.name, arguments: JSON.stringify(tc.function.arguments) },
+                        });
+                    }
+                }
+                if (part.done) {
+                    resultTokens = part.prompt_eval_count ?? 0;
+                    const resultDurationNano = part.eval_duration ?? 0;
+                    logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
+                }
+            }
+
+            return { content: cleanupResult(result, resultTokens, options), toolCalls };
+        } catch (err) {
+            return handleError(err);
+        }
+    }
+
     /** Generates a single prompt completion through Ollama's generate endpoint. */
     async generate(settings: LlmGenerateSettings): Promise<string> {
         try {
-            const { apiEndpoint, model, prompt, options, num_ctx, stop } = settings;
+            const { apiEndpoint, model, prompt, options, stop } = settings;
             logRequest(apiEndpoint.url, model, options, stop, prompt);
 
             const ollama = requestOllama(apiEndpoint.url, apiEndpoint.bearer);
@@ -26,20 +110,13 @@ export class OllamaClient implements LlmGenerateClient {
                 prompt,
                 raw: true,
                 stream: false,
-                options: {
-                    num_predict: options.max_tokens,
-                    temperature: options.temperature,
-                    top_p: options.top_p,
-                    top_k: options.top_k,
-                    num_ctx,
-                    stop: buildStopTokens(stop),
-                },
+                options: { ...options, stop: buildStopTokens(stop) },
             });
 
             const result = response.response ?? "";
             const resultTokens = response.eval_count ?? 0;
             const resultDurationNano = response.eval_duration ?? 0;
-            logPerformance(options.max_tokens, resultTokens, resultDurationNano, result);
+            logPerformance(options.num_predict, resultTokens, resultDurationNano, result);
 
             return cleanupResult(result, resultTokens, options);
         } catch (err) {
