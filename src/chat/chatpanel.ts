@@ -2,8 +2,8 @@ import * as vscode from "vscode";
 
 import { shouldDeduplicateToolResult } from "../agent/tools";
 import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
-import { ChatContext, ChatHistory } from "../common/context-chat";
 import { buildInstructionOptions, ToolCall } from "../common/client";
+import { ChatContext, ChatHistory } from "../common/context-chat";
 import { getUserConfigSnapshot, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { AgentRunner } from "./agent-runner";
@@ -13,7 +13,8 @@ import { SessionHandlers } from "./handlers/session-handlers";
 import { handleSummarizeRequest } from "./handlers/summary-handlers";
 import { SessionManager } from "./session-manager";
 import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils-back";
-import { StartPage } from "./web/components/chat-start";
+import { StartPage } from "./web/chat-init";
+
 
 /**
  * Encapsulates the chat panel logic within the extension.

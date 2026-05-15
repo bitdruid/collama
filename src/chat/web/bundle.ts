@@ -2,4 +2,5 @@
  * Bundle entry point for chat components
  */
 
-import "./components";
+import "./chat-root";
+import "./chat-root/components";
