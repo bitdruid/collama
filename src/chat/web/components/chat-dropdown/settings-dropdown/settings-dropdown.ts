@@ -73,7 +73,6 @@ export class SettingsDropdown extends BaseDropdown {
                     this.config.agentic && !this.config.enableEditTools,
                 )}
                 ${this._renderToggle("Shell Tool", "enableShellTool", this.config.enableShellTool)}
-                ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking)}
                 ${this._renderVerbosityMode()}
             </section>
             <section class="settings-section">
@@ -83,7 +82,8 @@ export class SettingsDropdown extends BaseDropdown {
                 ${this._renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this._updateSnakeEyecandy)}
             </section>
             <section class="settings-section">
-                <h4>Project</h4>
+                <h4>Agent</h4>
+                ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking)}
                 ${this._renderAgentsMdIndicator()}
             </section>
         `;

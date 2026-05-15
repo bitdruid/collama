@@ -31,8 +31,7 @@ const bannerTags: Record<AccordionType, string> = {
  * @property {AccordionType} type - The type of accordion, dictating the icon and behavior.
  * @property {boolean} expanded - Whether the accordion content is currently visible.
  * @property {string} code - The raw code string to display and highlight (rendered as <pre><code>).
- * @property {string} body - Plain-text body to display with preserved whitespace (rendered as <div>).
- *                           If both `code` and `body` are empty, the default <slot> is used.
+ *                          If empty, the default <slot> is used for arbitrary slotted content.
  * @property {string} copyCode - Specific text to copy when clicking the copy button (defaults to `code`).
  * @property {string} language - The language identifier for syntax highlighting (e.g., 'typescript', 'python').
  */
@@ -45,49 +44,21 @@ export class ChatAccordion extends LitElement {
     @property({ type: String }) type: AccordionType = "code";
     @state() expanded: boolean = false;
     @property({ type: String }) code: string = "";
-    @property({ type: String }) body: string = "";
     @property({ type: String }) copyCode: string = "";
     @property({ type: String }) language: string = "";
 
     private _highlighted = false;
     private _copyText = "Copy";
-    private _highlightTimer: number | undefined;
     private _copyResetTimer: number | undefined;
 
-    /**
-     * Called when the element is added to the document's DOM.
-     * Standard code accordions are always expanded by default.
-     */
     connectedCallback() {
         super.connectedCallback();
-        // Standard code accordions should always be expanded
         if (this.type === "code") {
             this.expanded = true;
         }
     }
 
-    /**
-     * Called after the element's DOM has been updated the first time.
-     * Defers syntax highlighting to ensure only the final, stable instance
-     * processes the code block, preventing wasted resources on temporary
-     * instances created during streaming re-renders.
-     */
-    firstUpdated() {
-        if (this.expanded && !this._highlighted) {
-            this._highlightTimer = window.setTimeout(() => {
-                if (this.isConnected && !this._highlighted) {
-                    this._highlightCode();
-                }
-                this._highlightTimer = undefined;
-            }, 500);
-        }
-    }
-
     disconnectedCallback() {
-        if (this._highlightTimer !== undefined) {
-            clearTimeout(this._highlightTimer);
-            this._highlightTimer = undefined;
-        }
         if (this._copyResetTimer !== undefined) {
             clearTimeout(this._copyResetTimer);
             this._copyResetTimer = undefined;
@@ -96,14 +67,23 @@ export class ChatAccordion extends LitElement {
     }
 
     /**
-     * Toggles the expanded state of the accordion.
-     * Triggers code highlighting if the accordion is being expanded for the first time.
+     * Public entry point. Called by chat-output once per accordion after
+     * streaming ends or on history mount. Idempotent.
      */
+    public async highlight() {
+        if (this._highlighted) {
+            return;
+        }
+        await this.updateComplete;
+        if (!this._highlighted) {
+            this._highlighted = highlightCodeBlock(this.shadowRoot, "pre code", this.language || undefined);
+        }
+    }
+
     private _toggle() {
         this.expanded = !this.expanded;
-        // Highlight on first expand
         if (this.expanded && !this._highlighted) {
-            this._highlightCode();
+            this.highlight();
         }
     }
 
@@ -126,18 +106,6 @@ export class ChatAccordion extends LitElement {
         } catch (err) {
             console.error("Failed to copy:", err);
         }
-    }
-
-    /**
-     * Performs syntax highlighting on the code block.
-     * Runs inside requestAnimationFrame to ensure DOM readiness and prevents re-highlighting.
-     */
-    private _highlightCode() {
-        requestAnimationFrame(() => {
-            if (!this._highlighted) {
-                this._highlighted = highlightCodeBlock(this.shadowRoot, "pre code", this.language || undefined);
-            }
-        });
     }
 
     /**
@@ -178,11 +146,7 @@ export class ChatAccordion extends LitElement {
                 <div class="accordion-content-wrapper ${this.expanded ? "expanded" : ""}">
                     <div class="accordion-content">
                         <div class="accordion-content-inner">
-                            ${this.code
-                                ? html`<pre><code>${this.code}</code></pre>`
-                                : this.body
-                                  ? html`<div class="plain-body">${this.body}</div>`
-                                  : html`<slot></slot>`}
+                            ${this.code ? html`<pre><code>${this.code}</code></pre>` : html`<slot></slot>`}
                         </div>
                     </div>
                 </div>

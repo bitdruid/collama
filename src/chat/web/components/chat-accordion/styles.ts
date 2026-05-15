@@ -70,11 +70,6 @@ export const accordionStyles = [
             overflow-x: visible;
         }
 
-        .accordion-content .plain-body {
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
         /* think/summary: wrap prose, no horizontal scroll */
         .accordion.type-think .accordion-content-inner,
         .accordion.type-summary .accordion-content-inner {

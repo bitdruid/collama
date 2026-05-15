@@ -164,16 +164,12 @@ function createChatMarkdown(): MarkdownIt {
         let accordionType = "code";
         let expandedAttr = "expanded";
         let languageAttr = "";
-        let contentAttr = `code="${escapedCode}"`;
+        const contentAttr = `code="${escapedCode}"`;
 
         let label = lang;
         let description = "";
 
-        if (lang.startsWith("Think:")) {
-            accordionType = "think";
-            expandedAttr = "";
-            contentAttr = `body="${escapedCode}"`;
-        } else if (lang.startsWith("Summary:")) {
+        if (lang.startsWith("Summary:")) {
             accordionType = "summary";
             expandedAttr = "";
             languageAttr = 'language="markdown"';

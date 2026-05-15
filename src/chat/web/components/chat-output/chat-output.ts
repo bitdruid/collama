@@ -169,6 +169,16 @@ export class ChatOutput extends LitElement {
                 this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
             });
         }
+        if ((changed.has("messages") || changed.has("isGenerating")) && !this.isGenerating) {
+            this._highlightAllAccordions();
+        }
+    }
+
+    private _highlightAllAccordions() {
+        const accordions = this.shadowRoot?.querySelectorAll("collama-accordion");
+        accordions?.forEach((el) => {
+            (el as HTMLElement & { highlight?: () => void }).highlight?.();
+        });
     }
 
     render() {

@@ -55,8 +55,11 @@ export const settingsDropdownStyles = css`
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        text-decoration: underline;
-        text-underline-offset: 2px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: ${themeColors.uiBackground};
+        border: 1px solid ${themeColors.uiBorder};
+        text-decoration: none;
     }
 
     .agents-md-active {
