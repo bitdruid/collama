@@ -17,6 +17,7 @@ export class ControlPanelButtons extends LitElement {
 
     @property({ type: Array }) contexts: AttachedContext[] = [];
     @property({ type: Boolean }) isGenerating = false;
+    @property({ type: Boolean }) isSummarizing = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
@@ -50,7 +51,12 @@ export class ControlPanelButtons extends LitElement {
     private handleClearChatConfirmed = () => emit(this, "clear-chat");
     private handleClearConfirmClose = () => (this.showClearConfirm = false);
     private handleToggleContextTree = () => this._toggleContextTree();
-    private handleCancel = () => emit(this, "cancel");
+    private handleCancel = () => {
+        if (this.isSummarizing) {
+            return;
+        }
+        emit(this, "cancel");
+    };
     private handleToggleGallery = () => (this.showGallery = true);
     private handleSummarizeConversation = () => emit(this, "summarize-conversation");
     private handleSubmitClick = () => emit(this, "submit-click");
@@ -139,7 +145,9 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderCancel() {
         return html`
-            <button-cancel title="Cancel" @click=${this.handleCancel}> ${themeIcons.x.medium} </button-cancel>
+            <button-cancel title="Cancel" ?disabled=${this.isSummarizing} @click=${this.handleCancel}>
+                ${themeIcons.x.medium}
+            </button-cancel>
         `;
     }
 

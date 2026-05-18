@@ -139,5 +139,12 @@ export function registerChatProvider(extContext: vscode.ExtensionContext) {
             panel.renderPanel();
         },
     };
-    extContext.subscriptions.push(vscode.window.registerWebviewViewProvider("collama_chatview", provider));
+    // retainContextWhenHidden keeps the webview's DOM/JS state alive when the
+    // view is hidden (e.g. activity-bar panel switch), so in-flight generations,
+    // open tool-confirm modals, and summary progress survive a return.
+    extContext.subscriptions.push(
+        vscode.window.registerWebviewViewProvider("collama_chatview", provider, {
+            webviewOptions: { retainContextWhenHidden: true },
+        }),
+    );
 }

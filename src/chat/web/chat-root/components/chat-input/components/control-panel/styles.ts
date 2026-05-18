@@ -98,8 +98,12 @@ export const controlPanelButtonStyles = css`
     button-cancel {
         ${themeAnimations.loadingPulse(themeColors.cancel)}
     }
-    button-cancel:hover {
+    button-cancel:hover:not([disabled]) {
         background-color: ${themeColors.cancelHover};
+    }
+    button-cancel[disabled] {
+        cursor: not-allowed;
+        opacity: 0.45;
     }
 
     button-compress {

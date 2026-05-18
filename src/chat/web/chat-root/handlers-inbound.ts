@@ -143,6 +143,7 @@ function handleAgentTokens(host: ChatRoot, msg: any) {
 /** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
 function handleChatComplete(host: ChatRoot, msg: any) {
     host.isGenerating = false;
+    host.isSummarizing = false;
     host.agentToken = 0;
     host.hasTokenData = false;
     host.contextUsed = msg.contextUsed ?? 0;
@@ -211,6 +212,7 @@ function handleToolDecisionRequest(host: ChatRoot, msg: any) {
 /** Displays the error modal with exported chat and error details when the agent throws. */
 function handleAgentError(host: ChatRoot, msg: any) {
     host.isGenerating = false;
+    host.isSummarizing = false;
     host.agentToken = 0;
     host.hasTokenData = false;
 

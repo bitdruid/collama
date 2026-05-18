@@ -43,7 +43,7 @@ export function onSubmit(host: ChatRoot, e: CustomEvent) {
 
 /** Signals the host to abort the in-flight LLM request. */
 export function onCancel(host: ChatRoot) {
-    if (!host.isGenerating) {
+    if (!host.isGenerating || host.isSummarizing) {
         return;
     }
     backendApi.cancel();
@@ -58,6 +58,7 @@ export function onSummarizeConversation(host: ChatRoot) {
     const totalMessages = host.chatContext.length();
 
     host.isGenerating = true;
+    host.isSummarizing = true;
 
     showToast("Summarizing conversation...");
     backendApi.summarize(0, totalMessages, host.activeSessionId);
@@ -160,6 +161,7 @@ export function onSummarizeTurn(host: ChatRoot, e: CustomEvent) {
     const turnEnd = host.chatContext?.getTurnEnd(messageIndex) ?? messageIndex;
 
     host.isGenerating = true;
+    host.isSummarizing = true;
 
     showToast("Summarizing turn...");
     logWebview(`Summarizing turn at index ${messageIndex}`);

@@ -11,6 +11,7 @@ export class ChatInput extends LitElement {
 
     @property({ type: Array }) contexts: AttachedContext[] = [];
     @property({ type: Boolean }) isGenerating = false;
+    @property({ type: Boolean }) isSummarizing = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
     @property({ type: Boolean }) isGhost = false;
@@ -33,6 +34,7 @@ export class ChatInput extends LitElement {
                 class="panel active"
                 .contexts=${this.contexts}
                 .isGenerating=${this.isGenerating}
+                .isSummarizing=${this.isSummarizing}
                 .agentToken=${this.agentToken}
                 .hasTokenData=${this.hasTokenData}
                 .isGhost=${this.isGhost}

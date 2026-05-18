@@ -62,6 +62,7 @@ export class ChatRoot extends LitElement {
     @property({ type: Array }) sessions: ChatSession[] = [];
     @property({ type: Boolean }) hasTokenData: boolean = false;
     @property({ type: Boolean, reflect: true }) isGenerating: boolean = false;
+    @property({ type: Boolean, reflect: true }) isSummarizing: boolean = false;
     @property({ type: Number }) agentToken: number = 0;
     @property({ type: Number }) contextMax: number = 0;
     @property({ type: Number }) contextUsed: number = 0;
@@ -530,6 +531,7 @@ export class ChatRoot extends LitElement {
                     @context-add=${onContextAdd}
                     .contexts=${this.currentContexts}
                     .isGenerating=${this.isGenerating}
+                    .isSummarizing=${this.isSummarizing}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
                     .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}

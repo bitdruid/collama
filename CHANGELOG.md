@@ -1,6 +1,11 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.14] - 2026-05-14
+
+### Fixed
+- Prevent webview from destruction when closing (persist chat state)
+
 ## [1.7.13] -  2026-05-14
 
 ### Fixed
