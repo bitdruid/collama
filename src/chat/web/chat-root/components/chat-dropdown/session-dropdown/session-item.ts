@@ -9,16 +9,22 @@ function formatDate(timestamp: number): string {
     const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const diffDays = (startOfDay(today) - startOfDay(date)) / 86400000;
 
+    const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
     if (diffDays === 0) {
-        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        // Today: show time only
+        return time;
     }
     if (diffDays === 1) {
-        return "Yesterday";
+        // Yesterday: show "Yesterday · time"
+        return `Yesterday · ${time}`;
     }
     if (diffDays < 7) {
-        return date.toLocaleDateString([], { weekday: "short" });
+        // This week: show "Fri · time"
+        return `${date.toLocaleDateString([], { weekday: "short" })} · ${time}`;
     }
-    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+    // Older: show "Jan 15 · time"
+    return `${date.toLocaleDateString([], { month: "short", day: "numeric" })} · ${time}`;
 }
 
 @customElement("collama-session-item")

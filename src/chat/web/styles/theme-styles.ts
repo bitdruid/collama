@@ -29,9 +29,8 @@ const hover = css`
 
 const boxShadow = css`
     box-shadow:
-        0 2px 8px ${themeColors.uiShadow},
-        0 8px 32px ${themeColors.uiShadow},
-        0 0 48px ${themeColors.uiShadow};
+        0 1px 4px ${themeColors.uiShadow},
+        0 4px 16px ${themeColors.uiShadow};
 `;
 
 const input = css`

@@ -91,11 +91,13 @@ function handleEditSend(host: UserMessageHost, e: CustomEvent) {
 
 export function renderUserMessage(opts: UserRenderOptions) {
     const { host, messages, msg, index, isGenerating, outOfContextClass, warningIcon } = opts;
+    const datetime = msg.customKeys?.datetime;
     return html`
         <div class="message user ${outOfContextClass}">
             <div class="bubble bubble-user">
                 <div class="role-header role-user">
                     <span class="role-label">${warningIcon}User</span>
+                    ${datetime ? html`<span class="role-datetime">${new Date(datetime).toLocaleString()}</span>` : ""}
                     <div class="message-actions">
                         <button
                             class="edit-button"

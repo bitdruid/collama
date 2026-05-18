@@ -21,6 +21,7 @@ export interface CustomMessageKeys {
     msgTokens?: number;
     id?: string;
     thinking?: string;
+    datetime?: number;
 }
 
 export type ChatHistory =
@@ -57,14 +58,17 @@ function nextMessageId(): string {
 }
 
 function ensureMessageId<T extends ChatHistory>(message: T): T {
-    if (message.customKeys?.id) {
+    const hasId = message.customKeys?.id !== undefined;
+    const hasDatetime = message.customKeys?.datetime !== undefined;
+    if (hasId && hasDatetime) {
         return message;
     }
     return {
         ...message,
         customKeys: {
             ...message.customKeys,
-            id: nextMessageId(),
+            id: hasId ? undefined : nextMessageId(),
+            datetime: hasDatetime ? undefined : Date.now(),
         },
     };
 }

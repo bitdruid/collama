@@ -18,7 +18,7 @@ export const userStyles = css`
     .message-actions {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 1px;
     }
 
     .resend-button,
@@ -29,7 +29,7 @@ export const userStyles = css`
         align-items: center;
         justify-content: center;
         gap: 4px;
-        padding: 2px 6px;
+        padding: 4px;
         border: none;
         ${themeStyles.borderRadius.small}
         background: transparent;

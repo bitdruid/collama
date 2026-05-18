@@ -32,6 +32,14 @@ export const outputStyles = [
             flex: 1;
         }
 
+        .role-datetime {
+            font-size: 0.8em;
+            font-weight: normal;
+            opacity: 0.8;
+            margin-left: 8px;
+            margin-right: 8px;
+        }
+
         .message {
             margin-bottom: 0;
         }
