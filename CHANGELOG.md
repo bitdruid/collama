@@ -1,6 +1,12 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.13] -  2026-05-14
+
+### Fixed
+- No markdown in decisions
+- Wait before use of LSP diagnostics
+
 ## [1.7.12] - 2026-05-14
 
 ### Added

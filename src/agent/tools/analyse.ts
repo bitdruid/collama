@@ -30,16 +30,45 @@ interface ReferenceEntry {
 type AnalyseOutput =
     | {
           mode: "diagnostics";
-          diagnostics?: DiagnosticEntry[];
-          diagnosticsByFile?: Record<string, DiagnosticEntry[]>;
+          diagnostics: DiagnosticEntry[];
           count: number;
-          fileCount?: number;
       }
     | {
           mode: "references";
           references: ReferenceEntry[];
           count: number;
       };
+
+/**
+ * Waits for the LSP to publish diagnostics for the given URI.
+ * Resolves after a quiet period (no new events for `quietMs`) or a hard timeout.
+ * Without this, `getDiagnostics` returns whatever was last published — often empty right after opening/editing.
+ */
+async function waitForDiagnostics(uri: vscode.Uri, timeoutMs = 2500, quietMs = 400): Promise<void> {
+    return new Promise((resolve) => {
+        const uriStr = uri.toString();
+        let quietTimer: NodeJS.Timeout;
+        let done = false;
+        const finish = () => {
+            if (done) {
+                return;
+            }
+            done = true;
+            sub.dispose();
+            clearTimeout(hardTimer);
+            clearTimeout(quietTimer);
+            resolve();
+        };
+        const sub = vscode.languages.onDidChangeDiagnostics((e) => {
+            if (e.uris.some((u) => u.toString() === uriStr)) {
+                clearTimeout(quietTimer);
+                quietTimer = setTimeout(finish, quietMs);
+            }
+        });
+        const hardTimer = setTimeout(finish, timeoutMs);
+        quietTimer = setTimeout(finish, quietMs);
+    });
+}
 
 function mapDiagnostic(d: vscode.Diagnostic): DiagnosticEntry {
     return {
@@ -53,48 +82,26 @@ function mapDiagnostic(d: vscode.Diagnostic): DiagnosticEntry {
 }
 
 /**
- * Runs diagnostics mode to retrieve LSP errors/warnings from the language server.
+ * Runs diagnostics mode to retrieve LSP errors/warnings from the language server for a specific file.
+ * Waits for the LSP to settle so results are accurate after recent edits.
  *
  * @param root - Absolute path to the workspace root directory
- * @param filePath - Optional relative path to a specific file. If omitted, returns diagnostics for all files.
- * @returns A ToolAnswer containing either a filtered diagnostics array (for single file) or diagnostics grouped by file (for all files)
+ * @param filePath - Relative path to a specific file.
+ * @returns A ToolAnswer containing a filtered diagnostics array.
  */
-async function runDiagnostics(root: string, filePath: string | undefined): Promise<ToolAnswer<AnalyseOutput>> {
-    if (filePath) {
-        const fullPath = path.resolve(root, filePath);
-        if (!isWithinRoot(root, fullPath)) {
-            return toolError("Path must not escape the workspace root");
-        }
-        const uri = vscode.Uri.file(fullPath);
-        await vscode.workspace.openTextDocument(uri);
-        const filtered = vscode.languages
-            .getDiagnostics(uri)
-            .filter((d) => d.severity <= MAX_SEVERITY)
-            .map(mapDiagnostic);
-        return toolSuccess({ mode: "diagnostics", diagnostics: filtered, count: filtered.length });
+async function runDiagnostics(root: string, filePath: string): Promise<ToolAnswer<AnalyseOutput>> {
+    const fullPath = path.resolve(root, filePath);
+    if (!isWithinRoot(root, fullPath)) {
+        return toolError("Path must not escape the workspace root");
     }
-
-    const all = vscode.languages.getDiagnostics();
-    const diagnosticsByFile: Record<string, DiagnosticEntry[]> = {};
-    let totalCount = 0;
-
-    for (const [uri, diagnostics] of all) {
-        if (!isWithinRoot(root, uri.fsPath)) {
-            continue;
-        }
-        const filtered = diagnostics.filter((d) => d.severity <= MAX_SEVERITY).map(mapDiagnostic);
-        if (filtered.length > 0) {
-            diagnosticsByFile[path.relative(root, uri.fsPath)] = filtered;
-            totalCount += filtered.length;
-        }
-    }
-
-    return toolSuccess({
-        mode: "diagnostics",
-        diagnosticsByFile,
-        count: totalCount,
-        fileCount: Object.keys(diagnosticsByFile).length,
-    });
+    const uri = vscode.Uri.file(fullPath);
+    await vscode.workspace.openTextDocument(uri);
+    await waitForDiagnostics(uri);
+    const filtered = vscode.languages
+        .getDiagnostics(uri)
+        .filter((d) => d.severity <= MAX_SEVERITY)
+        .map(mapDiagnostic);
+    return toolSuccess({ mode: "diagnostics", diagnostics: filtered, count: filtered.length });
 }
 
 /**
@@ -170,6 +177,9 @@ export async function analyse_exec(args: {
 
     try {
         if (args.mode === "diagnostics") {
+            if (!args.filePath) {
+                return toolError("diagnostics mode requires filePath");
+            }
             return await runDiagnostics(root, args.filePath);
         }
         if (args.mode === "references") {
@@ -190,7 +200,7 @@ export const analyse_def = {
     function: {
         name: "analyse",
         description:
-            "Language-server analysis. mode='diagnostics' returns errors/warnings/hints (use after editing to verify changes). mode='references' finds all references to the symbol at a given location.",
+            "Language-server analysis for a single file. mode='diagnostics' returns errors/warnings for the given filePath — call this after editing a file to verify the changes. mode='references' finds all references to the symbol at a given location.",
         parameters: {
             type: "object",
             properties: {
@@ -206,8 +216,7 @@ export const analyse_def = {
                 },
                 filePath: {
                     type: "string",
-                    description:
-                        "Path relative to workspace root. For 'diagnostics' optional (omit for all files). For 'references' required.",
+                    description: "Path relative to workspace root. Required for both modes.",
                 },
                 line: {
                     type: "number",
