@@ -25,6 +25,7 @@ export function createInboundDispatcher(host: ChatRoot) {
         "summary-error": (m) => handleSummaryError(host, m),
         "summary-progress": (m) => handleSummaryProgress(host, m),
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
+        "tool-decision-request": (m) => handleToolDecisionRequest(host, m),
     };
     return (msg: any) => handlers[msg.type]?.(msg);
 }
@@ -188,6 +189,18 @@ function handleToolConfirmRequest(host: ChatRoot, msg: any) {
     host.toolConfirmRequest = { id: msg.id, action: msg.action, filePath: msg.filePath, explanation: msg.explanation };
     host.activeModal = "toolConfirm";
     logWebview(`Tool confirm request: ${msg.action} ${msg.filePath}`);
+    host.updateComplete.then(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => host.scrollToBottom());
+        });
+    });
+}
+
+/** Shows the decision modal when the agent asks the user to pick between options. */
+function handleToolDecisionRequest(host: ChatRoot, msg: any) {
+    host.toolDecisionRequest = { id: msg.id, question: msg.question, options: msg.options };
+    host.activeModal = "toolDecision";
+    logWebview(`Tool decision request: ${msg.question}`);
     host.updateComplete.then(() => {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => host.scrollToBottom());

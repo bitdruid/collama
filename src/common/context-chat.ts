@@ -1,5 +1,7 @@
 import { ToolCall } from "./client";
 
+export type ToolHistoryPolicy = "dedupeExactArgs" | "keepAll" | "dropAll";
+
 export interface AttachedContext {
     fileName: string;
     filePath: string;
@@ -303,20 +305,63 @@ export class ChatContext {
     }
 
     /**
-     * Replaces stale tool results with a short note when a non-mutating tool is re-run
-     * with identical structured arguments.
+     * Applies the per-tool history policy.
+     *
+     * Called with `newToolCallId` after each tool execution: runs `dedupeExactArgs`
+     * (replaces earlier same-tool, same-args results) and `dropAll` (replaces all
+     * earlier same-tool results regardless of args).
+     *
+     * Called without `newToolCallId` at turn-end: sweeps every tool response whose
+     * policy is `dropAll` and replaces its content with a placeholder.
+     *
+     * `keepAll` is always a noop.
      */
-    public deduplicateToolResult(newToolCallId: string, shouldDeduplicate: (toolName: string) => boolean): void {
+    public applyToolHistoryPolicy(getPolicy: (toolName: string) => ToolHistoryPolicy, newToolCallId?: string): void {
+        if (newToolCallId !== undefined) {
+            this._applyPolicyForNewToolCall(getPolicy, newToolCallId);
+        } else {
+            this._sweepDropAllPolicies(getPolicy);
+        }
+    }
+
+    /** Sweeps all tool responses at turn-end, marking `dropAll` tools as stale. */
+    private _sweepDropAllPolicies(getPolicy: (toolName: string) => ToolHistoryPolicy): void {
+        for (let i = 0; i < this.length(); i++) {
+            const toolCallId = this.getToolCallId(i);
+            if (!toolCallId) {
+                continue;
+            }
+            const tc = this.findToolCall(toolCallId);
+            if (!tc) {
+                continue;
+            }
+            if (getPolicy(tc.function.name) === "dropAll") {
+                this.setToolResponse(toolCallId, { content: "[stale - dropped after turn]" });
+            }
+        }
+    }
+
+    /** Applies dedupe/drop policy for a newly executed tool call. */
+    private _applyPolicyForNewToolCall(
+        getPolicy: (toolName: string) => ToolHistoryPolicy,
+        newToolCallId: string,
+    ): void {
         const newTc = this.findToolCall(newToolCallId);
-        if (!newTc || !shouldDeduplicate(newTc.function.name)) {
+        if (!newTc) {
+            return;
+        }
+        const policy = getPolicy(newTc.function.name);
+        if (policy === "keepAll") {
             return;
         }
 
-        let newArgsKey: string;
-        try {
-            newArgsKey = stableStringify(JSON.parse(newTc.function.arguments));
-        } catch {
-            return;
+        let newArgsKey: string | undefined;
+        if (policy === "dedupeExactArgs") {
+            try {
+                newArgsKey = stableStringify(JSON.parse(newTc.function.arguments));
+            } catch {
+                return;
+            }
         }
 
         for (let i = 0; i < this.length(); i++) {
@@ -326,6 +371,11 @@ export class ChatContext {
             }
             const tc = this.findToolCall(toolCallId);
             if (!tc || tc.function.name !== newTc.function.name) {
+                continue;
+            }
+
+            if (policy === "dropAll") {
+                this.setToolResponse(toolCallId, { content: "[stale - dropped after turn]" });
                 continue;
             }
 

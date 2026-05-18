@@ -72,7 +72,12 @@ export class SettingsDropdown extends BaseDropdown {
                     this.config.enableEditTools,
                     this.config.agentic && !this.config.enableEditTools,
                 )}
-                ${this._renderToggle("Shell Tool", "enableShellTool", this.config.enableShellTool)}
+                ${this._renderToggle(
+                    "Shell Tool",
+                    "enableShellTool",
+                    this.config.enableShellTool,
+                    this.config.agentic && !this.config.enableShellTool,
+                )}
                 ${this._renderVerbosityMode()}
             </section>
             <section class="settings-section">

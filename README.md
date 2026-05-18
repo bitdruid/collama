@@ -195,7 +195,10 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
     - `gitDiff` - Show working tree, staged, or commit/branch diffs
 
 - **Code Analysis**
-    - `getDiagnostics` - Show language server diagnostics such as errors, warnings, info, and hints
+    - `analyse` - Language-server analysis. `mode='diagnostics'` returns errors/warnings/hints. `mode='references'` finds all usages of a symbol at a given location
+
+- **Decision**
+    - `decision` - Ask the user to choose between options when the right next step is ambiguous
 
 - **Edit Tools**
     - `edit` - Replace an exact string in a workspace file with preview and confirmation

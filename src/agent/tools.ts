@@ -1,9 +1,11 @@
 import os from "os";
 import path from "path";
 import * as vscode from "vscode";
+import { ToolHistoryPolicy } from "../common/context-chat";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
-import { getDiagnostics_def, getDiagnostics_exec } from "./tools/analyse";
+import { analyse_def, analyse_exec } from "./tools/analyse";
+import { decision_def, decision_exec } from "./tools/decision";
 import {
     create_def,
     create_exec,
@@ -20,7 +22,7 @@ import { shell_def, shell_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
 export type ToolCategory = "explore" | "git" | "edit" | "analyse" | "shell"; // | "fetch";
-export type ToolHistoryPolicy = "dedupeExactArgs" | "keepAll";
+export type { ToolHistoryPolicy };
 
 export interface ToolAnswer<TOutput = unknown> {
     success: boolean;
@@ -138,8 +140,8 @@ function getAllowedTools() {
     });
 }
 
-export function shouldDeduplicateToolResult(toolName: string): boolean {
-    return toolRegistry[toolName]?.historyPolicy === "dedupeExactArgs";
+export function getToolHistoryPolicy(toolName: string): ToolHistoryPolicy {
+    return toolRegistry[toolName]?.historyPolicy ?? "keepAll";
 }
 
 /**
@@ -289,7 +291,7 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     },
     gitDiff: {
         category: "git",
-        historyPolicy: "dedupeExactArgs",
+        historyPolicy: "dropAll",
         definition: gitDiff_def,
         targetKey: (args) => {
             const from = formatGitRefTarget(args.fromCommit);
@@ -335,11 +337,22 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: delete_exec,
     },
-    getDiagnostics: {
+    analyse: {
         category: "analyse",
-        historyPolicy: "dedupeExactArgs",
-        definition: getDiagnostics_def,
-        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
-        execute: getDiagnostics_exec,
+        historyPolicy: "dropAll",
+        definition: analyse_def,
+        targetKey: (args) => {
+            const mode = formatToolTargetValue("mode", args.mode);
+            const file = formatToolTargetValue("filePath", args.filePath);
+            return file ? `${mode}: ${file}` : mode;
+        },
+        execute: analyse_exec,
+    },
+    decision: {
+        category: "edit",
+        historyPolicy: "dropAll",
+        definition: decision_def,
+        targetKey: (args) => formatToolTargetValue("question", args.question),
+        execute: decision_exec,
     },
 };

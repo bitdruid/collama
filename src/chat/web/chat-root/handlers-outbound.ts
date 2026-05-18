@@ -275,6 +275,15 @@ export function onToolConfirmCancel(host: ChatRoot, e: CustomEvent) {
     backendApi.toolConfirmResponse(id, "cancel", reason);
 }
 
+/** Responds to a decision request with the user's chosen option. */
+export function onToolDecisionSelect(host: ChatRoot, e: CustomEvent) {
+    const { id, value } = e.detail;
+    host.toolDecisionRequest = null;
+    host.activeModal = "";
+    logWebview(`Tool decision select: ${id} → ${value}`);
+    backendApi.toolDecisionResponse(id, value);
+}
+
 /** Updates the scroll button visibility based on near-bottom state. */
 export function onNearBottomChanged(host: ChatRoot, e: CustomEvent) {
     host.showScrollButton = !e.detail.nearBottom;

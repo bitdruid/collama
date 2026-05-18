@@ -48,6 +48,8 @@ export const backendApi = {
     exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
     toolConfirmResponse: (id: string, value: string, reason: string) =>
         window.vscode.postMessage({ type: "tool-confirm-response", id, value, reason }),
+    toolDecisionResponse: (id: string, value: string) =>
+        window.vscode.postMessage({ type: "tool-decision-response", id, value }),
     contextSearch: (query: string) => window.vscode.postMessage({ type: "context-search", query }),
     contextAdd: (filePath: string, isFolder?: boolean) =>
         window.vscode.postMessage({ type: "context-add", filePath, isFolder }),

@@ -9,9 +9,9 @@ import { getBearerInstruct } from "../secrets";
 import {
     executeTool,
     getToolDefinitions,
+    getToolHistoryPolicy,
     getToolTarget,
     resetAutoAcceptEdits,
-    shouldDeduplicateToolResult,
 } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
@@ -80,6 +80,8 @@ export class Agent {
                         const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
                         if (result.toolCalls.length === 0) {
+                            history.applyToolHistoryPolicy();
+                            onEvent?.({ type: "agent-turn-complete" });
                             break;
                         }
 
@@ -204,7 +206,7 @@ export class Agent {
             const toolResult = await executeTool(toolCall.function.name, args);
 
             history.push({ role: "tool", tool_call_id: toolCall.id, content: toolResult });
-            history.deduplicateToolResult(toolCall.id);
+            history.applyToolHistoryPolicy(toolCall.id);
 
             onEvent?.({
                 type: "agent-tool-done",
@@ -261,10 +263,10 @@ class AgentContext {
     }
 
     /**
-     * Deduplicates tool results in the conversation history for the given tool call ID.
-     * @param newToolCallId - The ID of the new tool call whose result should be checked for duplicates.
+     * Applies the per-tool history policy. With `newToolCallId`: dedupes/drops earlier
+     * same-tool results. Without: sweeps every dropAll-policy tool result.
      */
-    deduplicateToolResult(newToolCallId: string): void {
-        this.context.deduplicateToolResult(newToolCallId, shouldDeduplicateToolResult);
+    applyToolHistoryPolicy(newToolCallId?: string): void {
+        this.context.applyToolHistoryPolicy(getToolHistoryPolicy, newToolCallId);
     }
 }

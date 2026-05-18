@@ -2,7 +2,13 @@ import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext, ChatContext, ChatHistory } from "../../../common/context-chat";
 import { BaseDropdown } from "../template-components/dropdown/base-dropdown";
-import { defaultChatConfig, type ChatConfig, type ChatSession, type ToolConfirmRequest } from "../types";
+import {
+    defaultChatConfig,
+    type ChatConfig,
+    type ChatSession,
+    type ToolConfirmRequest,
+    type ToolDecisionRequest,
+} from "../types";
 import "./components/chat-dropdown";
 import { ChatSessionStore } from "./components/chat-header/chat-session-store";
 import "./components/chat-modal";
@@ -34,12 +40,13 @@ import {
     onToolConfirmAccept,
     onToolConfirmAcceptAll,
     onToolConfirmCancel,
+    onToolDecisionSelect,
 } from "./handlers-outbound";
 import { ChatRootStyles } from "./styles";
 import { backendApi } from "./utils";
 
 type ActiveDropdown = "" | "session" | "settings";
-type ActiveModal = "" | "error" | "toolConfirm" | "acquire";
+type ActiveModal = "" | "error" | "toolConfirm" | "toolDecision" | "acquire";
 
 /**
  * Root webview component that orchestrates the chat UI.
@@ -68,6 +75,7 @@ export class ChatRoot extends LitElement {
     @state() messages: ChatHistory[] = [];
     @state() showScrollButton: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
+    @state() toolDecisionRequest: ToolDecisionRequest | null = null;
     @state() acquireModalTitle = "";
     @state() acquireModalDescription = "";
     @state() errorModalContent = "";
@@ -122,6 +130,7 @@ export class ChatRoot extends LitElement {
     private handleToolConfirmAccept = (e: CustomEvent) => onToolConfirmAccept(this, e);
     private handleToolConfirmAcceptAll = (e: CustomEvent) => onToolConfirmAcceptAll(this, e);
     private handleToolConfirmCancel = (e: CustomEvent) => onToolConfirmCancel(this, e);
+    private handleToolDecisionSelect = (e: CustomEvent) => onToolDecisionSelect(this, e);
     private handleScrollDown = () => this.scrollToBottom();
     private handleErrorModalClose = () => {
         this.activeModal = "";
@@ -362,7 +371,7 @@ export class ChatRoot extends LitElement {
     }
 
     private get showSettingsBadge(): boolean {
-        return this.config.agentic && !this.config.enableEditTools;
+        return this.config.agentic && (!this.config.enableEditTools || !this.config.enableShellTool);
     }
 
     private renderActiveDropdown() {
@@ -425,6 +434,16 @@ export class ChatRoot extends LitElement {
                     @tool-confirm-accept-all=${this.handleToolConfirmAcceptAll}
                     @tool-confirm-cancel=${this.handleToolConfirmCancel}
                 ></collama-tool-confirm-modal>
+            `;
+        }
+
+        if (this.activeModal === "toolDecision" && this.toolDecisionRequest) {
+            return html`
+                <collama-tool-decision-modal
+                    autoShow
+                    .request=${this.toolDecisionRequest}
+                    @tool-decision-select=${this.handleToolDecisionSelect}
+                ></collama-tool-decision-modal>
             `;
         }
 

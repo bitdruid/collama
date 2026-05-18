@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 
-import { shouldDeduplicateToolResult } from "../agent/tools";
+import { getToolHistoryPolicy } from "../agent/tools";
+import { resolveToolDecision } from "../agent/tools/decision";
 import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { buildInstructionOptions, ToolCall } from "../common/client";
 import { ChatContext, ChatHistory } from "../common/context-chat";
@@ -50,6 +51,7 @@ export class ChatPanel {
      */
     private readonly messageHandlers: Record<string, (msg: any, webview: vscode.Webview) => void | Promise<void>> = {
         "tool-confirm-response": (msg) => resolveToolConfirm(msg.id, msg.value, msg.reason),
+        "tool-decision-response": (msg) => resolveToolDecision(msg.id, msg.value),
         "chat-ready": (_, webview) => this.handleChatReady(webview),
         "new-session": () => this.sessionHandlers.handleNewSession(),
         "new-ghost-session": () => this.sessionHandlers.handleNewGhostSession(),
@@ -360,7 +362,7 @@ export class ChatPanel {
                                 customKeys,
                             },
                         ]);
-                        s.messages.deduplicateToolResult(toolCallId, shouldDeduplicateToolResult);
+                        s.messages.applyToolHistoryPolicy(getToolHistoryPolicy, toolCallId);
                     });
                     webview.postMessage({
                         type: "agent-add-message",
@@ -401,6 +403,12 @@ export class ChatPanel {
                     webview.postMessage({
                         type: "agent-add-message",
                         message: { role: "assistant", content: "" },
+                    });
+                }
+
+                if (event.type === "agent-turn-complete") {
+                    this.sessionManager.updateSession(session, (s) => {
+                        s.messages.applyToolHistoryPolicy(getToolHistoryPolicy);
                     });
                 }
             },

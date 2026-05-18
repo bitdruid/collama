@@ -1,6 +1,21 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.12] - 2026-05-14
+
+### Added
+- **Decision tool** — agent can ask user to choose between options without interrupting the flow
+- **References mode for analyse tool** — find all usages of a symbol at a given location
+- Timestamp display for user messages in chat
+
+### Changed
+- Refactored `getDiagnostics` tool into `analyse` tool with unified diagnostics and references modes
+- Tool history policies: `analyse`, `gitDiff`, `decision` now use `dropAll` (results cleared after turn)
+- Minor styling improvements for message components
+
+### Added
+- ToolDecisionModal — modal UI for decision requests when agent asks user to choose between options
+
 ## [1.7.11] - 2026-05-14
 
 ### Added

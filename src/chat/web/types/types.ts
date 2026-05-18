@@ -37,6 +37,15 @@ export interface ToolConfirmRequest {
 }
 
 /**
+ * Tool decision request data — agent asks the user to pick an option.
+ */
+export interface ToolDecisionRequest {
+    id: string;
+    question: string;
+    options: string[];
+}
+
+/**
  * Chat-facing extension configuration snapshot.
  */
 export interface ChatConfig extends ExtensionConfig {
