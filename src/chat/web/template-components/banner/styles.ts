@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors, themeStyles } from "../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../styles";
 
 export const bannerStyles = css`
     :host {
@@ -10,7 +10,7 @@ export const bannerStyles = css`
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 10px;
+        padding: 4px 10px;
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         cursor: pointer;
@@ -19,7 +19,6 @@ export const bannerStyles = css`
         border: 1px solid ${themeColors.uiBorderDimm};
         ${themeStyles.borderRadius.medium}
         border-left: 3px solid;
-        width: 100%;
         box-sizing: border-box;
         text-align: left;
         transition: background 0.15s;
@@ -73,11 +72,11 @@ export const bannerStyles = css`
     .banner-label {
         flex: 1;
         overflow: hidden;
-        font-weight: 600;
+        font-weight: ${themeFonts.weight.semiBold};
     }
 
     .banner-description {
-        font-weight: 400;
+        font-weight: ${themeFonts.weight.normal};
         font-style: italic;
         opacity: 0.85;
         margin-left: 4px;

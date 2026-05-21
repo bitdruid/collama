@@ -20,7 +20,7 @@ export class SettingsButton extends LitElement {
                 @click=${this._handleClick}
             >
                 <span class="settings-icon">${themeIcons.settings.large}</span>
-                ${this.showBadge ? html`<span class="button-badge">!</span>` : ""}
+                ${this.showBadge ? html`<span class="button-badge"></span>` : ""}
             </button>
         `;
     }

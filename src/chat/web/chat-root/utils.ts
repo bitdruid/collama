@@ -9,7 +9,15 @@ export function buildUserContent(contexts: AttachedContext[], text: string): str
     const blocks = contexts
         .map((ctx) => {
             const label = ctx.hasSelection ? `${ctx.fileName} (${ctx.startLine}-${ctx.endLine})` : ctx.fileName;
-            return `${llmInfoTag(`filepath: ${ctx.filePath}`)}\n\`\`\`Context: ${label}\n${ctx.content}\n\`\`\``;
+            const startLine = ctx.hasSelection ? ctx.startLine : 1;
+            const content =
+                ctx.isFolder
+                    ? ctx.content
+                    : ctx.content
+                          .split("\n")
+                          .map((line, i) => `${startLine + i}\t${line}`)
+                          .join("\n");
+            return `${llmInfoTag(`filepath: ${ctx.relativePath}`)}\n\`\`\`Context: ${label}\n${content}\n\`\`\``;
         })
         .join("\n\n");
     return `${blocks}\n\n${text}`;
@@ -51,8 +59,8 @@ export const backendApi = {
     toolDecisionResponse: (id: string, value: string) =>
         window.vscode.postMessage({ type: "tool-decision-response", id, value }),
     contextSearch: (query: string) => window.vscode.postMessage({ type: "context-search", query }),
-    contextAdd: (filePath: string, isFolder?: boolean) =>
-        window.vscode.postMessage({ type: "context-add", filePath, isFolder }),
+    contextAdd: (relativePath: string, isFolder?: boolean) =>
+        window.vscode.postMessage({ type: "context-add", relativePath, isFolder }),
     updateConfig: (key: string, value: unknown) =>
         window.vscode.postMessage({ type: "config-update-request", key, value }),
 };

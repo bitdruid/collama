@@ -29,7 +29,7 @@ export const userStyles = css`
         align-items: center;
         justify-content: center;
         gap: 4px;
-        padding: 4px;
+        padding: 2px;
         border: none;
         ${themeStyles.borderRadius.small}
         background: transparent;

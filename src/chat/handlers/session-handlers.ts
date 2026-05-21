@@ -15,6 +15,10 @@ export class SessionHandlers {
         private readonly extContext: vscode.ExtensionContext,
     ) {}
 
+    /**
+     * Creates a new session and sets it as the active session.
+     * If the current active session is temporary or ghost, it will be deleted first.
+     */
     handleNewSession() {
         this.deleteActiveTemporarySession();
 
@@ -46,6 +50,11 @@ export class SessionHandlers {
         logMsg(`Created ghost session: ${ghostSession.id}`);
     }
 
+    /**
+     * Switches the active session to the specified session.
+     * If the current active session is temporary or ghost, it will be deleted first.
+     * @param msg - The message containing the session ID to switch to.
+     */
     handleSwitchSession(msg: { sessionId: string }) {
         const { sessionId } = msg;
         if (!this.sessionManager.sessions.find((s) => s.id === sessionId)) {
@@ -77,6 +86,10 @@ export class SessionHandlers {
         });
     }
 
+    /**
+     * Renames a session with a new title.
+     * @param msg - The message containing the session ID and new title.
+     */
     handleRenameSession(msg: { sessionId: string; newTitle: string }) {
         const { sessionId, newTitle } = msg;
         const session = this.sessionManager.sessions.find((s) => s.id === sessionId);
@@ -90,6 +103,10 @@ export class SessionHandlers {
         }
     }
 
+    /**
+     * Creates a copy of an existing session.
+     * @param msg - The message containing the session ID to copy.
+     */
     handleCopySession(msg: { sessionId: string }) {
         const { sessionId } = msg;
         const newSession = this.sessionManager.copySession(sessionId);
@@ -99,13 +116,20 @@ export class SessionHandlers {
         }
     }
 
+    /**
+     * Deletes a session. If the deleted session was active, switches to the most recently
+     * updated session or creates a new session if none remain.
+     * @param msg - The message containing the session ID to delete.
+     */
     handleDeleteSession(msg: { sessionId: string }) {
         const { sessionId } = msg;
         this.sessionManager.sessions = this.sessionManager.sessions.filter((s) => s.id !== sessionId);
 
         if (this.sessionManager.activeSessionId === sessionId) {
             if (this.sessionManager.sessions.length > 0) {
-                this.sessionManager.activeSessionId = this.sessionManager.sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0].id;
+                this.sessionManager.activeSessionId = this.sessionManager.sessions.sort(
+                    (a, b) => b.updatedAt - a.updatedAt,
+                )[0].id;
             } else {
                 this.sessionManager.createNewSession();
             }
@@ -116,6 +140,10 @@ export class SessionHandlers {
         logMsg(`Deleted session: ${sessionId}`);
     }
 
+    /**
+     * Deletes the currently active session if it is temporary or ghost.
+     * This is used to clean up temporary sessions before creating new ones.
+     */
     private deleteActiveTemporarySession() {
         const oldSession = this.sessionManager.getActiveSession();
         if (!oldSession?.temporary && !oldSession?.ghost) {

@@ -25,7 +25,7 @@ export const baseNotificationStyles = css`
         background: ${themeColors.uiBackground};
         ${themeStyles.boxShadow}
         color: ${themeColors.uiFont};
-        font-family: ${themeFonts.family}, sans-serif;
+        font-family: ${themeFonts.familyMono};
         font-size: ${themeFonts.small};
         text-align: center;
         ${themeAnimations.fadeAnimate}
@@ -48,7 +48,7 @@ export const baseNotificationStyles = css`
         margin: 0;
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.small};
-        font-weight: bold;
+        font-weight: ${themeFonts.weight.bold};
         line-height: 1.2;
         text-align: center;
     }

@@ -1,8 +1,8 @@
-import { userConfig } from "../config";
 import type { ExtensionConfig } from "../config";
+import { userConfig } from "../config";
 import { getAgentsMdContent } from "./agents-md";
 
-type VerbosityMode = ExtensionConfig["verbosityMode"];
+type promptMode = "default" | "lite";
 
 /**
  * Parameters for constructing a prompt string.
@@ -99,69 +99,38 @@ export const chatSummarize_Template: string = [
     "- Never mention summary",
 ].join("\n");
 
-const VERBOSITY_PROMPTS: Record<VerbosityMode, string[]> = {
-    compact: [
-        "You are a smart caveman in a study session.",
-        "- Compress your answer aggressively and explain minimal.",
-        "- No filler words, no articles, no politeness.",
-        "- No grammar, short sentences, use symbols (→, =, vs, ×).",
-        "- Keep technical information. Keep code blocks.",
-    ],
-    medium: [
-        "You are a software engineer in a code review.",
-        "- Be concise but explain briefly.",
-        "- Keep your answer near the request and add relevant context.",
-        "- Reason essential informations.",
-        "- Keep technical information. Keep code blocks.",
-    ],
-    detailed: [
-        "You are a computer scientist in a conference.",
-        "- Be verbose and explain every detail.",
-        "- Provide thorough responses with context and reasoning.",
-        "- Explain why and how something works, not just what it does.",
-        "- Give alternatives, always use examples, pros and cons.",
-        "- Use headers and bullets do structure your answer.",
-        "- Use and explain code-output when possible.",
-    ],
-};
-
 /**
  * System prompt prepended to the agent's conversation history.
- * Guides the LLM on how to use tools effectively and when to stop.
+ * Routes to lite or default template based on config.
  */
 export function getAgentTemplate(): string {
-    // const tokenLimit = userConfig.apiTokenPredictInstruct;
-    const configuredVerbosity = userConfig.verbosityMode;
+    if (userConfig.liteMode) {
+        return getLiteTemplate();
+    }
+    return getDefaultTemplate();
+}
+
+/**
+ * Lite mode template - minimal, focused on formatting.
+ */
+function getLiteTemplate(): string {
     const lines: string[] = [];
 
-    lines.push(
-        ...(VERBOSITY_PROMPTS[configuredVerbosity] ?? VERBOSITY_PROMPTS.medium),
-        "- Never repeat yourself. Move on to the next step.",
-        "- Do not re-check conditions you have already confirmed.",
-        "- <llm-info> tags contain internal metadata. Never mention them to the user.",
-        "",
-        // `OUTPUT LIMIT: Keep your response under ~${Math.floor(tokenLimit * 4)} characters).`,
-    );
+    // role
+    lines.push("");
 
-    if (userConfig.agentic) {
-        lines.push(
-            "- Only use tools when the user's request requires interaction with files.",
-            "- For general questions, greetings, or conversations respond without tools.",
-            "- Grep and Glob efficient.",
-            "",
-        );
-    }
+    // output formating
+    lines.push(OUTPUT_FORMATING.LITE);
 
-    if (userConfig.agentic && userConfig.enableEditTools) {
-        lines.push(
-            "- Explain your actions and why before making changes.",
-            "- After you finished editing, use getDiagnostics to validate the changes.",
-            "- Make multiple small edits instead of large.",
-            "",
-        );
-    }
+    // agent
+    // lines.push(
+    //     ...getAgenticRules({
+    //         agenticMode: userConfig.agenticMode,
+    //         editTools: userConfig.enableEditTools,
+    //     }),
+    // );
 
-    // Append AGENTS.md content if present
+    // agents.md
     const agentsMd = getAgentsMdContent();
     if (agentsMd) {
         lines.push("", "===== PROJECT AGENT RULES (AGENTS.md) =====", agentsMd);
@@ -169,3 +138,127 @@ export function getAgentTemplate(): string {
 
     return lines.join("\n");
 }
+
+/**
+ * Default mode template - full verbosity, formatting, and agentic rules.
+ */
+function getDefaultTemplate(): string {
+    const lines: string[] = [];
+
+    // role
+    lines.push("<llm-info> tags contain internal metadata. Never mention them to the user.");
+
+    // output formating
+    lines.push(OUTPUT_FORMATING.DEFAULT);
+
+    // verbosity
+    lines.push(
+        ...getVerbosityRules({
+            verbosityMode: userConfig.verbosityMode,
+        }),
+    );
+
+    // agent
+    lines.push(
+        ...getAgenticRules({
+            agenticMode: userConfig.agenticMode,
+            editTools: userConfig.enableEditTools,
+        }),
+    );
+
+    const agentsMd = getAgentsMdContent();
+    if (agentsMd) {
+        lines.push("", "===== PROJECT AGENT RULES (AGENTS.md) =====", agentsMd);
+    }
+
+    return lines.join("\n");
+}
+
+/**
+ * Returns verbosity rules based on configured mode.
+ */
+const getVerbosityRules = ({ verbosityMode }: { verbosityMode: ExtensionConfig["verbosityMode"] }): string[] => {
+    const prompts: Record<ExtensionConfig["verbosityMode"], string[]> = {
+        compact: [
+            "Verbosity rules:",
+            "- Your output must be as compact as possible.",
+            "- Compress your answer aggressively and explain minimal.",
+            "- No filler words, no articles, no politeness.",
+            "- No grammar, short sentences, use symbols (→, =, vs, ×).",
+            "- Keep technical information.",
+        ],
+        medium: [
+            "Verbosity rules:",
+            "- Your output should cover the core informations.",
+            "- Be concise but explain briefly.",
+            "- Keep your answer near the request and add relevant context.",
+            "- Reason essential informations.",
+            "- Keep technical information.",
+        ],
+        detailed: [
+            "Verbosity rules:",
+            "- Your output must cover additional informations.",
+            "- Be verbose and explain every detail.",
+            "- Provide thorough responses with context and reasoning.",
+            "- Explain why and how something works, not just what it does.",
+            "- Give alternatives, always use examples, pros and cons.",
+            "- Use and explain code-output when possible.",
+        ],
+    };
+
+    return prompts[verbosityMode] ?? prompts.medium;
+};
+
+/**
+ * Returns agentic behavior rules based on enabled features.
+ */
+const getAgenticRules = ({ agenticMode, editTools }: { agenticMode: boolean; editTools: boolean }): string[] => {
+    const rules: string[] = [];
+
+    if (agenticMode) {
+        rules.push(
+            "- Only use tools when the user's request requires interaction with files.",
+            "- For general questions, greetings, or conversations respond without tools.",
+            "",
+        );
+    }
+
+    if (agenticMode && editTools) {
+        rules.push(
+            "- Tell the user what you are about to do before useing tools.",
+            "- Use the decision tool frequently to reinsure and let the user decide. Never guess if the right solution is ambigous. ",
+            "- After you finished editing, lint/test/compile/build to validate the changes if possible.",
+            "- Finish your answer with a summary of your actions and the resulting conclusion.",
+            "- Make multiple small edits instead of large.",
+        );
+    }
+
+    return rules;
+};
+
+const OUTPUT_FORMATING = {
+    DEFAULT: [
+        "Format all responses as Markdown:",
+        "- Use ### / #### headings to structure responses with multiple distinct sections; omit headings for short or single-topic answers.",
+        "- Fenced code blocks with a language identifier for all code, commands, and file contents.",
+        "- Use - for unordered lists; numbered lists only for sequential steps.",
+        "- Use **bold** for emphasis, `backticks` for filenames, variables, flags, and short expressions.",
+        "- Separate every block element (heading, paragraph, list, code block) with a blank line.",
+        "- No raw HTML. No horizontal rules. No setext-style headings (underline style).",
+        "- Do not write code into tables.",
+        "- Do not use emojis - only plain text:",
+        "   - ✅, ❌, ⚠️ allowed to approve or disapprove statements or circumstances.",
+        "   - 🟢, 🟡, 🔴 allowed to categorize quality or severity.",
+        "- You must always output relative paths for files to the user; root directory is the workspace.",
+    ].join("\n"),
+    LITE: [
+        "Format output as Markdown.",
+        "- Use ### for headings. Use - for lists.",
+        "- Use fenced code blocks with a language tag (```python, ```bash) for all code.",
+        "- Put a blank line before and after every heading, paragraph, list, and code block.",
+        "- No HTML. No --- separators.",
+        "- No code in tables.",
+        "- No emojis. Use plain text with ✅, ❌, ⚠️ to approve or disapprove; 🟢, 🟡, 🔴 to categorize quality",
+        "- Output always relative filepaths in the workspace.",
+    ].join("\n"),
+};

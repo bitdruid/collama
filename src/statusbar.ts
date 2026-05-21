@@ -37,7 +37,7 @@ async function showStatusbar() {
 
         const suggestMode = config.get<string>("suggestMode", "inline");
 
-        const staticOptions: vscode.QuickPickItem[] = [
+        const options: vscode.QuickPickItem[] = [
             {
                 label: `${config.get<boolean>("autoComplete", false) ? "🟢" : "🔴"} Autocomplete`,
                 description: "Toggle autocomplete",
@@ -56,48 +56,12 @@ async function showStatusbar() {
             },
         ];
 
-        const options: vscode.QuickPickItem[] = [
-            {
-                label: `${config.get<boolean>("agentic", false) ? "🟢" : "🔴"} Agentic`,
-                description: "Toggle Agentic-Mode (Chat - requires tool capability)",
-            },
-            {
-                label: `${config.get<boolean>("enableEditTools", true) ? "🟢" : "🔴"} Edit Tools`,
-                description: "Toggle edit tools (read-only mode when off)",
-            },
-            {
-                label: `${config.get<boolean>("enableShellTool", false) ? "🟢" : "🔴"} Shell Tool`,
-                description: "Toggle shell tool usage",
-            },
-            {
-                label: "Switch Agentic-Mode",
-                kind: vscode.QuickPickItemKind.Separator,
-            },
-            ...staticOptions,
-        ];
-
-        /**
-         * Show the quick pick menu and handle the user's selection.
-         */
         const selected = await vscode.window.showQuickPick(options);
 
         if (!selected) {
             return;
         }
 
-        if (selected.label.includes("Agentic")) {
-            const current = config.get<boolean>("agentic", false);
-            await config.update("agentic", !current, vscode.ConfigurationTarget.Global);
-        }
-        if (selected.label.includes("Edit Tools")) {
-            const current = config.get<boolean>("enableEditTools", true);
-            await config.update("enableEditTools", !current, vscode.ConfigurationTarget.Global);
-        }
-        if (selected.label.includes("Shell Tool")) {
-            const current = config.get<boolean>("enableShellTool", false);
-            await config.update("enableShellTool", !current, vscode.ConfigurationTarget.Global);
-        }
-        // Handle toggling autocomplete and suggestion modes
         if (selected.label.includes("Autocomplete")) {
             const current = config.get<boolean>("autoComplete", false);
             await config.update("autoComplete", !current, vscode.ConfigurationTarget.Global);

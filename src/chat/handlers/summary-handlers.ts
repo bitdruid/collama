@@ -8,6 +8,10 @@ import { recomputeContextState } from "../context-state";
 
 /**
  * Runs the agent on the given messages and returns the raw summary text.
+ * @param agentRunner - The agent runner instance
+ * @param webview - The VS Code webview for communication
+ * @param sourceMessages - The messages to summarize
+ * @returns The raw summary text or null if summarization failed
  */
 async function summarizeText(
     agentRunner: AgentRunner,
@@ -29,6 +33,12 @@ async function summarizeText(
 
 /**
  * Handles compressing the chat history into a summary.
+ * @param agentRunner - The agent runner instance
+ * @param webview - The VS Code webview for communication
+ * @param sourceMessages - The messages to summarize
+ * @param promptTemplate - The prompt template to use for summarization
+ * @param label - The label for the summary (e.g., "Conversation" or "Turn")
+ * @returns An array of chat history entries representing the summary, or null if summarization failed
  */
 async function summarizeContent(
     agentRunner: AgentRunner,
@@ -92,6 +102,10 @@ async function summarizeContent(
     return result;
 }
 
+/**
+ * Manages summary sessions for chat context compression.
+ * @interface
+ */
 export interface SummarySessionManager {
     sessions: { id: string; messages: ChatContext; contextStartIndex: number }[];
     updateSession: (session: any, fn: (s: any) => void) => void;
@@ -99,7 +113,12 @@ export interface SummarySessionManager {
 }
 
 /**
- * Handles compressing the chat history into a summary.
+ * Handles the request to summarize chat messages within a session.
+ * Updates the session with the summarized content and posts progress/completion messages.
+ * @param msg - The request message containing turnStart, turnEnd, and sessionId
+ * @param webview - The VS Code webview for communication
+ * @param sessionManager - The session manager instance
+ * @param agentRunner - The agent runner instance
  */
 export async function handleSummarizeRequest(
     msg: { turnStart: number; turnEnd: number; sessionId: string },

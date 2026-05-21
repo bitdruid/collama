@@ -124,7 +124,7 @@ export class Agent {
 
         return {
             history: new AgentContext(initial),
-            tools: this.agentMode === "default" && userConfig.agentic ? getToolDefinitions() : [],
+            tools: this.agentMode === "default" && userConfig.agenticMode ? getToolDefinitions() : [],
         };
     }
 

@@ -1,6 +1,6 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../../utils-front";
-import { themeColors, themeStyles } from "../../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../../styles";
 import { assistantStyles } from "./message-assistant/styles";
 import { toolStyles } from "./message-tool/styles";
 import { userStyles } from "./message-user/styles";
@@ -20,10 +20,10 @@ export const outputStyles = [
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-weight: bold;
+            font-weight: ${themeFonts.weight.bold};
             font-size: 1em;
             margin-bottom: 6px;
-            padding: 2px 6px;
+            padding: 2px 10px;
             ${themeStyles.borderRadius.small}
             color: ${themeColors.cleanWhite};
         }
@@ -33,8 +33,8 @@ export const outputStyles = [
         }
 
         .role-datetime {
-            font-size: 0.8em;
-            font-weight: normal;
+            font-size: 0.85em;
+            font-weight: ${themeFonts.weight.normal};
             opacity: 0.8;
             margin-left: 8px;
             margin-right: 8px;
@@ -79,7 +79,7 @@ export const outputStyles = [
 
         th {
             background: ${themeColors.uiBackgroundDimm};
-            font-weight: bold;
+            font-weight: ${themeFonts.weight.bold};
         }
 
         tr:hover {
@@ -113,6 +113,28 @@ export const outputStyles = [
         a:hover {
             color: ${themeColors.hyperlinkHover};
             text-decoration: underline;
+        }
+
+        /* Style for backtick text by css rule prefered over native code parsing */
+
+        :not(pre) > code {
+            color: ${themeColors.uiFontHighlight};
+            background: ${themeColors.uiFontHighlightBackground};
+            ${themeStyles.borderRadius.medium}
+            padding: 0.08em 0.4em;
+            font-size: 0.9em;
+            font-family: ${themeFonts.familyMono};
+            font-weight: ${themeFonts.weight.thin};
+            white-space: break-spaces;
+        }
+
+        a.file-link > code {
+            color: inherit;
+            background: none;
+            padding: 0;
+            font-size: inherit;
+            font-family: ${themeFonts.family};
+            font-weight: ${themeFonts.weight.normal};
         }
     `,
 ];

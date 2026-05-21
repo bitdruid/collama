@@ -1,6 +1,6 @@
 import { css } from "lit";
 import { hljsStyles } from "../../../../utils-front";
-import { themeColors, themeStyles } from "../../../styles";
+import { themeColors } from "../../../styles";
 import { bannerStyles } from "../../../template-components/banner/styles";
 
 export const accordionStyles = [
@@ -9,14 +9,12 @@ export const accordionStyles = [
     css`
         :host {
             display: block;
-            margin: 8px 0;
+            margin: 6px 0;
             position: relative;
             z-index: 0;
         }
 
         .accordion {
-            border: 1px solid ${themeColors.uiBorderDimm};
-            ${themeStyles.borderRadius.medium}
             overflow: hidden;
             position: relative;
         }

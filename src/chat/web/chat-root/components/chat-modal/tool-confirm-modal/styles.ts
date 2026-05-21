@@ -69,7 +69,7 @@ export const toolConfirmStyles = css`
     .confirm-filepath {
         flex: 1;
         min-width: 0;
-        font-family: ${themeFonts.family}, monospace;
+        font-family: ${themeFonts.familyMono};
         font-size: ${themeFonts.small};
         color: ${themeColors.uiFont};
         padding: 6px 8px;

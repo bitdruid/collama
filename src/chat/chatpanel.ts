@@ -5,17 +5,17 @@ import { resolveToolDecision } from "../agent/tools/decision";
 import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../agent/tools/edit";
 import { buildInstructionOptions, ToolCall } from "../common/client";
 import { ChatContext, ChatHistory } from "../common/context-chat";
+import { parseContextUri } from "../common/context-editor";
 import { getUserConfigSnapshot, userConfig } from "../config";
 import { logMsg } from "../logging";
 import { AgentRunner } from "./agent-runner";
 import { recomputeContextState, trimMessagesForContext } from "./context-state";
-import { handleContextAdd, handleContextSearch } from "./handlers/context-handlers";
+import { addContext, handleContextSearch, setContextWebviewReady } from "./handlers/context-handlers";
 import { SessionHandlers } from "./handlers/session-handlers";
 import { handleSummarizeRequest } from "./handlers/summary-handlers";
 import { SessionManager } from "./session-manager";
 import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils-back";
 import { StartPage } from "./web/chat-init";
-
 
 /**
  * Encapsulates the chat panel logic within the extension.
@@ -24,8 +24,6 @@ export class ChatPanel {
     private sessionManager: SessionManager;
     private sessionHandlers: SessionHandlers;
     private agentRunner: AgentRunner;
-    private webviewReady = false;
-    private pendingContextAdds: Array<{ filePath: string; isFolder?: boolean }> = [];
 
     get webview(): vscode.Webview {
         return this.webviewView.webview;
@@ -69,7 +67,7 @@ export class ChatPanel {
             handleSummarizeRequest(msg, webview, this.sessionManager, this.agentRunner),
         "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
         "context-search": (msg, webview) => handleContextSearch(msg, webview),
-        "context-add": (msg) => this.addContext(msg.filePath, msg.isFolder),
+        "context-add": (msg, webview) => addContext(parseContextUri(msg.relativePath), webview),
         "config-update-request": (msg, webview) => this.handleConfigUpdateRequest(msg, webview),
         log: (msg) => logMsg(`WEBVIEW - ${msg.message}`),
     };
@@ -81,7 +79,7 @@ export class ChatPanel {
         const page = new StartPage(this.extContext, this.webviewView);
         const webview = this.webviewView.webview;
 
-        this.webviewReady = false;
+        setContextWebviewReady(false, webview);
         webview.html = page.generate();
         setWebview(webview);
 
@@ -95,20 +93,11 @@ export class ChatPanel {
 
     // ==================== Message Handlers ====================
 
-    async addContext(filePath: string, isFolder?: boolean) {
-        if (!this.webviewReady) {
-            this.pendingContextAdds.push({ filePath, isFolder });
-            return;
-        }
-
-        await handleContextAdd({ filePath, isFolder }, this.webview);
-    }
-
     /**
      * Handles the chat-ready message by sending initial state to the webview.
      */
     private async handleChatReady(webview: vscode.Webview) {
-        this.webviewReady = true;
+        setContextWebviewReady(true, webview);
         const activeSession = this.sessionManager.getActiveSession();
         const messages = activeSession?.messages.getMessages() || [];
         const contextMax = userConfig.apiTokenContextLenInstruct;
@@ -124,11 +113,6 @@ export class ChatPanel {
             config: getUserConfigSnapshot(),
             autoAcceptAll: getAutoAcceptAll(),
         });
-
-        const pending = this.pendingContextAdds.splice(0);
-        for (const contextAdd of pending) {
-            await handleContextAdd(contextAdd, webview);
-        }
     }
 
     /**
@@ -136,9 +120,10 @@ export class ChatPanel {
      */
     private async handleConfigUpdateRequest(msg: { key: string; value: unknown }, webview: vscode.Webview) {
         const schema = {
-            agentic: "boolean",
+            agenticMode: "boolean",
             enableEditTools: "boolean",
             enableShellTool: "boolean",
+            liteMode: "boolean",
         } as const;
         const key = msg.key as keyof typeof schema;
 

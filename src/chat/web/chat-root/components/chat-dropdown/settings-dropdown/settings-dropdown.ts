@@ -30,7 +30,7 @@ export class SettingsDropdown extends BaseDropdown {
     @property({ type: Boolean }) showThinking = false;
     @property({ type: Boolean }) agentsMdActive = false;
 
-    private _updateBoolean(key: "agentic" | "enableEditTools" | "enableShellTool", event: Event) {
+    private _updateBoolean(key: "agenticMode" | "enableEditTools" | "enableShellTool" | "liteMode", event: Event) {
         const value = Number((event.target as HTMLInputElement).value);
         emit(this, "settings-update", { key, value: value === 1 });
     }
@@ -65,20 +65,31 @@ export class SettingsDropdown extends BaseDropdown {
         return html`
             <section class="settings-section">
                 <h4>Extension</h4>
-                ${this._renderToggle("Agentic-Mode", "agentic", this.config.agentic)}
+                ${this._renderToggle("Agentic-Mode", "agenticMode", this.config.agenticMode, false, {
+                    description: "Let the agent use tools.",
+                })}
                 ${this._renderToggle(
                     "Edit Tools",
                     "enableEditTools",
                     this.config.enableEditTools,
-                    this.config.agentic && !this.config.enableEditTools,
+                    this.config.agenticMode && !this.config.enableEditTools,
+                    {
+                        description: "Allow the agent to write, create and delete files.",
+                    },
                 )}
                 ${this._renderToggle(
                     "Shell Tool",
                     "enableShellTool",
                     this.config.enableShellTool,
-                    this.config.agentic && !this.config.enableShellTool,
+                    this.config.agenticMode && !this.config.enableShellTool,
+                    {
+                        description: "Allow the agent to execute shell commands.",
+                    },
                 )}
                 ${this._renderVerbosityMode()}
+                ${this._renderToggle("Lite-Mode", "liteMode", this.config.liteMode, this.config.liteMode, {
+                    description: "Use a minimal system prompt. May improve small models.",
+                })}
             </section>
             <section class="settings-section">
                 <h4>Style</h4>
@@ -88,7 +99,7 @@ export class SettingsDropdown extends BaseDropdown {
             </section>
             <section class="settings-section">
                 <h4>Agent</h4>
-                ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking)}
+                ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking, {})}
                 ${this._renderAgentsMdIndicator()}
             </section>
         `;
@@ -101,6 +112,7 @@ export class SettingsDropdown extends BaseDropdown {
         return html`
             <collama-slider
                 label="Agent Verbosity"
+                title="Controls how  detailed the answers are."
                 value-label=${value}
                 min="0"
                 max="2"
@@ -143,13 +155,15 @@ export class SettingsDropdown extends BaseDropdown {
 
     private _renderToggle(
         label: string,
-        key: "agentic" | "enableEditTools" | "enableShellTool",
+        key: "agenticMode" | "enableEditTools" | "enableShellTool" | "liteMode",
         checked: boolean,
         showWarning = false,
+        opts: { description?: string } = {},
     ) {
         return html`
             <collama-slider
                 label=${label}
+                title=${opts.description ?? ""}
                 value-label=${checked ? "On" : "Off"}
                 min="0"
                 max="1"
@@ -163,10 +177,16 @@ export class SettingsDropdown extends BaseDropdown {
         `;
     }
 
-    private _renderStyleToggle(label: string, checked: boolean, onChange: (event: Event) => void) {
+    private _renderStyleToggle(
+        label: string,
+        checked: boolean,
+        onChange: (event: Event) => void,
+        opts: { description?: string } = {},
+    ) {
         return html`
             <collama-slider
                 label=${label}
+                title=${opts.description ?? ""}
                 value-label=${checked ? "On" : "Off"}
                 min="0"
                 max="1"

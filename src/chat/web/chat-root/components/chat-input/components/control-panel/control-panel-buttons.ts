@@ -65,7 +65,7 @@ export class ControlPanelButtons extends LitElement {
     private handleContextSearch = (e: CustomEvent) => emit(this, "context-search", { query: e.detail.query });
     private handleContextAdd = (e: CustomEvent) => emit(this, "context-add", e.detail);
     private handleContextRemoveFile = (e: CustomEvent) => {
-        const index = this.contexts.findIndex((ctx) => ctx.filePath === e.detail.filePath);
+        const index = this.contexts.findIndex((ctx) => ctx.relativePath === e.detail.relativePath);
         if (index !== -1) {
             emit(this, "context-cleared", { index });
         }

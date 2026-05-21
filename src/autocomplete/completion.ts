@@ -8,11 +8,10 @@ export class Completion {
     context: EditorContext | null = null;
 
     public async generate() {
-        this.context = await EditorContext.create();
+        this.context = await new EditorContext().loadActiveEditor({ includeCompletionData: true });
         if (!this.context) {
             return;
         }
-
         this.context.recreateTokenLimit(userConfig.apiTokenContextLenCompletion);
 
         this.snippet = await requestCompletion(this.context);

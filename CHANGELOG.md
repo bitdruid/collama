@@ -1,6 +1,23 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.15] - 2026-05-21
+
+### Added
+- Lite mode for system prompt — optionally switch to a minimal prompt to support small models
+
+### Changed
+- Unified theme font variables across UI components for visual consistency
+- Optimized accordion and role-header sizing for better layout
+- Improved chip coloring for clearer visual hierarchy
+- Enhanced system prompt with better output instructions and code-backtick styling
+- Refactored context handling with `relativePath` and instance-based `EditorContext` API
+
+### Fixed
+- Markdown code_inline blocks now detect file-urls for proper link handling
+- Markdown link validation in chat output
+- Removed statusbar indicators for the agent
+
 ## [1.7.14] - 2026-05-14
 
 ### Fixed

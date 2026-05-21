@@ -4,8 +4,8 @@ import * as vscode from "vscode";
 import { ToolHistoryPolicy } from "../common/context-chat";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
-import { analyse_def, analyse_exec } from "./tools/analyse";
 import { decision_def, decision_exec } from "./tools/decision";
+import { diagnostics_def, diagnostics_exec } from "./tools/diagnostics";
 import {
     create_def,
     create_exec,
@@ -21,7 +21,7 @@ import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git"
 import { shell_def, shell_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
-export type ToolCategory = "explore" | "git" | "edit" | "analyse" | "shell"; // | "fetch";
+export type ToolCategory = "explore" | "git" | "edit" | "diagnostics" | "shell"; // | "fetch";
 export type { ToolHistoryPolicy };
 
 export interface ToolAnswer<TOutput = unknown> {
@@ -128,7 +128,7 @@ function getAllowedTools() {
         switch (tool.category) {
             case "explore":
             case "git":
-            case "analyse":
+            case "diagnostics":
                 return true;
             case "edit":
                 return userConfig.enableEditTools;
@@ -252,7 +252,13 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         category: "explore",
         historyPolicy: "dedupeExactArgs",
         definition: read_def,
-        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
+        targetKey: (args) => {
+            const path = formatToolTargetValue("filePath", args.filePath);
+            if (args.startLine || args.endLine) {
+                return `${path} → ${args.startLine ?? 1} - ${args.endLine ?? "?"}`;
+            }
+            return path;
+        },
         execute: read_exec,
     },
     grep: {
@@ -337,16 +343,12 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: delete_exec,
     },
-    analyse: {
-        category: "analyse",
+    diagnostics: {
+        category: "diagnostics",
         historyPolicy: "dropAll",
-        definition: analyse_def,
-        targetKey: (args) => {
-            const mode = formatToolTargetValue("mode", args.mode);
-            const file = formatToolTargetValue("filePath", args.filePath);
-            return file ? `${mode}: ${file}` : mode;
-        },
-        execute: analyse_exec,
+        definition: diagnostics_def,
+        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
+        execute: diagnostics_exec,
     },
     decision: {
         category: "edit",

@@ -90,7 +90,7 @@ export const controlPanelButtonStyles = css`
         background-color: ${themeColors.usageDanger};
         color: ${themeColors.cleanWhite};
         font-size: 10px;
-        font-weight: bold;
+        font-weight: ${themeFonts.weight.bold};
         line-height: 1;
         box-shadow: 0 1px 3px ${themeColors.uiShadow};
     }
@@ -157,7 +157,7 @@ export const controlPanelButtonStyles = css`
         padding: 0 10px;
         ${themeStyles.borderRadius.round}
         font-size: ${themeFonts.medium};
-        font-weight: 600;
+        font-weight: ${themeFonts.weight.semiBold};
         cursor: default;
     }
 

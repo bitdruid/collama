@@ -13,6 +13,7 @@ const cssOf = (c: Color) => (typeof c === "string" ? c : c.cssText);
  */
 const darken = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - var(--theme-tint, 1) * ${n}))`);
 const contrast = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s calc(l - sign(l - 50) * ${n}))`);
+const lighten = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s min(calc(l + ${n}), 96))`);
 
 const getBorder = (color: Color) =>
     unsafeCSS(
@@ -23,7 +24,6 @@ const getHover = (color: Color) => contrast(color, 6);
 export const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
 const defaultColor = contrast(baseColor, 6);
 const dimmColor = darken(baseColor, 3);
-//const backDarkColor = darken(defaultColor, 7);
 
 /**
  * Reusable color values for consistent color usage.
@@ -98,6 +98,8 @@ export const themeColors = {
 
     /* Font */
     uiFont: contrast(defaultColor, 50),
+    uiFontHighlight: contrast(defaultColor, 66),
+    uiFontHighlightBackground: lighten(defaultColor, 2),
 
     /* Bubble and Chat-Input */
     uiBackground: defaultColor,

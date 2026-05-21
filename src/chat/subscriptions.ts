@@ -1,10 +1,9 @@
 import * as vscode from "vscode";
 
-import { EditorContext } from "../common/context-editor";
 import { openAgentsMdDraft } from "../common/agents-md";
 import { logMsg } from "../logging";
 import { ChatPanel } from "./chatpanel";
-import { receiveCurrentContext } from "./handlers/context-handlers";
+import { handleSendToChat } from "./handlers/context-handlers";
 
 let panel: ChatPanel | null = null;
 
@@ -16,36 +15,7 @@ async function revealChatPanel(): Promise<ChatPanel | null> {
     return panel;
 }
 
-function getExplorerUris(resource?: vscode.Uri, selectedResources?: vscode.Uri[]): vscode.Uri[] {
-    const uris = selectedResources?.length ? selectedResources : resource ? [resource] : [];
-    const unique = new Map<string, vscode.Uri>();
-    for (const uri of uris) {
-        unique.set(uri.toString(), uri);
-    }
-    return [...unique.values()];
-}
-
-function isExplorerInvocation(selectedResources?: vscode.Uri[]): boolean {
-    return Array.isArray(selectedResources) && selectedResources.length > 0;
-}
-
-async function getActiveEditorContext(): Promise<EditorContext | null> {
-    return vscode.window.activeTextEditor ? EditorContext.create() : null;
-}
-
-function canUseActiveEditorSelection(resource?: vscode.Uri, selectedResources?: vscode.Uri[]): boolean {
-    if (isExplorerInvocation(selectedResources)) {
-        return false;
-    }
-    const activeUri = vscode.window.activeTextEditor?.document.uri.toString();
-    return !resource || resource.toString() === activeUri;
-}
-
-/**
- * Registers the command that sends the current selection to the chat view.
- *
- * @param context - The extension context used to register the command.
- */
+/** Registers the command that sends the current selection or a resource to the chat view. */
 export function registerSendToChatCommand(extContext: vscode.ExtensionContext) {
     const disposable = vscode.commands.registerCommand(
         "collama.sendToChat",
@@ -54,30 +24,7 @@ export function registerSendToChatCommand(extContext: vscode.ExtensionContext) {
             if (!chatPanel) {
                 return;
             }
-
-            const currentContext = canUseActiveEditorSelection(resource, selectedResources)
-                ? await getActiveEditorContext()
-                : null;
-            if (currentContext?.selectionText.length) {
-                logMsg("Edit (Selection): SendToChat triggered");
-                receiveCurrentContext(chatPanel.webview, currentContext);
-                return;
-            }
-
-            const explorerUris = getExplorerUris(resource, selectedResources);
-            if (explorerUris.length > 0) {
-                logMsg(`Explorer: SendToChat triggered (${explorerUris.length} item(s))`);
-                for (const uri of explorerUris) {
-                    await chatPanel.addContext(uri.toString());
-                }
-                return;
-            }
-
-            logMsg("Edit (Selection): SendToChat triggered");
-            const fallbackContext = currentContext ?? (await EditorContext.create());
-            if (fallbackContext) {
-                receiveCurrentContext(chatPanel.webview, fallbackContext);
-            }
+            await handleSendToChat(chatPanel.webview, resource, selectedResources);
         },
     );
     extContext.subscriptions.push(disposable);

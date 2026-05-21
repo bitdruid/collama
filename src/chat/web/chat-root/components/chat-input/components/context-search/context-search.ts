@@ -68,12 +68,12 @@ export class ContextTree extends BasePopup {
      * @param result - The search result to add.
      */
     private _handleAdd(result: ContextSearchResult) {
-        const existingIndex = this.contexts.findIndex((ctx) => ctx.filePath === result.filePath);
+        const existingIndex = this.contexts.findIndex((ctx) => ctx.relativePath === result.relativePath);
         if (existingIndex !== -1) {
             // Remove context
             this.dispatchEvent(
                 new CustomEvent("context-remove-file", {
-                    detail: { filePath: result.filePath },
+                    detail: { relativePath: result.relativePath },
                     bubbles: true,
                     composed: true,
                 }),
@@ -82,7 +82,7 @@ export class ContextTree extends BasePopup {
             // Add context
             this.dispatchEvent(
                 new CustomEvent("context-add", {
-                    detail: { filePath: result.filePath, isFolder: result.isFolder },
+                    detail: { relativePath: result.relativePath, isFolder: result.isFolder },
                     bubbles: true,
                     composed: true,
                 }),
@@ -118,7 +118,6 @@ export class ContextTree extends BasePopup {
 
         return {
             fileName,
-            filePath: ctx.filePath,
             relativePath: ctx.relativePath,
             isFolder: ctx.isFolder,
         };
@@ -158,7 +157,7 @@ export class ContextTree extends BasePopup {
      * @returns A template result for the item.
      */
     private _renderResult(result: ContextSearchResult) {
-        const isAdded = this.contexts.some((ctx) => ctx.filePath === result.filePath);
+        const isAdded = this.contexts.some((ctx) => ctx.relativePath === result.relativePath);
         return html`
             <div class="result-item" @click=${() => this._handleAdd(result)}>
                 <div class="result-info">

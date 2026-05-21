@@ -92,7 +92,7 @@ export const galleryStyles = css`
         ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
-        font-family: inherit;
+        font-family: ${themeFonts.familyMono};
         font-size: ${themeFonts.medium};
         line-height: 1.4;
         resize: vertical;

@@ -74,6 +74,22 @@ function renderFilePathLinks(state: StateCore) {
 
         const newChildren: Token[] = [];
         for (const child of block.children) {
+            if (child.type === "code_inline") {
+                const content = child.content;
+                FILE_PATH_RE.lastIndex = 0;
+                const m = FILE_PATH_RE.exec(content);
+                if (m && m.index === 0 && m[0].length === content.length) {
+                    const [, filePath, lineAnchor] = m;
+                    const open = new Token("link_open", "a", 1);
+                    open.attrSet("href", buildOpenFileCommandUri(filePath, lineAnchor));
+                    open.attrSet("class", "file-link");
+                    newChildren.push(open, child, new Token("link_close", "a", -1));
+                    continue;
+                }
+                newChildren.push(child);
+                continue;
+            }
+
             if (child.type !== "text") {
                 newChildren.push(child);
                 continue;
@@ -135,6 +151,8 @@ function createChatMarkdown(): MarkdownIt {
         linkify: false,
         breaks: true,
     });
+
+    md.validateLink = (url) => /^(https?:|file:|command:|mailto:|\/|\.\/|\.\.\/)/i.test(url);
 
     md.block.ruler.before("html_block", "llm_info", (state, startLine, _endLine, silent) => {
         const line = state.src.slice(state.bMarks[startLine], state.eMarks[startLine]);

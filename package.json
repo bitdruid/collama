@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.7.14",
+    "version": "1.7.15",
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -110,7 +110,7 @@
                         "default": 1500,
                         "markdownDescription": "Delay (ms) before requesting inline completion. Prevents Ollama from running every time the completion is triggered. (Spam protection)\n\n**Min:** 1000"
                     },
-                    "collama.agentic": {
+                    "collama.agenticMode": {
                         "type": "boolean",
                         "default": true,
                         "description": "Use agentic (tool use) mode for chat."
@@ -124,6 +124,11 @@
                         "type": "boolean",
                         "default": false,
                         "description": "Enable the shell tool. When disabled, shell command execution is unavailable to the agent."
+                    },
+                    "collama.liteMode": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Lite-Mode. When enabled, the agent system prompt is reduced to a minimal form. Useful for small models that struggle with longer system prompts."
                     }
                 }
             }

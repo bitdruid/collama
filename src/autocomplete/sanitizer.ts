@@ -177,8 +177,8 @@ export class Sanitizer {
                 .filter((l) => !isFullLineComment(l));
 
         this.normSnippetLines = cleanCodeLines(this.snippet);
-        this.normPrefixLines = cleanCodeLines(this.context.activePrefix);
-        this.normSuffixLines = cleanCodeLines(this.context.activeSuffix);
+        this.normPrefixLines = cleanCodeLines(this.context.activePrefix ?? "");
+        this.normSuffixLines = cleanCodeLines(this.context.activeSuffix ?? "");
     }
 
     /**

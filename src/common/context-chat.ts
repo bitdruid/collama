@@ -4,7 +4,6 @@ export type ToolHistoryPolicy = "dedupeExactArgs" | "keepAll" | "dropAll";
 
 export interface AttachedContext {
     fileName: string;
-    filePath: string;
     relativePath: string;
     isFolder: boolean;
     hasSelection: boolean;

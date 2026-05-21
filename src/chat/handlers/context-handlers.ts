@@ -1,11 +1,16 @@
 import * as vscode from "vscode";
 
 import path from "path";
-import { EditorContext, getRelativePath } from "../../common/context-editor";
+
+import { EditorContext } from "../../common/context-editor";
 import { logMsg } from "../../logging";
 
 /**
- * Searches workspace files/folders matching the query and sends results to the webview.
+ * Searches workspace files and folders matching the query and sends results to the webview.
+ *
+ * @param msg - The message object containing the search query
+ * @param msg.query - The search string to match against file and folder names
+ * @param webview - The webview to send the search results to
  */
 export async function handleContextSearch(msg: { query: string }, webview: vscode.Webview) {
     const query = msg.query?.trim();
@@ -25,7 +30,7 @@ export async function handleContextSearch(msg: { query: string }, webview: vscod
             const fullPath = uri.fsPath;
             const relativePath = workspaceRoot ? path.relative(workspaceRoot, fullPath) : fullPath;
             const fileName = path.basename(fullPath);
-            return { fileName, filePath: fullPath, relativePath, isFolder: false };
+            return { fileName, relativePath, isFolder: false };
         });
 
         // Also search for matching folders
@@ -43,7 +48,6 @@ export async function handleContextSearch(msg: { query: string }, webview: vscod
                         const relativePath = workspaceRoot ? path.relative(workspaceRoot, folderPath) : folderPath;
                         results.unshift({
                             fileName: parts[i],
-                            filePath: folderPath,
                             relativePath,
                             isFolder: true,
                         });
@@ -60,93 +64,87 @@ export async function handleContextSearch(msg: { query: string }, webview: vscod
 }
 
 /**
- * Reads a file or folder and sends it as an attached context to the webview.
- * Auto-detects if the path is a file or folder if isFolder is not specified.
+ * Loads context from a URI and sends it to the webview.
+ *
+ * @param uri - The URI to load context from
+ * @param webview - The webview to send the loaded context to
  */
-export async function handleContextAdd(msg: { filePath: string; isFolder?: boolean }, webview: vscode.Webview) {
-    const inputPath = msg.filePath;
+export async function handleContextAdd(uri: vscode.Uri, webview: vscode.Webview) {
+    const ctx = await new EditorContext().loadUri(uri);
+    if (ctx) {
+        webview.postMessage({ type: "context-update", context: ctx.toWebviewPayload() });
+    }
+}
 
-    try {
-        const uri = /^[a-z][a-z0-9+.-]*:\/\//i.test(inputPath) || inputPath.startsWith("file:")
-            ? vscode.Uri.parse(inputPath)
-            : vscode.Uri.file(inputPath);
-        const filePath = uri.fsPath;
-        const fileName = path.basename(filePath);
-        const relativePath = getRelativePath(uri);
+let webviewReady = false;
+const pendingContextAdds: vscode.Uri[] = [];
 
-        // Auto-detect file type if not provided
-        let isFolder = msg.isFolder;
-        if (isFolder === undefined) {
-            const stat = await vscode.workspace.fs.stat(uri);
-            isFolder = stat.type === vscode.FileType.Directory;
-        }
-
-        if (isFolder) {
-            // For folders, list the directory contents as the context
-            const entries = await vscode.workspace.fs.readDirectory(uri);
-            const listing = entries
-                .map(([name, type]) => {
-                    const prefix = type === vscode.FileType.Directory ? "[dir]  " : "       ";
-                    return `${prefix}${name}`;
-                })
-                .join("\n");
-
-            webview.postMessage({
-                type: "context-update",
-                context: {
-                    fileName: fileName + "/",
-                    filePath,
-                    relativePath: relativePath + "/",
-                    isFolder: true,
-                    hasSelection: false,
-                    startLine: 0,
-                    endLine: 0,
-                    content: listing,
-                },
-            });
-            return;
-        }
-
-        const contentBytes = await vscode.workspace.fs.readFile(uri);
-        const content = Buffer.from(contentBytes).toString("utf8");
-
-        webview.postMessage({
-            type: "context-update",
-            context: {
-                fileName,
-                filePath,
-                relativePath,
-                isFolder: false,
-                hasSelection: false,
-                startLine: 0,
-                endLine: 0,
-                content,
-            },
-        });
-    } catch (err) {
-        logMsg(`Failed to read context: ${inputPath} - ${err}`);
+/**
+ * Marks the webview as ready or not ready and flushes pending context adds when becoming ready.
+ *
+ * @param ready - Whether the webview is ready to receive messages
+ * @param webview - The webview instance
+ */
+export async function setContextWebviewReady(ready: boolean, webview: vscode.Webview) {
+    webviewReady = ready;
+    if (!ready) {
+        return;
+    }
+    const pending = pendingContextAdds.splice(0);
+    for (const uri of pending) {
+        await handleContextAdd(uri, webview);
     }
 }
 
 /**
- * Sends the current editor context to the webview.
+ * Adds a URI as attached context. Queues the URI until the webview is ready.
+ *
+ * @param uri - The URI to add as context
+ * @param webview - The webview to send the context to
  */
-export function receiveCurrentContext(webview: vscode.Webview, currentContext: EditorContext) {
-    const hasSelection = currentContext.selectionText.length > 0;
-    const startLine = currentContext.selectionStartLine + 1; // 1-based
-    const endLine = currentContext.selectionEndLine + 1;
+export async function addContext(uri: vscode.Uri, webview: vscode.Webview) {
+    if (!webviewReady) {
+        pendingContextAdds.push(uri);
+        return;
+    }
+    await handleContextAdd(uri, webview);
+}
 
-    webview.postMessage({
-        type: "context-update",
-        context: {
-            fileName: currentContext.fileName,
-            filePath: currentContext.filePath,
-            relativePath: currentContext.relativePath,
-            isFolder: currentContext.isFolder,
-            hasSelection,
-            startLine,
-            endLine,
-            content: hasSelection ? currentContext.selectionText : currentContext.activeFileText,
-        },
-    });
+/**
+ * Routes the `collama.sendToChat` command:
+ * - Explorer multi-select: attach each selected URI as its own context.
+ * - Single non-active URI: attach that file/folder as context.
+ * - Active editor: attach the current selection (or full file) as context.
+ *
+ * @param webview - The webview to send the context to
+ * @param resource - Optional URI from the explorer (single selection)
+ * @param selectedResources - Optional array of URIs from multi-select in explorer
+ */
+export async function handleSendToChat(
+    webview: vscode.Webview,
+    resource?: vscode.Uri,
+    selectedResources?: vscode.Uri[],
+) {
+    if (selectedResources && selectedResources.length > 0) {
+        const unique = [...new Map(selectedResources.map((u) => [u.toString(), u])).values()];
+        logMsg(`Explorer: SendToChat triggered (${unique.length} item(s))`);
+        for (const uri of unique) {
+            await addContext(uri, webview);
+        }
+        return;
+    }
+
+    const activeUri = vscode.window.activeTextEditor?.document.uri.toString();
+    if (resource && resource.toString() !== activeUri) {
+        logMsg("Explorer: SendToChat triggered (single resource)");
+        await addContext(resource, webview);
+        return;
+    }
+
+    const ctx = await new EditorContext().loadActiveEditor();
+    if (!ctx) {
+        return;
+    }
+    logMsg("Edit (Selection): SendToChat triggered");
+    webview.postMessage({ type: "context-update", context: ctx.toWebviewPayload() });
 }

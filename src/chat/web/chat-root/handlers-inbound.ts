@@ -233,7 +233,9 @@ function handleContextUpdate(host: ChatRoot, msg: any) {
     const newCtx = msg.context;
     const exists = host.currentContexts.some(
         (ctx) =>
-            ctx.filePath === newCtx.filePath && ctx.startLine === newCtx.startLine && ctx.endLine === newCtx.endLine,
+            ctx.relativePath === newCtx.relativePath &&
+            ctx.startLine === newCtx.startLine &&
+            ctx.endLine === newCtx.endLine,
     );
     if (!exists) {
         host.currentContexts = [...host.currentContexts, newCtx];

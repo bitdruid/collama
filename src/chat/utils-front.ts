@@ -139,7 +139,8 @@ export const hljsStyles = [
         }
 
         pre code {
-            font-family: ${themeFonts.family}, monospace;
+            font-family: ${themeFonts.familyMono};
+            font-weight: ${themeFonts.weight.thin} !important;
             font-size: 0.95em;
             line-height: 1.4;
         }

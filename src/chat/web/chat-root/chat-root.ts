@@ -67,8 +67,7 @@ export class ChatRoot extends LitElement {
     @property({ type: Number }) contextMax: number = 0;
     @property({ type: Number }) contextUsed: number = 0;
     @property({ type: String }) activeSessionId: string = "";
-    @state() contextSearchResults: { fileName: string; filePath: string; relativePath: string; isFolder: boolean }[] =
-        [];
+    @state() contextSearchResults: { fileName: string; relativePath: string; isFolder: boolean }[] = [];
 
     @state() config: ChatConfig = defaultChatConfig;
     @state() contextStartIndex: number = 0;
@@ -372,7 +371,10 @@ export class ChatRoot extends LitElement {
     }
 
     private get showSettingsBadge(): boolean {
-        return this.config.agentic && (!this.config.enableEditTools || !this.config.enableShellTool);
+        return (
+            this.config.liteMode ||
+            (this.config.agenticMode && (!this.config.enableEditTools || !this.config.enableShellTool))
+        );
     }
 
     private renderActiveDropdown() {

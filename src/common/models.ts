@@ -116,7 +116,10 @@ export const getCompletionModelConfig = (context: EditorContext): { prompt: stri
         return false;
     }
 
-    return { prompt: cfg.prompt(context.openFiles, context.activePrefix, context.activeSuffix), stop: cfg.stop };
+    return {
+        prompt: cfg.prompt(context.openFiles ?? [], context.activePrefix ?? "", context.activeSuffix ?? ""),
+        stop: cfg.stop,
+    };
 };
 
 /**

@@ -44,7 +44,7 @@ class DiffContentProvider implements vscode.TextDocumentContentProvider {
  *   action.
  */
 export async function handleSelectionWithDiff(callback: (currentContext: EditorContext) => Promise<string>) {
-    const currentContext = await EditorContext.create();
+    const currentContext = await new EditorContext().loadActiveEditor();
     if (!currentContext) {
         return;
     }
@@ -94,7 +94,7 @@ export async function handleSelectionWithDiff(callback: (currentContext: EditorC
 
                 if (applyChoice === "Accept") {
                     const edit = new vscode.WorkspaceEdit();
-                    edit.replace(currentContext.textEditor.document.uri, currentContext.selectionObject, editedText);
+                    edit.replace(currentContext.uri, currentContext.selectionObject, editedText);
                     await vscode.workspace.applyEdit(edit);
                     showInformationMessage("Changes applied.");
                 }
@@ -115,7 +115,7 @@ export async function handleSelectionWithDiff(callback: (currentContext: EditorC
             } else if (previewChoice === "No") {
                 // apply without preview
                 const edit = new vscode.WorkspaceEdit();
-                edit.replace(currentContext.textEditor.document.uri, currentContext.selectionObject, editedText);
+                edit.replace(currentContext.uri, currentContext.selectionObject, editedText);
                 await vscode.workspace.applyEdit(edit);
                 showInformationMessage("Changes applied.");
             }

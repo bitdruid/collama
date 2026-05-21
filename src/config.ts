@@ -41,13 +41,14 @@ export interface ExtensionConfig {
     apiEndpointInstruct: string;
     apiModelCompletion: string;
     apiModelInstruct: string;
-    agentic: boolean;
+    agenticMode: boolean;
     autoComplete: boolean;
     suggestMode: string;
     verbosityMode: "compact" | "medium" | "detailed";
     suggestDelay: number;
     enableEditTools: boolean;
     enableShellTool: boolean;
+    liteMode: boolean;
     tlsRejectUnauthorized: boolean;
     apiTokenContextLenCompletion: number;
     apiTokenContextLenInstruct: number;
@@ -60,13 +61,14 @@ export const defaultExtensionConfig: ExtensionConfig = {
     apiEndpointInstruct: "http://127.0.0.1:11434",
     apiModelCompletion: "qwen2.5-coder:3b",
     apiModelInstruct: "qwen2.5-coder:3b-instruct",
-    agentic: true,
+    agenticMode: true,
     autoComplete: true,
     suggestMode: "inline",
     verbosityMode: "medium",
     suggestDelay: 1500,
     enableEditTools: true,
     enableShellTool: false,
+    liteMode: false,
     tlsRejectUnauthorized: false,
     apiTokenContextLenCompletion: 4096,
     apiTokenContextLenInstruct: 4096,
@@ -129,13 +131,14 @@ export async function updateVSConfig() {
         apiEndpointInstruct: cfg.get("apiEndpointInstruct", userConfig.apiEndpointInstruct),
         apiModelCompletion: cfg.get("apiModelCompletion", userConfig.apiModelCompletion),
         apiModelInstruct: cfg.get("apiModelInstruct", userConfig.apiModelInstruct),
-        agentic: cfg.get("agentic", userConfig.agentic),
+        agenticMode: cfg.get("agenticMode", userConfig.agenticMode),
         autoComplete: cfg.get("autoComplete", userConfig.autoComplete),
         suggestMode: cfg.get("suggestMode", userConfig.suggestMode),
         verbosityMode: cfg.get("verbosityMode", userConfig.verbosityMode),
         suggestDelay: Math.max(cfg.get("suggestDelay", userConfig.suggestDelay), 1500),
         enableEditTools: cfg.get("enableEditTools", userConfig.enableEditTools),
         enableShellTool: cfg.get("enableShellTool", userConfig.enableShellTool),
+        liteMode: cfg.get("liteMode", userConfig.liteMode),
         tlsRejectUnauthorized: cfg.get("tlsRejectUnauthorized", userConfig.tlsRejectUnauthorized),
         apiTokenContextLenCompletion: cfg.get("apiTokenContextLenCompletion", userConfig.apiTokenContextLenCompletion),
         apiTokenContextLenInstruct: cfg.get("apiTokenContextLenInstruct", userConfig.apiTokenContextLenInstruct),

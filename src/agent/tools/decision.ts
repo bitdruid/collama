@@ -107,7 +107,7 @@ export const decision_def = {
     function: {
         name: "decision",
         description:
-            "Ask the user to choose between options when the right next step is ambiguous. Use this instead of guessing or stopping mid-task. The user's selected option is returned verbatim. Markdown not allowed",
+            "Ask the user to choose between options when the right next step is ambiguous. Prefer it over guessing. Requesting a decision overcomes thinking. Markdown not allowed",
         parameters: {
             type: "object",
             properties: {
