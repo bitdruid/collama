@@ -1,6 +1,8 @@
+import { LitElement } from "lit";
 import { AttachedContext } from "../../../common/context-chat";
 import { logWebview, showToast } from "../../utils-front";
 import type { ChatRoot } from "./chat-root";
+import { buildSelfContainedHtml } from "./html-export";
 import { backendApi, buildUserContent } from "./utils";
 
 function scrollToBottomAfterRender(host: ChatRoot) {
@@ -173,6 +175,62 @@ export function onExportSession(host: ChatRoot, e: CustomEvent) {
     const sessionId = e.detail?.id || host.activeSessionId;
     logWebview(`Exporting session ${sessionId}`);
     backendApi.exportSession(sessionId);
+}
+
+/**
+ * Exports a session's chat as a self-contained HTML file.
+ *
+ * Switches to the target session first (so its messages are rendered into the
+ * live DOM), waits for paint, then serializes `collama-chatoutput` — including
+ * shadow roots and snapshotted CSS variables — and sends the document to the
+ * backend, which prompts a save dialog.
+ */
+export async function onExportSessionHtml(host: ChatRoot, e: CustomEvent) {
+    const sessionId = e.detail?.id || host.activeSessionId;
+    const session = host.sessions.find((s) => s.id === sessionId);
+    if (!session) {
+        return;
+    }
+    logWebview(`Exporting session ${sessionId} as HTML`);
+
+    if (sessionId !== host.activeSessionId) {
+        backendApi.switchSession(sessionId);
+        const switched = await waitFor(() => host.activeSessionId === sessionId, 3000);
+        if (!switched) {
+            showToast("Could not switch to session for export");
+            return;
+        }
+    }
+
+    await host.updateComplete;
+    const chatOutput = host.shadowRoot?.querySelector("collama-chatoutput") as LitElement | null;
+    if (!chatOutput) {
+        showToast("Chat output not ready");
+        return;
+    }
+    await chatOutput.updateComplete;
+
+    const htmlDoc = buildSelfContainedHtml(chatOutput, session.title);
+    backendApi.exportSessionHtml(sessionId, session.title, htmlDoc);
+}
+
+function waitFor(predicate: () => boolean, timeoutMs: number): Promise<boolean> {
+    return new Promise((resolve) => {
+        if (predicate()) {
+            resolve(true);
+            return;
+        }
+        const start = Date.now();
+        const interval = window.setInterval(() => {
+            if (predicate()) {
+                window.clearInterval(interval);
+                resolve(true);
+            } else if (Date.now() - start >= timeoutMs) {
+                window.clearInterval(interval);
+                resolve(false);
+            }
+        }, 30);
+    });
 }
 
 /** Creates a new chat session. */

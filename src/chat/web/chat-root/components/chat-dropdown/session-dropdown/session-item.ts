@@ -61,6 +61,9 @@ export class SessionItem extends LitElement {
                     <button class="action-button export-button" @click=${this._handleExport} title="Export chat (JSON)">
                         <!--  -->E
                     </button>
+                    <button class="action-button export-html-button" @click=${this._handleExportHtml} title="Export chat (HTML)">
+                        <!--  -->H
+                    </button>
                     <button class="action-button rename-button" @click=${this._startRename} title="Rename chat">
                         <!--  -->R
                     </button>
@@ -98,6 +101,11 @@ export class SessionItem extends LitElement {
     private _handleExport(e: Event) {
         e.stopPropagation();
         this.dispatchEvent(new CustomEvent("export", { bubbles: true, composed: true }));
+    }
+
+    private _handleExportHtml(e: Event) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent("export-html", { bubbles: true, composed: true }));
     }
 
     private _handleDelete(e: Event) {

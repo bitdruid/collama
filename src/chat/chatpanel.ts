@@ -55,6 +55,7 @@ export class ChatPanel {
         "new-ghost-session": () => this.sessionHandlers.handleNewGhostSession(),
         "switch-session": (msg) => this.sessionHandlers.handleSwitchSession(msg),
         "export-session": (msg) => this.sessionHandlers.handleExportSession(msg),
+        "export-session-html": (msg) => this.sessionHandlers.handleExportSessionHtml(msg),
         "rename-session": (msg) => this.sessionHandlers.handleRenameSession(msg),
         "copy-session": (msg) => this.sessionHandlers.handleCopySession(msg),
         "delete-session": (msg) => this.sessionHandlers.handleDeleteSession(msg),

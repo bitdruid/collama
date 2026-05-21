@@ -70,6 +70,39 @@ export class SessionHandlers {
     }
 
     /**
+     * Prompts the user for a path and writes the session as a self-contained HTML file.
+     * Offers to open the resulting file in the default browser.
+     */
+    async handleExportSessionHtml(msg: { sessionId: string; title: string; html: string }) {
+        const safeName = (msg.title || "chat-export").replace(/[\\/:*?"<>|]+/g, "_").trim() || "chat-export";
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        const defaultUri = workspaceFolder
+            ? vscode.Uri.joinPath(workspaceFolder.uri, `${safeName}.html`)
+            : vscode.Uri.file(`${safeName}.html`);
+        const target = await vscode.window.showSaveDialog({
+            defaultUri,
+            filters: { "HTML": ["html"] },
+            saveLabel: "Export chat",
+        });
+        if (!target) {
+            return;
+        }
+        try {
+            await vscode.workspace.fs.writeFile(target, Buffer.from(msg.html, "utf8"));
+            logMsg(`Exported session ${msg.sessionId} as HTML to ${target.fsPath}`);
+            const choice = await vscode.window.showInformationMessage(
+                `Chat exported to ${target.fsPath}`,
+                "Open in browser",
+            );
+            if (choice === "Open in browser") {
+                vscode.env.openExternal(target);
+            }
+        } catch (err) {
+            vscode.window.showErrorMessage(`Failed to write HTML export: ${String(err)}`);
+        }
+    }
+
+    /**
      * Opens a read-only preview of a session's chat history as raw JSON.
      */
     handleExportSession(msg: { sessionId: string }) {

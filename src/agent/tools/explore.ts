@@ -108,13 +108,56 @@ export const read_def = {
 
 /**
  * Searches file contents for a regex pattern across files matched by an optional glob.
- * Returns results in `file:line:content` format, or "No matches found." if no matches exist.
+ * Returns matching lines in `file:line:content` format, or "No matches found." if no matches exist.
+ * For large result sets, output degrades automatically: first to `file:line` only (no content),
+ * then to a truncated list. Check the `message` footer for total match count.
  *
  * @param args.pattern - Regex pattern to search for
  * @param args.glob - Optional glob pattern to restrict search scope
  * @returns Matching lines in `file:line:content` format, or JSON error string on failure
  */
-export async function grep_exec(args: { pattern: string; glob?: string }): Promise<ToolAnswer<{ results: string[] }>> {
+const GREP_MAX_TOTAL_CHARS = 10_000 * 4;
+const GREP_MAX_LINE_CONTENT_CHARS = 200;
+
+interface GrepHit {
+    file: string;
+    line: number;
+    text: string;
+}
+
+/** Windows a long line around the match offset so a single huge line cannot dominate output. */
+function windowAroundMatch(line: string, matchIdx: number, matchLen: number): string {
+    if (line.length <= GREP_MAX_LINE_CONTENT_CHARS) {
+        return line.trim();
+    }
+    const before = Math.max(0, matchIdx - 60);
+    const end = Math.min(line.length, matchIdx + matchLen + 120);
+    const prefix = before > 0 ? "…" : "";
+    const suffix = end < line.length ? "…" : "";
+    return (prefix + line.slice(before, end) + suffix).trim();
+}
+
+function joinedSize(entries: string[]): number {
+    let size = 0;
+    for (const e of entries) {
+        size += e.length + 1;
+    }
+    return size;
+}
+
+/**
+ * Searches file contents for a regex pattern across files matched by an optional glob.
+ * Returns matching lines in `file:line:content` format, or "No matches found." if no matches exist.
+ * For large result sets, output degrades automatically: first to `file:line` only (no content),
+ * then to a truncated list. Check the `message` footer for total match count.
+ *
+ * @param args.pattern - Regex pattern to search for
+ * @param args.glob - Optional glob pattern to restrict search scope
+ * @returns Matching lines in `file:line:content` format, or JSON error string on failure
+ */
+export async function grep_exec(
+    args: { pattern: string; glob?: string },
+): Promise<ToolAnswer<{ results: string[] }>> {
     logMsg(`Agent - use grep-tool pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
 
     let regex: RegExp;
@@ -146,7 +189,7 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
         })
     ).filter((f) => isWithinRoot(ws.root, path.resolve(ws.root, f)));
 
-    const results: string[] = [];
+    const hits: GrepHit[] = [];
     for (const file of files) {
         const fullPath = path.resolve(ws.root, file);
         let content: string;
@@ -157,20 +200,57 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
         }
         const lines = content.split("\n");
         for (let i = 0; i < lines.length; i++) {
-            if (regex.test(lines[i])) {
-                results.push(`${formatExplorePath(ws.root, file)}:${i + 1}:${lines[i].trim()}`);
+            const m = regex.exec(lines[i]);
+            if (m) {
+                hits.push({
+                    file: formatExplorePath(ws.root, file),
+                    line: i + 1,
+                    text: windowAroundMatch(lines[i], m.index, m[0].length),
+                });
             }
         }
     }
 
-    return results.length > 0 ? toolSuccess({ results }) : toolSuccess({ results: [] }, "No matches found.");
-}
-export const grep_def = {
+    if (hits.length === 0) {
+        return toolSuccess({ results: [] }, "No matches found.");
+    }
+
+    const total = hits.length;
+
+    const withContent = hits.map((h) => `${h.file}:${h.line}:${h.text}`);
+    if (joinedSize(withContent) <= GREP_MAX_TOTAL_CHARS) {
+        return toolSuccess({ results: withContent }, `[${total} matches]`);
+    }
+
+    const fileLineOnly = hits.map((h) => `${h.file}:${h.line}`);
+    if (joinedSize(fileLineOnly) <= GREP_MAX_TOTAL_CHARS) {
+        return toolSuccess(
+            { results: fileLineOnly },
+            `[${total} matches — content omitted, refine pattern/glob to see snippets]`,
+        );
+    }
+
+    const truncated: string[] = [];
+    let runningSize = 0;
+    for (const entry of fileLineOnly) {
+        if (runningSize + entry.length + 1 > GREP_MAX_TOTAL_CHARS) {
+            break;
+        }
+        truncated.push(entry);
+        runningSize += entry.length + 1;
+    }
+    return toolSuccess(
+        { results: truncated },
+        `[showing ${truncated.length} of ${total} matches — refine pattern/glob to see more]`,
+    );
+}export const grep_def = {
     type: "function" as const,
     function: {
         name: "grep",
         description:
-            "Grep file contents for a regex pattern. Returns filenames with exact line of the pattern. Use to locate strings.",
+            "Grep file contents for a regex pattern. Returns `file:line:content` where content is windowed around the match. " +
+            "Large result sets degrade automatically: first to `file:line` only (no content), then to a truncated `file:line` list. " +
+            "Check the `message` footer for the total match count and whether output was reduced — refine pattern/glob to see more.",
         parameters: {
             type: "object",
             properties: {

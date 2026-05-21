@@ -54,6 +54,8 @@ export const backendApi = {
     convertToGhost: () => window.vscode.postMessage({ type: "convert-to-ghost" }),
     clearChat: () => window.vscode.postMessage({ type: "clear-chat" }),
     exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
+    exportSessionHtml: (sessionId: string, title: string, html: string) =>
+        window.vscode.postMessage({ type: "export-session-html", sessionId, title, html }),
     toolConfirmResponse: (id: string, value: string, reason: string) =>
         window.vscode.postMessage({ type: "tool-confirm-response", id, value, reason }),
     toolDecisionResponse: (id: string, value: string) =>

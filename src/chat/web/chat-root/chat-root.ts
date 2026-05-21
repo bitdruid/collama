@@ -28,6 +28,7 @@ import {
     onDeleteSession,
     onEditMessage,
     onExportSession,
+    onExportSessionHtml,
     onNearBottomChanged,
     onNewChat,
     onNewGhostChat,
@@ -112,6 +113,7 @@ export class ChatRoot extends LitElement {
     private activeDropdownElement?: BaseDropdown;
 
     private handleExportSession = (e: CustomEvent) => onExportSession(this, e);
+    private handleExportSessionHtml = (e: CustomEvent) => onExportSessionHtml(this, e);
     private handleSelectSession = (e: CustomEvent) => onSelectSession(e);
     private handleDeleteSession = (e: CustomEvent) => onDeleteSession(e);
     private handleRenameSession = (e: CustomEvent) => onRenameSession(e);
@@ -386,6 +388,7 @@ export class ChatRoot extends LitElement {
                     .activeSessionId=${this.activeSessionId}
                     @dropdown-close=${this.handleDropdownClose}
                     @export-session=${this.handleExportSession}
+                    @export-session-html=${this.handleExportSessionHtml}
                     @select-session=${this.handleSelectSession}
                     @delete-session=${this.handleDeleteSession}
                     @rename-session=${this.handleRenameSession}

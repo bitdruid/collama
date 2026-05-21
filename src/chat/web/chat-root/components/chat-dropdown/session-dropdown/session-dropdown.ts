@@ -61,6 +61,16 @@ export class SessionDropdown extends BaseDropdown {
         );
     };
 
+    private handleExportHtml = (session: ChatSession) => {
+        this.dispatchEvent(
+            new CustomEvent("export-session-html", {
+                detail: { id: session.id },
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    };
+
     protected override renderContent() {
         const sorted = [...this.sessions].filter((s) => !s.ghost).sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -81,6 +91,7 @@ export class SessionDropdown extends BaseDropdown {
                               @rename=${this.handleRename}
                               @copy=${() => this.handleCopy(session)}
                               @export=${() => this.handleExport(session)}
+                              @export-html=${() => this.handleExportHtml(session)}
                           ></collama-session-item>
                       `,
                   )}
