@@ -55,7 +55,7 @@ export class SessionHandlers {
      * If the current active session is temporary or ghost, it will be deleted first.
      * @param msg - The message containing the session ID to switch to.
      */
-    handleSwitchSession(msg: { sessionId: string }) {
+    async handleSwitchSession(msg: { sessionId: string }) {
         const { sessionId } = msg;
         if (!this.sessionManager.sessions.find((s) => s.id === sessionId)) {
             return;
@@ -64,7 +64,8 @@ export class SessionHandlers {
         this.deleteActiveTemporarySession();
 
         this.sessionManager.activeSessionId = sessionId;
-        this.sessionManager.saveSessions();
+        await this.sessionManager.ensureLoaded(sessionId);
+        await this.sessionManager.flushSessions();
         this.sessionManager.sendSessionsUpdate();
         logMsg(`Switched to session: ${sessionId}`);
     }
@@ -105,7 +106,8 @@ export class SessionHandlers {
     /**
      * Opens a read-only preview of a session's chat history as raw JSON.
      */
-    handleExportSession(msg: { sessionId: string }) {
+    async handleExportSession(msg: { sessionId: string }) {
+        await this.sessionManager.ensureLoaded(msg.sessionId);
         const session = this.sessionManager.sessions.find((s) => s.id === msg.sessionId);
         const messages = session?.messages.getMessages() || [];
         const json = JSON.stringify(buildExportData(this.extContext, messages), null, 2);
@@ -140,8 +142,9 @@ export class SessionHandlers {
      * Creates a copy of an existing session.
      * @param msg - The message containing the session ID to copy.
      */
-    handleCopySession(msg: { sessionId: string }) {
+    async handleCopySession(msg: { sessionId: string }) {
         const { sessionId } = msg;
+        await this.sessionManager.ensureLoaded(sessionId);
         const newSession = this.sessionManager.copySession(sessionId);
         if (newSession) {
             this.sessionManager.sendSessionsUpdate();
@@ -154,21 +157,23 @@ export class SessionHandlers {
      * updated session or creates a new session if none remain.
      * @param msg - The message containing the session ID to delete.
      */
-    handleDeleteSession(msg: { sessionId: string }) {
+    async handleDeleteSession(msg: { sessionId: string }) {
         const { sessionId } = msg;
-        this.sessionManager.sessions = this.sessionManager.sessions.filter((s) => s.id !== sessionId);
+        const wasActive = this.sessionManager.activeSessionId === sessionId;
 
-        if (this.sessionManager.activeSessionId === sessionId) {
+        await this.sessionManager.deleteSessionAsync(sessionId);
+
+        if (wasActive) {
             if (this.sessionManager.sessions.length > 0) {
-                this.sessionManager.activeSessionId = this.sessionManager.sessions.sort(
-                    (a, b) => b.updatedAt - a.updatedAt,
-                )[0].id;
+                const next = [...this.sessionManager.sessions].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+                this.sessionManager.activeSessionId = next.id;
+                await this.sessionManager.ensureLoaded(next.id);
             } else {
                 this.sessionManager.createNewSession();
             }
         }
 
-        this.sessionManager.saveSessions();
+        await this.sessionManager.flushSessions();
         this.sessionManager.sendSessionsUpdate();
         logMsg(`Deleted session: ${sessionId}`);
     }

@@ -98,6 +98,7 @@ export class ChatPanel {
      * Handles the chat-ready message by sending initial state to the webview.
      */
     private async handleChatReady(webview: vscode.Webview) {
+        await this.sessionManager.init();
         setContextWebviewReady(true, webview);
         const activeSession = this.sessionManager.getActiveSession();
         const messages = activeSession?.messages.getMessages() || [];
@@ -252,6 +253,7 @@ export class ChatPanel {
                     this.removeActiveRunTail(s);
                     s.messages.push({ role: "assistant" as const, content: "**Interrupted**" });
                 });
+                this.sessionManager.flushSessions();
                 webview.postMessage({
                     type: "history-replace",
                     messages: sanitizeMessages(active.messages.getMessages()),
@@ -416,7 +418,7 @@ export class ChatPanel {
         this.sessionManager.updateSession(session, (s) => {
             s.contextStartIndex = completedContextStartIndex;
         });
-        this.sessionManager.saveSessions();
+        this.sessionManager.flushSessions();
 
         // Notify webview that chat is complete
         webview.postMessage({ type: "chat-complete", contextUsed });

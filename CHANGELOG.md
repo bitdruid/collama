@@ -1,6 +1,22 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.17] - 2026-05-26
+
+### Changed
+- Simplified tool history policy to `dropAll`/`keepAll` only (removed per-call deduplication)
+- Removed `AgentContext` wrapper in favor of direct `ChatContext` usage
+- Lazy-load session messages from storage — only the active session is hydrated at startup for faster load times
+- Explore tools (`read`, `grep`, `glob`, `gitLog`) now use the `dropAll` policy so their results are cleared after each turn
+
+## [1.7.16] - 2026-05-21
+
+### Added
+- Export chat session to HTML for sharing or archiving
+
+### Changed
+- Limit `grep` tool output to prevent oversized responses from flooding context
+
 ## [1.7.15] - 2026-05-21
 
 ### Added
