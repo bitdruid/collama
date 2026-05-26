@@ -1,6 +1,6 @@
 import { ToolCall } from "./client";
 
-export type ToolHistoryPolicy = "dedupeExactArgs" | "keepAll" | "dropAll";
+export type ToolHistoryPolicy = "keepAll" | "dropAll";
 
 export interface AttachedContext {
     fileName: string;
@@ -76,20 +76,6 @@ function ensureMessageId<T extends ChatHistory>(message: T): T {
 
 function ensureMessageIds(messages: ChatHistory[]): ChatHistory[] {
     return messages.map((message) => ensureMessageId(message));
-}
-
-function stableStringify(value: unknown): string {
-    if (Array.isArray(value)) {
-        return `[${value.map(stableStringify).join(",")}]`;
-    }
-    if (value && typeof value === "object") {
-        const obj = value as Record<string, unknown>;
-        return `{${Object.keys(obj)
-            .sort()
-            .map((key) => `${JSON.stringify(key)}:${stableStringify(obj[key])}`)
-            .join(",")}}`;
-    }
-    return JSON.stringify(value);
 }
 
 /**
@@ -304,27 +290,11 @@ export class ChatContext {
     }
 
     /**
-     * Applies the per-tool history policy.
-     *
-     * Called with `newToolCallId` after each tool execution: runs `dedupeExactArgs`
-     * (replaces earlier same-tool, same-args results) and `dropAll` (replaces all
-     * earlier same-tool results regardless of args).
-     *
-     * Called without `newToolCallId` at turn-end: sweeps every tool response whose
-     * policy is `dropAll` and replaces its content with a placeholder.
-     *
-     * `keepAll` is always a noop.
+     * Sweeps every tool response at turn-end, marking `dropAll` tools' content as
+     * `[stale]`. `keepAll` is a noop. Called once per agent turn after the work-loop
+     * completes — tool results stay live throughout the loop that produced them.
      */
-    public applyToolHistoryPolicy(getPolicy: (toolName: string) => ToolHistoryPolicy, newToolCallId?: string): void {
-        if (newToolCallId !== undefined) {
-            this._applyPolicyForNewToolCall(getPolicy, newToolCallId);
-        } else {
-            this._sweepDropAllPolicies(getPolicy);
-        }
-    }
-
-    /** Sweeps all tool responses at turn-end, marking `dropAll` tools as stale. */
-    private _sweepDropAllPolicies(getPolicy: (toolName: string) => ToolHistoryPolicy): void {
+    public applyToolHistoryPolicy(getPolicy: (toolName: string) => ToolHistoryPolicy): void {
         for (let i = 0; i < this.length(); i++) {
             const toolCallId = this.getToolCallId(i);
             if (!toolCallId) {
@@ -336,57 +306,6 @@ export class ChatContext {
             }
             if (getPolicy(tc.function.name) === "dropAll") {
                 this.setToolResponse(toolCallId, { content: "[stale - dropped after turn]" });
-            }
-        }
-    }
-
-    /** Applies dedupe/drop policy for a newly executed tool call. */
-    private _applyPolicyForNewToolCall(
-        getPolicy: (toolName: string) => ToolHistoryPolicy,
-        newToolCallId: string,
-    ): void {
-        const newTc = this.findToolCall(newToolCallId);
-        if (!newTc) {
-            return;
-        }
-        const policy = getPolicy(newTc.function.name);
-        if (policy === "keepAll") {
-            return;
-        }
-
-        let newArgsKey: string | undefined;
-        if (policy === "dedupeExactArgs") {
-            try {
-                newArgsKey = stableStringify(JSON.parse(newTc.function.arguments));
-            } catch {
-                return;
-            }
-        }
-
-        for (let i = 0; i < this.length(); i++) {
-            const toolCallId = this.getToolCallId(i);
-            if (!toolCallId || toolCallId === newToolCallId) {
-                continue;
-            }
-            const tc = this.findToolCall(toolCallId);
-            if (!tc || tc.function.name !== newTc.function.name) {
-                continue;
-            }
-
-            if (policy === "dropAll") {
-                this.setToolResponse(toolCallId, { content: "[stale - dropped after turn]" });
-                continue;
-            }
-
-            let argsKey: string;
-            try {
-                argsKey = stableStringify(JSON.parse(tc.function.arguments));
-            } catch {
-                continue;
-            }
-
-            if (argsKey === newArgsKey) {
-                this.setToolResponse(toolCallId, { content: "[stale - tool re-run later]" });
             }
         }
     }

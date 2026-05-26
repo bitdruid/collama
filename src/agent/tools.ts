@@ -63,11 +63,11 @@ function formatGitRefTarget(raw: unknown): string {
 
 /**
  * Extracts the primary target value from tool args for UI display.
- * Uses the tool's `targetKey` to pick or format the right args, then truncates file paths.
+ * Uses the tool's `toolTarget` to pick or format the right args, then truncates file paths.
  */
 export function getToolTarget(toolName: string, args: Record<string, any>): string {
     const tool = toolRegistry[toolName];
-    const key = tool?.targetKey;
+    const key = tool?.toolTarget;
     if (!key) {
         return "";
     }
@@ -94,7 +94,7 @@ export interface Tool<TInput = any, TData = unknown> {
         };
     };
     /** The args key or formatter whose value identifies this tool's primary target (shown in UI). */
-    targetKey?: string | ((args: Record<string, any>) => string);
+    toolTarget?: string | ((args: Record<string, any>) => string);
     execute: (input: TInput) => Promise<ToolAnswer<TData>>;
 }
 
@@ -250,9 +250,9 @@ export async function confirmAction(action: string, placeHolder: string): Promis
 export const toolRegistry: Record<string, Tool<any, any>> = {
     read: {
         category: "explore",
-        historyPolicy: "dedupeExactArgs",
+        historyPolicy: "dropAll",
         definition: read_def,
-        targetKey: (args) => {
+        toolTarget: (args) => {
             const path = formatToolTargetValue("filePath", args.filePath);
             if (args.startLine || args.endLine) {
                 return `${path} → ${args.startLine ?? 1} - ${args.endLine ?? "?"}`;
@@ -263,9 +263,9 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     },
     grep: {
         category: "explore",
-        historyPolicy: "dedupeExactArgs",
+        historyPolicy: "dropAll",
         definition: grep_def,
-        targetKey: (args) => {
+        toolTarget: (args) => {
             const pattern = formatToolTargetValue("pattern", args.pattern);
             const glob = formatToolTargetValue("filePath", args.glob);
             return glob ? `${pattern} → ${glob}` : pattern;
@@ -274,16 +274,16 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     },
     glob: {
         category: "explore",
-        historyPolicy: "dedupeExactArgs",
+        historyPolicy: "dropAll",
         definition: glob_def,
-        targetKey: "pattern",
+        toolTarget: "pattern",
         execute: glob_exec,
     },
     gitLog: {
         category: "git",
-        historyPolicy: "dedupeExactArgs",
+        historyPolicy: "dropAll",
         definition: gitLog_def,
-        targetKey: (args) => {
+        toolTarget: (args) => {
             const mode = formatToolTargetValue("mode", args.mode ?? "commits");
             if (mode === "branches") {
                 return args.includeRemote ? "branches (all)" : "branches";
@@ -299,7 +299,7 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         category: "git",
         historyPolicy: "dropAll",
         definition: gitDiff_def,
-        targetKey: (args) => {
+        toolTarget: (args) => {
             const from = formatGitRefTarget(args.fromCommit);
             const to = formatGitRefTarget(args.toCommit ?? "HEAD");
             const filePath = formatToolTargetValue("filePath", args.filePath);
@@ -312,49 +312,49 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         category: "shell",
         historyPolicy: "keepAll",
         definition: shell_def,
-        targetKey: (args) => formatToolTargetValue("command", args.command),
+        toolTarget: (args) => formatToolTargetValue("command", args.command),
         execute: shell_exec,
     },
     // fetch: {
     //     category: "fetch",
-    //     historyPolicy: "dedupeExactArgs",
+    //     historyPolicy: "dropAll",
     //     definition: fetch_def,
-    //     targetKey: (args) => formatToolTargetValue("url", args.url),
+    //     toolTarget: (args) => formatToolTargetValue("url", args.url),
     //     execute: fetch_exec,
     // },
     edit: {
         category: "edit",
         historyPolicy: "keepAll",
         definition: edit_def,
-        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
+        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: edit_exec,
     },
     create: {
         category: "edit",
         historyPolicy: "keepAll",
         definition: create_def,
-        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
+        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: create_exec,
     },
     delete: {
         category: "edit",
         historyPolicy: "keepAll",
         definition: delete_def,
-        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
+        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: delete_exec,
     },
     diagnostics: {
         category: "diagnostics",
         historyPolicy: "dropAll",
         definition: diagnostics_def,
-        targetKey: (args) => formatToolTargetValue("filePath", args.filePath),
+        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: diagnostics_exec,
     },
     decision: {
         category: "edit",
         historyPolicy: "dropAll",
         definition: decision_def,
-        targetKey: (args) => formatToolTargetValue("question", args.question),
+        toolTarget: (args) => formatToolTargetValue("question", args.question),
         execute: decision_exec,
     },
 };

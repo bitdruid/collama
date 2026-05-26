@@ -100,7 +100,7 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 | `collama.suggestMode`                  | string  | `inline`                 | Suggestion style: `inline`, `multiline`, or `multiblock` |
 | `collama.suggestDelay`                 | number  | `1500`                   | Delay (ms) before requesting completion                  |
 | `collama.verbosityMode`                | string  | `medium`                 | Chat response detail: `compact`, `medium`, or `detailed` |
-| `collama.agentic`                      | boolean | `true`                   | Use tool-calling mode; recommended only for large models |
+| `collama.agenticMode`                  | string  | `plain`                  | Agent mode: `plain`, `lite`, or `default`                |
 | `collama.enableEditTools`              | boolean | `true`                   | Enable edit tools (read-only mode when disabled)         |
 | `collama.enableShellTool`              | boolean | `false`                  | Enable shell tool usage                                  |
 | `collama.tlsRejectUnauthorized`        | boolean | `true`                   | Verify TLS certificates for HTTPS endpoints              |
@@ -195,7 +195,7 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
     - `gitDiff` - Show working tree, staged, or commit/branch diffs
 
 - **Code Analysis**
-    - `analyse` - Language-server analysis. `mode='diagnostics'` returns errors/warnings/hints. `mode='references'` finds all usages of a symbol at a given location
+    - `diagnostics` - Language-server analysis. Returns errors/warnings/hints for a file
 
 - **Decision**
     - `decision` - Ask the user to choose between options when the right next step is ambiguous

@@ -348,7 +348,6 @@ export class ChatPanel {
                                 customKeys,
                             },
                         ]);
-                        s.messages.applyToolHistoryPolicy(getToolHistoryPolicy, toolCallId);
                     });
                     webview.postMessage({
                         type: "agent-add-message",
@@ -359,6 +358,19 @@ export class ChatPanel {
                             customKeys,
                         },
                     });
+
+                    if (event.toolLastCall) {
+                        currentIndex++;
+                        this.sessionManager.updateSession(session, (s) => {
+                            s.messages.replaceRange(currentIndex, currentIndex, [
+                                { role: "assistant" as const, content: "" },
+                            ]);
+                        });
+                        webview.postMessage({
+                            type: "agent-add-message",
+                            message: { role: "assistant", content: "" },
+                        });
+                    }
                 }
 
                 if (event.type === "agent-tool-calls") {
@@ -372,29 +384,6 @@ export class ChatPanel {
                         type: "agent-tool-calls",
                         index: currentIndex,
                         toolCalls: event.toolCalls as ToolCall[],
-                    });
-                }
-
-                if (event.type === "agent-turn-start") {
-                    currentIndex++;
-
-                    this.sessionManager.updateSession(session, (s) => {
-                        s.messages.replaceRange(currentIndex, currentIndex, [
-                            {
-                                role: "assistant" as const,
-                                content: "",
-                            },
-                        ]);
-                    });
-                    webview.postMessage({
-                        type: "agent-add-message",
-                        message: { role: "assistant", content: "" },
-                    });
-                }
-
-                if (event.type === "agent-turn-complete") {
-                    this.sessionManager.updateSession(session, (s) => {
-                        s.messages.applyToolHistoryPolicy(getToolHistoryPolicy);
                     });
                 }
             },
@@ -416,6 +405,10 @@ export class ChatPanel {
             this.sessionManager.sendSessionsUpdate();
             return;
         }
+
+        this.sessionManager.updateSession(session, (s) => {
+            s.messages.applyToolHistoryPolicy(getToolHistoryPolicy);
+        });
 
         const { contextStartIndex: completedContextStartIndex, contextUsed } = await recomputeContextState(
             session.messages,

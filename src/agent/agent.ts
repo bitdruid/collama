@@ -6,13 +6,7 @@ import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import {
-    executeTool,
-    getToolDefinitions,
-    getToolHistoryPolicy,
-    getToolTarget,
-    resetAutoAcceptEdits,
-} from "./tools";
+import { executeTool, getToolDefinitions, getToolHistoryPolicy, getToolTarget, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
 export type AgentMode = "plain" | "default" | "sub";
@@ -80,8 +74,7 @@ export class Agent {
                         const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
                         if (result.toolCalls.length === 0) {
-                            history.applyToolHistoryPolicy();
-                            onEvent?.({ type: "agent-turn-complete" });
+                            history.applyToolHistoryPolicy(getToolHistoryPolicy);
                             break;
                         }
 
@@ -93,8 +86,6 @@ export class Agent {
                         if (signal.aborted) {
                             break;
                         }
-
-                        onEvent?.({ type: "agent-turn-start" });
                     }
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -114,16 +105,18 @@ export class Agent {
      * @returns An object containing the initialized history and tool definitions.
      */
     private prepareAgent(messages: ChatContext): {
-        history: AgentContext;
+        history: ChatContext;
         tools: ReturnType<typeof getToolDefinitions>;
     } {
-        const initial =
-            this.agentMode !== "plain"
-                ? [{ role: "system" as const, content: getAgentTemplate() }, ...messages.getMessages()]
-                : messages.getMessages();
+        const history = new ChatContext();
+        if (this.agentMode !== "plain") {
+            history.setMessages([{ role: "system" as const, content: getAgentTemplate() }, ...messages.getMessages()]);
+        } else {
+            history.setMessages(messages.getMessages());
+        }
 
         return {
-            history: new AgentContext(initial),
+            history,
             tools: this.agentMode === "default" && userConfig.agenticMode ? getToolDefinitions() : [],
         };
     }
@@ -136,7 +129,7 @@ export class Agent {
      * @returns The configured LLM chat settings.
      */
     private async buildSettings(
-        history: AgentContext,
+        history: ChatContext,
         tools: ReturnType<typeof getToolDefinitions>,
         signal: AbortSignal,
     ): Promise<LlmChatSettings> {
@@ -188,7 +181,7 @@ export class Agent {
      */
     private async executeTools(
         toolCalls: ToolCall[],
-        history: AgentContext,
+        history: ChatContext,
         signal: AbortSignal,
         onEvent?: (event: AgentEvent) => void,
     ) {
@@ -206,7 +199,6 @@ export class Agent {
             const toolResult = await executeTool(toolCall.function.name, args);
 
             history.push({ role: "tool", tool_call_id: toolCall.id, content: toolResult });
-            history.applyToolHistoryPolicy(toolCall.id);
 
             onEvent?.({
                 type: "agent-tool-done",
@@ -215,6 +207,7 @@ export class Agent {
                 toolArgs: argsBody,
                 toolTarget: getToolTarget(toolCall.function.name, args),
                 toolResult,
+                toolLastCall: toolCall === toolCalls.at(-1) && !signal.aborted,
             });
         }
 
@@ -227,46 +220,5 @@ export class Agent {
                 `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
             );
         }
-    }
-}
-
-/**
- * Wrapper around ChatContext that provides agent-specific operations
- * for managing conversation history and tool result deduplication.
- */
-class AgentContext {
-    private context: ChatContext;
-
-    /**
-     * Creates a new AgentContext instance.
-     * @param messages - The initial messages to populate the context with.
-     */
-    constructor(messages: ChatHistory[]) {
-        this.context = new ChatContext();
-        this.context.setMessages([...messages]);
-    }
-
-    /**
-     * Retrieves all messages in the conversation history.
-     * @returns An array of chat history entries.
-     */
-    getMessages(): ChatHistory[] {
-        return this.context.getMessages();
-    }
-
-    /**
-     * Adds a new message to the conversation history.
-     * @param message - The message to add.
-     */
-    push(message: ChatHistory): void {
-        this.context.push(message);
-    }
-
-    /**
-     * Applies the per-tool history policy. With `newToolCallId`: dedupes/drops earlier
-     * same-tool results. Without: sweeps every dropAll-policy tool result.
-     */
-    applyToolHistoryPolicy(newToolCallId?: string): void {
-        this.context.applyToolHistoryPolicy(getToolHistoryPolicy, newToolCallId);
     }
 }
