@@ -1,9 +1,65 @@
 import { LitElement } from "lit";
-import { AttachedContext } from "../../../common/context-chat";
-import { logWebview, showToast } from "../../utils-front";
-import type { ChatRoot } from "./chat-root";
-import { buildSelfContainedHtml } from "./html-export";
-import { backendApi, buildUserContent } from "./utils";
+import { AttachedContext, ChatHistory } from "../../../../common/context-chat";
+import type { ChatConfig } from "../../types";
+import { buildSelfContainedHtml } from "../html-export";
+import { buildUserContent, logWebview, showToast } from "../utils";
+import type { ChatRoot } from "../chat-root";
+
+declare global {
+    interface Window {
+        vscode: {
+            postMessage(message: any): void;
+            getState(): any;
+            setState(state: any): void;
+        };
+    }
+}
+
+/** Typed wrappers for all outbound postMessage calls to the VS Code host. */
+const backendApi = {
+    ready: () => window.vscode.postMessage({ type: "chat-ready" }),
+    sendChatRequest: (messages: ChatHistory[], sessionId: string) =>
+        window.vscode.postMessage({ type: "chat-request", messages, sessionId }),
+    cancel: () => window.vscode.postMessage({ type: "chat-cancel" }),
+    summarize: (turnStart: number, turnEnd: number, sessionId: string) =>
+        window.vscode.postMessage({ type: "summarize-request", turnStart, turnEnd, sessionId }),
+    deleteMessages: (turnStart: number, turnEnd: number, sessionId: string) =>
+        window.vscode.postMessage({ type: "delete-messages", turnStart, turnEnd, sessionId }),
+    newSession: () => window.vscode.postMessage({ type: "new-session" }),
+    newGhostSession: () => window.vscode.postMessage({ type: "new-ghost-session" }),
+    switchSession: (sessionId: string) => window.vscode.postMessage({ type: "switch-session", sessionId }),
+    deleteSession: (sessionId: string) => window.vscode.postMessage({ type: "delete-session", sessionId }),
+    renameSession: (sessionId: string, newTitle: string) =>
+        window.vscode.postMessage({ type: "rename-session", sessionId, newTitle }),
+    copySession: (sessionId: string) => window.vscode.postMessage({ type: "copy-session", sessionId }),
+    autoAcceptAll: (enabled: boolean) => window.vscode.postMessage({ type: "auto-accept-all", enabled }),
+    convertToGhost: () => window.vscode.postMessage({ type: "convert-to-ghost" }),
+    clearChat: () => window.vscode.postMessage({ type: "clear-chat" }),
+    exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
+    exportSessionHtml: (sessionId: string, title: string, html: string) =>
+        window.vscode.postMessage({ type: "export-session-html", sessionId, title, html }),
+    toolConfirmResponse: (id: string, value: string, reason: string) =>
+        window.vscode.postMessage({ type: "tool-confirm-response", id, value, reason }),
+    toolDecisionResponse: (id: string, value: string) =>
+        window.vscode.postMessage({ type: "tool-decision-response", id, value }),
+    contextSearch: (query: string) => window.vscode.postMessage({ type: "context-search", query }),
+    contextAdd: (relativePath: string, isFolder?: boolean) =>
+        window.vscode.postMessage({ type: "context-add", relativePath, isFolder }),
+    updateConfig: (key: string, value: unknown) =>
+        window.vscode.postMessage({ type: "config-update-request", key, value }),
+};
+
+/** Signals the host that the webview is ready to receive the initial state. */
+export function onChatReady() {
+    backendApi.ready();
+}
+
+/** Applies a settings change locally and persists it on the host. */
+export function onSettingsUpdate(host: ChatRoot, e: CustomEvent) {
+    const { key, value } = e.detail as { key: keyof ChatConfig; value: ChatConfig[keyof ChatConfig] };
+    host.config = { ...host.config, [key]: value };
+    backendApi.updateConfig(key, value);
+}
 
 function scrollToBottomAfterRender(host: ChatRoot) {
     host.updateComplete.then(() => {
@@ -13,12 +69,13 @@ function scrollToBottomAfterRender(host: ChatRoot) {
     });
 }
 
+// ---------- chat send / edit / delete ----------
+
 /** Builds user content with embedded contexts, sends the request, and adds a placeholder assistant message. */
 export function onSubmit(host: ChatRoot, e: CustomEvent) {
     const content = e.detail.value?.trim();
     const contexts: AttachedContext[] = e.detail.contexts || [];
     if (!content) {
-        // Clear contexts even when there's no text, so user can add new contexts
         if (contexts.length > 0) {
             host.currentContexts = [];
         }
@@ -49,28 +106,6 @@ export function onCancel(host: ChatRoot) {
         return;
     }
     backendApi.cancel();
-}
-
-/** Appends a summarization prompt and sends the full history for conversation summarization. */
-export function onSummarizeConversation(host: ChatRoot) {
-    if (host.isGenerating || !host.chatContext || host.chatContext.length() === 0) {
-        return;
-    }
-
-    const totalMessages = host.chatContext.length();
-
-    host.isGenerating = true;
-    host.isSummarizing = true;
-
-    showToast("Summarizing conversation...");
-    backendApi.summarize(0, totalMessages, host.activeSessionId);
-}
-
-/** Accepts the forced auto-summary prompt and starts conversation summarization. */
-export function onAcquireAutoSummaryAccept(host: ChatRoot) {
-    host.activeModal = "";
-    host.beginAutoSummary();
-    onSummarizeConversation(host);
 }
 
 /** Truncates history after the selected user message and re-sends from that point. */
@@ -149,6 +184,48 @@ export function onDeleteMessage(host: ChatRoot, e: CustomEvent) {
     backendApi.deleteMessages(messageIndex, turnEnd, host.activeSessionId);
 }
 
+/** Clears all messages from the active session. */
+export function onClearChat(host: ChatRoot) {
+    if (host.isGenerating || !host.chatContext || host.chatContext.length() === 0) {
+        return;
+    }
+    backendApi.clearChat();
+}
+
+/** Removes a single attached context by index, or clears all if no index is provided. */
+export function onContextCleared(host: ChatRoot, e: CustomEvent) {
+    const index = e.detail?.index;
+    if (typeof index === "number") {
+        host.currentContexts = host.currentContexts.filter((_, i) => i !== index);
+    } else {
+        host.currentContexts = [];
+    }
+}
+
+// ---------- summarization ----------
+
+/** Appends a summarization prompt and sends the full history for conversation summarization. */
+export function onSummarizeConversation(host: ChatRoot) {
+    if (host.isGenerating || !host.chatContext || host.chatContext.length() === 0) {
+        return;
+    }
+
+    const totalMessages = host.chatContext.length();
+
+    host.isGenerating = true;
+    host.isSummarizing = true;
+
+    showToast("Summarizing conversation...");
+    backendApi.summarize(0, totalMessages, host.activeSessionId);
+}
+
+/** Accepts the forced auto-summary prompt and starts conversation summarization. */
+export function onAcquireAutoSummaryAccept(host: ChatRoot) {
+    host.activeModal = "";
+    host.beginAutoSummary();
+    onSummarizeConversation(host);
+}
+
 /** Sends a single turn (user message + responses) to the backend for summarization. */
 export function onSummarizeTurn(host: ChatRoot, e: CustomEvent) {
     if (host.isGenerating) {
@@ -169,6 +246,8 @@ export function onSummarizeTurn(host: ChatRoot, e: CustomEvent) {
     logWebview(`Summarizing turn at index ${messageIndex}`);
     backendApi.summarize(messageIndex, turnEnd, host.activeSessionId);
 }
+
+// ---------- sessions ----------
 
 /** Exports a session's chat history as raw JSON to a preview window. */
 export function onExportSession(host: ChatRoot, e: CustomEvent) {
@@ -280,23 +359,7 @@ export function onConvertToGhost() {
     backendApi.convertToGhost();
 }
 
-/** Clears all messages from the active session. */
-export function onClearChat(host: ChatRoot) {
-    if (host.isGenerating || !host.chatContext || host.chatContext.length() === 0) {
-        return;
-    }
-    backendApi.clearChat();
-}
-
-/** Removes a single attached context by index, or clears all if no index is provided. */
-export function onContextCleared(host: ChatRoot, e: CustomEvent) {
-    const index = e.detail?.index;
-    if (typeof index === "number") {
-        host.currentContexts = host.currentContexts.filter((_, i) => i !== index);
-    } else {
-        host.currentContexts = [];
-    }
-}
+// ---------- context ----------
 
 /** Sends a context search query to the backend. */
 export function onContextSearch(e: CustomEvent) {
@@ -307,6 +370,8 @@ export function onContextSearch(e: CustomEvent) {
 export function onContextAdd(e: CustomEvent) {
     backendApi.contextAdd(e.detail.relativePath, e.detail.isFolder);
 }
+
+// ---------- tool prompts ----------
 
 /** Responds to a tool confirmation with "accept". */
 export function onToolConfirmAccept(host: ChatRoot, e: CustomEvent) {
@@ -343,6 +408,8 @@ export function onToolDecisionSelect(host: ChatRoot, e: CustomEvent) {
     logWebview(`Tool decision select: ${id} → ${value}`);
     backendApi.toolDecisionResponse(id, value);
 }
+
+// ---------- ui ----------
 
 /** Updates the scroll button visibility based on near-bottom state. */
 export function onNearBottomChanged(host: ChatRoot, e: CustomEvent) {

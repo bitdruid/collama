@@ -1,7 +1,7 @@
 import { html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 
-import { buildOpenFileCommandUri } from "../../../../../utils-front";
+import { buildOpenFileCommandUri } from "../../../utils";
 import { themeIcons } from "../../../../styles";
 import "../../../../template-components/action-button";
 import "../../../../template-components/banner";

@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { openAgentsMdDraft } from "../common/agents-md";
 import { logMsg } from "../logging";
 import { ChatPanel } from "./chatpanel";
-import { handleSendToChat } from "./handlers/context-handlers";
+import { handleSendToChat } from "./handlers/context";
 
 let panel: ChatPanel | null = null;
 

@@ -1,7 +1,7 @@
 import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../../common/context-chat";
-import { adjustTextareaRows } from "../../../../../../utils-front";
+import { adjustTextareaRows } from "../../../../utils";
 import { type ContextSearchResult } from "../../../../../types";
 import "./control-panel-buttons";
 import { controlPanelStyles } from "./styles";

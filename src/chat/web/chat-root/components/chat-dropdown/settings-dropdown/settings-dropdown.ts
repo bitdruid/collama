@@ -1,6 +1,6 @@
 import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../../../utils-front";
+import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../utils";
 import { themeIcons } from "../../../../styles";
 import { BaseDropdown } from "../../../../template-components/dropdown/base-dropdown";
 import { baseDropdownStyles } from "../../../../template-components/dropdown/styles";

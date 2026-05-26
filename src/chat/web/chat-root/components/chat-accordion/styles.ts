@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { hljsStyles } from "../../../../utils-front";
+import { hljsStyles } from "../../utils";
 import { themeColors } from "../../../styles";
 import { bannerStyles } from "../../../template-components/banner/styles";
 

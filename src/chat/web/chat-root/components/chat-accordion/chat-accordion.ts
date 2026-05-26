@@ -2,7 +2,7 @@ import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { html as staticHtml, unsafeStatic } from "lit/static-html.js";
 
-import { highlightCodeBlock } from "../../../../utils-front";
+import { highlightCodeBlock } from "../../utils";
 import { themeIcons } from "../../../styles";
 import { accordionStyles } from "./styles";
 

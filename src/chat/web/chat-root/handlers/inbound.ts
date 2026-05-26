@@ -1,8 +1,8 @@
-import type { ToolCall } from "../../../common/client";
-import { logWebview, showToast } from "../../utils-front";
-import type { ChatConfig } from "../types";
-import type { ChatRoot } from "./chat-root";
-import { ChatSessionStore } from "./components/chat-header/chat-session-store";
+import type { ToolCall } from "../../../../common/client";
+import { logWebview, showToast } from "../utils";
+import type { ChatConfig } from "../../types";
+import type { ChatRoot } from "../chat-root";
+import { ChatSessionStore } from "../components/chat-header/chat-session-store";
 
 /** Creates a dispatcher function that routes inbound host messages to their handlers. */
 export function createInboundDispatcher(host: ChatRoot) {
@@ -30,11 +30,12 @@ export function createInboundDispatcher(host: ChatRoot) {
     return (msg: any) => handlers[msg.type]?.(msg);
 }
 
+// ---------- session ----------
+
 /** Applies session state (history, sessions list, context usage) from a host message. */
 function applySessionState(host: ChatRoot, msg: any) {
     const store = ChatSessionStore.instance;
 
-    // Use store's public method to update state
     store.updateFromBackend({
         sessions: msg.sessions || [],
         activeSessionId: msg.activeSessionId || host.activeSessionId,
@@ -43,12 +44,9 @@ function applySessionState(host: ChatRoot, msg: any) {
         contextMax: msg.contextMax || 0,
     });
 
-    // Refresh reference to store's ChatContext
-    // Note: This is also handled by _onStoreChange event, but we refresh here for immediate UI update
     host.chatContext = store.getActiveChatContext();
     host.syncMessages();
 
-    // Update host properties for UI
     host.sessions = store.sessions;
     host.activeSessionId = store.activeSessionId;
     host.contextUsed = store.contextUsed;
@@ -101,6 +99,14 @@ function handleSessionsUpdate(host: ChatRoot, msg: any) {
     applySessionState(host, msg);
 }
 
+/** Replaces the full message history (e.g. after a cancel prunes incomplete tail state). */
+function handleHistoryReplace(host: ChatRoot, msg: any) {
+    host.chatContext?.setMessages(msg.messages || []);
+    host.syncMessages();
+}
+
+// ---------- agent / streaming ----------
+
 /** Appends a complete message (e.g. tool call/response) pushed by the agent. */
 function handleAgentAddMessage(host: ChatRoot, msg: any) {
     host.chatContext?.push(msg.message);
@@ -114,12 +120,6 @@ function handleAgentToolCalls(host: ChatRoot, msg: any) {
         target.tool_calls = (msg.toolCalls || []) as ToolCall[];
         host.syncMessages();
     }
-}
-
-/** Replaces the full message history (e.g. after a cancel prunes incomplete tail state). */
-function handleHistoryReplace(host: ChatRoot, msg: any) {
-    host.chatContext?.setMessages(msg.messages || []);
-    host.syncMessages();
 }
 
 /** Appends a streaming text chunk to the message at the given index. */
@@ -151,6 +151,22 @@ function handleChatComplete(host: ChatRoot, msg: any) {
     host.completeAutoSummaryContextUpdate();
 }
 
+/** Displays the error modal with exported chat and error details when the agent throws. */
+function handleAgentError(host: ChatRoot, msg: any) {
+    host.isGenerating = false;
+    host.isSummarizing = false;
+    host.agentToken = 0;
+    host.hasTokenData = false;
+
+    const errorMessage = (msg.errorMessage || "").trim().replace(/^--- ERROR ---\s*/, "");
+    const history = (msg.exportedChat || "").trim();
+    host.errorModalContent = `ERROR:\n${errorMessage}\n\nHISTORY:\n${history}`;
+    host.activeModal = "error";
+    logWebview(`Agent error: ${msg.error?.message}`);
+}
+
+// ---------- summarization ----------
+
 /** Replaces message history with the summarized version returned by the host. */
 function handleSummarized(host: ChatRoot, msg: any) {
     host.chatContext?.setMessages(msg.messages || []);
@@ -172,7 +188,7 @@ function handleSummaryError(host: ChatRoot, msg: any) {
 }
 
 /** Shows a toast with the current summarization progress. */
-function handleSummaryProgress(host: ChatRoot, msg: any) {
+function handleSummaryProgress(_host: ChatRoot, msg: any) {
     showToast(`Summarizing: ${msg.current} / ${msg.total}`);
 }
 
@@ -184,6 +200,8 @@ function handleContextTrimmed(host: ChatRoot, msg: any) {
         showToast(`Context exceeded — ${turns} old turn${turns > 1 ? "s" : ""} removed (~${msg.tokensFreed} tokens)`);
     }
 }
+
+// ---------- tool prompts ----------
 
 /** Shows the tool confirmation modal when the backend requests user approval. */
 function handleToolConfirmRequest(host: ChatRoot, msg: any) {
@@ -209,19 +227,7 @@ function handleToolDecisionRequest(host: ChatRoot, msg: any) {
     });
 }
 
-/** Displays the error modal with exported chat and error details when the agent throws. */
-function handleAgentError(host: ChatRoot, msg: any) {
-    host.isGenerating = false;
-    host.isSummarizing = false;
-    host.agentToken = 0;
-    host.hasTokenData = false;
-
-    const errorMessage = (msg.errorMessage || "").trim().replace(/^--- ERROR ---\s*/, "");
-    const history = (msg.exportedChat || "").trim();
-    host.errorModalContent = `ERROR:\n${errorMessage}\n\nHISTORY:\n${history}`;
-    host.activeModal = "error";
-    logWebview(`Agent error: ${msg.error?.message}`);
-}
+// ---------- context ----------
 
 /** Forwards file/folder search results to the chat input's context tree. */
 function handleContextSearchResults(host: ChatRoot, msg: any) {

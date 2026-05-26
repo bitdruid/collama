@@ -1,7 +1,7 @@
 import MarkdownIt from "markdown-it";
 import type StateCore from "markdown-it/lib/rules_core/state_core.mjs";
 import Token from "markdown-it/lib/token.mjs";
-import { buildOpenFileCommandUri, escapeAttr, FILE_PATH_RE } from "../../../../utils-front";
+import { buildOpenFileCommandUri, escapeAttr, FILE_PATH_RE } from "../../utils";
 
 const TABLE_CELL_LINE_BREAK_RE = /<br\s*\/?>/gi;
 

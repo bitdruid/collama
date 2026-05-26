@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { hljsStyles } from "../../../../utils-front";
+import { hljsStyles } from "../../utils";
 import { themeColors, themeFonts, themeStyles } from "../../../styles";
 import { assistantStyles } from "./message-assistant/styles";
 import { toolStyles } from "./message-tool/styles";

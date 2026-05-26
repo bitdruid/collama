@@ -13,11 +13,12 @@ import "./components/chat-dropdown";
 import { ChatSessionStore } from "./components/chat-header/chat-session-store";
 import "./components/chat-modal";
 import "./components/chat-notification/context-notification/context-notification";
-import { createInboundDispatcher } from "./handlers-inbound";
+import { createInboundDispatcher } from "./handlers/inbound";
 import {
     onAcquireAutoSummaryAccept,
     onAutoAccept,
     onCancel,
+    onChatReady,
     onClearChat,
     onContextAdd,
     onContextCleared,
@@ -35,6 +36,7 @@ import {
     onRenameSession,
     onResendMessage,
     onSelectSession,
+    onSettingsUpdate,
     onSubmit,
     onSummarizeConversation,
     onSummarizeTurn,
@@ -42,9 +44,8 @@ import {
     onToolConfirmAcceptAll,
     onToolConfirmCancel,
     onToolDecisionSelect,
-} from "./handlers-outbound";
+} from "./handlers/outbound";
 import { ChatRootStyles } from "./styles";
-import { backendApi } from "./utils";
 
 type ActiveDropdown = "" | "session" | "settings";
 type ActiveModal = "" | "error" | "toolConfirm" | "toolDecision" | "acquire";
@@ -54,7 +55,7 @@ type ActiveModal = "" | "error" | "toolConfirm" | "toolDecision" | "acquire";
  *
  * Uses the ChatContext from ChatSessionStore (single source of truth) and exposes a
  * Lit-reactive `messages` snapshot for child components. Delegates user
- * interactions to `handlers-outbound` and host messages to `handlers-inbound`.
+ * interactions to outbound handlers and host messages to the inbound dispatcher.
  */
 @customElement("collama-chatroot")
 export class ChatRoot extends LitElement {
@@ -138,11 +139,7 @@ export class ChatRoot extends LitElement {
         this.activeModal = "";
         this.errorModalContent = "";
     };
-    private handleSettingsUpdate = (e: CustomEvent) => {
-        const { key, value } = e.detail as { key: keyof ChatConfig; value: ChatConfig[keyof ChatConfig] };
-        this.config = { ...this.config, [key]: value };
-        backendApi.updateConfig(key, value);
-    };
+    private handleSettingsUpdate = (e: CustomEvent) => onSettingsUpdate(this, e);
     private handleSnakeLoadingEnabledUpdate = (e: CustomEvent) => {
         this.snakeLoadingEnabled = Boolean(e.detail?.value);
         const state = window.vscode.getState?.() || {};
@@ -229,7 +226,7 @@ export class ChatRoot extends LitElement {
         this._onStoreChange = this._onStoreChange.bind(this);
         ChatSessionStore.instance.addEventListener("change", this._onStoreChange);
 
-        backendApi.ready();
+        onChatReady();
         const dispatch = createInboundDispatcher(this);
         this._messageHandler = (e: MessageEvent) => dispatch(e.data);
         window.addEventListener("message", this._messageHandler);
