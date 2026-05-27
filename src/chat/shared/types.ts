@@ -1,5 +1,24 @@
-import { ChatContext } from "../../common/context-chat";
-import type { ExtensionConfig } from "../../config";
+import type { ChatContext } from "../../common/context-chat";
+
+/**
+ * The subset of extension settings the chat webview can view and toggle.
+ * The backend maps ExtensionConfig <-> ChatSettings; the webview never sees the full config.
+ */
+export interface ChatSettings {
+    agenticMode: boolean;
+    enableEditTools: boolean;
+    enableShellTool: boolean;
+    liteMode: boolean;
+    verbosityMode: "compact" | "medium" | "detailed";
+}
+
+export const defaultChatSettings: ChatSettings = {
+    agenticMode: true,
+    enableEditTools: true,
+    enableShellTool: false,
+    liteMode: false,
+    verbosityMode: "medium",
+};
 
 /**
  * Chat session data structure
@@ -43,31 +62,3 @@ export interface ToolDecisionRequest {
     question: string;
     options: string[];
 }
-
-/**
- * Chat-facing extension configuration snapshot.
- */
-export interface ChatConfig extends ExtensionConfig {
-    agentsMdActive: boolean;
-}
-
-export const defaultChatConfig: ChatConfig = {
-    apiEndpointCompletion: "http://127.0.0.1:11434",
-    apiEndpointInstruct: "http://127.0.0.1:11434",
-    apiModelCompletion: "qwen2.5-coder:3b",
-    apiModelInstruct: "qwen2.5-coder:3b-instruct",
-    agenticMode: true,
-    autoComplete: true,
-    suggestMode: "inline",
-    verbosityMode: "medium",
-    suggestDelay: 1500,
-    enableEditTools: true,
-    enableShellTool: false,
-    liteMode: false,
-    tlsRejectUnauthorized: false,
-    apiTokenContextLenCompletion: 4096,
-    apiTokenContextLenInstruct: 4096,
-    apiTokenPredictCompletion: 400,
-    apiTokenPredictInstruct: 4096,
-    agentsMdActive: false,
-};

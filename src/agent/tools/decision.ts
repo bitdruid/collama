@@ -9,7 +9,7 @@
  * @module decision-tool
  */
 
-import { getWebview } from "../../chat/backend/utils-back";
+import { getWebview } from "../../chat/backend/utils";
 import { logMsg } from "../../logging";
 import { ToolAnswer, toolError, toolSuccess } from "../tools";
 

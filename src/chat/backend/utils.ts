@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ChatHistory } from "../../common/context-chat";
+import type { ChatSettings } from "../shared";
 
 // -- Shared webview reference --
 
@@ -15,10 +16,10 @@ export function getWebview(): vscode.Webview | null {
     return _webview;
 }
 
-/** Broadcasts the current config to the webview. */
-export function postConfigToWebview<T extends object>(config: T): void {
+/** Broadcasts the current chat settings to the webview. */
+export function postConfigToWebview(config: ChatSettings, agentsMdActive: boolean): void {
     if (_webview) {
-        _webview.postMessage({ type: "config-update", config });
+        _webview.postMessage({ type: "config-update", config, agentsMdActive });
     }
 }
 

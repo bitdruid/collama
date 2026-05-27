@@ -1,41 +1,16 @@
 import * as vscode from "vscode";
 
-import { postConfigToWebview } from "./chat/backend/utils-back";
+import { postConfigToWebview } from "./chat/backend/utils";
+import type { ChatSettings } from "./chat/shared";
 import { isAgentsMdActive } from "./common/agents-md";
 import { requestOllama, requestOpenAI, type LlmBackendType } from "./common/client";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 
-let tlsRejectUnauthorized = true;
-
 /**
- * Toggle TLS certificate validation (process-wide).
- * When disabled, equivalent to NODE_TLS_REJECT_UNAUTHORIZED=0.
+ * User-facing configuration options for the Collama VS Code extension.
+ * Values are synchronized from VS Code workspace settings.
  */
-export function setTlsRejectUnauthorized(reject: boolean): void {
-    if (reject !== tlsRejectUnauthorized) {
-        tlsRejectUnauthorized = reject;
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = reject ? "1" : "0";
-        logMsg(`TLS certificate validation: ${reject ? "enabled" : "disabled"}`);
-    }
-}
-
-/**
- * Registers a configuration change listener that automatically updates the in-memory config
- * when the collama configuration changes.
- *
- * @param extContext - The extension context.
- */
-export function registerConfigAutoUpdateCommand(extContext: vscode.ExtensionContext): void {
-    const disposable = vscode.workspace.onDidChangeConfiguration(async (event) => {
-        if (event.affectsConfiguration("collama")) {
-            logMsg("Config auto-update...");
-            await updateVSConfig();
-        }
-    });
-    extContext.subscriptions.push(disposable);
-}
-
 export interface ExtensionConfig {
     apiEndpointCompletion: string;
     apiEndpointInstruct: string;
@@ -77,56 +52,90 @@ export const defaultExtensionConfig: ExtensionConfig = {
 };
 
 /**
- * Mutable runtime configuration initialized from shared defaults.
- * Values are synchronized from VS Code workspace configuration by updateVSConfig().
- *
- * Note: Bearer tokens are stored via SecretStorage, not in config.
- */
-export const userConfig: ExtensionConfig = { ...defaultExtensionConfig };
-
-export function getUserConfigSnapshot() {
-    return { ...userConfig, agentsMdActive: isAgentsMdActive() };
-}
-
-export function broadcastUserConfig(): void {
-    postConfigToWebview(getUserConfigSnapshot());
-}
-
-/**
- * System configuration values that are not exposed to the user.
- * These constants are used internally by the extension.
+ * Tracks detected LLM backend types for each request type.
+ * An empty string indicates the backend has not yet been detected.
+ * This is an internal system configuration, not exposed to users.
  */
 export const sysConfig = {
     backendCompletion: "" as LlmBackendType,
     backendInstruct: "" as LlmBackendType,
 };
+
 /**
- * Retrieves the VS Code configuration for the extension.
- *
- * @returns {vscode.WorkspaceConfiguration} The configuration object for `collama`.
+ * Returns the subset of user configuration that the chat webview can access.
+ * These settings are read-only from the webview's perspective.
+ */
+export function getChatSettings(): ChatSettings {
+    return {
+        agenticMode: userConfig.agenticMode,
+        enableEditTools: userConfig.enableEditTools,
+        enableShellTool: userConfig.enableShellTool,
+        liteMode: userConfig.liteMode,
+        verbosityMode: userConfig.verbosityMode,
+    };
+}
+
+/**
+ * Mutable runtime configuration populated from VS Code settings.
+ * Updated via `updateVSConfig()`. Note: Bearer tokens are stored in
+ * SecretStorage and are not part of this object.
+ */
+export const userConfig: ExtensionConfig = { ...defaultExtensionConfig };
+
+/**
+ * Retrieves the VS Code workspace configuration for the "collama" extension.
+ * @returns The configuration object for the collama extension.
  */
 export function getConfig() {
     return vscode.workspace.getConfiguration("collama");
 }
 
 /**
- * Synchronises the in‑memory `userConfig` with the VS Code workspace
- * configuration. The function compares each key, updates `userConfig`
- * when a change is detected, respects a lock that prevents
- * modification of non‑allowed keys, and logs any changes.
- *
- * The `suggestDelay` value is clamped to a minimum of 1500 ms.
- *
- * @returns {void}
+ * Sends the current user configuration to the chat webview.
+ * Includes chat-relevant settings and the current agents.md activation state.
  */
-export async function updateVSConfig() {
-    if (isFirstDetection) {
-        isFirstDetection = false;
-        await new Promise((r) => setTimeout(r, INITIAL_DELAY));
+export function broadcastUserConfig(): void {
+    postConfigToWebview(getChatSettings(), isAgentsMdActive());
+}
+
+/**
+ * Registers a VS Code command that automatically syncs configuration
+ * whenever the user modifies collama settings in the workspace.
+ */
+export function registerConfigAutoUpdateCommand(extContext: vscode.ExtensionContext): void {
+    const disposable = vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration("collama")) {
+            updateVSConfig();
+        }
+    });
+    extContext.subscriptions.push(disposable);
+}
+
+// Node validates certs; track so we only touch it on change.
+let tlsApplied = true;
+
+/**
+ * Updates the process-wide TLS certificate validation setting.
+ * Only modifies the environment when the setting actually changes.
+ */
+function applyTls(): void {
+    if (tlsApplied === userConfig.tlsRejectUnauthorized) {
+        return;
     }
+    tlsApplied = userConfig.tlsRejectUnauthorized;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = tlsApplied ? "1" : "0";
+    logMsg(`TLS certificate validation ${tlsApplied ? "enabled" : "disabled"}`);
+}
+
+/**
+ * Synchronizes `userConfig` with current VS Code settings and notifies
+ * dependent components of any changes. Backend detection runs asynchronously
+ * and does not block this function.
+ */
+export function updateVSConfig(): void {
     const cfg = getConfig();
 
-    const updateConfig = {
+    const updateConfig: ExtensionConfig = {
         apiEndpointCompletion: cfg.get("apiEndpointCompletion", userConfig.apiEndpointCompletion),
         apiEndpointInstruct: cfg.get("apiEndpointInstruct", userConfig.apiEndpointInstruct),
         apiModelCompletion: cfg.get("apiModelCompletion", userConfig.apiModelCompletion),
@@ -146,145 +155,137 @@ export async function updateVSConfig() {
         apiTokenPredictInstruct: cfg.get("apiTokenPredictInstruct", userConfig.apiTokenPredictInstruct),
     };
 
-    const changed: Partial<Record<keyof typeof userConfig, { from: any; to: any }>> = {};
-    let endpointCompletionChanged = false;
-    let endpointInstructChanged = false;
-    let modelCompletionChanged = false;
-    let modelInstructChanged = false;
+    // Re-detect a backend only when its endpoint or model changed.
+    if (
+        updateConfig.apiEndpointCompletion !== userConfig.apiEndpointCompletion ||
+        updateConfig.apiModelCompletion !== userConfig.apiModelCompletion
+    ) {
+        sysConfig.backendCompletion = "";
+    }
+    if (
+        updateConfig.apiEndpointInstruct !== userConfig.apiEndpointInstruct ||
+        updateConfig.apiModelInstruct !== userConfig.apiModelInstruct
+    ) {
+        sysConfig.backendInstruct = "";
+    }
 
-    for (const key of Object.keys(updateConfig) as (keyof typeof userConfig)[]) {
-        const oldValue = userConfig[key];
-        const newValue = updateConfig[key];
-
-        if (oldValue !== newValue) {
-            changed[key] = { from: oldValue, to: newValue };
-            (userConfig as any)[key] = newValue;
-
-            if (key === "apiEndpointCompletion") {
-                endpointCompletionChanged = true;
-            }
-            if (key === "apiEndpointInstruct") {
-                endpointInstructChanged = true;
-            }
-            if (key === "apiModelCompletion") {
-                modelCompletionChanged = true;
-            }
-            if (key === "apiModelInstruct") {
-                modelInstructChanged = true;
-            }
+    const changes: string[] = [];
+    for (const key of Object.keys(updateConfig) as (keyof ExtensionConfig)[]) {
+        if (updateConfig[key] !== userConfig[key]) {
+            changes.push(`${key}: ${userConfig[key]} → ${updateConfig[key]}`);
+            (userConfig as any)[key] = updateConfig[key];
         }
     }
 
-    if (Object.keys(changed).length > 0) {
-        logMsg(`🔄 Config changed: ${JSON.stringify(changed)}`);
+    if (changes.length > 0) {
+        logMsg(`🔄 Config changed — ${changes.join(", ")}`);
         broadcastUserConfig();
     }
 
-    // Apply TLS settings before any network calls
-    setTlsRejectUnauthorized(updateConfig.tlsRejectUnauthorized);
+    applyTls();
+    startBackendDetection();
+}
 
-    // Detect backends on startup (when not yet detected) or when endpoints or models changed
-    if (endpointCompletionChanged || modelCompletionChanged || !sysConfig.backendCompletion) {
-        if (!updateConfig.apiEndpointCompletion) {
-            sysConfig.backendCompletion = "";
-            logMsg("⚠️ Completion endpoint cleared – backend reset");
-        } else if (!hasValidScheme(updateConfig.apiEndpointCompletion)) {
-            sysConfig.backendCompletion = "";
-            logMsg(
-                `⚠️ Completion endpoint missing protocol (got "${updateConfig.apiEndpointCompletion}") – include http:// or https:// in the setting`,
-            );
-        } else {
-            const bearer = await getBearerCompletion();
-            const backend = await detectBackend(updateConfig.apiEndpointCompletion, bearer);
-            if (backend === "") {
-                logMsg("⚠️ Failed to detect LLM backend (completion)");
-            } else {
-                logMsg(`ℹ️ Detected LLM backend (completion): ${backend}`);
-            }
-            sysConfig.backendCompletion = backend;
-        }
+/**
+ * Triggers a fresh detection of both LLM backends.
+ * Useful after events like bearer token changes that may affect connectivity.
+ */
+export function redetectBackends(): void {
+    sysConfig.backendCompletion = "";
+    sysConfig.backendInstruct = "";
+    detectBackends();
+}
+
+const DETECT_INTERVAL_MS = 30000;
+const DETECT_TIMEOUT_MS = 5000;
+
+let detectTimer: ReturnType<typeof setInterval> | null = null;
+let detecting = false;
+
+/**
+ * Initiates the background backend detection loop.
+ * Only creates a new interval if one is not already running.
+ * Once a backend is detected, subsequent ticks become no-ops.
+ */
+function startBackendDetection(): void {
+    detectBackends();
+    if (!detectTimer) {
+        detectTimer = setInterval(detectBackends, DETECT_INTERVAL_MS);
     }
+}
 
-    if (endpointInstructChanged || modelInstructChanged || !sysConfig.backendInstruct) {
-        if (!updateConfig.apiEndpointInstruct) {
-            sysConfig.backendInstruct = "";
-            logMsg("⚠️ Instruct endpoint cleared – backend reset");
-        } else if (!hasValidScheme(updateConfig.apiEndpointInstruct)) {
-            sysConfig.backendInstruct = "";
-            logMsg(
-                `⚠️ Instruct endpoint missing protocol (got "${updateConfig.apiEndpointInstruct}") – include http:// or https:// in the setting`,
-            );
-        } else {
-            const bearer = await getBearerInstruct();
-            const backend = await detectBackend(updateConfig.apiEndpointInstruct, bearer);
-            if (backend === "") {
-                logMsg("⚠️ Failed to detect LLM backend (instruct)");
-            } else {
-                logMsg(`ℹ️ Detected LLM backend (instruct): ${backend}`);
-            }
-            sysConfig.backendInstruct = backend;
-        }
+/**
+ * Attempts to detect any LLM backends that are still unidentified.
+ * Idempotent and safe to call multiple times.
+ */
+async function detectBackends(): Promise<void> {
+    if (detecting) {
+        return;
     }
+    detecting = true;
+    try {
+        if (!sysConfig.backendCompletion) {
+            sysConfig.backendCompletion = await detectBackend(
+                userConfig.apiEndpointCompletion,
+                await getBearerCompletion(),
+            );
+            logDetection("completion", sysConfig.backendCompletion);
+        }
+        if (!sysConfig.backendInstruct) {
+            sysConfig.backendInstruct = await detectBackend(userConfig.apiEndpointInstruct, await getBearerInstruct());
+            logDetection("instruct", sysConfig.backendInstruct);
+        }
+    } finally {
+        detecting = false;
+    }
+}
 
-    if (!sysConfig.backendCompletion && !sysConfig.backendInstruct) {
-        scheduleRetry();
+/**
+ * Logs the outcome of backend detection for a specific request type.
+ * @param type - The request type, such as "completion" or "instruct".
+ * @param backend - The detected backend type, or an empty string if detection failed.
+ */
+function logDetection(type: string, backend: LlmBackendType): void {
+    if (backend) {
+        logMsg(`ℹ️ Detected LLM backend (${type}): ${backend}`);
     } else {
-        retryCount = 0;
+        logMsg(`⚠️ No LLM backend (${type}) — retrying every ${DETECT_INTERVAL_MS / 1000}s`);
     }
 }
 
-let retryTimer: ReturnType<typeof setTimeout> | null = null;
-let retryCount = 0;
-let isFirstDetection = true;
-const INITIAL_DELAY = 5000;
-const MAX_RETRIES = 60;
-const DELAY = 30000;
-
-function scheduleRetry() {
-    if (retryTimer) {
-        return;
-    }
-    if (retryCount >= MAX_RETRIES) {
-        logMsg(`❌ Backend detection gave up after ${MAX_RETRIES} attempts`);
-        return;
-    }
-    retryCount++;
-    logMsg(`⏳ Retrying backend detection in ${DELAY / 1000}s (attempt ${retryCount}/${MAX_RETRIES})`);
-    retryTimer = setTimeout(() => {
-        retryTimer = null;
-        updateVSConfig();
-    }, DELAY);
+/**
+ * Wraps a promise with a timeout. If the timeout expires before the promise
+ * resolves or rejects, the returned promise is rejected.
+ * @param probe - The promise to wrap with a timeout.
+ * @returns A promise that resolves or rejects based on whichever happens first.
+ */
+function withTimeout<T>(probe: Promise<T>): Promise<T> {
+    const timeout = new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timed out")), DETECT_TIMEOUT_MS));
+    return Promise.race([probe, timeout]);
 }
 
-const DETECTION_TIMEOUT_MS = 5000;
-
-/** Validates that an endpoint URL includes an http:// or https:// scheme. */
-function hasValidScheme(url: string): boolean {
-    return /^https?:\/\//i.test(url);
-}
-
+/**
+ * Probes an API endpoint to determine which LLM backend provider is available.
+ * @param apiBase - The base URL of the API endpoint.
+ * @param bearer - Optional bearer token for authentication.
+ * @returns The detected backend type ("ollama" or "openai"), or an empty string if unreachable.
+ */
 async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBackendType> {
-    const createTimeout = (ms: number) =>
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Connection timed out")), ms));
-
-    const errors: string[] = [];
+    if (!/^https?:\/\//i.test(apiBase)) {
+        return "";
+    }
 
     try {
-        const ollama = requestOllama(apiBase, bearer);
-        await Promise.race([ollama.list(), createTimeout(DETECTION_TIMEOUT_MS)]);
+        await withTimeout(requestOllama(apiBase, bearer).list());
         return "ollama";
-    } catch (err) {
-        errors.push(`Ollama: ${err instanceof Error ? err.message : String(err)}`);
+    } catch {
+        // try the next provider
     }
 
     try {
-        const openai = requestOpenAI(apiBase, bearer);
-        await Promise.race([openai.models.list(), createTimeout(DETECTION_TIMEOUT_MS)]);
+        await withTimeout(requestOpenAI(apiBase, bearer).models.list());
         return "openai";
-    } catch (err) {
-        errors.push(`OpenAI: ${err instanceof Error ? err.message : String(err)}`);
+    } catch {
+        return "";
     }
-
-    logMsg(`Backend detection failed for ${apiBase}:\n  ${errors.join("\n  ")}`);
-    return "";
 }

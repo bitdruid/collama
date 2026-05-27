@@ -3,19 +3,20 @@ import * as vscode from "vscode";
 import { getToolHistoryPolicy } from "../../agent/tools";
 import { resolveToolDecision } from "../../agent/tools/decision";
 import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../../agent/tools/edit";
+import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
 import { ChatContext, ChatHistory } from "../../common/context-chat";
 import { parseContextUri } from "../../common/context-editor";
-import { getUserConfigSnapshot, userConfig } from "../../config";
+import { getChatSettings, userConfig } from "../../config";
 import { logMsg } from "../../logging";
+import { StartPage } from "../frontend/chat-init";
 import { AgentRunner } from "./agent-runner";
 import { recomputeContextState, trimMessagesForContext } from "./context-state";
 import { addContext, handleContextSearch, setContextWebviewReady } from "./handlers/context";
 import { SessionHandlers } from "./handlers/session";
 import { handleSummarizeRequest } from "./handlers/summary";
 import { SessionManager } from "./session-manager";
-import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils-back";
-import { StartPage } from "../frontend/chat-init";
+import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils";
 
 /**
  * Encapsulates the chat panel logic within the extension.
@@ -112,7 +113,8 @@ export class ChatPanel {
             contextUsed: activeSession?.messages.sumTokensFrom(activeSession.contextStartIndex) ?? 0,
             contextMax,
             contextStartIndex: activeSession?.contextStartIndex || 0,
-            config: getUserConfigSnapshot(),
+            config: getChatSettings(),
+            agentsMdActive: isAgentsMdActive(),
             autoAcceptAll: getAutoAcceptAll(),
         });
     }

@@ -1,6 +1,6 @@
 import type { ToolCall } from "../../../../common/client";
 import { logWebview, showToast } from "../utils";
-import type { ChatConfig } from "../../../shared";
+import type { ChatSettings } from "../../../shared";
 import type { ChatRoot } from "../chat-root";
 import { ChatSessionStore } from "../components/chat-header/chat-session-store";
 
@@ -54,8 +54,8 @@ function applySessionState(host: ChatRoot, msg: any) {
     host.contextStartIndex = msg.contextStartIndex || 0;
 }
 
-function legacyConfigFromMessage(msg: any): Partial<ChatConfig> {
-    const config: Partial<ChatConfig> = {};
+function legacyConfigFromMessage(msg: any): Partial<ChatSettings> {
+    const config: Partial<ChatSettings> = {};
     if ("enableEditTools" in msg) {
         config.enableEditTools = msg.enableEditTools;
     }
@@ -70,8 +70,8 @@ function applyConfig(host: ChatRoot, msg: any) {
         ...host.config,
         ...(msg.config || legacyConfigFromMessage(msg)),
     };
-    if (msg.config?.agentsMdActive !== undefined) {
-        host.agentsMdActive = msg.config.agentsMdActive;
+    if (msg.agentsMdActive !== undefined) {
+        host.agentsMdActive = msg.agentsMdActive;
     }
 }
 

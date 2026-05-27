@@ -1,6 +1,6 @@
 import { LitElement } from "lit";
 import { AttachedContext, ChatHistory } from "../../../../common/context-chat";
-import type { ChatConfig } from "../../../shared";
+import type { ChatSettings } from "../../../shared";
 import { buildSelfContainedHtml } from "../html-export";
 import { buildUserContent, logWebview, showToast } from "../utils";
 import type { ChatRoot } from "../chat-root";
@@ -56,7 +56,7 @@ export function onChatReady() {
 
 /** Applies a settings change locally and persists it on the host. */
 export function onSettingsUpdate(host: ChatRoot, e: CustomEvent) {
-    const { key, value } = e.detail as { key: keyof ChatConfig; value: ChatConfig[keyof ChatConfig] };
+    const { key, value } = e.detail as { key: keyof ChatSettings; value: ChatSettings[keyof ChatSettings] };
     host.config = { ...host.config, [key]: value };
     backendApi.updateConfig(key, value);
 }

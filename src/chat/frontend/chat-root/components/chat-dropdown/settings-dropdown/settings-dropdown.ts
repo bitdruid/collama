@@ -5,11 +5,11 @@ import { themeIcons } from "../../../../styles";
 import { BaseDropdown } from "../../../../template-components/dropdown/base-dropdown";
 import { baseDropdownStyles } from "../../../../template-components/dropdown/styles";
 import "../../../../template-components/slider";
-import { defaultChatConfig, type ChatConfig } from "../../../../../shared";
+import { defaultChatSettings, type ChatSettings } from "../../../../../shared";
 import { settingsDropdownStyles } from "./styles";
 
 const AGENTS_MD_PATH = "AGENTS.md";
-type VerbosityMode = ChatConfig["verbosityMode"];
+type VerbosityMode = ChatSettings["verbosityMode"];
 const VERBOSITY_MODES: readonly VerbosityMode[] = ["compact", "medium", "detailed"];
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
@@ -23,7 +23,7 @@ export class SettingsDropdown extends BaseDropdown {
         ${settingsDropdownStyles}
     `;
 
-    @property({ type: Object }) config: ChatConfig = defaultChatConfig;
+    @property({ type: Object }) config: ChatSettings = defaultChatSettings;
     @property({ type: Boolean }) snakeLoadingEnabled = false;
     @property({ type: Boolean }) snakeEyecandyMode = false;
     @property({ type: Boolean }) flatDesign = false;

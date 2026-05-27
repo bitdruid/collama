@@ -3,8 +3,8 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext, ChatContext, ChatHistory } from "../../../common/context-chat";
 import { BaseDropdown } from "../template-components/dropdown/base-dropdown";
 import {
-    defaultChatConfig,
-    type ChatConfig,
+    defaultChatSettings,
+    type ChatSettings,
     type ChatSession,
     type ToolConfirmRequest,
     type ToolDecisionRequest,
@@ -71,7 +71,7 @@ export class ChatRoot extends LitElement {
     @property({ type: String }) activeSessionId: string = "";
     @state() contextSearchResults: { fileName: string; relativePath: string; isFolder: boolean }[] = [];
 
-    @state() config: ChatConfig = defaultChatConfig;
+    @state() config: ChatSettings = defaultChatSettings;
     @state() contextStartIndex: number = 0;
     @state() currentContexts: AttachedContext[] = [];
     @state() messages: ChatHistory[] = [];

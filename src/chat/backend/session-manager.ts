@@ -2,8 +2,8 @@ import * as vscode from "vscode";
 import { ChatContext, ChatHistory } from "../../common/context-chat";
 import { userConfig } from "../../config";
 import { logMsg } from "../../logging";
-import { mapSessionsToSummaries, sanitizeMessages, SessionSummary } from "./utils-back";
 import type { ChatSession } from "../shared";
+import { mapSessionsToSummaries, sanitizeMessages, SessionSummary } from "./utils";
 
 /**
  * On-disk shape for a single session's message history.

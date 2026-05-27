@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import * as vscode from "vscode";
-import { getWebview } from "../../chat/backend/utils-back";
+import { getWebview } from "../../chat/backend/utils";
 import { logMsg } from "../../logging";
 import { ToolAnswer, secureWorkspace, toolError, toolSuccess } from "../tools";
 

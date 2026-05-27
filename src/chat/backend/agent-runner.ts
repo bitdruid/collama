@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { Agent, AgentEvent, AgentMode } from "../../agent/agent";
 import { ChatContext, ChatHistory } from "../../common/context-chat";
-import { buildExportData } from "./utils-back";
+import { buildExportData } from "./utils";
 
 export interface AgentRunnerRunOptions {
     webview: vscode.Webview;

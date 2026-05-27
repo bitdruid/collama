@@ -35,7 +35,7 @@ export async function activate(extContext: vscode.ExtensionContext) {
     registerSetBearerCompletionCommand(extContext);
     registerSetBearerInstructCommand(extContext);
 
-    await updateVSConfig();
+    updateVSConfig();
     registerConfigAutoUpdateCommand(extContext);
 
     await loadAgentsMdContent();

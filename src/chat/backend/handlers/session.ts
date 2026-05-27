@@ -2,9 +2,9 @@ import * as vscode from "vscode";
 
 import { ChatContext } from "../../../common/context-chat";
 import { logMsg } from "../../../logging";
-import { SessionManager } from "../session-manager";
-import { buildExportData } from "../utils-back";
 import type { ChatSession } from "../../shared";
+import { SessionManager } from "../session-manager";
+import { buildExportData } from "../utils";
 
 /**
  * Handles chat session lifecycle actions requested by the webview.
@@ -82,7 +82,7 @@ export class SessionHandlers {
             : vscode.Uri.file(`${safeName}.html`);
         const target = await vscode.window.showSaveDialog({
             defaultUri,
-            filters: { "HTML": ["html"] },
+            filters: { HTML: ["html"] },
             saveLabel: "Export chat",
         });
         if (!target) {

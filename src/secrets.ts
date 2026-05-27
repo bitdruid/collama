@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 const { showInformationMessage } = vscode.window;
 
-import { updateVSConfig } from "./config";
+import { redetectBackends } from "./config";
 
 const BEARER_COMPLETION_KEY = "collama.bearerCompletion";
 const BEARER_INSTRUCT_KEY = "collama.bearerInstruct";
@@ -108,7 +108,7 @@ export async function commandSetBearerCompletion(): Promise<void> {
             showInformationMessage("Bearer token (Completion) saved securely");
         }
         // Trigger backend detection since bearer token changed
-        await updateVSConfig();
+        redetectBackends();
     }
 }
 
@@ -132,6 +132,6 @@ export async function commandSetBearerInstruct(): Promise<void> {
             showInformationMessage("Bearer token (Instruct) saved securely");
         }
         // Trigger backend detection since bearer token changed
-        await updateVSConfig();
+        redetectBackends();
     }
 }
