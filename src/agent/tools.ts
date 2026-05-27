@@ -6,22 +6,15 @@ import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { decision_def, decision_exec } from "./tools/decision";
 import { diagnostics_def, diagnostics_exec } from "./tools/diagnostics";
-import {
-    create_def,
-    create_exec,
-    delete_def,
-    delete_exec,
-    edit_def,
-    edit_exec,
-    resetAutoAcceptEdits,
-} from "./tools/edit";
+import { resetAutoAcceptEdits } from "./tools/confirm";
+import { create_def, create_exec, delete_def, delete_exec, edit_def, edit_exec } from "./tools/edit";
 import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
-// import { fetch_def, fetch_exec } from "./tools/fetch";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
+import { notebook_def, notebook_exec } from "./tools/notebook";
 import { shell_def, shell_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
-export type ToolCategory = "explore" | "git" | "edit" | "diagnostics" | "shell"; // | "fetch";
+export type ToolCategory = "explore" | "git" | "edit" | "diagnostics" | "shell";
 export type { ToolHistoryPolicy };
 
 export interface ToolAnswer<TOutput = unknown> {
@@ -208,7 +201,7 @@ export function isWithinAllowedTemp(resolvedPath: string): boolean {
 
 /**
  * Resolves a relative path against the workspace root and validates it doesn't escape.
- * Also allows explore tools to access os.tmpdir() files (e.g., from fetch tool).
+ * Also allows explore tools to access os.tmpdir() files (e.g., shell's spilled output).
  * Returns { root, fullPath } on success, or { error } (a ready-to-return JSON string) on failure.
  */
 export function secureWorkspace(relPath: string, toolName: string): { root: string; fullPath: string; error: string } {
@@ -315,13 +308,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         toolTarget: (args) => formatToolTargetValue("command", args.command),
         execute: shell_exec,
     },
-    // fetch: {
-    //     category: "fetch",
-    //     historyPolicy: "dropAll",
-    //     definition: fetch_def,
-    //     toolTarget: (args) => formatToolTargetValue("url", args.url),
-    //     execute: fetch_exec,
-    // },
     edit: {
         category: "edit",
         historyPolicy: "keepAll",
@@ -342,6 +328,16 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: delete_def,
         toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: delete_exec,
+    },
+    notebook: {
+        category: "edit",
+        historyPolicy: "keepAll",
+        definition: notebook_def,
+        toolTarget: (args) => {
+            const filePath = formatToolTargetValue("filePath", args.filePath);
+            return `${args.mode} #${args.cellIndex} → ${filePath}`;
+        },
+        execute: notebook_exec,
     },
     diagnostics: {
         category: "diagnostics",

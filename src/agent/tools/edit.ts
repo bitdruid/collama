@@ -14,25 +14,7 @@ import {
     setAutoAcceptFileCreates,
     setAutoAcceptFolderCreates,
 } from "./confirm";
-
-/**
- * Virtual document provider for diff previews.
- */
-class DiffContentProvider implements vscode.TextDocumentContentProvider {
-    private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
-    onDidChange = this._onDidChange.event;
-
-    private contents = new Map<string, string>();
-
-    set(uri: vscode.Uri, content: string) {
-        this.contents.set(uri.toString(), content);
-        this._onDidChange.fire(uri);
-    }
-
-    provideTextDocumentContent(uri: vscode.Uri): string {
-        return this.contents.get(uri.toString()) ?? "";
-    }
-}
+import { confirmWithDiff, confirmWithPreview } from "./diff-preview";
 
 /**
  * Helper function to get file extension from path
@@ -59,131 +41,6 @@ async function applyFileChanges(uri: vscode.Uri, newContent: string): Promise<vo
     if (doc) {
         await doc.save();
     }
-}
-
-async function closePreviewTabs(previewUri: vscode.Uri, originalUri?: vscode.Uri): Promise<void> {
-    const tabsToClose: vscode.Tab[] = [];
-    const previewUriString = previewUri.toString();
-    const originalUriString = originalUri?.toString();
-
-    for (const tabGroup of vscode.window.tabGroups.all) {
-        for (const tab of tabGroup.tabs) {
-            if (tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === previewUriString) {
-                tabsToClose.push(tab);
-                continue;
-            }
-
-            if (
-                originalUriString &&
-                tab.input instanceof vscode.TabInputTextDiff &&
-                tab.input.original.toString() === originalUriString &&
-                tab.input.modified.toString() === previewUriString
-            ) {
-                tabsToClose.push(tab);
-            }
-        }
-    }
-
-    if (tabsToClose.length > 0) {
-        await vscode.window.tabGroups.close(tabsToClose, true);
-    }
-}
-
-/**
- * Shows a preview of file changes and asks for user confirmation.
- * Edit mode (originalContent provided): opens a diff view with Accept/Accept All.
- * Create mode (no originalContent): opens a single preview with Create/Create All.
- */
-async function handleChanges(
-    filePath: string,
-    newContent: string,
-    explanation: string,
-    options: {
-        /** Present → edit/diff mode. Absent → create mode. */
-        originalContent?: string;
-        title?: string;
-        progressMessage?: string;
-    } = {},
-): Promise<{ success: boolean; message: string }> {
-    const isEdit = options.originalContent !== undefined;
-    const {
-        title = isEdit ? "collama – Preview Changes" : "collama – Preview New File",
-        progressMessage = isEdit ? "collama: Processing changes…" : "collama: Creating file…",
-    } = options;
-
-    return await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Window, title: progressMessage, cancellable: false },
-        async () => {
-            if (isEdit && newContent === options.originalContent) {
-                return { success: false, message: "No changes to apply." };
-            }
-
-            const id = Date.now();
-            const ext = getFileExtension(filePath);
-            const uri = vscode.Uri.file(filePath);
-            const scheme = isEdit ? "collama-diff" : "collama-preview";
-            const provider = new DiffContentProvider();
-            const registration = vscode.workspace.registerTextDocumentContentProvider(scheme, provider);
-
-            const previewUri = vscode.Uri.parse(`${scheme}:${id}-modified${ext}`);
-            const originalUri = isEdit ? vscode.Uri.parse(`${scheme}:${id}-original${ext}`) : undefined;
-
-            try {
-                provider.set(previewUri, newContent);
-
-                if (isEdit && originalUri) {
-                    provider.set(originalUri, options.originalContent!);
-                    await vscode.commands.executeCommand("vscode.diff", originalUri, previewUri, title, {
-                        preview: false,
-                    });
-                } else {
-                    await vscode.commands.executeCommand("vscode.openWith", previewUri, "default", {
-                        preview: false,
-                    });
-                }
-
-                const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
-                const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, filePath) : filePath;
-
-                const action = isEdit ? "edit" : "create";
-                const { value, reason } = await requestToolConfirm(action, relativePath, explanation);
-
-                if (!value) {
-                    await closePreviewTabs(previewUri, originalUri);
-                    return {
-                        success: false,
-                        message: reason,
-                    };
-                }
-
-                let success = false;
-                let message = "";
-
-                if (isEdit) {
-                    await applyFileChanges(uri, newContent);
-                    message = "Changes applied.";
-                    if (value === "acceptAll") {
-                        setAutoAcceptEdits(true);
-                        message = "Changes applied. Auto-accepting future edits.";
-                    }
-                } else {
-                    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(newContent));
-                    message = "File created.";
-                    if (value === "acceptAll") {
-                        setAutoAcceptFileCreates(true);
-                        message = "File created. Auto-creating future files.";
-                    }
-                }
-                success = true;
-
-                await closePreviewTabs(previewUri, originalUri);
-
-                return { success, message };
-            } finally {
-                registration.dispose();
-            }
-        },
-    );
 }
 
 /**
@@ -246,13 +103,25 @@ export async function edit_exec(args: {
             return toolSuccess({ filePath: args.filePath }, "Changes applied (auto-accepted).");
         }
 
-        const result = await handleChanges(ws.fullPath, newContent, args.explanation, {
-            originalContent: content,
+        const { value, reason } = await confirmWithDiff({
+            original: content,
+            proposed: newContent,
+            ext: getFileExtension(args.filePath),
+            action: "edit",
+            displayPath: args.filePath,
+            explanation: args.explanation,
             title: `collama – Edit: ${args.filePath}`,
-            progressMessage: `collama: Editing ${args.filePath}…`,
         });
+        if (!value) {
+            return { success: false, output: { filePath: args.filePath }, message: reason };
+        }
 
-        return { success: result.success, output: { filePath: args.filePath }, message: result.message };
+        await applyFileChanges(vscode.Uri.file(ws.fullPath), newContent);
+        if (value === "acceptAll") {
+            setAutoAcceptEdits(true);
+            return toolSuccess({ filePath: args.filePath }, "Changes applied. Auto-accepting future edits.");
+        }
+        return toolSuccess({ filePath: args.filePath }, "Changes applied.");
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         return toolError(`Failed to edit file: ${msg}`);
@@ -354,12 +223,23 @@ export async function create_exec(args: {
         }
 
         // Create file with preview
-        const result = await handleChanges(ws.fullPath, args.content!, args.explanation, {
-            title: `collama – New File: ${args.filePath}`,
-            progressMessage: `collama: Creating ${args.filePath}…`,
+        const { value, reason } = await confirmWithPreview({
+            content: args.content!,
+            ext: getFileExtension(args.filePath),
+            action: "create",
+            displayPath: args.filePath,
+            explanation: args.explanation,
         });
+        if (!value) {
+            return { success: false, output: { filePath: args.filePath }, message: reason };
+        }
 
-        return { success: result.success, output: { filePath: args.filePath }, message: result.message };
+        await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), new TextEncoder().encode(args.content!));
+        if (value === "acceptAll") {
+            setAutoAcceptFileCreates(true);
+            return toolSuccess({ filePath: args.filePath }, "File created. Auto-creating future files.");
+        }
+        return toolSuccess({ filePath: args.filePath }, "File created.");
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         return toolError(`Failed to create ${isFolder ? "folder" : "file"}: ${msg}`);
