@@ -3,6 +3,7 @@ import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 import "./components/context-usage-bar/context-usage-bar";
+import "./components/chat-transfer-button/chat-transfer-button";
 import "./components/create-chat-button/create-chat-button";
 import "./components/session-button/session-button";
 import "./components/settings-button/settings-button";
@@ -53,6 +54,14 @@ export class ChatHeader extends LitElement {
                         .used=${this.contextUsed}
                         .max=${this.contextMax}
                     ></collama-context-usage-bar>
+                    <collama-chat-transfer-button
+                        mode="import"
+                        .disabled=${this.isGenerating}
+                    ></collama-chat-transfer-button>
+                    <collama-chat-transfer-button
+                        mode="export"
+                        .disabled=${this.isGenerating}
+                    ></collama-chat-transfer-button>
                     <collama-create-chat-button
                         kind="ghost"
                         .disabled=${this.isGenerating}

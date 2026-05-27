@@ -1,10 +1,9 @@
 import * as vscode from "vscode";
 
-import { ChatContext } from "../../../common/context-chat";
+import { ChatContext, ChatHistory } from "../../../common/context-chat";
 import { logMsg } from "../../../logging";
 import type { ChatSession } from "../../shared";
 import { SessionManager } from "../session-manager";
-import { buildExportData } from "../utils";
 
 /**
  * Handles chat session lifecycle actions requested by the webview.
@@ -17,10 +16,10 @@ export class SessionHandlers {
 
     /**
      * Creates a new session and sets it as the active session.
-     * If the current active session is temporary or ghost, it will be deleted first.
+     * If the current active session is a ghost, it will be deleted first.
      */
     handleNewSession() {
-        this.deleteActiveTemporarySession();
+        this.deleteActiveGhostSession();
 
         this.sessionManager.createNewSession();
         this.sessionManager.sendSessionsUpdate();
@@ -32,17 +31,15 @@ export class SessionHandlers {
      * The session is never persisted and never appears in the sessions list.
      */
     handleNewGhostSession() {
-        this.deleteActiveTemporarySession();
+        this.deleteActiveGhostSession();
 
-        const now = Date.now();
         const ghostSession: ChatSession = {
             id: SessionManager.generateSessionId(),
             title: "Temporary Chat",
             messages: new ChatContext(),
             contextStartIndex: 0,
             ghost: true,
-            createdAt: now,
-            updatedAt: now,
+            updatedAt: Date.now(),
         };
         this.sessionManager.sessions.push(ghostSession);
         this.sessionManager.activeSessionId = ghostSession.id;
@@ -52,7 +49,7 @@ export class SessionHandlers {
 
     /**
      * Switches the active session to the specified session.
-     * If the current active session is temporary or ghost, it will be deleted first.
+     * If the current active session is a ghost, it will be deleted first.
      * @param msg - The message containing the session ID to switch to.
      */
     async handleSwitchSession(msg: { sessionId: string }) {
@@ -61,7 +58,7 @@ export class SessionHandlers {
             return;
         }
 
-        this.deleteActiveTemporarySession();
+        this.deleteActiveGhostSession();
 
         this.sessionManager.activeSessionId = sessionId;
         await this.sessionManager.ensureLoaded(sessionId);
@@ -104,21 +101,70 @@ export class SessionHandlers {
     }
 
     /**
-     * Opens a read-only preview of a session's chat history as raw JSON.
+     * Prompts the user for a path and writes the session's chat history as JSON.
+     * The first array element is a header identifying the producing extension
+     * (e.g. "collama-1.7.18"); it's discarded on import.
      */
     async handleExportSession(msg: { sessionId: string }) {
         await this.sessionManager.ensureLoaded(msg.sessionId);
         const session = this.sessionManager.sessions.find((s) => s.id === msg.sessionId);
         const messages = session?.messages.getMessages() || [];
-        const json = JSON.stringify(buildExportData(this.extContext, messages), null, 2);
-        const uri = vscode.Uri.parse(`untitled:session-export-${msg.sessionId}.json`);
-        vscode.workspace.openTextDocument(uri).then((doc) => {
-            vscode.window.showTextDocument(doc, { preview: true }).then((editor) => {
-                editor.edit((editBuilder) => {
-                    editBuilder.insert(new vscode.Position(0, 0), json);
-                });
-            });
+        const { name, version } = this.extContext.extension.packageJSON;
+        const json = JSON.stringify([{ version: `${name}-${version}` }, ...messages], null, 2);
+
+        const safeName = (session?.title || "chat-export").replace(/[\\/:*?"<>|]+/g, "_").trim() || "chat-export";
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        const defaultUri = workspaceFolder
+            ? vscode.Uri.joinPath(workspaceFolder.uri, `${safeName}.json`)
+            : vscode.Uri.file(`${safeName}.json`);
+        const target = await vscode.window.showSaveDialog({
+            defaultUri,
+            filters: { JSON: ["json"] },
+            saveLabel: "Export chat",
         });
+        if (!target) {
+            return;
+        }
+        try {
+            await vscode.workspace.fs.writeFile(target, Buffer.from(json, "utf8"));
+            logMsg(`Exported session ${msg.sessionId} as JSON to ${target.fsPath}`);
+        } catch (err) {
+            vscode.window.showErrorMessage(`Failed to write JSON export: ${String(err)}`);
+        }
+    }
+
+    /**
+     * Prompts the user for a JSON file and imports it as a new session.
+     * The first array element is the export header and is discarded; the rest
+     * are the messages. The imported session becomes the active session.
+     */
+    async handleImportSession() {
+        const picked = await vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: false,
+            filters: { JSON: ["json"] },
+            openLabel: "Import chat",
+        });
+        if (!picked || picked.length === 0) {
+            return;
+        }
+        const uri = picked[0];
+        try {
+            const buf = await vscode.workspace.fs.readFile(uri);
+            const raw = JSON.parse(Buffer.from(buf).toString("utf8"));
+            if (!Array.isArray(raw)) {
+                throw new Error("Expected an array");
+            }
+            const messages = raw.slice(1) as ChatHistory[];
+            this.deleteActiveGhostSession();
+            const newSession = this.sessionManager.importSession(messages);
+            await this.sessionManager.flushSessions();
+            this.sessionManager.sendSessionsUpdate();
+            logMsg(`Imported session ${newSession.id} from ${uri.fsPath}`);
+        } catch (err) {
+            vscode.window.showErrorMessage(`Failed to import chat: ${String(err)}`);
+        }
     }
 
     /**
@@ -131,7 +177,6 @@ export class SessionHandlers {
         if (session && newTitle && newTitle.trim() !== "") {
             this.sessionManager.updateSession(session, (s) => {
                 s.title = newTitle.trim();
-                s.customTitle = true;
             });
             this.sessionManager.sendSessionsUpdate();
             logMsg(`Renamed session ${sessionId} to "${newTitle}"`);
@@ -179,16 +224,16 @@ export class SessionHandlers {
     }
 
     /**
-     * Deletes the currently active session if it is temporary or ghost.
-     * This is used to clean up temporary sessions before creating new ones.
+     * Deletes the currently active session if it is a ghost (unlisted, never
+     * persisted). Used to clean up ghost sessions before creating/switching.
      */
-    private deleteActiveTemporarySession() {
+    private deleteActiveGhostSession() {
         const oldSession = this.sessionManager.getActiveSession();
-        if (!oldSession?.temporary && !oldSession?.ghost) {
+        if (!oldSession?.ghost) {
             return;
         }
 
         this.sessionManager.sessions = this.sessionManager.sessions.filter((s) => s.id !== oldSession.id);
-        logMsg(`Auto-deleted temporary/ghost session: ${oldSession.id}`);
+        logMsg(`Auto-deleted ghost session: ${oldSession.id}`);
     }
 }

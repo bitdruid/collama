@@ -17,14 +17,12 @@ export class ChatSessionStore extends EventTarget {
 
     newChat() {
         const id = Date.now().toString();
-        const now = Date.now();
         const newSession: ChatSession = {
             id,
             title: "New Chat",
             messages: new ChatContext(),
             contextStartIndex: 0,
-            createdAt: now,
-            updatedAt: now,
+            updatedAt: Date.now(),
         };
         this.sessions = [...this.sessions, newSession];
         this.activeSessionId = id;
@@ -60,10 +58,8 @@ export class ChatSessionStore extends EventTarget {
         const newSession: ChatSession = {
             id: now.toString(),
             title: source.title + " (Copy)",
-            customTitle: true,
             messages: new ChatContext(JSON.parse(JSON.stringify(source.messages.getMessages()))),
             contextStartIndex: source.contextStartIndex,
-            createdAt: now,
             updatedAt: now,
         };
         this.sessions = [...this.sessions, newSession];
@@ -155,10 +151,7 @@ export class ChatSessionStore extends EventTarget {
         sessions: Array<{
             id: string;
             title: string;
-            customTitle?: boolean;
-            temporary?: boolean;
             ghost?: boolean;
-            createdAt: number;
             updatedAt: number;
         }>;
         activeSessionId: string;

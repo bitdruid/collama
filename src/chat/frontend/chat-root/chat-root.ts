@@ -30,6 +30,7 @@ import {
     onEditMessage,
     onExportSession,
     onExportSessionHtml,
+    onImportSession,
     onNearBottomChanged,
     onNewChat,
     onNewGhostChat,
@@ -384,7 +385,6 @@ export class ChatRoot extends LitElement {
                     .sessions=${this.sessions}
                     .activeSessionId=${this.activeSessionId}
                     @dropdown-close=${this.handleDropdownClose}
-                    @export-session=${this.handleExportSession}
                     @export-session-html=${this.handleExportSessionHtml}
                     @select-session=${this.handleSelectSession}
                     @delete-session=${this.handleDeleteSession}
@@ -483,6 +483,7 @@ export class ChatRoot extends LitElement {
                 .settingsDropdownOpen=${this.activeDropdown === "settings"}
                 .showSettingsBadge=${this.showSettingsBadge}
                 @export-session=${this.handleExportSession}
+                @import-session=${onImportSession}
                 @new-chat=${onNewChat}
                 @new-ghost-chat=${onNewGhostChat}
                 @toggle-session-dropdown=${this.handleToggleSessionDropdown}

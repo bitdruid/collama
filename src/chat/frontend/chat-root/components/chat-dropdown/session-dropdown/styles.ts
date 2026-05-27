@@ -81,7 +81,6 @@ export const sessionItemStyles = css`
         background: ${themeColors.uiBackgroundHoverDimm};
     }
 
-    .export-button,
     .copy-button,
     .rename-button {
         color: ${themeColors.uiFont};

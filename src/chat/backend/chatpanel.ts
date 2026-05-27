@@ -42,7 +42,7 @@ export class ChatPanel {
     ) {
         this.sessionManager = new SessionManager(extContext, webviewView);
         this.sessionHandlers = new SessionHandlers(this.sessionManager, extContext);
-        this.agentRunner = new AgentRunner(extContext);
+        this.agentRunner = new AgentRunner();
     }
 
     /**
@@ -57,6 +57,7 @@ export class ChatPanel {
         "switch-session": (msg) => this.sessionHandlers.handleSwitchSession(msg),
         "export-session": (msg) => this.sessionHandlers.handleExportSession(msg),
         "export-session-html": (msg) => this.sessionHandlers.handleExportSessionHtml(msg),
+        "import-session": () => this.sessionHandlers.handleImportSession(),
         "rename-session": (msg) => this.sessionHandlers.handleRenameSession(msg),
         "copy-session": (msg) => this.sessionHandlers.handleCopySession(msg),
         "delete-session": (msg) => this.sessionHandlers.handleDeleteSession(msg),
@@ -168,9 +169,6 @@ export class ChatPanel {
         const { contextStartIndex } = await recomputeContextState(session.messages);
         this.sessionManager.updateSession(session, (s) => {
             s.contextStartIndex = contextStartIndex;
-            if (!s.customTitle) {
-                s.title = SessionManager.generateSessionTitle(s.messages.getMessages());
-            }
         });
         this.sessionManager.sendSessionsUpdate();
         logMsg(`Messages deleted for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
@@ -195,7 +193,6 @@ export class ChatPanel {
         }
         this.sessionManager.updateSession(session, (s) => {
             s.ghost = true;
-            s.temporary = false;
         });
         this.sessionManager.sendSessionsUpdate();
         this.sessionManager.saveSessions();
@@ -278,11 +275,14 @@ export class ChatPanel {
         // Mutable index tracking the current message being streamed/added
         let currentIndex = messages.length;
 
-        // Update the active session's messages (full history + empty assistant slot)
+        // Update the active session's messages (full history + empty assistant slot).
+        // The title is derived from the first user message once, when the session is
+        // still empty; afterwards it's left alone (renames and edits don't relabel it).
         const session = this.sessionManager.sessions.find((s) => s.id === sessionId)!;
+        const isFirstMessage = session.messages.length() === 0;
         this.sessionManager.updateSession(session, (s) => {
             s.messages.setMessages([...messages, { role: "assistant" as const, content: "" }]);
-            if (!s.customTitle) {
+            if (isFirstMessage) {
                 s.title = SessionManager.generateSessionTitle(messages);
             }
         });

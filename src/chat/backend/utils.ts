@@ -23,39 +23,27 @@ export function postConfigToWebview(config: ChatSettings, agentsMdActive: boolea
     }
 }
 
-/** Builds a portable export payload: extension metadata + messages. */
-export function buildExportData(extContext: vscode.ExtensionContext, messages: ChatHistory[]): unknown[] {
-    const { name, version } = extContext.extension.packageJSON;
-    return [{ extension: name, version }, ...messages];
-}
-
 /**
  * Session summary for UI display (excludes full message history).
  */
 export interface SessionSummary {
     id: string;
     title: string;
-    customTitle?: boolean;
-    temporary?: boolean;
     ghost?: boolean;
-    createdAt: number;
     updatedAt: number;
 }
 
 /**
  * Maps a session to a summary object for UI display.
  *
- * @param session - The session object with id, title, createdAt, updatedAt properties.
+ * @param session - The session object with id, title, updatedAt properties.
  * @returns A summary object suitable for sending to the webview.
  */
 export function mapSessionToSummary<T extends SessionSummary>(session: T): SessionSummary {
     return {
         id: session.id,
         title: session.title,
-        customTitle: session.customTitle,
-        temporary: session.temporary,
         ghost: session.ghost,
-        createdAt: session.createdAt,
         updatedAt: session.updatedAt,
     };
 }

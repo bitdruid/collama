@@ -170,7 +170,6 @@ export class SessionManager {
             title: "New Chat",
             messages: new ChatContext(),
             contextStartIndex: 0,
-            createdAt: Date.now(),
             updatedAt: Date.now(),
         };
         this.sessions.push(newSession);
@@ -190,15 +189,34 @@ export class SessionManager {
         if (!source || !this.loadedIds.includes(sourceId)) {
             return undefined;
         }
-        const now = Date.now();
         const newSession: ChatSession = {
             id: SessionManager.generateSessionId(),
             title: source.title + " (Copy)",
-            customTitle: true,
             messages: new ChatContext(JSON.parse(JSON.stringify(source.messages.getMessages()))),
             contextStartIndex: source.contextStartIndex,
-            createdAt: now,
-            updatedAt: now,
+            updatedAt: Date.now(),
+        };
+        this.sessions.push(newSession);
+        this.activeSessionId = newSession.id;
+        this.loadedIds = [newSession.id, ...this.loadedIds];
+        this.markDirty(newSession.id);
+        this.saveSessions();
+        return newSession;
+    }
+
+    /**
+     * Adds an imported session built from a header + message array. Generates a
+     * fresh id (the original may collide with an existing session), persists,
+     * and sets it as the active session.
+     */
+    importSession(messages: ChatHistory[]): ChatSession {
+        const newSession: ChatSession = {
+            id: SessionManager.generateSessionId(),
+            title: SessionManager.generateSessionTitle(messages),
+            messages: new ChatContext(messages),
+            // Recomputed against the importer's own model/config on the next request.
+            contextStartIndex: 0,
+            updatedAt: Date.now(),
         };
         this.sessions.push(newSession);
         this.activeSessionId = newSession.id;
@@ -257,9 +275,7 @@ export class SessionManager {
         await Promise.all(ids.map((id) => this.writeHistory(id)));
 
         if (wroteIndex || ids.length > 0) {
-            const summaries: SessionSummary[] = mapSessionsToSummaries(
-                this.sessions.filter((s) => !s.temporary && !s.ghost),
-            );
+            const summaries: SessionSummary[] = mapSessionsToSummaries(this.sessions.filter((s) => !s.ghost));
             this.extContext.globalState.update(SESSION_INDEX_KEY, summaries);
         }
         this.extContext.globalState.update(ACTIVE_SESSION_KEY, this.activeSessionId);
@@ -267,7 +283,7 @@ export class SessionManager {
 
     private async writeHistory(id: string): Promise<void> {
         const session = this.sessions.find((s) => s.id === id);
-        if (!session || session.temporary || session.ghost) {
+        if (!session || session.ghost) {
             return;
         }
         if (!this.loadedIds.includes(id)) {
@@ -350,8 +366,6 @@ export class SessionManager {
         const typed = legacy as Array<{
             id: string;
             title: string;
-            customTitle?: boolean;
-            createdAt: number;
             updatedAt: number;
             messages: ChatHistory[];
             contextStartIndex?: number;
@@ -377,8 +391,6 @@ export class SessionManager {
         const summaries: SessionSummary[] = typed.map((s) => ({
             id: s.id,
             title: s.title,
-            customTitle: s.customTitle,
-            createdAt: s.createdAt,
             updatedAt: s.updatedAt,
         }));
         await this.extContext.globalState.update(SESSION_INDEX_KEY, summaries);

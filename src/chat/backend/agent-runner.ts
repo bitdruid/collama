@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 
 import { Agent, AgentEvent, AgentMode } from "../../agent/agent";
+
 import { ChatContext, ChatHistory } from "../../common/context-chat";
-import { buildExportData } from "./utils";
 
 export interface AgentRunnerRunOptions {
     webview: vscode.Webview;
@@ -20,7 +20,7 @@ export interface AgentRunnerRunOptions {
 export class AgentRunner {
     private currentAgent: Agent | null = null;
 
-    constructor(private readonly extContext: vscode.ExtensionContext) {}
+    constructor() {}
 
     isRunning(): boolean {
         return this.currentAgent !== null;
@@ -72,11 +72,7 @@ export class AgentRunner {
                 name: error instanceof Error ? error.name : "Error",
             };
             // Export live session history before the caller prunes the failed run tail.
-            const exportedChat = JSON.stringify(
-                buildExportData(this.extContext, errorMessages?.() ?? messages.getMessages()),
-                null,
-                2,
-            );
+            const exportedChat = JSON.stringify(errorMessages?.() ?? messages.getMessages(), null, 2);
             const errorMessage = `\n\n--- ERROR ---\n\nname:\n${errorInfo.name}\n\nmessage:\n${errorInfo.message}\n\nstack:\n${errorInfo.stack || "N/A"}`;
             webview.postMessage({
                 type: "agent-error",

@@ -38,6 +38,7 @@ const backendApi = {
     exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
     exportSessionHtml: (sessionId: string, title: string, html: string) =>
         window.vscode.postMessage({ type: "export-session-html", sessionId, title, html }),
+    importSession: () => window.vscode.postMessage({ type: "import-session" }),
     toolConfirmResponse: (id: string, value: string, reason: string) =>
         window.vscode.postMessage({ type: "tool-confirm-response", id, value, reason }),
     toolDecisionResponse: (id: string, value: string) =>
@@ -310,6 +311,12 @@ function waitFor(predicate: () => boolean, timeoutMs: number): Promise<boolean> 
             }
         }, 30);
     });
+}
+
+/** Opens the host file dialog to import a chat JSON as a new session. */
+export function onImportSession() {
+    logWebview("Importing session from file");
+    backendApi.importSession();
 }
 
 /** Creates a new chat session. */

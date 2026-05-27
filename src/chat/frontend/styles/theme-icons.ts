@@ -16,6 +16,7 @@ import {
     Copy,
     CornerDownLeft,
     createElement,
+    Download,
     FileText,
     Folder,
     GalleryHorizontalEnd,
@@ -29,6 +30,7 @@ import {
     Search,
     Settings,
     Trash2,
+    Upload,
     Wrench,
     X,
 } from "lucide";
@@ -52,6 +54,7 @@ export const themeIcons = {
     code: icon(Code),
     compress: icon(Minimize2),
     copy: icon(Copy),
+    download: icon(Download),
     enter: icon(CornerDownLeft),
     fileText: icon(FileText),
     folder: icon(Folder),
@@ -68,5 +71,6 @@ export const themeIcons = {
     thinking: icon(HelpCircle),
     tool: icon(Wrench),
     trash: icon(Trash2),
+    upload: icon(Upload),
     x: icon(X),
 } as const;

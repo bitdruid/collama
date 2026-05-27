@@ -26,12 +26,9 @@ export const defaultChatSettings: ChatSettings = {
 export interface ChatSession {
     id: string;
     title: string;
-    customTitle?: boolean;
-    temporary?: boolean;
     ghost?: boolean;
     messages: ChatContext;
     contextStartIndex: number;
-    createdAt: number;
     updatedAt: number;
 }
 

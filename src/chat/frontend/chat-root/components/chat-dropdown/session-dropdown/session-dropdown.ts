@@ -51,16 +51,6 @@ export class SessionDropdown extends BaseDropdown {
         );
     };
 
-    private handleExport = (session: ChatSession) => {
-        this.dispatchEvent(
-            new CustomEvent("export-session", {
-                detail: { id: session.id },
-                bubbles: true,
-                composed: true,
-            }),
-        );
-    };
-
     private handleExportHtml = (session: ChatSession) => {
         this.dispatchEvent(
             new CustomEvent("export-session-html", {
@@ -90,7 +80,6 @@ export class SessionDropdown extends BaseDropdown {
                               @delete=${() => this.handleDelete(session)}
                               @rename=${this.handleRename}
                               @copy=${() => this.handleCopy(session)}
-                              @export=${() => this.handleExport(session)}
                               @export-html=${() => this.handleExportHtml(session)}
                           ></collama-session-item>
                       `,
