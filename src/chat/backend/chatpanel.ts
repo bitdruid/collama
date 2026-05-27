@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { getToolHistoryPolicy } from "../../agent/tools";
 import { resolveToolDecision } from "../../agent/tools/decision";
-import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../../agent/tools/edit";
+import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../../agent/tools/confirm";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
 import { ChatContext, ChatHistory } from "../../common/context-chat";

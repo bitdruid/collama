@@ -11,7 +11,7 @@
     "license": "MIT",
     "version": "1.7.17",
     "engines": {
-        "vscode": "^1.109.0"
+        "vscode": "^1.120.0"
     },
     "categories": [
         "Other"
@@ -268,26 +268,26 @@
     "devDependencies": {
         "@types/markdown-it": "^14.1.2",
         "@types/node": "25.x",
-        "@types/vscode": "^1.109.0",
-        "esbuild": "^0.27.3",
+        "@types/vscode": "^1.120.0",
+        "esbuild": "^0.28.0",
         "esbuild-plugin-inline-import": "^1.1.0",
-        "eslint": "^10.0.3",
+        "eslint": "^10.4.0",
         "fastest-levenshtein": "^1.0.16",
         "npm-run-all": "^4.1.5",
-        "prettier": "^3.8.1",
-        "typescript": "^5.9.3",
-        "typescript-eslint": "^8.56.1"
+        "prettier": "^3.8.3",
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.60.0"
     },
     "dependencies": {
         "@microsoft/tiktokenizer": "^1.0.10",
         "globby": "^16.2.0",
         "highlight.js": "^11.11.1",
-        "lit": "^3.3.2",
-        "lucide": "^1.14.0",
-        "markdown-it": "^14.1.1",
+        "lit": "^3.3.3",
+        "lucide": "^1.16.0",
+        "markdown-it": "^14.2.0",
         "micromatch": "^4.0.8",
         "node-fetch": "^3.3.2",
         "ollama": "^0.6.3",
-        "openai": "^6.27.0"
+        "openai": "^6.39.0"
     }
 }

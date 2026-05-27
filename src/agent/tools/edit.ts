@@ -1,103 +1,19 @@
 import fs from "fs";
 import path from "path";
 import * as vscode from "vscode";
-import { getWebview } from "../../chat/backend/utils";
 import { logMsg } from "../../logging";
 import { ToolAnswer, secureWorkspace, toolError, toolSuccess } from "../tools";
-
-// -- Tool confirmation via webview --
-
-const _pending = new Map<string, (result: { value: string | null; reason: string }) => void>();
-let _idCounter = 0;
-
-/** Resolves a pending tool confirmation. Called when the webview responds. */
-export function resolveToolConfirm(id: string, value: string, reason: string): void {
-    const resolve = _pending.get(id);
-    if (resolve) {
-        _pending.delete(id);
-        resolve(value === "cancel" ? { value: null, reason } : { value, reason });
-    }
-}
-
-/** Sends a confirmation request to the webview and awaits the user's response. */
-export function requestToolConfirm(
-    action: string,
-    filePath: string,
-    explanation: string,
-): Promise<{ value: string | null; reason: string }> {
-    const webview = getWebview();
-    if (!webview) {
-        return Promise.resolve({ value: "accept", reason: "No webview available" });
-    }
-    const id = String(++_idCounter);
-    return new Promise((resolve) => {
-        _pending.set(id, resolve);
-        webview.postMessage({ type: "tool-confirm-request", id, action, filePath, explanation });
-    });
-}
-
-// -- Auto-accept flags --
-
-/**
- * When true, edit applies changes without showing a diff preview.
- * Set by the "Accept All" quick-pick option; reset per agent session.
- */
-let autoAcceptEdits = false;
-
-/**
- * When true, create_exec creates files without showing a preview.
- * Set by the "Create All" quick-pick option; reset per agent session.
- */
-let autoAcceptFileCreates = false;
-
-/**
- * When true, create_exec creates folders without confirmation.
- * Set by the "Create All" quick-pick option; reset per agent session.
- */
-let autoAcceptFolderCreates = false;
-
-/**
- * When true, delete_exec deletes files without confirmation.
- * Set by the "Delete All" quick-pick option; reset per agent session.
- */
-let autoAcceptDeletes = false;
-
-/**
- * When true, the frontend toggle is active and resetAutoAcceptEdits
- * should not clear the flags.
- */
-let frontendAutoAcceptActive = false;
-
-/**
- * Sets all auto-accept flags at once. Called by the frontend
- * "auto-accept all" toggle button.
- */
-export function getAutoAcceptAll(): boolean {
-    return frontendAutoAcceptActive;
-}
-
-export function setAutoAcceptAll(enabled: boolean): void {
-    frontendAutoAcceptActive = enabled;
-    autoAcceptEdits = enabled;
-    autoAcceptFileCreates = enabled;
-    autoAcceptFolderCreates = enabled;
-    autoAcceptDeletes = enabled;
-    logMsg(`Auto-accept ${enabled ? "enabled" : "disabled"}`);
-}
-
-/**
- * Resets the per-session auto-accept flags (from quick-pick bulk actions).
- * Skips reset when the frontend toggle is active.
- */
-export function resetAutoAcceptEdits(): void {
-    if (frontendAutoAcceptActive) {
-        return;
-    }
-    autoAcceptEdits = false;
-    autoAcceptFileCreates = false;
-    autoAcceptFolderCreates = false;
-    autoAcceptDeletes = false;
-}
+import {
+    getAutoAcceptDeletes,
+    getAutoAcceptEdits,
+    getAutoAcceptFileCreates,
+    getAutoAcceptFolderCreates,
+    requestToolConfirm,
+    setAutoAcceptDeletes,
+    setAutoAcceptEdits,
+    setAutoAcceptFileCreates,
+    setAutoAcceptFolderCreates,
+} from "./confirm";
 
 /**
  * Virtual document provider for diff previews.
@@ -247,14 +163,14 @@ async function handleChanges(
                     await applyFileChanges(uri, newContent);
                     message = "Changes applied.";
                     if (value === "acceptAll") {
-                        autoAcceptEdits = true;
+                        setAutoAcceptEdits(true);
                         message = "Changes applied. Auto-accepting future edits.";
                     }
                 } else {
                     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(newContent));
                     message = "File created.";
                     if (value === "acceptAll") {
-                        autoAcceptFileCreates = true;
+                        setAutoAcceptFileCreates(true);
                         message = "File created. Auto-creating future files.";
                     }
                 }
@@ -325,7 +241,7 @@ export async function edit_exec(args: {
         }
 
         // Auto-accept: apply without diff preview
-        if (autoAcceptEdits) {
+        if (getAutoAcceptEdits()) {
             await applyFileChanges(vscode.Uri.file(ws.fullPath), newContent);
             return toolSuccess({ filePath: args.filePath }, "Changes applied (auto-accepted).");
         }
@@ -409,7 +325,7 @@ export async function create_exec(args: {
 
         if (isFolder) {
             // Auto-accept: create folder without confirmation
-            if (autoAcceptFolderCreates) {
+            if (getAutoAcceptFolderCreates()) {
                 await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
                 return toolSuccess({ filePath: args.filePath }, "Folder created (auto-created).");
             }
@@ -423,7 +339,7 @@ export async function create_exec(args: {
             await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
 
             if (value === "acceptAll") {
-                autoAcceptFolderCreates = true;
+                setAutoAcceptFolderCreates(true);
                 return toolSuccess({ filePath: args.filePath }, "Folder created. Auto-creating future folders.");
             }
 
@@ -431,7 +347,7 @@ export async function create_exec(args: {
         }
 
         // Auto-accept: create without preview
-        if (autoAcceptFileCreates) {
+        if (getAutoAcceptFileCreates()) {
             const encoder = new TextEncoder();
             await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), encoder.encode(args.content!));
             return toolSuccess({ filePath: args.filePath }, "File created (auto-created).");
@@ -504,7 +420,7 @@ export async function delete_exec(args: {
         }
 
         // Auto-accept: delete without confirmation
-        if (autoAcceptDeletes) {
+        if (getAutoAcceptDeletes()) {
             await vscode.workspace.fs.delete(uri);
             return toolSuccess({ filePath: args.filePath }, "File/folder deleted (auto-deleted).");
         }
@@ -522,7 +438,7 @@ export async function delete_exec(args: {
         await vscode.workspace.fs.delete(uri);
 
         if (value === "acceptAll") {
-            autoAcceptDeletes = true;
+            setAutoAcceptDeletes(true);
             return toolSuccess({ filePath: args.filePath }, "File/folder deleted. Auto-deleting future files.");
         }
 
