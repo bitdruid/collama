@@ -204,9 +204,10 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
     - `edit` - Replace an exact string in a workspace file with preview and confirmation
     - `create` - Create a new file or folder with confirmation
     - `delete` - Delete a file or folder with confirmation
+    - `notebook` - Edit Jupyter notebook cells with rich diff preview support
 
 - **Shell Tool**
-    - `shell` - Run npm/python shell commands with confirmation when `collama.enableShellTool` is enabled (⚠️ **Work in Progress** — currently tested with npm/python debugging only; use with caution and explicit confirmations); keep it **OFF**
+    - `shell` - Run shell commands with confirmation when `collama.enableShellTool` is enabled; large output is written to a temp file instead of truncating
 
 ## Contributing
 

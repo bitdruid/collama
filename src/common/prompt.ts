@@ -2,8 +2,6 @@ import type { ExtensionConfig } from "../config";
 import { userConfig } from "../config";
 import { getAgentsMdContent } from "./agents-md";
 
-type promptMode = "default" | "lite";
-
 /**
  * Parameters for constructing a prompt string.
  */
@@ -116,19 +114,18 @@ export function getAgentTemplate(): string {
 function getLiteTemplate(): string {
     const lines: string[] = [];
 
-    // role
-    lines.push("");
-
     // output formating
-    lines.push(OUTPUT_FORMATING.LITE);
+    lines.push(...OUTPUT_FORMATING.LITE);
 
-    // agent
-    // lines.push(
-    //     ...getAgenticRules({
-    //         agenticMode: userConfig.agenticMode,
-    //         editTools: userConfig.enableEditTools,
-    //     }),
-    // );
+    // agent rules
+    if (userConfig.agenticMode) {
+        lines.push("", ...AGENT_RULES.LITE);
+    }
+
+    // edit rules
+    if (userConfig.agenticMode && userConfig.enableEditTools) {
+        lines.push("", ...EDIT_RULES.LITE);
+    }
 
     // agents.md
     const agentsMd = getAgentsMdContent();
@@ -145,26 +142,24 @@ function getLiteTemplate(): string {
 function getDefaultTemplate(): string {
     const lines: string[] = [];
 
-    // role
-    lines.push("<llm-info> tags contain internal metadata. Never mention them to the user.");
-
-    // output formating
-    lines.push(OUTPUT_FORMATING.DEFAULT);
+    // metadata
+    lines.push("<llm-info> tags contain internal metadata. Never mention them to the user.", "");
 
     // verbosity
-    lines.push(
-        ...getVerbosityRules({
-            verbosityMode: userConfig.verbosityMode,
-        }),
-    );
+    lines.push(...VERBOSITY_RULES[userConfig.verbosityMode]);
 
-    // agent
-    lines.push(
-        ...getAgenticRules({
-            agenticMode: userConfig.agenticMode,
-            editTools: userConfig.enableEditTools,
-        }),
-    );
+    // output formating
+    lines.push(...OUTPUT_FORMATING.DEFAULT);
+
+    // agent rules
+    if (userConfig.agenticMode) {
+        lines.push("", ...AGENT_RULES.DEFAULT);
+    }
+
+    // edit rules
+    if (userConfig.agenticMode && userConfig.enableEditTools) {
+        lines.push("", ...EDIT_RULES.DEFAULT);
+    }
 
     const agentsMd = getAgentsMdContent();
     if (agentsMd) {
@@ -173,68 +168,6 @@ function getDefaultTemplate(): string {
 
     return lines.join("\n");
 }
-
-/**
- * Returns verbosity rules based on configured mode.
- */
-const getVerbosityRules = ({ verbosityMode }: { verbosityMode: ExtensionConfig["verbosityMode"] }): string[] => {
-    const prompts: Record<ExtensionConfig["verbosityMode"], string[]> = {
-        compact: [
-            "Verbosity rules:",
-            "- Your output must be as compact as possible.",
-            "- Compress your answer aggressively and explain minimal.",
-            "- No filler words, no articles, no politeness.",
-            "- No grammar, short sentences, use symbols (→, =, vs, ×).",
-            "- Keep technical information.",
-        ],
-        medium: [
-            "Verbosity rules:",
-            "- Your output should cover the core informations.",
-            "- Be concise but explain briefly.",
-            "- Keep your answer near the request and add relevant context.",
-            "- Reason essential informations.",
-            "- Keep technical information.",
-        ],
-        detailed: [
-            "Verbosity rules:",
-            "- Your output must cover additional informations.",
-            "- Be verbose and explain every detail.",
-            "- Provide thorough responses with context and reasoning.",
-            "- Explain why and how something works, not just what it does.",
-            "- Give alternatives, always use examples, pros and cons.",
-            "- Use and explain code-output when possible.",
-        ],
-    };
-
-    return prompts[verbosityMode] ?? prompts.medium;
-};
-
-/**
- * Returns agentic behavior rules based on enabled features.
- */
-const getAgenticRules = ({ agenticMode, editTools }: { agenticMode: boolean; editTools: boolean }): string[] => {
-    const rules: string[] = [];
-
-    if (agenticMode) {
-        rules.push(
-            "- Only use tools when the user's request requires interaction with files.",
-            "- For general questions, greetings, or conversations respond without tools.",
-            "",
-        );
-    }
-
-    if (agenticMode && editTools) {
-        rules.push(
-            "- Tell the user what you are about to do before useing tools.",
-            "- Use the decision tool frequently to reinsure and let the user decide. Never guess if the right solution is ambigous. ",
-            "- After you finished editing, lint/test/compile/build to validate the changes if possible.",
-            "- Finish your answer with a summary of your actions and the resulting conclusion.",
-            "- Make multiple small edits instead of large.",
-        );
-    }
-
-    return rules;
-};
 
 const OUTPUT_FORMATING = {
     DEFAULT: [
@@ -250,7 +183,7 @@ const OUTPUT_FORMATING = {
         "   - ✅, ❌, ⚠️ allowed to approve or disapprove statements or circumstances.",
         "   - 🟢, 🟡, 🔴 allowed to categorize quality or severity.",
         "- You must always output relative paths for files to the user; root directory is the workspace.",
-    ].join("\n"),
+    ],
     LITE: [
         "Format output as Markdown.",
         "- Use ### for headings. Use - for lists.",
@@ -260,5 +193,66 @@ const OUTPUT_FORMATING = {
         "- No code in tables.",
         "- No emojis. Use plain text with ✅, ❌, ⚠️ to approve or disapprove; 🟢, 🟡, 🔴 to categorize quality",
         "- Output always relative filepaths in the workspace.",
-    ].join("\n"),
+    ],
+};
+
+const VERBOSITY_RULES: Record<ExtensionConfig["verbosityMode"], string[]> = {
+    compact: [
+        "- Your output must be as compact as possible.",
+        "- Compress your answer aggressively and explain minimal.",
+        "- No filler words, no articles, no politeness.",
+        "- No grammar, short sentences, use symbols (→, =, vs, ×).",
+        "- Keep technical information.",
+    ],
+    medium: [
+        "- Your output should cover the core informations.",
+        "- Be concise but explain briefly.",
+        "- Keep your answer near the request and add relevant context.",
+        "- Reason essential informations.",
+        "- Keep technical information.",
+    ],
+    detailed: [
+        "- Your output must cover additional informations.",
+        "- Be verbose and explain every detail.",
+        "- Provide thorough responses with context and reasoning.",
+        "- Explain why and how something works, not just what it does.",
+        "- Give alternatives, always use examples, pros and cons.",
+        "- Use and explain code-output when possible.",
+    ],
+};
+
+const AGENT_RULES = {
+    DEFAULT: [
+        "Only use tools when the user's request requires interaction with files.",
+        "For general questions, greetings or conversations respond without tools.",
+        "Don't hide your thinking. Keep it compact and output to the user instead.",
+    ],
+    LITE: [
+        "- Only use tools when file-interaction is required",
+        "- For general communication do not use tools",
+        "- Think compact; Output instead of thinking",
+    ],
+};
+
+const EDIT_RULES = {
+    DEFAULT: [
+        "Before you use tools, you have to tell the user what you are about to do. Your steps must be clarified.",
+        "Finish your answer with a summary of your actions and the resulting conclusion.",
+        "Respect the following rules when useing tools to edit files or run shell commands:",
+        "1. Use the decision tool frequently instead of guessing of inline questions:",
+        "   - If there are several possible edits",
+        "   - If the provided instructions do not clarify which file or modification should be applied",
+        "   - If changes can differ in size and impact offer the user to choose one direction",
+        "2. Use the shell tool as last resort and always prefer native tools instead of shell commands.",
+        "3. Use the shell tool if native tools would require to much effort to satisfy the request.",
+        "4. After you finished editing, use the shell tool to lint/test/compile/build for validation.",
+        "5. You have to split edits into several small ones. If a very large edit is required, recreate the file.",
+    ],
+    LITE: [
+        "- Finish your answer with a summary and conclusion",
+        "- Use the decision tool frequently instead of guessing",
+        "- Make small several small edits instead of one large",
+        "- Prefer native tools over the shell tool",
+        "- Use the shell tool to validate linting and builds",
+    ],
 };

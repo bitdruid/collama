@@ -1,6 +1,21 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.18] - 2026-05-27
+
+### Added
+- Notebook editing tool with rich diff preview support
+- Shell tool now writes large output to a temp file instead of truncating
+
+### Changed
+- Restructured prompt template generation with constants for better maintainability
+- Reorganized chat module structure into backend/frontend/shared directories
+- Simplified config.ts and extracted tool confirmation logic to separate module
+- Frontend first-level folder structure refactored
+
+### Fixed
+- Debounce session saving and store one session per file in global state
+
 ## [1.7.17] - 2026-05-26
 
 ### Changed
