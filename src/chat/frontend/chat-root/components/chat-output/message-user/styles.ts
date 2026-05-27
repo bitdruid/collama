@@ -1,0 +1,133 @@
+import { css } from "lit";
+import { themeColors, themeFonts, themeStyles } from "../../../../styles";
+
+export const userStyles = css`
+    .message.user {
+        margin: 24px 0;
+    }
+
+    .role-user {
+        background-color: ${themeColors.user};
+    }
+
+    .bubble-user {
+        border: 1px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackground};
+    }
+
+    .message-actions {
+        display: flex;
+        align-items: center;
+        gap: 1px;
+    }
+
+    .resend-button,
+    .delete-button,
+    .edit-button,
+    .summarize-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 2px;
+        border: none;
+        ${themeStyles.borderRadius.small}
+        background: transparent;
+        color: ${themeColors.cleanWhite};
+        font-size: ${themeFonts.small};
+        line-height: 1;
+        vertical-align: middle;
+        cursor: pointer;
+        opacity: 1;
+        transition: background 0.15s;
+    }
+
+    .resend-button:hover,
+    .edit-button:hover {
+        background: ${themeColors.submitHover};
+    }
+
+    .delete-button:hover {
+        background: ${themeColors.cancelHover};
+    }
+
+    .summarize-button:hover {
+        background: ${themeColors.compressHover};
+    }
+
+    .resend-button:disabled,
+    .delete-button:disabled,
+    .edit-button:disabled,
+    .summarize-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+    }
+
+    .resend-button:hover:disabled,
+    .delete-button:hover:disabled,
+    .edit-button:hover:disabled,
+    .summarize-button:hover:disabled {
+        background: transparent;
+    }
+`;
+
+export const editStyles = css`
+    :host {
+        display: block;
+    }
+
+    .edit-textarea {
+        ${themeStyles.textarea}
+        margin-top: 4px;
+    }
+
+    .edit-textarea:focus {
+        ${themeStyles.focus}
+    }
+
+    .edit-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        justify-content: flex-end;
+    }
+
+    .edit-send,
+    .edit-cancel {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 12px;
+        border: none;
+        ${themeStyles.borderRadius.small}
+        font-size: ${themeFonts.medium};
+        line-height: 1;
+        vertical-align: middle;
+        cursor: pointer;
+        color: ${themeColors.cleanWhite};
+    }
+
+    .edit-send {
+        background: ${themeColors.submit};
+    }
+
+    .edit-send:hover {
+        background: ${themeColors.submitHover};
+    }
+
+    .edit-send:active {
+        background: ${themeColors.submit};
+    }
+
+    .edit-cancel {
+        background: ${themeColors.cancel};
+    }
+
+    .edit-cancel:hover {
+        background: ${themeColors.cancelHover};
+    }
+
+    .edit-cancel:active {
+        background: ${themeColors.cancel};
+    }
+`;

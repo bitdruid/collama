@@ -40,7 +40,7 @@ async function main() {
 
     // webview build
     const webviewCtx = await esbuild.context({
-        entryPoints: ["src/chat/web/bundle.ts"],
+        entryPoints: ["src/chat/frontend/bundle.ts"],
         bundle: true,
         format: "esm",
         minify: production,

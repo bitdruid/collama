@@ -6,7 +6,7 @@ import {
     registerCreateAgentsMdDraftCommand,
     registerOpenFileCommand,
     registerSendToChatCommand,
-} from "./chat/subscriptions";
+} from "./chat/backend/subscriptions";
 import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
 import { loadAgentsMdContent, registerAgentsMdWatcher } from "./common/agents-md";
 import { initTokenizer } from "./common/tokenizer";

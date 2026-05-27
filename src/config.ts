@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { postConfigToWebview } from "./chat/utils-back";
+import { postConfigToWebview } from "./chat/backend/utils-back";
 import { isAgentsMdActive } from "./common/agents-md";
 import { requestOllama, requestOpenAI, type LlmBackendType } from "./common/client";
 import { logMsg } from "./logging";
