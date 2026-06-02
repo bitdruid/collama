@@ -1,12 +1,12 @@
 import { css } from "lit";
-import { themeColors, themeFonts, themeStyles } from "../../../styles";
-import { hljsStyles } from "../../utils";
+import { codeBlockStyles, inlineCodeStyles, themeColors, themeFonts, themeStyles } from "../../../styles";
 import { assistantStyles } from "./message-assistant/styles";
 import { toolStyles } from "./message-tool/styles";
 import { userStyles } from "./message-user/styles";
 
 export const outputStyles = [
-    ...hljsStyles,
+    ...codeBlockStyles,
+    ...inlineCodeStyles,
     assistantStyles,
     userStyles,
     toolStyles,
@@ -113,28 +113,6 @@ export const outputStyles = [
         a:hover {
             color: ${themeColors.hyperlinkHover};
             text-decoration: underline;
-        }
-
-        /* Style for backtick text by css rule prefered over native code parsing */
-
-        :not(pre) > code {
-            color: ${themeColors.uiFontHighlight};
-            background: ${themeColors.uiFontHighlightBackground};
-            ${themeStyles.borderRadius.medium}
-            padding: 0.08em 0.4em;
-            font-size: 0.9em;
-            font-family: ${themeFonts.familyMono};
-            font-weight: ${themeFonts.weight.light};
-            white-space: break-spaces;
-        }
-
-        a.file-link > code {
-            color: inherit;
-            background: none;
-            padding: 0;
-            font-size: inherit;
-            font-family: ${themeFonts.family};
-            font-weight: ${themeFonts.weight.normal};
         }
     `,
 ];

@@ -1,5 +1,6 @@
 // Barrel export for all theme styles
 export { themeAnimations } from "./theme-animations";
+export { codeBlockStyles, inlineCodeStyles } from "./theme-code";
 export { baseColor, themeColors } from "./theme-colors";
 export { themeFonts } from "./theme-fonts";
 export { themeIcons } from "./theme-icons";

@@ -1,10 +1,9 @@
 import { css } from "lit";
-import { themeColors } from "../../../styles";
+import { codeBlockStyles, themeColors } from "../../../styles";
 import { bannerStyles } from "../../../template-components/banner/styles";
-import { hljsStyles } from "../../utils";
 
 export const accordionStyles = [
-    ...hljsStyles,
+    ...codeBlockStyles,
     bannerStyles,
     css`
         :host {

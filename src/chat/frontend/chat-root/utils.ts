@@ -1,9 +1,6 @@
 import hljs from "highlight.js";
-import hljsdarkcss from "highlight.js/styles/atom-one-dark-reasonable.min.css";
-import hljslightcss from "highlight.js/styles/atom-one-light.min.css";
-import { css, unsafeCSS } from "lit";
 import { AttachedContext } from "../../../common/context-chat";
-import { themeColors, themeFonts } from "../styles";
+import { themeColors } from "../styles";
 
 export function llmInfoTag(tagContent: string): string {
     return `<llm-info>${tagContent}</llm-info>`;
@@ -131,43 +128,6 @@ export function showToast(message: string) {
         _toastTimer = null;
     }, 5000);
 }
-
-/**
- * Shared hljs CSS styles for code blocks.
- * Import and spread into your component's static styles array.
- */
-export const hljsStyles = [
-    css`
-        :host-context(body.vscode-light),
-        :host-context(body.vscode-high-contrast-light) {
-            ${unsafeCSS(hljslightcss)}
-        }
-        :host-context(body:not(.vscode-light):not(.vscode-high-contrast-light)) {
-            ${unsafeCSS(hljsdarkcss)}
-        }
-    `,
-    css`
-        pre code.hljs {
-            display: block;
-            padding: 8px;
-            border-radius: 0px;
-            background: ${themeColors.uiBackgroundDimm} !important;
-            overflow-x: auto;
-        }
-
-        pre {
-            margin: 0;
-            background: ${themeColors.uiBackgroundDimm} !important;
-        }
-
-        pre code {
-            font-family: ${themeFonts.familyMono};
-            font-weight: ${themeFonts.weight.light} !important;
-            font-size: 0.95em;
-            line-height: 1.4;
-        }
-    `,
-];
 
 /**
  * Highlight a code element using hljs auto-detection.
