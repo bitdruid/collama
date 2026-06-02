@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import { buildAgentOptions, emptyStop, LlmChatSettings, LlmClientFactory, ToolCall } from "../common/client";
-import { ChatContext, ChatHistory } from "../common/context-chat";
+import { ChatContext } from "../common/context-chat";
 import { getAgentTemplate } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import { executeTool, getToolDefinitions, getToolHistoryPolicy, getToolTarget, resetAutoAcceptEdits } from "./tools";
+import { executeTool, getToolDefinitions, getToolTarget, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
 export type AgentMode = "plain" | "default" | "sub";
@@ -74,7 +74,6 @@ export class Agent {
                         const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
                         if (result.toolCalls.length === 0) {
-                            history.applyToolHistoryPolicy(getToolHistoryPolicy);
                             break;
                         }
 

@@ -4,9 +4,9 @@ import * as vscode from "vscode";
 import { ToolHistoryPolicy } from "../common/context-chat";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
+import { resetAutoAcceptEdits } from "./tools/confirm";
 import { decision_def, decision_exec } from "./tools/decision";
 import { diagnostics_def, diagnostics_exec } from "./tools/diagnostics";
-import { resetAutoAcceptEdits } from "./tools/confirm";
 import { create_def, create_exec, delete_def, delete_exec, edit_def, edit_exec } from "./tools/edit";
 import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
@@ -243,7 +243,7 @@ export async function confirmAction(action: string, placeHolder: string): Promis
 export const toolRegistry: Record<string, Tool<any, any>> = {
     read: {
         category: "explore",
-        historyPolicy: "dropAll",
+        historyPolicy: "evalOutdated",
         definition: read_def,
         toolTarget: (args) => {
             const path = formatToolTargetValue("filePath", args.filePath);

@@ -149,7 +149,7 @@ export const gitLog_def = {
                 },
                 filePath: {
                     type: "string",
-                    description: "Filter to commits affecting this file. Only for mode 'commits'.",
+                    description: "Filter to commits affecting this file (relative to workspace root). Only for mode 'commits'.",
                 },
                 includeRemote: {
                     type: "boolean",
@@ -273,7 +273,7 @@ export const gitDiff_def = {
                 },
                 filePath: {
                     type: "string",
-                    description: "Filter the diff to a specific file.",
+                    description: "Filter the diff to a specific file (relative to workspace root).",
                 },
             },
             required: ["explanation"],

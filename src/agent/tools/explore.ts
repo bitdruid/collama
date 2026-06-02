@@ -97,7 +97,7 @@ export const read_def = {
                     type: "string",
                     description: "One sentence explaining why this tool call is needed for the user's request.",
                 },
-                filePath: { type: "string", description: "Path to the file" },
+                filePath: { type: "string", description: "Path to the file (relative to workspace root)." },
                 startLine: { type: "number", description: "Starting line (1-based, inclusive)" },
                 endLine: { type: "number", description: "Ending line (1-based, inclusive)" },
             },

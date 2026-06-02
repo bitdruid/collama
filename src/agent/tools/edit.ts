@@ -143,7 +143,7 @@ export const edit_def = {
                 },
                 filePath: {
                     type: "string",
-                    description: "Path to the file to edit (relative to workspace root).",
+                    description: "Path to the file (relative to workspace root).",
                 },
                 oldString: {
                     type: "string",

@@ -1,6 +1,6 @@
 import { ToolCall } from "./client";
 
-export type ToolHistoryPolicy = "keepAll" | "dropAll";
+export type ToolHistoryPolicy = "keepAll" | "dropAll" | "evalOutdated";
 
 export interface AttachedContext {
     fileName: string;
@@ -291,8 +291,10 @@ export class ChatContext {
 
     /**
      * Sweeps every tool response at turn-end, marking `dropAll` tools' content as
-     * `[stale]`. `keepAll` is a noop. Called once per agent turn after the work-loop
-     * completes — tool results stay live throughout the loop that produced them.
+     * `[stale]`. `keepAll` is a noop. `evalOutdated` marks a tool response as stale
+     * if the file it operated on was later edited (edit/create/delete/notebook).
+     * Called once per agent turn after the work-loop completes — tool results stay
+     * live throughout the loop that produced them.
      */
     public applyToolHistoryPolicy(getPolicy: (toolName: string) => ToolHistoryPolicy): void {
         for (let i = 0; i < this.length(); i++) {
@@ -304,10 +306,49 @@ export class ChatContext {
             if (!tc) {
                 continue;
             }
-            if (getPolicy(tc.function.name) === "dropAll") {
+            const policy = getPolicy(tc.function.name);
+            if (policy === "dropAll") {
                 this.setToolResponse(toolCallId, { content: "[stale - dropped after turn]" });
+            } else if (policy === "evalOutdated") {
+                const filePath = this.parseToolFilePath(tc);
+                if (filePath && this.isFileEditedAfter(i, filePath)) {
+                    this.setToolResponse(toolCallId, { content: "[stale - file was edited after this read]" });
+                }
             }
         }
+    }
+
+    /** Extracts `filePath` from a tool call's JSON arguments, or undefined. */
+    private parseToolFilePath(tc: ToolCall): string | undefined {
+        try {
+            const args = JSON.parse(tc.function.arguments);
+            return typeof args.filePath === "string" ? args.filePath : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    /**
+     * Returns true if any edit-type tool call on the given filePath appears after `fromIndex`.
+     * Paths are compared verbatim; the agent canonicalizes `filePath` args before they reach
+     * the history, so the same file always has a single representation here.
+     */
+    private isFileEditedAfter(fromIndex: number, filePath: string): boolean {
+        const editTools = new Set(["edit", "create", "delete", "notebook"]);
+        for (let j = fromIndex + 1; j < this.length(); j++) {
+            const msg = this.messages[j];
+            if (msg.role === "assistant" && msg.tool_calls) {
+                for (const tc of msg.tool_calls) {
+                    if (editTools.has(tc.function.name)) {
+                        const editedPath = this.parseToolFilePath(tc);
+                        if (editedPath === filePath) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /** Sums cached `msgTokens` across all messages in the context. */

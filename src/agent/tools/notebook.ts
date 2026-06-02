@@ -192,7 +192,7 @@ export const notebook_def = {
                 },
                 filePath: {
                     type: "string",
-                    description: "Path to the .ipynb file (relative to workspace root).",
+                    description: "Path to the file (relative to workspace root).",
                 },
                 mode: {
                     type: "string",
