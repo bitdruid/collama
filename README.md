@@ -45,9 +45,8 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - Multiple chat sessions with custom titles
 - Temporary chat sessions — create unlisted, non-persisted sessions for quick experiments
 - Send selected code/files as context with file references
-- **Search and attach files/folders directly from the chat input** - easily browse and add workspace files to your conversation context
-- **Send to chat from file tree** — right-click files/folders in VSCode explorer to add them as context
-- **Chat search functionality** — find messages in your conversation history
+- **Search and attach files/folders directly from the chat input**
+- **Send to chat from file tree** — right-click files/folders in VSCode explorer
 - Real-time context usage bar with automatic trimming
 - Edit messages, copy sessions, scroll navigation
 - Export chat history to JSON for backup and sharing
@@ -164,8 +163,6 @@ Note: tested primarily at q4 quantization (results may vary with others), and Ch
 
 ## Usage
 
-Most actions are available from the editor context menu, chat sidebar, Command Palette, or Source Control view.
-
 - **Completions:** trigger automatically after `suggestDelay`; press `Tab` to accept or `Esc` to dismiss.
 - **Code edits:** select code and use **collama (on selection)** for docstrings, refactors, fixes, or manual edits.
 - **Chat:** attach files/folders, manage sessions, summarize context, and toggle auto-accept for edits/creates.
@@ -179,6 +176,7 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
   - gpt-oss:120b
   - glm-4.7-fp8
   - minimax2.5, minimax2.7
+  - deepseek-v4-flash
 
 > [!WARNING]
 > Small models should use chat with `Agentic` OFF.

@@ -72,7 +72,7 @@ export const bannerStyles = css`
     .banner-label {
         flex: 1;
         overflow: hidden;
-        font-weight: ${themeFonts.weight.semiBold};
+        font-weight: ${themeFonts.weight.bold};
     }
 
     .banner-description {

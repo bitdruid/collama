@@ -61,7 +61,7 @@ export const contextTreeStyles = css`
     .added-context-header {
         padding: 8px 12px;
         font-size: ${themeFonts.small};
-        font-weight: ${themeFonts.weight.semiBold};
+        font-weight: ${themeFonts.weight.bold};
         color: ${themeColors.uiFont};
         border-bottom: 1px solid ${themeColors.uiBorderDimm};
         margin-bottom: 4px;

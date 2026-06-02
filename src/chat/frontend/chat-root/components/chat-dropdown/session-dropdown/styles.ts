@@ -78,7 +78,7 @@ export const sessionItemStyles = css`
     }
 
     .action-button:hover {
-        background: ${themeColors.uiBackgroundHoverDimm};
+        background: ${themeColors.uiBackgroundHover};
     }
 
     .copy-button,
@@ -87,10 +87,6 @@ export const sessionItemStyles = css`
     }
 
     .delete-button {
-        color: ${themeColors.usageDanger};
-    }
-
-    .delete-button:hover {
-        background: rgba(220, 53, 69, 0.1);
+        color: ${themeColors.cancel};
     }
 `;

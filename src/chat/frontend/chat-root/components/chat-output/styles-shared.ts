@@ -1,6 +1,6 @@
 import { css } from "lit";
-import { hljsStyles } from "../../utils";
 import { themeColors, themeFonts, themeStyles } from "../../../styles";
+import { hljsStyles } from "../../utils";
 import { assistantStyles } from "./message-assistant/styles";
 import { toolStyles } from "./message-tool/styles";
 import { userStyles } from "./message-user/styles";
@@ -34,7 +34,7 @@ export const outputStyles = [
 
         .role-datetime {
             font-size: 0.85em;
-            font-weight: ${themeFonts.weight.normal};
+            font-weight: ${themeFonts.weight.light};
             opacity: 0.8;
             margin-left: 8px;
             margin-right: 8px;
@@ -124,7 +124,7 @@ export const outputStyles = [
             padding: 0.08em 0.4em;
             font-size: 0.9em;
             font-family: ${themeFonts.familyMono};
-            font-weight: ${themeFonts.weight.thin};
+            font-weight: ${themeFonts.weight.light};
             white-space: break-spaces;
         }
 

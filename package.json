@@ -279,6 +279,8 @@
         "typescript-eslint": "^8.60.0"
     },
     "dependencies": {
+        "@fontsource/jetbrains-mono": "^5.2.8",
+        "@fontsource/roboto": "^5.2.10",
         "@microsoft/tiktokenizer": "^1.0.10",
         "globby": "^16.2.0",
         "highlight.js": "^11.11.1",

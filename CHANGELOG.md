@@ -1,6 +1,22 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.7.19] - 2026-06-02
+
+### Added
+- Font loading infrastructure: `@fontsource/roboto` and `@fontsource/jetbrains-mono` dependencies with esbuild plugin to inline woff2 fonts as base64 data URIs
+- `injectFontStyles()` function that injects @font-face rules into the document head once
+- Hardcoded font families (Roboto, JetBrains Mono) replacing VS Code CSS variable fallbacks
+
+### Changed
+- Simplified font weight scale — removed `thin`, `extraLight`, `medium`, `semiBold`, `extraBold`, `black`; kept `light` (200), `normal` (400), `bold` (700)
+- Updated font-weight references across all components to use the simplified scale
+- Updated decision tool description for clarity
+- Strengthened agent prompt rules to emphasize decision tool usage before editing
+- Changed delete button color from `usageDanger` to `cancel`
+- Changed session item hover background from `uiBackgroundHoverDimm` to `uiBackgroundHover`
+- Changed HTML export font-family to Roboto
+
 ## [1.7.18] - 2026-05-27
 
 ### Added

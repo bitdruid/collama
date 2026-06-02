@@ -49,7 +49,7 @@ html, body {
   overflow: visible;
   background: var(--vscode-sideBar-background, #1e1e1e);
   color: var(--vscode-foreground, #d4d4d4);
-  font-family: var(--vscode-font-family, -apple-system, system-ui, sans-serif);
+  font-family: 'Roboto', sans-serif;
   font-size: var(--vscode-font-size, 13px);
 }
 body { padding: 16px; }
@@ -119,7 +119,8 @@ function serializeElement(el: Element): string {
 
     if (el.shadowRoot) {
         const mode = el.shadowRoot.mode;
-        const adopted = (el.shadowRoot as ShadowRoot & { adoptedStyleSheets?: CSSStyleSheet[] }).adoptedStyleSheets ?? [];
+        const adopted =
+            (el.shadowRoot as ShadowRoot & { adoptedStyleSheets?: CSSStyleSheet[] }).adoptedStyleSheets ?? [];
         const adoptedCss = adopted
             .map((sheet) => {
                 try {
@@ -166,7 +167,5 @@ function escapeText(s: string): string {
 }
 
 function escapeAttr(s: string): string {
-    return s.replace(/[&"<>]/g, (c) =>
-        c === "&" ? "&amp;" : c === '"' ? "&quot;" : c === "<" ? "&lt;" : "&gt;",
-    );
+    return s.replace(/[&"<>]/g, (c) => (c === "&" ? "&amp;" : c === '"' ? "&quot;" : c === "<" ? "&lt;" : "&gt;"));
 }

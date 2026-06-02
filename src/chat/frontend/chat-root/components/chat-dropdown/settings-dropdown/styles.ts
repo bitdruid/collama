@@ -26,7 +26,7 @@ export const settingsDropdownStyles = css`
         margin: 0 0 4px;
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.medium};
-        font-weight: ${themeFonts.weight.extraBold};
+        font-weight: ${themeFonts.weight.bold};
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
