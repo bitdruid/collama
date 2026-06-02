@@ -1,8 +1,7 @@
 import * as vscode from "vscode";
 
-import { ChatContext, ChatHistory } from "../../../common/context-chat";
+import { ChatHistory } from "../../../common/context-chat";
 import { logMsg } from "../../../logging";
-import type { ChatSession } from "../../shared";
 import { SessionManager } from "../session-manager";
 
 /**
@@ -33,16 +32,7 @@ export class SessionHandlers {
     handleNewGhostSession() {
         this.deleteActiveGhostSession();
 
-        const ghostSession: ChatSession = {
-            id: SessionManager.generateSessionId(),
-            title: "Temporary Chat",
-            messages: new ChatContext(),
-            contextStartIndex: 0,
-            ghost: true,
-            updatedAt: Date.now(),
-        };
-        this.sessionManager.sessions.push(ghostSession);
-        this.sessionManager.activeSessionId = ghostSession.id;
+        const ghostSession = this.sessionManager.createGhostSession();
         this.sessionManager.sendSessionsUpdate();
         logMsg(`Created ghost session: ${ghostSession.id}`);
     }

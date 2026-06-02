@@ -181,6 +181,26 @@ export class SessionManager {
     }
 
     /**
+     * Creates a new ghost (temporary, unlisted) session and sets it active.
+     * Ghost sessions live only in memory and are never written while ghost, but
+     * they're tracked in `loadedIds` so a later convert-to-stored can persist them.
+     */
+    createGhostSession(): ChatSession {
+        const ghostSession: ChatSession = {
+            id: SessionManager.generateSessionId(),
+            title: "Temporary Chat",
+            messages: new ChatContext(),
+            contextStartIndex: 0,
+            ghost: true,
+            updatedAt: Date.now(),
+        };
+        this.sessions.push(ghostSession);
+        this.activeSessionId = ghostSession.id;
+        this.loadedIds = [ghostSession.id, ...this.loadedIds.filter((x) => x !== ghostSession.id)];
+        return ghostSession;
+    }
+
+    /**
      * Copies a session. Requires the source to be loaded — caller is responsible
      * for `await ensureLoaded(sourceId)` before calling.
      */
