@@ -70,6 +70,7 @@ export const toolConfirmStyles = css`
         flex: 1;
         min-width: 0;
         font-family: ${themeFonts.familyMono};
+        font-size: ${themeFonts.size.small};
         color: ${themeColors.uiFont};
         padding: 6px 8px;
         ${themeStyles.borderRadius.small}

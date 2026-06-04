@@ -28,7 +28,7 @@ export const bannerStyles = css`
 
     /* Height for box banner without icon */
     .banner:not(.bare) {
-        min-height: 26px;
+        min-height: 24px;
     }
 
     .banner.type-info {
@@ -45,7 +45,7 @@ export const bannerStyles = css`
         background: none;
         border: none;
         padding: 4px 0;
-        font-family: ${themeFonts.familyMono};
+        font-family: ${themeFonts.family};
     }
 
     .banner.bare:hover {
@@ -78,8 +78,11 @@ export const bannerStyles = css`
         stroke-width: 3;
     }
 
-    /* Chevron coloring */
-    .banner.type-tool .banner-pill,
+    /* Chevron and label coloring */
+    .banner.type-tool .banner-pill {
+        color: ${themeColors.autoAccept};
+    }
+
     .banner.type-tool-group .banner-pill {
         color: ${themeColors.autoAccept};
     }

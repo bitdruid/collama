@@ -10,7 +10,7 @@ export const accordionStyles = [
             font-familiy: ${themeFonts.familyMono};
             display: block;
             max-width: 750px;
-            margin: 6px 0px;
+            margin: 0px 0px;
             position: relative;
             z-index: 0;
         }
