@@ -79,6 +79,10 @@ export async function decision_exec(args: {
     if (!Array.isArray(args.options) || args.options.length < 2) {
         return toolError("options must be an array with at least 2 entries");
     }
+    if (!args.options.every((o) => typeof o === "string")) {
+        logMsg(`Agent - decision-tool got non-string options: ${JSON.stringify(args.options)}`);
+        return toolError("each entry in options must be a plain string, not an object");
+    }
 
     logMsg(`Agent - use decision-tool question="${args.question}" options=${args.options.length}`);
 
