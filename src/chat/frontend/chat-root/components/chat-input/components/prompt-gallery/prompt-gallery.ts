@@ -103,7 +103,7 @@ export class PromptGallery extends BasePopup {
         return html`
             <div class="panel-header">
                 <h3>Prompt Gallery</h3>
-                <span class="close-btn" @click=${this.handleClose}>${themeIcons.x.medium}</span>
+                <span class="close-btn" @click=${this.handleClose}>${themeIcons.x.large}</span>
             </div>
 
             <div class="prompt-list">

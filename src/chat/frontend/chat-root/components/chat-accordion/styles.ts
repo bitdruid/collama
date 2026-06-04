@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { codeBlockStyles, themeColors } from "../../../styles";
+import { codeBlockStyles, themeColors, themeFonts, themeStyles } from "../../../styles";
 import { bannerStyles } from "../../../template-components/banner/styles";
 
 export const accordionStyles = [
@@ -7,8 +7,10 @@ export const accordionStyles = [
     bannerStyles,
     css`
         :host {
+            font-familiy: ${themeFonts.familyMono};
             display: block;
-            margin: 6px 0;
+            max-width: 750px;
+            margin: 6px 0px;
             position: relative;
             z-index: 0;
         }
@@ -19,92 +21,91 @@ export const accordionStyles = [
         }
 
         /* Smooth animation using CSS grid trick */
-        .accordion-content-wrapper {
+        .accordion-body {
             display: grid;
             grid-template-rows: 0fr;
             transition: grid-template-rows 0.25s ease-out;
         }
 
-        .accordion-content-wrapper.expanded {
+        .accordion-body.expanded {
             grid-template-rows: 1fr;
         }
 
-        .accordion-content {
+        /* Clip-layer to round the scrollbar of the child-element */
+        .accordion-body-clip {
             overflow: hidden;
+            ${themeStyles.borderRadius.large}
         }
 
-        .accordion-content-inner {
+        /* Border collapses inside to clip to zero (not viewable then) with own radius */
+        .accordion-body-content {
             background: ${themeColors.uiBackgroundDimm};
-            max-height: min(300px, 40vh);
-            overflow-y: scroll;
+            border: 1px solid ${themeColors.uiBorderDimm};
+            ${themeStyles.borderRadius.large}
+            max-height: 50vh;
+            overflow-y: auto;
             overflow-x: auto;
         }
 
         /* Code accordions get their padding on <code> (rule below).
            For everything else (slot content, no <pre>), pad the inner. */
-        .accordion-content-inner:not(:has(pre)) {
+        .accordion-body-content:not(:has(pre)) {
             padding: 8px 10px;
         }
 
-        .accordion-content pre {
+        /* Slotted prose (e.g. thinking) own paragraph margins; drop
+           the outer ones; body looks the same regardless of content type. */
+        ::slotted(:first-child) {
+            margin-top: 0;
+        }
+
+        ::slotted(:last-child) {
+            margin-bottom: 0;
+        }
+
+        .accordion-body-clip pre {
             margin: 0;
             min-width: max-content;
             overflow-x: auto;
         }
 
-        .accordion-content pre code {
-            padding: 8px 10px;
+        .accordion-body-clip pre code {
             white-space: pre;
             display: block;
         }
 
-        .accordion-content pre code.hljs {
+        .accordion-body-clip pre code.hljs {
             overflow-x: visible;
         }
 
         /* think/summary: wrap prose, no horizontal scroll */
-        .accordion.type-think .accordion-content-inner,
-        .accordion.type-summary .accordion-content-inner {
+        .accordion.type-think .accordion-body-content,
+        .accordion.type-summary .accordion-body-content {
             overflow-x: hidden;
         }
 
-        .accordion.type-think .accordion-content pre,
-        .accordion.type-summary .accordion-content pre {
+        .accordion.type-think .accordion-body-clip pre,
+        .accordion.type-summary .accordion-body-clip pre {
             min-width: 0;
             white-space: pre-wrap;
             word-break: break-word;
         }
 
-        .accordion.type-think .accordion-content pre code,
-        .accordion.type-summary .accordion-content pre code {
+        .accordion.type-think .accordion-body-clip pre code,
+        .accordion.type-summary .accordion-body-clip pre code {
             white-space: pre-wrap;
         }
 
-        /* Type-specific content overrides */
-        .accordion.type-tool-group .accordion-content-inner {
+        /* Tool group: nested tool rows hang under a left guide line, indented
+           from it so the grouping reads without per-row boxes. */
+        .accordion.type-tool-group .accordion-body-content {
             max-height: min(500px, 60vh);
+            padding: 4px 8px 4px 14px;
+            border-left: 3px solid ${themeColors.autoAccept};
         }
 
-        .accordion.type-tool-group .accordion-content-inner collama-accordion {
+        .accordion.type-tool-group .accordion-body-content collama-accordion {
             margin: 0;
-        }
-
-        .accordion.type-tool-group .accordion-content-inner collama-accordion .accordion {
-            border-radius: 0;
-            border-left: none;
-            border-right: none;
-        }
-
-        .accordion.type-tool-group .accordion-content-inner collama-accordion:first-child .accordion {
-            border-top: none;
-        }
-
-        .banner-arrow {
-            transition: transform 0.2s ease;
-        }
-
-        .banner-arrow.expanded {
-            transform: rotate(180deg);
         }
     `,
 ];

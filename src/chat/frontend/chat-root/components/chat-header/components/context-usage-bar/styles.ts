@@ -41,7 +41,7 @@ export const contextUsageBarStyles = css`
     }
 
     .context-text {
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         color: ${themeColors.uiFont};
         white-space: nowrap;
         margin-left: 8px;

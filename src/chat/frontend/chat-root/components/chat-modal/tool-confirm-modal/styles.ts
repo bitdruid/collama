@@ -17,12 +17,14 @@ export const toolConfirmStyles = css`
     .confirm-action {
         display: inline-flex;
         align-items: center;
-        font-size: ${themeFonts.medium};
-        padding: 6px 12px;
+        line-height: 1;
+        text-box: trim-both cap alphabetic;
+        padding: 8px 12px;
         ${themeStyles.borderRadius.small}
         background: ${themeColors.settings};
         color: ${themeColors.cleanWhite};
         text-transform: capitalize;
+        font-weight: ${themeFonts.weight.bold};
     }
 
     .confirm-buttons {
@@ -39,7 +41,6 @@ export const toolConfirmStyles = css`
         cursor: pointer;
         border: none;
         ${themeStyles.borderRadius.small}
-        font-size: ${themeFonts.medium};
         color: ${themeColors.cleanWhite};
     }
 
@@ -56,7 +57,6 @@ export const toolConfirmStyles = css`
         cursor: pointer;
         border: none;
         ${themeStyles.borderRadius.small}
-        font-size: ${themeFonts.medium};
         color: ${themeColors.cleanWhite};
     }
     .btn-send:hover {
@@ -70,7 +70,6 @@ export const toolConfirmStyles = css`
         flex: 1;
         min-width: 0;
         font-family: ${themeFonts.familyMono};
-        font-size: ${themeFonts.small};
         color: ${themeColors.uiFont};
         padding: 6px 8px;
         ${themeStyles.borderRadius.small}

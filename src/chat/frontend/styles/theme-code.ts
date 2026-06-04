@@ -23,7 +23,6 @@ export const codeBlockStyles = [
     css`
         pre code.hljs {
             display: block;
-            padding: 8px;
             border-radius: 0px;
             background: ${themeColors.uiBackgroundDimm} !important;
             overflow-x: auto;
@@ -35,6 +34,7 @@ export const codeBlockStyles = [
         }
 
         pre code {
+            padding: 8px 10px !important;
             font-family: ${themeFonts.familyMono};
             font-weight: ${themeFonts.weight.light} !important;
             font-size: 0.95em;

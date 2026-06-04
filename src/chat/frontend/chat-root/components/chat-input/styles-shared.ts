@@ -43,7 +43,6 @@ export const panelStyles = css`
 
     .close-btn {
         cursor: pointer;
-        font-size: ${themeFonts.giant};
         line-height: 1;
         color: ${themeColors.uiFont};
     }

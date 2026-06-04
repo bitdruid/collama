@@ -22,10 +22,10 @@ export const settingsDropdownStyles = css`
         border-top: 1px solid ${themeColors.uiBorderDimm};
     }
 
-    h4 {
+    .settings-header {
         margin: 0 0 4px;
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         font-weight: ${themeFonts.weight.bold};
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -38,16 +38,15 @@ export const settingsDropdownStyles = css`
         gap: 8px;
         min-height: 20px;
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
     }
 
     .setting-title {
         display: inline;
-        line-height: 1.3;
     }
 
     .info-row {
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
     }
 
     .agents-md-active,

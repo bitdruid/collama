@@ -21,7 +21,7 @@ export const toolDecisionStyles = css`
         border: 1px solid ${themeColors.uiBorderDimm};
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         ${themeStyles.borderRadius.small}
     }
 

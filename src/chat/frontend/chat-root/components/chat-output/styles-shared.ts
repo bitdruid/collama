@@ -22,8 +22,10 @@ export const outputStyles = [
             align-items: center;
             font-weight: ${themeFonts.weight.bold};
             font-size: 1em;
+            line-height: 1;
+            text-box: trim-both cap alphabetic;
             margin-bottom: 6px;
-            padding: 2px 10px;
+            padding: 4px 10px;
             ${themeStyles.borderRadius.small}
             color: ${themeColors.cleanWhite};
         }

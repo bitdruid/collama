@@ -1,21 +1,14 @@
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { html as staticHtml, unsafeStatic } from "lit/static-html.js";
 
 import { highlightCodeBlock } from "../../utils";
 import { themeIcons } from "../../../styles";
 import { accordionStyles } from "./styles";
+import "../../../template-components/banner";
+import type { BannerType } from "../../../template-components/banner";
 
-export type AccordionType = "think" | "summary" | "code" | "tool" | "tool-group" | "context";
-
-const bannerTags: Record<AccordionType, string> = {
-    think: "collama-think-banner",
-    summary: "collama-summary-banner",
-    code: "collama-code-banner",
-    tool: "collama-tool-banner",
-    "tool-group": "collama-tool-group-banner",
-    context: "collama-context-banner",
-};
+/** Accordion types are the banner types minus the standalone-only ones. */
+export type AccordionType = Exclude<BannerType, "info" | "banner">;
 
 /**
  * A collapsible accordion component for displaying structured chat content.
@@ -109,11 +102,11 @@ export class ChatAccordion extends LitElement {
     }
 
     /**
-     * Renders the copy button if the type is 'code' or 'summary' and code is present.
+     * Renders the copy button if the type is 'code' and code is present.
      * @returns A template result for the button or null.
      */
     private _renderCopyButton() {
-        if ((this.type !== "code" && this.type !== "summary") || (!this.code && !this.copyCode)) {
+        if (this.type !== "code" || (!this.code && !this.copyCode)) {
             return null;
         }
         return html`
@@ -124,28 +117,22 @@ export class ChatAccordion extends LitElement {
         `;
     }
 
-    private _renderBanner() {
-        const tag = unsafeStatic(bannerTags[this.type]);
-
-        return staticHtml`
-            <${tag}
-                .label=${this.label}
-                .description=${this.description}
-                @click=${this._toggle}
-            >
-                <span slot="slot1">${this._renderCopyButton()}</span>
-                <span slot="slot2" class="banner-arrow ${this.expanded ? "expanded" : ""}">${themeIcons.chevronDown.medium}</span>
-            </${tag}>
-        `;
-    }
-
     render() {
         return html`
             <div class="accordion type-${this.type}">
-                ${this._renderBanner()}
-                <div class="accordion-content-wrapper ${this.expanded ? "expanded" : ""}">
-                    <div class="accordion-content">
-                        <div class="accordion-content-inner">
+                <collama-banner
+                    .type=${this.type}
+                    .label=${this.label}
+                    .description=${this.description}
+                    .expanded=${this.expanded}
+                    ?collapsible=${true}
+                    @click=${this._toggle}
+                >
+                    ${this._renderCopyButton()}
+                </collama-banner>
+                <div class="accordion-body ${this.expanded ? "expanded" : ""}">
+                    <div class="accordion-body-clip">
+                        <div class="accordion-body-content">
                             ${this.code ? html`<pre><code>${this.code}</code></pre>` : html`<slot></slot>`}
                         </div>
                     </div>

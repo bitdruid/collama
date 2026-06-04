@@ -58,14 +58,16 @@ export interface LlmGenerateSettings {
     stop: Stop;
 }
 
-/** Provider-neutral generation options used by the client implementations. */
+/**
+ * Provider-neutral generation options used by the client implementations.
+ *
+ * Only sampling params supported by BOTH Ollama and the OpenAI spec.
+ */
 export interface Options {
     num_ctx: number;
     num_predict: number;
     temperature: number;
-    top_k: number;
-    top_p: number;
-    repeat_penalty?: number;
+    top_p?: number;
 }
 
 /** Stop token groups coming from model metadata and user/UI mode behavior. */
@@ -111,8 +113,7 @@ export function buildCompletionOptions(): Options {
         num_predict: calculateNumPredict(),
         num_ctx: userConfig.apiTokenContextLenCompletion,
         temperature: 0.4,
-        top_p: 0.8,
-        top_k: 20,
+        top_p: 0.9,
     };
 }
 
@@ -123,7 +124,6 @@ export function buildInstructionOptions(): Options {
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.8,
         top_p: 0.95,
-        top_k: 40,
     };
 }
 
@@ -134,7 +134,6 @@ export function buildCommitOptions(): Options {
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.3,
         top_p: 0.95,
-        top_k: 40,
     };
 }
 
@@ -143,9 +142,7 @@ export function buildAgentOptions(): Options {
     return {
         num_predict: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
-        temperature: 0.1,
-        top_p: 0.5,
-        top_k: 40,
-        repeat_penalty: 1.1,
+        temperature: userConfig.liteMode ? 0.6 : 0.2,
+        top_p: 0.9,
     };
 }

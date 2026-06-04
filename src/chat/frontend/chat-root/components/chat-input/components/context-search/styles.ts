@@ -41,7 +41,7 @@ export const contextTreeStyles = css`
         border: none;
         background: transparent;
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.small};
+        font-size: ${themeFonts.size.small};
         cursor: pointer;
         line-height: 1;
         padding: 0;
@@ -60,7 +60,7 @@ export const contextTreeStyles = css`
 
     .added-context-header {
         padding: 8px 12px;
-        font-size: ${themeFonts.small};
+        font-size: ${themeFonts.size.small};
         font-weight: ${themeFonts.weight.bold};
         color: ${themeColors.uiFont};
         border-bottom: 1px solid ${themeColors.uiBorderDimm};
@@ -73,7 +73,7 @@ export const contextTreeStyles = css`
         justify-content: space-between;
         padding: 4px 8px;
         cursor: pointer;
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         color: ${themeColors.uiFont};
     }
 
@@ -97,7 +97,7 @@ export const contextTreeStyles = css`
     }
 
     .result-path {
-        font-size: ${themeFonts.small};
+        font-size: ${themeFonts.size.small};
         color: ${themeColors.uiFont};
         white-space: nowrap;
         overflow: hidden;
@@ -139,6 +139,6 @@ export const contextTreeStyles = css`
         padding: 16px;
         text-align: center;
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
     }
 `;

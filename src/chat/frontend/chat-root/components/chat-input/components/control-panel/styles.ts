@@ -156,7 +156,7 @@ export const controlPanelButtonStyles = css`
         aspect-ratio: auto;
         padding: 0 10px;
         ${themeStyles.borderRadius.round}
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         font-weight: ${themeFonts.weight.bold};
         cursor: default;
     }

@@ -23,17 +23,19 @@ export function injectFontStyles() {
 
 /**
  * Reusable font size values for consistent font usage.
- * Usage: font-size: ${themeFonts.small};
- *        font-size: ${themeFonts.medium};
+ * Usage: font-size: ${themeFonts.size.small};
+ *        font-size: ${themeFonts.size.normal};
  */
 export const themeFonts = {
-    small: unsafeCSS("10px"),
-    medium: unsafeCSS("12px"),
-    large: unsafeCSS("16px"),
-    giant: unsafeCSS("20px"),
-    user: unsafeCSS("14px"),
+    size: {
+        small: unsafeCSS("11px"),
+        normal: unsafeCSS("13px"),
+        large: unsafeCSS("16px"),
+        user: unsafeCSS("14px"),
+    },
     family: unsafeCSS("'Roboto', sans-serif"),
     familyMono: unsafeCSS("'JetBrains Mono', monospace"),
+    lineHeight: unsafeCSS("1.3"),
     weight: {
         light: unsafeCSS("200"),
         normal: unsafeCSS("400"),

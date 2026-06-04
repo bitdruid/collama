@@ -114,6 +114,9 @@ export function getAgentTemplate(): string {
 function getLiteTemplate(): string {
     const lines: string[] = [];
 
+    // General
+    lines.push(...GENERAL.LITE);
+
     // output formating
     lines.push(...OUTPUT_FORMATING.LITE);
 
@@ -142,6 +145,9 @@ function getLiteTemplate(): string {
 function getDefaultTemplate(): string {
     const lines: string[] = [];
 
+    // General
+    lines.push(...GENERAL.DEFAULT);
+
     // metadata
     lines.push("<llm-info> tags contain internal metadata. Never mention them to the user.", "");
 
@@ -168,6 +174,11 @@ function getDefaultTemplate(): string {
 
     return lines.join("\n");
 }
+
+const GENERAL = {
+    DEFAULT: ["Don't hide your thinking. Keep it compact and output to the user instead."],
+    LITE: ["- Think compact; Output instead of thinking"],
+};
 
 const OUTPUT_FORMATING = {
     DEFAULT: [
@@ -225,13 +236,8 @@ const AGENT_RULES = {
     DEFAULT: [
         "Only use tools when the user's request requires interaction with files.",
         "For general questions, greetings or conversations respond without tools.",
-        "Don't hide your thinking. Keep it compact and output to the user instead.",
     ],
-    LITE: [
-        "- Only use tools when file-interaction is required",
-        "- For general communication do not use tools",
-        "- Think compact; Output instead of thinking",
-    ],
+    LITE: ["- Only use tools when file-interaction is required", "- For general communication do not use tools"],
 };
 
 const EDIT_RULES = {

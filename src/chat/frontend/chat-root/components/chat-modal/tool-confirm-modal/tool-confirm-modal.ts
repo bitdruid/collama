@@ -1,12 +1,12 @@
 import { html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 
-import { buildOpenFileCommandUri } from "../../../utils";
+import type { ToolConfirmRequest } from "../../../../../shared";
 import { themeIcons } from "../../../../styles";
 import "../../../../template-components/action-button";
 import "../../../../template-components/banner";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
-import type { ToolConfirmRequest } from "../../../../../shared";
+import { buildOpenFileCommandUri } from "../../../utils";
 import { toolConfirmStyles } from "./styles";
 
 @customElement("collama-tool-confirm-modal")
@@ -111,10 +111,10 @@ export class ToolConfirmModal extends BaseModal {
         return html`
             <div class="confirm-content">
                 ${this.request.explanation
-                    ? html`<collama-info-banner .description=${this.request.explanation}></collama-info-banner>`
+                    ? html`<collama-banner type="info" .description=${this.request.explanation}></collama-banner>`
                     : null}
                 <div class="confirm-summary">
-                    <span class="confirm-action"><b>${this.request.action}</b></span>
+                    <span class="confirm-action">${this.request.action}</span>
                     <a
                         class="confirm-filepath"
                         href="${buildOpenFileCommandUri(this.request.filePath)}"

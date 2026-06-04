@@ -8,7 +8,9 @@ export const ChatRootStyles = css`
         height: 100%;
         overflow: hidden;
         font-family: ${themeFonts.family};
+        font-size: ${themeFonts.size.normal};
         font-weight: ${themeFonts.weight.normal};
+        line-height: ${themeFonts.lineHeight};
     }
 
     collama-chatheader {

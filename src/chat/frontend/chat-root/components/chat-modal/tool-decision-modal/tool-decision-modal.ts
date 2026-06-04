@@ -88,7 +88,7 @@ export class ToolDecisionModal extends BaseModal {
         }
         return html`
             <div class="decision-content">
-                <collama-info-banner .description=${this.request.question}></collama-info-banner>
+                <collama-banner type="info" .description=${this.request.question}></collama-banner>
                 <div class="decision-options">
                     ${this.request.options.map(
                         (option) => html`

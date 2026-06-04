@@ -11,7 +11,7 @@ export const sliderStyles = css`
         gap: 8px;
         min-height: 20px;
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
     }
 
     .slider-heading {
@@ -22,7 +22,6 @@ export const sliderStyles = css`
 
     .slider-title {
         display: inline;
-        line-height: 1.3;
     }
 
     ::slotted([slot="prefix"]) {
@@ -41,7 +40,7 @@ export const sliderStyles = css`
         flex: 0 0 auto;
         min-width: 60px;
         color: ${themeColors.placeholder};
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         text-align: right;
         text-transform: capitalize;
     }

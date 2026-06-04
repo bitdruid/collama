@@ -40,7 +40,7 @@ const input = css`
     ${borderRadius.large}
     background: ${themeColors.uiBackground};
     color: ${themeColors.uiFont};
-    font-size: ${themeFonts.medium};
+    font-size: ${themeFonts.size.normal};
     box-sizing: border-box;
     outline: none;
 `;
@@ -52,11 +52,11 @@ const textarea = css`
     ${borderRadius.large}
     background: ${themeColors.uiBackground};
     color: ${themeColors.uiFont};
-    font-size: ${themeFonts.user};
+    font-size: ${themeFonts.size.user};
     border: none;
     resize: vertical;
     overflow: hidden;
-    line-height: 1.2em;
+    line-height: ${themeFonts.lineHeight};
     box-sizing: border-box;
 `;
 

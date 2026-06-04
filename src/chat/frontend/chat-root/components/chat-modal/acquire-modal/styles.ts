@@ -22,6 +22,6 @@ export const acquireModalStyles = css`
         ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
     }
 `;

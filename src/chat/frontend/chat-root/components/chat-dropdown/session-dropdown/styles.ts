@@ -27,7 +27,7 @@ export const sessionItemStyles = css`
     }
 
     .session-title {
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -35,7 +35,7 @@ export const sessionItemStyles = css`
     }
 
     .session-title-input {
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         width: 100%;
         padding: 2px 4px;
         border: none;
@@ -52,7 +52,7 @@ export const sessionItemStyles = css`
     }
 
     .session-date {
-        font-size: ${themeFonts.small};
+        font-size: ${themeFonts.size.small};
         color: ${themeColors.uiFont};
         margin-top: 2px;
     }
@@ -72,7 +72,7 @@ export const sessionItemStyles = css`
         border: none;
         ${themeStyles.borderRadius.small}
         cursor: pointer;
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         background: transparent;
         color: ${themeColors.uiFont};
     }

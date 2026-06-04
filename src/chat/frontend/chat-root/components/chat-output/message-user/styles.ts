@@ -34,7 +34,7 @@ export const userStyles = css`
         ${themeStyles.borderRadius.small}
         background: transparent;
         color: ${themeColors.cleanWhite};
-        font-size: ${themeFonts.small};
+        font-size: ${themeFonts.size.small};
         line-height: 1;
         vertical-align: middle;
         cursor: pointer;
@@ -100,7 +100,7 @@ export const editStyles = css`
         padding: 4px 12px;
         border: none;
         ${themeStyles.borderRadius.small}
-        font-size: ${themeFonts.medium};
+        font-size: ${themeFonts.size.normal};
         line-height: 1;
         vertical-align: middle;
         cursor: pointer;

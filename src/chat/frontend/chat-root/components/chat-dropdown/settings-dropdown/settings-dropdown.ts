@@ -1,11 +1,11 @@
 import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../utils";
+import { defaultChatSettings, type ChatSettings } from "../../../../../shared";
 import { themeIcons } from "../../../../styles";
 import { BaseDropdown } from "../../../../template-components/dropdown/base-dropdown";
 import { baseDropdownStyles } from "../../../../template-components/dropdown/styles";
 import "../../../../template-components/slider";
-import { defaultChatSettings, type ChatSettings } from "../../../../../shared";
+import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../utils";
 import { settingsDropdownStyles } from "./styles";
 
 const AGENTS_MD_PATH = "AGENTS.md";
@@ -64,7 +64,7 @@ export class SettingsDropdown extends BaseDropdown {
     protected override renderContent() {
         return html`
             <section class="settings-section">
-                <h4>Extension</h4>
+                <div class="settings-header">Extension</div>
                 ${this._renderToggle("Agentic-Mode", "agenticMode", this.config.agenticMode, false, {
                     description: "Let the agent use tools.",
                 })}
@@ -92,13 +92,13 @@ export class SettingsDropdown extends BaseDropdown {
                 })}
             </section>
             <section class="settings-section">
-                <h4>Style</h4>
+                <div class="settings-header">Style</div>
                 ${this._renderStyleToggle("Flat Design", this.flatDesign, this._updateFlatDesign)}
                 ${this._renderStyleToggle("Loading Snake", this.snakeLoadingEnabled, this._updateSnakeLoadingEnabled)}
                 ${this._renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this._updateSnakeEyecandy)}
             </section>
             <section class="settings-section">
-                <h4>Agent</h4>
+                <div class="settings-header">Agent</div>
                 ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking, {})}
                 ${this._renderAgentsMdIndicator()}
             </section>

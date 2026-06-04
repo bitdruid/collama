@@ -21,8 +21,7 @@ export const galleryStyles = css`
         ${themeStyles.borderRadius.small}
         border-bottom: 1px solid ${themeColors.uiBorderDimm};
         color: ${themeColors.uiFont};
-        font-size: ${themeFonts.medium};
-        line-height: 1.4;
+        font-size: ${themeFonts.size.normal};
     }
 
     .prompt-item:last-child {
@@ -93,8 +92,7 @@ export const galleryStyles = css`
         background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         font-family: ${themeFonts.familyMono};
-        font-size: ${themeFonts.medium};
-        line-height: 1.4;
+        font-size: ${themeFonts.size.normal};
         resize: vertical;
         box-sizing: border-box;
     }

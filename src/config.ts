@@ -196,7 +196,7 @@ export function redetectBackends(): void {
     detectBackends();
 }
 
-const DETECT_INTERVAL_MS = 30000;
+const DETECT_INTERVAL_MS = 15000;
 const DETECT_TIMEOUT_MS = 5000;
 
 let detectTimer: ReturnType<typeof setInterval> | null = null;

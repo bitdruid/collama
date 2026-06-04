@@ -67,9 +67,6 @@ export function optionsToOpenAI(options: Options): Record<string, any> {
     if (options.top_p !== undefined) {
         optionsOpenAI.top_p = options.top_p;
     }
-    if (options.top_k !== undefined) {
-        optionsOpenAI.top_k = options.top_k;
-    }
     return optionsOpenAI;
 }
 
