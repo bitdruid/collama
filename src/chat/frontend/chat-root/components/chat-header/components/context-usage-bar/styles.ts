@@ -18,7 +18,7 @@ export const contextUsageBarStyles = css`
         min-width: 70px;
         height: 10px;
         background: ${themeColors.uiBackgroundDimm};
-        border: 1px solid ${themeColors.uiBorder};
+        ${themeStyles.border.normal}
         ${themeStyles.borderRadius.medium}
         overflow: hidden;
         position: relative;

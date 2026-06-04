@@ -12,7 +12,7 @@ export const scrollDownButtonStyles = css`
         width: 32px;
         height: 32px;
         ${themeStyles.borderRadius.round}
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         cursor: pointer;

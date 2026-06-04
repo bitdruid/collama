@@ -16,7 +16,7 @@ export const baseModalStyles = css`
         margin-bottom: 8px;
         overflow: auto;
         ${themeStyles.borderRadius.large}
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         background: ${themeColors.uiBackgroundDimm};
         ${themeStyles.boxShadow}
         ${themeAnimations.fadeAnimate}

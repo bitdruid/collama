@@ -38,7 +38,6 @@ export const codeBlockStyles = [
             font-family: ${themeFonts.familyMono};
             font-weight: ${themeFonts.weight.light} !important;
             font-size: 0.95em;
-            line-height: 1.4;
         }
     `,
 ];

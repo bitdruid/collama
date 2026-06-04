@@ -40,7 +40,7 @@ export const accordionStyles = [
         /* Border collapses inside to clip to zero (not viewable then) with own radius */
         .accordion-body-content {
             background: ${themeColors.uiBackgroundDimm};
-            border: 1px solid ${themeColors.uiBorderDimm};
+            ${themeStyles.border.dimm}
             ${themeStyles.borderRadius.large}
             max-height: 50vh;
             overflow-y: auto;

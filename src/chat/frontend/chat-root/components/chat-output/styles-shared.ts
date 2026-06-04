@@ -74,7 +74,7 @@ export const outputStyles = [
 
         th,
         td {
-            border: 1px solid ${themeColors.uiBorder};
+            ${themeStyles.border.normal}
             padding: 6px 10px;
             text-align: left;
         }

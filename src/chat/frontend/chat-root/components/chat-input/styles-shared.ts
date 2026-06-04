@@ -6,7 +6,7 @@ export const chatInputStyles = css`
         display: block;
         overflow: visible;
         ${themeStyles.borderRadius.large}
-        border: 1px solid ${themeColors.uiBorder};
+        ${themeStyles.border.normal}
         background: ${themeColors.uiBackground};
     }
 

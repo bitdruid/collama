@@ -18,7 +18,7 @@ export const toolDecisionStyles = css`
         text-align: left;
         padding: 8px 12px;
         cursor: pointer;
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.size.normal};

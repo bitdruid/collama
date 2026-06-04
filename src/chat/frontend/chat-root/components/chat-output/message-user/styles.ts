@@ -11,7 +11,7 @@ export const userStyles = css`
     }
 
     .bubble-user {
-        border: 1px solid ${themeColors.uiBorder};
+        ${themeStyles.border.normal}
         background: ${themeColors.uiBackground};
     }
 

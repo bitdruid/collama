@@ -62,7 +62,7 @@ export const sliderStyles = css`
         height: 12px;
         margin: 0;
         padding: 0;
-        border: 1px solid ${themeColors.uiBorder};
+        ${themeStyles.border.normal}
         ${themeStyles.borderRadius.round}
         background: linear-gradient(
             to right,

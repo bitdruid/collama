@@ -15,7 +15,7 @@ export const baseDropdownStyles = css`
         width: 100%;
         max-height: var(--dropdown-open-max-height, 300px);
         background: ${themeColors.uiBackgroundDimm};
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         ${themeStyles.borderRadius.small}
         ${themeStyles.boxShadow}
         overflow: hidden;

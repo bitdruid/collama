@@ -10,7 +10,7 @@ export const errorModalStyles = css`
         font-size: 12px;
         padding: 8px;
         margin: 8px 0;
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};

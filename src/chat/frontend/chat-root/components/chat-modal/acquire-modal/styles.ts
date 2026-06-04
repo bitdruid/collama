@@ -18,7 +18,7 @@ export const acquireModalStyles = css`
         flex: 1;
         min-width: 0;
         padding: 6px 8px;
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};

@@ -74,7 +74,7 @@ export const toolConfirmStyles = css`
         padding: 6px 8px;
         ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackgroundDimm};
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         white-space: nowrap;
         overflow-x: auto;
         overflow-y: hidden;

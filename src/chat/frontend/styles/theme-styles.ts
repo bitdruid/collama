@@ -17,6 +17,15 @@ const borderRadius = {
     `,
 } as const;
 
+const border = {
+    normal: css`
+        border: 1px solid ${themeColors.uiBorder};
+    `,
+    dimm: css`
+        border: 1px solid ${themeColors.uiBorderDimm};
+    `,
+} as const;
+
 const focus = css`
     box-shadow: inset 0 0 0 1px ${themeColors.focus};
     outline: none;
@@ -56,7 +65,6 @@ const textarea = css`
     border: none;
     resize: vertical;
     overflow: hidden;
-    line-height: ${themeFonts.lineHeight};
     box-sizing: border-box;
 `;
 
@@ -65,4 +73,4 @@ const textarea = css`
  * Usage: .my-input:focus { ${themeStyles.focus} }
  *        .my-item:hover { ${themeStyles.hover} }
  */
-export const themeStyles = { borderRadius, focus, hover, boxShadow, input, textarea } as const;
+export const themeStyles = { borderRadius, border, focus, hover, boxShadow, input, textarea } as const;

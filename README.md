@@ -138,11 +138,14 @@ Small models may struggle with **verbosity** settings. Test it and keep the sett
 
 #### For Code Edits (Instruct/Base Models)
 
-- **any instruct model with thinking capabilities** (e.g. gpt-oss:20b, qwen3:14b)
+- **any instruct model with thinking capabilities** (e.g. gpt-oss:20b)
+- **Mid-level MoE models with dynamic quantization** (e.g. unsloth's dynamic GGUF quants) gave noticeably better results than dense models of similar size
+- Dense mid-size models (e.g. qwen3:14b) can struggle here — prefer a MoE/dynamic-quant variant if results are poor
 
 #### Agentic Chat
 
-- **Only use frontier models** (e.g. gpt-oss:120b, glm-4.7b) for agentic mode.
+- **Prefer frontier models** (e.g. gpt-oss:120b, glm-4.7, minimax2.7) for agentic mode.
+- **Mid-level MoE models with dynamic quantization** also handled agentic editing well (e.g. gpt-oss:20b bf16, qwen3.6:35b, qwen3:30b — all dynamic quants)
 
 #### Pure Chat
 

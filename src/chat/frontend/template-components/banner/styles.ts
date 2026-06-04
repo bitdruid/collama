@@ -15,8 +15,7 @@ export const bannerStyles = css`
         color: ${themeColors.uiFont};
         cursor: pointer;
         user-select: none;
-        line-height: 1;
-        border: 1px solid ${themeColors.uiBorderDimm};
+        ${themeStyles.border.dimm}
         ${themeStyles.borderRadius.medium}
         box-sizing: border-box;
         text-align: left;

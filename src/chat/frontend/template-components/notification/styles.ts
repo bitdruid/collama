@@ -20,7 +20,7 @@ export const baseNotificationStyles = css`
         width: fit-content;
         max-width: 100%;
         padding: 10px 12px;
-        border: 1px solid ${themeColors.uiBorder};
+        ${themeStyles.border.normal}
         ${themeStyles.borderRadius.large}
         background: ${themeColors.uiBackground};
         ${themeStyles.boxShadow}

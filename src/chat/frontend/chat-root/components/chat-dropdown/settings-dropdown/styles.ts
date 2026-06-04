@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors, themeFonts } from "../../../../styles";
+import { themeColors, themeFonts, themeStyles } from "../../../../styles";
 
 export const settingsDropdownStyles = css`
     :host {
@@ -57,7 +57,7 @@ export const settingsDropdownStyles = css`
         padding: 2px 8px;
         border-radius: 999px;
         background: ${themeColors.uiBackground};
-        border: 1px solid ${themeColors.uiBorder};
+        ${themeStyles.border.normal}
         text-decoration: none;
     }
 

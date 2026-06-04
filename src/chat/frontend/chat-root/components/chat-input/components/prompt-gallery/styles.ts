@@ -87,7 +87,7 @@ export const galleryStyles = css`
     .custom-prompt-input {
         width: 100%;
         padding: 8px;
-        border: 1px solid ${themeColors.uiBorder};
+        ${themeStyles.border.normal}
         ${themeStyles.borderRadius.small}
         background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
