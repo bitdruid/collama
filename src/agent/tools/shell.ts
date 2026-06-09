@@ -5,6 +5,7 @@ import path from "node:path";
 import { logMsg } from "../../logging";
 import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
 import { requestToolConfirm } from "./confirm";
+import { EXTENSION_HARD_TOKEN_CAP } from "../../common/tokenizer";
 
 type ShellType = "bash" | "powershell";
 
@@ -24,7 +25,7 @@ type ShellInput = {
     explanation: string;
 };
 
-const MAX_OUTPUT_CHARS = 10_000 * 4;
+const SHELL_MAX_OUTPUT_CHARS = EXTENSION_HARD_TOKEN_CAP * 4;
 const TEMP_DIR_NAME = "collama-tmp";
 
 /**
@@ -55,7 +56,7 @@ function countLines(text: string): number {
  * @returns A CapturedOutput object containing either inline output or file reference.
  */
 function captureOutput(output: string): CapturedOutput {
-    if (output.length <= MAX_OUTPUT_CHARS) {
+    if (output.length <= SHELL_MAX_OUTPUT_CHARS) {
         return { output };
     }
 

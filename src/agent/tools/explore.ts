@@ -4,6 +4,7 @@ import os from "os";
 import path from "path";
 import { logMsg } from "../../logging";
 import { ToolAnswer, isWithinAllowedTemp, isWithinRoot, secureWorkspace, toolError, toolSuccess } from "../tools";
+import { EXTENSION_HARD_TOKEN_CAP } from "../../common/tokenizer";
 
 /** Returns true if the pattern contains '..' path segments. */
 function hasPathTraversal(pattern: string): boolean {
@@ -45,6 +46,8 @@ function formatExplorePath(root: string, file: string): string {
  * @param args.endLine - Optional 1-based ending line (inclusive)
  * @returns Formatted string with numbered lines, or JSON error string
  */
+const READ_MAX_TOTAL_CHARS = EXTENSION_HARD_TOKEN_CAP * 4;
+
 export async function read_exec(args: {
     filePath: string;
     startLine?: number;
@@ -70,7 +73,7 @@ export async function read_exec(args: {
 
     const numbered = slice.map((line, i) => `${start + i + 1}\t${line}`).join("\n");
 
-    if (numbered.length > 10_000 * 4) {
+    if (numbered.length > READ_MAX_TOTAL_CHARS * 4) {
         return toolError(
             `Read exceeds ~10k tokens. File has ${lines.length} lines total. Use startLine/endLine to read a smaller range.`,
         );
@@ -106,17 +109,7 @@ export const read_def = {
     },
 };
 
-/**
- * Searches file contents for a regex pattern across files matched by an optional glob.
- * Returns matching lines in `file:line:content` format, or "No matches found." if no matches exist.
- * For large result sets, output degrades automatically: first to `file:line` only (no content),
- * then to a truncated list. Check the `message` footer for total match count.
- *
- * @param args.pattern - Regex pattern to search for
- * @param args.glob - Optional glob pattern to restrict search scope
- * @returns Matching lines in `file:line:content` format, or JSON error string on failure
- */
-const GREP_MAX_TOTAL_CHARS = 10_000 * 4;
+const GREP_MAX_TOTAL_CHARS = EXTENSION_HARD_TOKEN_CAP * 4;
 const GREP_MAX_LINE_CONTENT_CHARS = 200;
 
 interface GrepHit {
@@ -155,9 +148,7 @@ function joinedSize(entries: string[]): number {
  * @param args.glob - Optional glob pattern to restrict search scope
  * @returns Matching lines in `file:line:content` format, or JSON error string on failure
  */
-export async function grep_exec(
-    args: { pattern: string; glob?: string },
-): Promise<ToolAnswer<{ results: string[] }>> {
+export async function grep_exec(args: { pattern: string; glob?: string }): Promise<ToolAnswer<{ results: string[] }>> {
     logMsg(`Agent - use grep-tool pattern=${args.pattern}${args.glob ? ` glob=${args.glob}` : ""}`);
 
     let regex: RegExp;
@@ -243,7 +234,8 @@ export async function grep_exec(
         { results: truncated },
         `[showing ${truncated.length} of ${total} matches — refine pattern/glob to see more]`,
     );
-}export const grep_def = {
+}
+export const grep_def = {
     type: "function" as const,
     function: {
         name: "grep",

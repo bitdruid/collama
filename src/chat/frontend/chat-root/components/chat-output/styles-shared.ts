@@ -11,11 +11,6 @@ export const outputStyles = [
     userStyles,
     toolStyles,
     css`
-        llm-info {
-            display: none;
-        }
-    `,
-    css`
         .role-header {
             display: flex;
             justify-content: space-between;

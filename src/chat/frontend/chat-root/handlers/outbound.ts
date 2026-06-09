@@ -88,7 +88,7 @@ export function onSubmit(host: ChatRoot, e: CustomEvent) {
     }
     host.chatContext?.push({
         role: "user",
-        content: buildUserContent(contexts, content),
+        content: buildUserContent(contexts, content, host.config.agenticMode),
         customKeys: contexts.length > 0 ? { contexts } : undefined,
     });
     const messagesToSend = [...(host.chatContext?.getMessages() || [])];
@@ -144,7 +144,7 @@ export function onEditMessage(host: ChatRoot, e: CustomEvent) {
     }
 
     const userContexts = msgs[messageIndex].customKeys?.contexts ?? [];
-    const updatedContent = buildUserContent(userContexts, newContent);
+    const updatedContent = buildUserContent(userContexts, newContent, host.config.agenticMode);
 
     host.chatContext?.truncate(messageIndex);
     host.chatContext?.push({

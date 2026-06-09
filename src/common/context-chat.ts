@@ -9,7 +9,8 @@ export interface AttachedContext {
     hasSelection: boolean;
     startLine: number;
     endLine: number;
-    content: string;
+    /** File content. Omitted in agent mode, where only a path reference is attached. */
+    content?: string;
 }
 
 /** Custom keys attached to messages for UI/internal use (not sent to LLM). */

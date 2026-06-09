@@ -3,6 +3,8 @@ import * as vscode from "vscode";
 import path from "path";
 
 import { EditorContext } from "../../../common/context-editor";
+import { EXTENSION_HARD_TOKEN_CAP, estTokens } from "../../../common/tokenizer";
+import { userConfig } from "../../../config";
 import { logMsg } from "../../../logging";
 
 /**
@@ -76,6 +78,36 @@ export async function handleContextAdd(uri: vscode.Uri, webview: vscode.Webview)
     }
 }
 
+/**
+ * Chat-only mode embeds file content into the message, so oversized files are rejected before
+ * being read — token count is estimated from byte size (~4 bytes/token) to avoid loading and
+ * tokenizing huge files (UI freeze). Returns the estimate when over the cap, otherwise null.
+ * Agent mode attaches a path reference only and is never capped.
+ */
+async function fileExceedsContextCap(uri: vscode.Uri): Promise<number | null> {
+    if (userConfig.agenticMode) {
+        return null;
+    }
+    try {
+        const stat = await vscode.workspace.fs.stat(uri);
+        if (stat.type !== vscode.FileType.File) {
+            return null;
+        }
+        const approxTokens = estTokens(stat.size);
+        return approxTokens > EXTENSION_HARD_TOKEN_CAP ? approxTokens : null;
+    } catch (err) {
+        logMsg(`Failed to stat context URI ${uri.toString()}: ${err}`);
+        return null;
+    }
+}
+
+/** Native warning shown when a send-to-chat file is too large for chat-only mode. */
+function warnContextTooLarge(uri: vscode.Uri, estTokens: number): void {
+    vscode.window.showWarningMessage(
+        `collama: "${path.basename(uri.fsPath)}" is too large to attach (~${estTokens} tokens, max ${EXTENSION_HARD_TOKEN_CAP}). Enable agent mode to let the model read it itself.`,
+    );
+}
+
 let webviewReady = false;
 const pendingContextAdds: vscode.Uri[] = [];
 
@@ -129,6 +161,11 @@ export async function handleSendToChat(
         const unique = [...new Map(selectedResources.map((u) => [u.toString(), u])).values()];
         logMsg(`Explorer: SendToChat triggered (${unique.length} item(s))`);
         for (const uri of unique) {
+            const estTokens = await fileExceedsContextCap(uri);
+            if (estTokens !== null) {
+                warnContextTooLarge(uri, estTokens);
+                continue;
+            }
             await addContext(uri, webview);
         }
         return;
@@ -136,6 +173,11 @@ export async function handleSendToChat(
 
     const activeUri = vscode.window.activeTextEditor?.document.uri.toString();
     if (resource && resource.toString() !== activeUri) {
+        const estTokens = await fileExceedsContextCap(resource);
+        if (estTokens !== null) {
+            warnContextTooLarge(resource, estTokens);
+            return;
+        }
         logMsg("Explorer: SendToChat triggered (single resource)");
         await addContext(resource, webview);
         return;
@@ -145,6 +187,12 @@ export async function handleSendToChat(
     if (!ctx) {
         return;
     }
+    const payload = ctx.toWebviewPayload();
+    const approxTokens = !userConfig.agenticMode ? estTokens(payload.content.length) : 0;
+    if (approxTokens > EXTENSION_HARD_TOKEN_CAP) {
+        warnContextTooLarge(ctx.uri, approxTokens);
+        return;
+    }
     logMsg("Edit (Selection): SendToChat triggered");
-    webview.postMessage({ type: "context-update", context: ctx.toWebviewPayload() });
+    webview.postMessage({ type: "context-update", context: payload });
 }

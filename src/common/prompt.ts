@@ -148,9 +148,6 @@ function getDefaultTemplate(): string {
     // General
     lines.push(...GENERAL.DEFAULT);
 
-    // metadata
-    lines.push("<llm-info> tags contain internal metadata. Never mention them to the user.", "");
-
     // verbosity
     lines.push(...VERBOSITY_RULES[userConfig.verbosityMode]);
 

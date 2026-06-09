@@ -2,10 +2,6 @@ import hljs from "highlight.js";
 import { AttachedContext } from "../../../common/context-chat";
 import { themeColors } from "../styles";
 
-export function llmInfoTag(tagContent: string): string {
-    return `<llm-info>${tagContent}</llm-info>`;
-}
-
 /**
  * Matches file paths in plain text (`src/foo.ts`, `./bar.js`,
  * `path/to/file.py#L42-L51`). Requires at least one `/` separator and a
@@ -47,8 +43,13 @@ export function escapeAttr(s: string): string {
         .replace(/>/g, "&gt;");
 }
 
-/** Builds user content with embedded contexts. */
-export function buildUserContent(contexts: AttachedContext[], text: string): string {
+/**
+ * Builds user content with embedded contexts.
+ *
+ * In agent mode the accordion body holds only a `filepath: … (lines …)` reference —
+ * the agent reads file contents itself via its tools, so no content is embedded or tokenized.
+ */
+export function buildUserContent(contexts: AttachedContext[], text: string, agenticMode = false): string {
     if (contexts.length === 0) {
         return text;
     }
@@ -56,13 +57,21 @@ export function buildUserContent(contexts: AttachedContext[], text: string): str
         .map((ctx) => {
             const label = ctx.hasSelection ? `${ctx.fileName} (${ctx.startLine}-${ctx.endLine})` : ctx.fileName;
             const startLine = ctx.hasSelection ? ctx.startLine : 1;
+            const fileRef = ctx.hasSelection
+                ? `filepath: ${ctx.relativePath} (lines ${ctx.startLine}-${ctx.endLine})`
+                : `filepath: ${ctx.relativePath}`;
+            // Agent mode attaches a path reference only; the accordion (collapsed by
+            // default) keeps it out of view while still feeding the path to the model.
+            if (agenticMode) {
+                return `\`\`\`Context: ${label}\n${fileRef}\n\`\`\``;
+            }
             const content = ctx.isFolder
-                ? ctx.content
-                : ctx.content
+                ? (ctx.content ?? "")
+                : (ctx.content ?? "")
                       .split("\n")
                       .map((line, i) => `${startLine + i}\t${line}`)
                       .join("\n");
-            return `${llmInfoTag(`filepath: ${ctx.relativePath}`)}\n\`\`\`Context: ${label}\n${content}\n\`\`\``;
+            return `\`\`\`Context: ${label}\n${fileRef}\n${content}\n\`\`\``;
         })
         .join("\n\n");
     return `${blocks}\n\n${text}`;

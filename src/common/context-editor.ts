@@ -2,6 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../logging";
 import Tokenizer from "./tokenizer";
+import { userConfig } from "../config";
 const { showErrorMessage } = vscode.window;
 
 /**
@@ -202,6 +203,13 @@ export class EditorContext {
             const stat = await vscode.workspace.fs.stat(uri);
             this.uri = uri;
             this.isFolder = stat.type === vscode.FileType.Directory;
+
+            // Agent mode reads files via its own tools — attach a path reference only,
+            // never the content. This avoids loading/tokenizing huge files (UI freeze).
+            if (userConfig.agenticMode) {
+                this.content = "";
+                return this;
+            }
 
             if (this.isFolder) {
                 const entries = await vscode.workspace.fs.readDirectory(uri);

@@ -93,4 +93,14 @@ export async function populateMsgTokens(messages: ChatHistory[]): Promise<void> 
     );
 }
 
+/**
+ * Estimates token count from a unit count (characters or bytes) at ~4 units per token.
+ * Cheap and synchronous — use to gate oversized input before the exact, blocking encode.
+ */
+export function estTokens(units: number): number {
+    return Math.ceil(units / 4);
+}
+
+export const EXTENSION_HARD_TOKEN_CAP = 10_000;
+
 export default Tokenizer;

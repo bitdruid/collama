@@ -1,4 +1,5 @@
 import type { ToolCall } from "../../../../common/client";
+import { EXTENSION_HARD_TOKEN_CAP, estTokens } from "../../../../common/tokenizer";
 import { logWebview, showToast } from "../utils";
 import type { ChatSettings } from "../../../shared";
 import type { ChatRoot } from "../chat-root";
@@ -237,6 +238,18 @@ function handleContextSearchResults(host: ChatRoot, msg: any) {
 /** Adds a file/selection context sent from the editor (e.g. via "Add to Chat" command). */
 function handleContextUpdate(host: ChatRoot, msg: any) {
     const newCtx = msg.context;
+
+    // Chat-only mode embeds this content into the message and tokenizes it. Reject oversized
+    // attachments here (cheap length-based estimate) so the exact, blocking encode never runs.
+    const approxTokens = estTokens((newCtx.content ?? "").length);
+    if (approxTokens > EXTENSION_HARD_TOKEN_CAP) {
+        showToast(
+            `"${newCtx.fileName}" is too large to attach (~${approxTokens} tokens, max ${EXTENSION_HARD_TOKEN_CAP})`,
+        );
+        logWebview(`Context rejected: ${newCtx.fileName} (~${approxTokens} tokens > ${EXTENSION_HARD_TOKEN_CAP})`);
+        return;
+    }
+
     const exists = host.currentContexts.some(
         (ctx) =>
             ctx.relativePath === newCtx.relativePath &&

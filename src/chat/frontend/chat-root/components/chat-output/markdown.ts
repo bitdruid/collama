@@ -143,7 +143,7 @@ function renderFilePathLinks(state: StateCore) {
 
 /**
  * Create a MarkdownIt instance configured with chat-specific rules:
- * code-fence accordions, hidden llm-info blocks, table cell breaks, and file links.
+ * code-fence accordions, table cell breaks, and file links.
  */
 function createChatMarkdown(): MarkdownIt {
     const md = new MarkdownIt({
@@ -153,22 +153,6 @@ function createChatMarkdown(): MarkdownIt {
     });
 
     md.validateLink = (url) => /^(https?:|file:|command:|mailto:|\/|\.\/|\.\.\/)/i.test(url);
-
-    md.block.ruler.before("html_block", "llm_info", (state, startLine, _endLine, silent) => {
-        const line = state.src.slice(state.bMarks[startLine], state.eMarks[startLine]);
-        if (!line.startsWith("<llm-info>") || !line.endsWith("</llm-info>")) {
-            return false;
-        }
-        if (silent) {
-            return true;
-        }
-        const token = state.push("llm_info", "", 0);
-        token.content = line;
-        state.line = startLine + 1;
-        return true;
-    });
-
-    md.renderer.rules["llm_info"] = (tokens, idx) => `${tokens[idx].content}\n`;
 
     md.core.ruler.push("table_cell_line_breaks", renderTableCellLineBreaks);
     md.core.ruler.push("file_path_links", renderFilePathLinks);
