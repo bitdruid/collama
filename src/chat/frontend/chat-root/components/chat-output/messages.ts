@@ -1,22 +1,94 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { ChatContext, ChatHistory } from "../../../../../../common/context-chat";
-import { themeIcons } from "../../../../styles";
+import { ChatContext, ChatHistory, ToolMessage } from "../../../../../common/context-chat";
+import { themeIcons } from "../../../styles";
 import "./edit";
+
+// Assistant
+// Assistant
+// Assistant
+
+export interface AssistantRenderOptions {
+    msg: ChatHistory;
+    outOfContextClass: string;
+    isStreaming: boolean;
+    showThinking: boolean;
+    getCachedMarkdown: (content: string, isStreaming: boolean) => string;
+}
+
+export function renderAssistantMessage(opts: AssistantRenderOptions) {
+    const { msg, outOfContextClass, isStreaming, showThinking } = opts;
+    const thinking = msg.customKeys?.thinking;
+    const renderThinking = showThinking && thinking;
+
+    // Hide empty assistant messages (e.g. LLM returned only tool calls, or only thinking while hidden)
+    if (!msg.content && !renderThinking) {
+        return html``;
+    }
+
+    return html`
+        <div class="message assistant ${outOfContextClass}">
+            <div class="bubble-assistant">
+                ${renderThinking
+                    ? html`<collama-accordion
+                          type="think"
+                          label="Thinking"
+                          description=${isStreaming && !msg.content ? "…" : ""}
+                          >${unsafeHTML(opts.getCachedMarkdown(thinking, isStreaming))}</collama-accordion
+                      >`
+                    : ""}
+                ${msg.content ? unsafeHTML(opts.getCachedMarkdown(msg.content, isStreaming)) : ""}
+            </div>
+        </div>
+    `;
+}
+
+// Tool
+// Tool
+// Tool
+
+export interface ToolRenderOptions {
+    msg: ToolMessage;
+    outOfContextClass: string;
+    warningIcon: TemplateResult | string;
+    bare?: boolean;
+}
+
+export function renderToolMessage(opts: ToolRenderOptions) {
+    const { msg, outOfContextClass, bare } = opts;
+    const toolName = msg.customKeys?.toolName || "unknown";
+    const toolTarget = msg.customKeys?.toolTarget || "";
+    const toolArgs = msg.customKeys?.toolArgs || "";
+
+    const accordion = html`
+        <collama-accordion
+            type="tool"
+            label="${toolName}"
+            description="${toolTarget}"
+            .code="${toolArgs}"
+            .copyCode="${toolArgs}"
+        ></collama-accordion>
+    `;
+
+    if (bare) {
+        return accordion;
+    }
+
+    return html`
+        <div class="message tool ${outOfContextClass}">
+            <div class="bubble-tool">${accordion}</div>
+        </div>
+    `;
+}
+
+// User
+// User
+// User
 
 export interface UserMessageHost {
     editingIndex: number | null;
     requestUpdate(): void;
     dispatchEvent(event: Event): boolean;
-}
-
-function getEditableText(msg: ChatHistory): string {
-    const contexts = msg.customKeys?.contexts;
-    if (!contexts?.length) {
-        return msg.content;
-    }
-    const lastBlockEnd = msg.content.lastIndexOf("```\n\n");
-    return lastBlockEnd !== -1 ? msg.content.substring(lastBlockEnd + 5) : msg.content;
 }
 
 export interface UserRenderOptions {
@@ -28,6 +100,15 @@ export interface UserRenderOptions {
     outOfContextClass: string;
     warningIcon: TemplateResult | string;
     getCachedMarkdown: (content: string, isStreaming: boolean) => string;
+}
+
+function getEditableText(msg: ChatHistory): string {
+    const contexts = msg.customKeys?.contexts;
+    if (!contexts?.length) {
+        return msg.content;
+    }
+    const lastBlockEnd = msg.content.lastIndexOf("```\n\n");
+    return lastBlockEnd !== -1 ? msg.content.substring(lastBlockEnd + 5) : msg.content;
 }
 
 function getTurnTokens(messages: ChatHistory[], index: number): number {
@@ -95,9 +176,10 @@ export function renderUserMessage(opts: UserRenderOptions) {
     return html`
         <div class="message user ${outOfContextClass}">
             <div class="bubble bubble-user">
-                <div class="role-header role-user">
-                    <span class="role-label">${warningIcon}User</span>
-                    ${datetime ? html`<span class="role-datetime">${new Date(datetime).toLocaleString()}</span>` : ""}
+                <div class="user-heading">
+                    <span class="role-datetime"
+                        >${warningIcon}${datetime ? new Date(datetime).toLocaleString() : ""}</span
+                    >
                     <div class="message-actions">
                         <button
                             class="edit-button"

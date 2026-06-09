@@ -3,9 +3,9 @@ import * as vscode from "vscode";
 import path from "path";
 
 import { EditorContext } from "../../../common/context-editor";
-import { EXTENSION_HARD_TOKEN_CAP, estTokens } from "../../../common/tokenizer";
 import { userConfig } from "../../../config";
 import { logMsg } from "../../../logging";
+import { estTokens, EXTENSION_HARD_TOKEN_CAP } from "../../../common/utils";
 
 /**
  * Searches workspace files and folders matching the query and sends results to the webview.

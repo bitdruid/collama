@@ -1,9 +1,9 @@
 import type { ToolCall } from "../../../../common/client";
-import { EXTENSION_HARD_TOKEN_CAP, estTokens } from "../../../../common/tokenizer";
 import { logWebview, showToast } from "../utils";
 import type { ChatSettings } from "../../../shared";
 import type { ChatRoot } from "../chat-root";
 import { ChatSessionStore } from "../components/chat-header/chat-session-store";
+import { estTokens, EXTENSION_HARD_TOKEN_CAP } from "../../../../common/utils";
 
 /** Creates a dispatcher function that routes inbound host messages to their handlers. */
 export function createInboundDispatcher(host: ChatRoot) {

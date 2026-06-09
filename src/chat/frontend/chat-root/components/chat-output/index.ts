@@ -5,4 +5,4 @@
 
 export { ChatOutput } from "./chat-output";
 
-export { ChatEditMessage } from "./message-user/edit";
+export { ChatEditMessage } from "./edit";

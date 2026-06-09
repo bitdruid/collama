@@ -1,44 +1,103 @@
 import { css } from "lit";
 import { codeBlockStyles, inlineCodeStyles, themeColors, themeFonts, themeStyles } from "../../../styles";
-import { assistantStyles } from "./message-assistant/styles";
-import { toolStyles } from "./message-tool/styles";
-import { userStyles } from "./message-user/styles";
 
 export const outputStyles = [
     ...codeBlockStyles,
     ...inlineCodeStyles,
-    assistantStyles,
-    userStyles,
-    toolStyles,
     css`
-        .role-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: ${themeFonts.weight.bold};
-            font-size: 1em;
-            line-height: 1;
-            text-box: trim-both cap alphabetic;
-            margin-bottom: 6px;
-            padding: 4px 10px;
-            ${themeStyles.borderRadius.small}
-            color: ${themeColors.cleanWhite};
+        .message {
+            margin-bottom: 0;
         }
 
-        .role-label {
-            flex: 1;
+        .message.assistant,
+        .message.tool {
+            padding: 0;
+            margin: 0;
+        }
+
+        .message.user {
+            margin: 24px 0;
+        }
+
+        .bubble-assistant,
+        .bubble-tool {
+            padding: 0 8px;
+            margin: 0;
+        }
+
+        .bubble-user {
+            ${themeStyles.border.normal}
+            background: ${themeColors.uiBackground};
+        }
+
+        /* Calm heading stripe: flush to the top edge of the bubble, no background */
+        .user-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: -8px -8px 4px -8px;
+            padding: 2px 8px;
+            border: ${themeStyles.border.normal};
         }
 
         .role-datetime {
-            font-size: 0.85em;
+            font-size: 1em;
             font-weight: ${themeFonts.weight.light};
-            opacity: 0.8;
-            margin-left: 8px;
-            margin-right: 8px;
+            color: ${themeColors.uiFont};
         }
 
-        .message {
-            margin-bottom: 0;
+        .message-actions {
+            display: flex;
+            align-items: center;
+            gap: 1px;
+        }
+
+        .resend-button,
+        .delete-button,
+        .edit-button,
+        .summarize-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 2px;
+            border: none;
+            ${themeStyles.borderRadius.small}
+            background: transparent;
+            color: ${themeColors.uiFont};
+            font-size: ${themeFonts.size.small};
+            line-height: 1;
+            vertical-align: middle;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .resend-button:hover,
+        .edit-button:hover {
+            background: ${themeColors.submitHover};
+        }
+
+        .delete-button:hover {
+            background: ${themeColors.cancelHover};
+        }
+
+        .summarize-button:hover {
+            background: ${themeColors.compressHover};
+        }
+
+        .resend-button:disabled,
+        .delete-button:disabled,
+        .edit-button:disabled,
+        .summarize-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        .resend-button:hover:disabled,
+        .delete-button:hover:disabled,
+        .edit-button:hover:disabled,
+        .summarize-button:hover:disabled {
+            background: transparent;
         }
 
         .bubble {

@@ -6,9 +6,7 @@ import { themeIcons } from "../../../styles";
 import "../chat-loading-animation/dots";
 import "./empty-state";
 import { chatMarkdown } from "./markdown";
-import { renderAssistantMessage, renderSystemMessage } from "./message-assistant/message-assistant";
-import { renderToolMessage } from "./message-tool/message-tool";
-import { renderUserMessage } from "./message-user/message-user";
+import { renderAssistantMessage, renderToolMessage, renderUserMessage } from "./messages";
 import { outputStyles } from "./styles-shared";
 
 type MessageGroup =
@@ -262,21 +260,11 @@ export class ChatOutput extends LitElement {
                             });
                         }
 
-                        if (msg.role === "assistant") {
-                            return renderAssistantMessage({
-                                msg,
-                                outOfContextClass,
-                                warningIcon,
-                                isStreaming: this.isGenerating && index === lastAssistantIndex && !!msg.content,
-                                showThinking: this.showThinking,
-                                getCachedMarkdown: this._getCachedMarkdown,
-                            });
-                        }
-
-                        return renderSystemMessage({
+                        return renderAssistantMessage({
                             msg,
                             outOfContextClass,
-                            warningIcon,
+                            isStreaming: this.isGenerating && index === lastAssistantIndex && !!msg.content,
+                            showThinking: this.showThinking,
                             getCachedMarkdown: this._getCachedMarkdown,
                         });
                     },

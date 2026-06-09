@@ -1,8 +1,68 @@
-import { LitElement, html } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { adjustTextareaRows } from "../../../utils";
-import { themeIcons } from "../../../../styles";
-import { editStyles } from "./styles";
+import { adjustTextareaRows } from "../../utils";
+import { themeColors, themeFonts, themeIcons, themeStyles } from "../../../styles";
+
+const editStyles = css`
+    :host {
+        display: block;
+    }
+
+    .edit-textarea {
+        ${themeStyles.textarea}
+        margin-top: 4px;
+    }
+
+    .edit-textarea:focus {
+        ${themeStyles.focus}
+    }
+
+    .edit-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        justify-content: flex-end;
+    }
+
+    .edit-send,
+    .edit-cancel {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 12px;
+        border: none;
+        ${themeStyles.borderRadius.small}
+        font-size: ${themeFonts.size.normal};
+        line-height: 1;
+        vertical-align: middle;
+        cursor: pointer;
+        color: ${themeColors.cleanWhite};
+    }
+
+    .edit-send {
+        background: ${themeColors.submit};
+    }
+
+    .edit-send:hover {
+        background: ${themeColors.submitHover};
+    }
+
+    .edit-send:active {
+        background: ${themeColors.submit};
+    }
+
+    .edit-cancel {
+        background: ${themeColors.cancel};
+    }
+
+    .edit-cancel:hover {
+        background: ${themeColors.cancelHover};
+    }
+
+    .edit-cancel:active {
+        background: ${themeColors.cancel};
+    }
+`;
 
 /**
  * A component that provides an inline editing interface for chat messages.

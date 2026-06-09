@@ -4,7 +4,7 @@ import os from "os";
 import path from "path";
 import { logMsg } from "../../logging";
 import { ToolAnswer, isWithinAllowedTemp, isWithinRoot, secureWorkspace, toolError, toolSuccess } from "../tools";
-import { EXTENSION_HARD_TOKEN_CAP } from "../../common/tokenizer";
+import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 
 /** Returns true if the pattern contains '..' path segments. */
 function hasPathTraversal(pattern: string): boolean {

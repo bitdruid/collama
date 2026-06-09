@@ -5,7 +5,7 @@ import path from "node:path";
 import { logMsg } from "../../logging";
 import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
 import { requestToolConfirm } from "./confirm";
-import { EXTENSION_HARD_TOKEN_CAP } from "../../common/tokenizer";
+import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 
 type ShellType = "bash" | "powershell";
 
