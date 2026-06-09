@@ -2,4 +2,5 @@
 export { LlmClientFactory } from "./factory";
 export { OllamaClient, requestOllama } from "./ollama";
 export { OpenAiClient, requestOpenAI } from "./openai";
+export { parseTextToolCalls } from "./toolparse";
 export * from "./types";

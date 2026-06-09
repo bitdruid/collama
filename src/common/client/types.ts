@@ -59,15 +59,18 @@ export interface LlmGenerateSettings {
 }
 
 /**
- * Provider-neutral generation options used by the client implementations.
+ * Generation options in OpenAI shape, the extension's primary backend.
  *
- * Only sampling params supported by BOTH Ollama and the OpenAI spec.
+ * Field names mirror the OpenAI request body so the common path needs no
+ * renaming; the Ollama completion path converts via `optionsToOllama`. `num_ctx`
+ * is the exception: OpenAI has no per-request context field, so it is never sent
+ * to OpenAI — it is used only for the local prompt-fit check and Ollama's options.
  */
 export interface Options {
-    num_ctx: number;
-    num_predict: number;
+    max_tokens: number;
     temperature: number;
     top_p?: number;
+    num_ctx: number;
 }
 
 /** Stop token groups coming from model metadata and user/UI mode behavior. */
@@ -110,7 +113,7 @@ export function buildCompletionStop(modelStop: string[]): Stop {
 /** Builds generation options for autocomplete requests. */
 export function buildCompletionOptions(): Options {
     return {
-        num_predict: calculateNumPredict(),
+        max_tokens: calculateNumPredict(),
         num_ctx: userConfig.apiTokenContextLenCompletion,
         temperature: 0.4,
         top_p: 0.9,
@@ -120,7 +123,7 @@ export function buildCompletionOptions(): Options {
 /** Builds generation options for chat/edit instruction requests. */
 export function buildInstructionOptions(): Options {
     return {
-        num_predict: userConfig.apiTokenPredictInstruct,
+        max_tokens: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.8,
         top_p: 0.95,
@@ -130,7 +133,7 @@ export function buildInstructionOptions(): Options {
 /** Builds generation options tuned for concise commit message generation. */
 export function buildCommitOptions(): Options {
     return {
-        num_predict: userConfig.apiTokenPredictInstruct,
+        max_tokens: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: 0.3,
         top_p: 0.95,
@@ -140,7 +143,7 @@ export function buildCommitOptions(): Options {
 /** Builds generation options for multi-step agent conversations with tool use. */
 export function buildAgentOptions(): Options {
     return {
-        num_predict: userConfig.apiTokenPredictInstruct,
+        max_tokens: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
         temperature: userConfig.liteMode ? 0.6 : 0.2,
         top_p: 0.9,

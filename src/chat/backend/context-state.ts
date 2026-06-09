@@ -11,7 +11,7 @@ export interface ContextState {
 
 export async function recomputeContextState(
     messages: ChatContext,
-    numPredict = buildInstructionOptions().num_predict,
+    numPredict = buildInstructionOptions().max_tokens,
     contextMax = userConfig.apiTokenContextLenInstruct,
 ): Promise<ContextState> {
     const contextStartIndex = await findContextStartIndex(messages.getMessages(), numPredict, contextMax);

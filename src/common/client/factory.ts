@@ -23,7 +23,9 @@ export class LlmClientFactory implements LlmClient {
         const backend = requestType === "completion" ? sysConfig.backendCompletion : sysConfig.backendInstruct;
 
         if (backend === "ollama") {
-            this.factoryClient = new OllamaClient();
+            // Ollama chat runs through its OpenAI-compatible /v1 endpoint; completion
+            // stays native for raw FIM (raw: true), which /v1/completions can't express.
+            this.factoryClient = requestType === "instruction" ? new OpenAiClient() : new OllamaClient();
         } else if (backend === "openai") {
             this.factoryClient = new OpenAiClient();
         }
@@ -35,7 +37,7 @@ export class LlmClientFactory implements LlmClient {
         onChunk?: (chunk: string) => void,
         onReasoning?: (chunk: string) => void,
     ): Promise<ChatResult> {
-        if (!this.factoryClient) {
+        if (!this.factoryClient || !("chat" in this.factoryClient)) {
             throw new Error(`LLM client not initialized for ${this.requestType}`);
         }
         return this.factoryClient.chat(settings, onChunk, onReasoning);
@@ -48,7 +50,7 @@ export class LlmClientFactory implements LlmClient {
         }
 
         const promptTokens = await Tokenizer.calcTokens(settings.prompt);
-        if (!checkPredictFitsContextLength(settings.options.num_predict, promptTokens, settings.options.num_ctx)) {
+        if (!checkPredictFitsContextLength(settings.options.max_tokens, promptTokens, settings.options.num_ctx)) {
             showErrorMessage(
                 `Prompt (${promptTokens} tokens) exceeds available context window (${settings.options.num_ctx} tokens). Please reduce content.`,
             );

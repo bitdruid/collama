@@ -1,12 +1,13 @@
 import OpenAI from "openai";
 
 import { ToolCallAccumulator } from "../litellmfix";
+import { emitGated, finalizeChat, ToolCallStreamGate } from "./toolparse";
 import type { ChatResult, LlmChatSettings, LlmClient, LlmGenerateSettings } from "./types";
 import {
     buildStopTokens,
     cleanupResult,
     handleError,
-    logPerformance,
+    summupPerformance,
     logRequest,
     optionsToOpenAI,
     proxyFetch,
@@ -48,8 +49,11 @@ export class OpenAiClient implements LlmClient {
             });
 
             let result = "";
+            let reasoningText = "";
             let resultTokens = 0;
             const toolAccumulator = new ToolCallAccumulator();
+            const gate = tools.length > 0 ? new ToolCallStreamGate() : null;
+            const reasoningGate = tools.length > 0 ? new ToolCallStreamGate() : null;
 
             for await (const part of stream) {
                 if (signal?.aborted) {
@@ -57,17 +61,18 @@ export class OpenAiClient implements LlmClient {
                 }
 
                 const delta = part.choices[0]?.delta as
-                    | (typeof part.choices[0]["delta"] & { reasoning?: string; reasoning_content?: string })
+                    | ((typeof part.choices)[0]["delta"] & { reasoning?: string; reasoning_content?: string })
                     | undefined;
                 const chunk = delta?.content;
                 if (chunk) {
                     result += chunk;
-                    onChunk?.(chunk);
+                    emitGated(gate, result, chunk, onChunk);
                 }
 
                 const reasoning = delta?.reasoning_content ?? delta?.reasoning;
                 if (reasoning) {
-                    onReasoning?.(reasoning);
+                    reasoningText += reasoning;
+                    emitGated(reasoningGate, reasoningText, reasoning, onReasoning);
                 }
 
                 if (delta?.tool_calls) {
@@ -77,17 +82,19 @@ export class OpenAiClient implements LlmClient {
                 }
 
                 if (part.usage) {
-                    const endTime = process.hrtime.bigint();
                     resultTokens = part.usage.completion_tokens ?? 0;
-                    const resultDurationNano = endTime - startTime;
-                    logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
+                    summupPerformance(options, startTime, resultTokens, result);
                 }
             }
 
-            return {
-                content: cleanupResult(result, resultTokens, options),
-                toolCalls: toolAccumulator.build(),
-            };
+            const content = cleanupResult(result, resultTokens, options);
+            const toolCalls = toolAccumulator.build();
+            return finalizeChat(
+                content,
+                toolCalls,
+                { gate, raw: result, emit: onChunk },
+                { gate: reasoningGate, raw: reasoningText, emit: onReasoning },
+            );
         } catch (err) {
             return handleError(err);
         }
@@ -108,12 +115,10 @@ export class OpenAiClient implements LlmClient {
                 ...optionsToOpenAI(options),
                 stop: buildStopTokens(stop),
             });
-            const endTime = process.hrtime.bigint();
 
             const result = response.choices[0]?.text ?? "";
             const resultTokens = response.usage?.total_tokens ?? 0;
-            const resultDurationNano = endTime - startTime;
-            logPerformance(options.num_predict, resultTokens, Number(resultDurationNano), result);
+            summupPerformance(options, startTime, resultTokens, result);
 
             return cleanupResult(result, resultTokens, options);
         } catch (err) {

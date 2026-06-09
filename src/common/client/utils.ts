@@ -37,7 +37,7 @@ export function cleanupResult(result: string, resultTokens: number, options: Opt
         return "";
     }
     // if result is too long then cut it off (autocomplete prevent incomplete lines)
-    if (resultTokens === options.num_predict && result.includes("\n")) {
+    if (resultTokens === options.max_tokens && result.includes("\n")) {
         logMsg("Output reached token limit - cutting last line (probably incomplete)");
         result = result.split("\n").slice(0, -1).join("\n");
     }
@@ -52,22 +52,26 @@ export function cleanupResult(result: string, resultTokens: number, options: Opt
     return result.trim();
 }
 
-/** Converts provider-neutral options into OpenAI-compatible request fields. */
+/**
+ * Selects the OpenAI request fields from the options.
+ *
+ * `Options` is already OpenAI-shaped, so this only drops `num_ctx`: the OpenAI
+ * spec has no per-request context size — it is fixed server-side (launch flag for
+ * llama.cpp/vLLM, Modelfile for Ollama). `num_ctx` is still used client-side to
+ * check the prompt fits before sending.
+ */
 export function optionsToOpenAI(options: Options): Record<string, any> {
-    const optionsOpenAI: Record<string, any> = {};
-    if (options.num_ctx !== undefined) {
-        optionsOpenAI.max_context_length = options.num_ctx;
-    }
-    if (options.num_predict !== undefined) {
-        optionsOpenAI.max_tokens = options.num_predict;
-    }
-    if (options.temperature !== undefined) {
-        optionsOpenAI.temperature = options.temperature;
-    }
-    if (options.top_p !== undefined) {
-        optionsOpenAI.top_p = options.top_p;
-    }
-    return optionsOpenAI;
+    const { num_ctx, ...openai } = options;
+    return openai;
+}
+
+/**
+ * Converts OpenAI-shaped options into Ollama's native option names for the
+ * completion (autocomplete) path, which talks to Ollama's /api/generate.
+ */
+export function optionsToOllama(options: Options): Record<string, any> {
+    const { max_tokens, ...rest } = options;
+    return { ...rest, num_predict: max_tokens };
 }
 
 /** Logs request metadata and input for extension diagnostics. */
@@ -82,12 +86,7 @@ export function logRequest(url: string, model: string, options: Options, stop: S
 }
 
 /** Logs model output throughput and warns when a response hits the configured token cap. */
-export function logPerformance(
-    tokenLimit: number,
-    resultTokens: number,
-    resultDurationNano: number,
-    result: string,
-): void {
+function logPerformance(tokenLimit: number, resultTokens: number, resultDurationNano: number, result: string): void {
     const resultDuration = (resultDurationNano / 1_000_000_000).toFixed(3);
     const resultTPS = resultDurationNano > 0 ? (resultTokens / (resultDurationNano / 1_000_000_000)).toFixed(1) : "0";
     logMsg(
@@ -100,6 +99,16 @@ export function logPerformance(
         logMsg(msg);
         showWarningMessage(msg);
     }
+}
+
+/**
+ * Logs throughput for a finished request: wall-clock time since the `startTime`
+ * mark over the result token count. Shared by both providers and both chat and
+ * generate, so all performance logs are measured the same way.
+ */
+export function summupPerformance(options: Options, startTime: bigint, resultTokens: number, result: string): void {
+    const resultDurationNano = Number(process.hrtime.bigint() - startTime);
+    logPerformance(options.max_tokens, resultTokens, resultDurationNano, result);
 }
 
 /** Logs full Error details before rethrowing to the caller. */
