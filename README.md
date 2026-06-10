@@ -96,7 +96,7 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 | `collama.apiTokenContextLenInstruct`   | number  | `4096`                   | Context window size (tokens) for the instruct/chat model |
 | `collama.apiTokenPredictCompletion`    | number  | `400`                    | Max tokens to generate per completion request            |
 | `collama.apiTokenPredictInstruct`      | number  | `4096`                   | Max tokens to generate per instruct/chat request         |
-| `collama.autoComplete`                 | boolean | `true`                   | Enable auto-suggestions                                  |
+| `collama.autoComplete`                 | boolean | `false`                   | Enable auto-suggestions                                  |
 | `collama.suggestMode`                  | string  | `inline`                 | Suggestion style: `inline`, `multiline`, or `multiblock` |
 | `collama.suggestDelay`                 | number  | `1500`                   | Delay (ms) before requesting completion                  |
 | `collama.verbosityMode`                | string  | `medium`                 | Chat response detail: `compact`, `medium`, or `detailed` |

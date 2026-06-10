@@ -37,7 +37,7 @@ export const defaultExtensionConfig: ExtensionConfig = {
     apiModelCompletion: "qwen2.5-coder:3b",
     apiModelInstruct: "qwen2.5-coder:3b-instruct",
     agenticMode: true,
-    autoComplete: true,
+    autoComplete: false,
     suggestMode: "inline",
     verbosityMode: "medium",
     suggestDelay: 1500,

@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.8.0",
+    "version": "1.8.1",
     "engines": {
         "vscode": "^1.120.0"
     },
@@ -82,7 +82,7 @@
                     },
                     "collama.autoComplete": {
                         "type": "boolean",
-                        "default": true,
+                        "default": false,
                         "description": "Turn auto-suggestions ON."
                     },
                     "collama.suggestMode": {
