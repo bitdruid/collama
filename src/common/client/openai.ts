@@ -17,7 +17,7 @@ import {
 export function requestOpenAI(url: string, bearer?: string): OpenAI {
     const baseURL = url.endsWith("/v1") ? url : url + "/v1";
     return new OpenAI({
-        apiKey: bearer ?? "",
+        apiKey: bearer || "ollama",
         baseURL,
         fetch: proxyFetch as typeof fetch,
     });
