@@ -68,10 +68,10 @@ export const themeColors = {
     settingsHover: unsafeCSS("#646b74"),
 
     /* Role Colors */
-    system: unsafeCSS("#9b59b6"),
-    user: unsafeCSS("#2277a8"),
-    assistant: unsafeCSS("#3a9a40"),
-    tool: unsafeCSS("#d87979"),
+    // system: unsafeCSS("#9b59b6"),
+    // user: unsafeCSS("#2277a8"),
+    // assistant: unsafeCSS("#3a9a40"),
+    // tool: unsafeCSS("#d87979"),
 
     /* Out of Context Colors */
     outOfContextBackground: unsafeCSS("rgba(255, 60, 60, 0.08)"),

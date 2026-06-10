@@ -31,6 +31,16 @@ export class AgentRunner {
         this.currentAgent = null;
     }
 
+    /** Queues a user message into the running agent loop without interrupting it. */
+    injectMessage(content: string, customKeys: Parameters<Agent["injectMessage"]>[1], id: string) {
+        this.currentAgent?.injectMessage(content, customKeys, id);
+    }
+
+    /** Removes a still-queued interjection by id (no-op if it already drained). */
+    cancelInjected(id: string) {
+        this.currentAgent?.cancelInjected(id);
+    }
+
     /**
      * Runs the agent with a 60s startup timeout. The timeout fires only if the agent
      * never produces a first chunk or event; any inbound activity clears it. Callers

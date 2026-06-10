@@ -20,6 +20,9 @@ const backendApi = {
     ready: () => window.vscode.postMessage({ type: "chat-ready" }),
     sendChatRequest: (messages: ChatHistory[], sessionId: string) =>
         window.vscode.postMessage({ type: "chat-request", messages, sessionId }),
+    intercept: (content: string, contexts: AttachedContext[], id: string) =>
+        window.vscode.postMessage({ type: "chat-intercept", content, contexts, id }),
+    cancelIntercept: (id: string) => window.vscode.postMessage({ type: "chat-intercept-cancel", id }),
     cancel: () => window.vscode.postMessage({ type: "chat-cancel" }),
     summarize: (turnStart: number, turnEnd: number, sessionId: string) =>
         window.vscode.postMessage({ type: "summarize-request", turnStart, turnEnd, sessionId }),
@@ -80,6 +83,20 @@ export function onSubmit(host: ChatRoot, e: CustomEvent) {
         if (contexts.length > 0) {
             host.currentContexts = [];
         }
+        return;
+    }
+
+    // While the agent is running, route the message into the live loop instead of starting a
+    // new run. It is inserted at the next turn boundary and rendered via `agent-inject-message`.
+    if (host.isGenerating) {
+        if (contexts.length > 0) {
+            host.currentContexts = [];
+        }
+        const id = crypto.randomUUID();
+        backendApi.intercept(buildUserContent(contexts, content, host.config.agenticMode), contexts, id);
+        // Show a pending banner until the backend drains it (see handleAgentInjectMessage).
+        host.pendingIntercepts = [...host.pendingIntercepts, { id, text: content, contextCount: contexts.length }];
+        logWebview("Intercept queued into running agent loop");
         return;
     }
 
@@ -191,6 +208,16 @@ export function onClearChat(host: ChatRoot) {
         return;
     }
     backendApi.clearChat();
+}
+
+/** Cancels a still-queued intercept (drops the pending banner and dequeues it on the backend). */
+export function onInterceptCancel(host: ChatRoot, e: CustomEvent) {
+    const id = e.detail?.id as string;
+    if (!id) {
+        return;
+    }
+    host.pendingIntercepts = host.pendingIntercepts.filter((p) => p.id !== id);
+    backendApi.cancelIntercept(id);
 }
 
 /** Removes a single attached context by index, or clears all if no index is provided. */

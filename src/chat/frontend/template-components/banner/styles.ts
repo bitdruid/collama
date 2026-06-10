@@ -15,8 +15,8 @@ export const bannerStyles = css`
         color: ${themeColors.uiFont};
         cursor: pointer;
         user-select: none;
-        ${themeStyles.border.dimm}
-        ${themeStyles.borderRadius.medium}
+        border: ${themeStyles.border.dimm};
+        border-radius: ${themeStyles.borderRadius.medium};
         box-sizing: border-box;
         text-align: left;
         transition: background 0.15s;
@@ -107,8 +107,6 @@ export const bannerStyles = css`
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 16px;
-        height: 16px;
         flex-shrink: 0;
     }
 
@@ -141,7 +139,7 @@ export const bannerStyles = css`
         color: ${themeColors.uiFont};
         cursor: pointer;
         padding: 2px 6px;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         font-size: 0.85em;
         transition:
             background 0.15s,

@@ -215,16 +215,18 @@ export function renderUserMessage(opts: UserRenderOptions) {
                         </button>
                     </div>
                 </div>
-                ${host.editingIndex === index
-                    ? html`
-                          <collama-chatedit
-                              .content=${getEditableText(msg)}
-                              .messageIndex=${index}
-                              @edit-send=${(e: CustomEvent) => handleEditSend(host, e)}
-                              @edit-cancel=${() => handleEditCancel(host)}
-                          ></collama-chatedit>
-                      `
-                    : unsafeHTML(opts.getCachedMarkdown(msg.content, false))}
+                <div class="user-content">
+                    ${host.editingIndex === index
+                        ? html`
+                              <collama-chatedit
+                                  .content=${getEditableText(msg)}
+                                  .messageIndex=${index}
+                                  @edit-send=${(e: CustomEvent) => handleEditSend(host, e)}
+                                  @edit-cancel=${() => handleEditCancel(host)}
+                              ></collama-chatedit>
+                          `
+                        : unsafeHTML(opts.getCachedMarkdown(msg.content, false))}
+                </div>
             </div>
         </div>
     `;

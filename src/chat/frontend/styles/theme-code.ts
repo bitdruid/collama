@@ -51,7 +51,7 @@ export const inlineCodeStyles = [
         :not(pre) > code {
             color: ${themeColors.uiFontHighlight};
             background: ${themeColors.uiFontHighlightBackground};
-            ${themeStyles.borderRadius.medium}
+            border-radius: ${themeStyles.borderRadius.medium};
             padding: 0.08em 0.4em;
             font-size: 0.9em;
             font-family: ${themeFonts.familyMono};

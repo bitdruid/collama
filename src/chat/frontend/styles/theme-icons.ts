@@ -2,6 +2,7 @@ import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { html } from "lit/static-html.js";
 import {
     AlertTriangle,
+    BetweenHorizontalStart,
     Brain,
     Check,
     CheckCheck,
@@ -35,6 +36,7 @@ const icon = (Icon: any) => ({
 
 export const themeIcons = {
     alertTriangle: icon(AlertTriangle),
+    betweenHorizontalStart: icon(BetweenHorizontalStart),
     brain: icon(Brain),
     check: icon(Check),
     checkCheck: icon(CheckCheck),

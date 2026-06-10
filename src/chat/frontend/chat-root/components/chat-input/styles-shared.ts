@@ -5,8 +5,8 @@ export const chatInputStyles = css`
     :host {
         display: block;
         overflow: visible;
-        ${themeStyles.borderRadius.large}
-        ${themeStyles.border.normal}
+        border-radius: ${themeStyles.borderRadius.large};
+        border: ${themeStyles.border.normal};
         background: ${themeColors.uiBackground};
     }
 

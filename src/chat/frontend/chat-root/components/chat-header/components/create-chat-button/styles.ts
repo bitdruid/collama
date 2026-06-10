@@ -7,7 +7,7 @@ export const createChatButtonStyles = css`
         align-items: center;
         justify-content: center;
         border: none;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         background: transparent;
         cursor: pointer;
         transition: background 0.2s ease;

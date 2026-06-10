@@ -18,8 +18,8 @@ export const contextUsageBarStyles = css`
         min-width: 70px;
         height: 10px;
         background: ${themeColors.uiBackgroundDimm};
-        ${themeStyles.border.normal}
-        ${themeStyles.borderRadius.medium}
+        border: ${themeStyles.border.normal};
+        border-radius: ${themeStyles.borderRadius.medium};
         overflow: hidden;
         position: relative;
     }
@@ -27,7 +27,7 @@ export const contextUsageBarStyles = css`
     .context-bar {
         height: 100%;
         background: ${themeColors.usagePrimary};
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.medium};
         transition: width 0.3s ease;
         min-width: 1px;
     }

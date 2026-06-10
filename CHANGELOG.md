@@ -1,6 +1,32 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.0] - 2026-06-10
+
+### Added
+- Intercept queued messages into a running agent loop — submit a follow-up while the agent is still working; it's injected at the next turn boundary without interrupting the current one, with a pending-intercept banner showing queued messages (cancellable)
+- On-the-fly parsing of leaking XML/JSON tool-calls — detects tool calls that models emit as text instead of native tool-call format and converts them, instead of leaking the raw markup into the chat
+- Loading dots now show for the entire agent run (waiting, streaming, and tool execution) and live in-flow under the streaming text so they scroll with it instead of jumping
+
+### Changed
+- Ghost session creation centralized in `SessionManager.createGhostSession()`
+- Banner component restyled and consolidated theme tokens for borders, fonts, and icons
+- Chat output message components restructured (assistant/tool/user merged into a single `messages.ts`, edit moved out of `message-user`)
+- Standardized border styles via shared theme tokens; updated README model recommendations
+- Moved syntax-highlighting (hljs) styles into `styles/theme-code.ts`
+- Read/grep tools now share a single `EXTENSION_HARD_TOKEN_CAP` size limit
+- `read` tool history policy changed from `dropAll` to `evalOutdated` so stale reads are marked accordingly
+- Output scrollbar now has a fixed, themed width with `scrollbar-gutter: stable` reserved, so content no longer shifts when the scrollbar appears; the pending-intercept banner aligns with it
+- Instant (non-smooth) auto-scroll while the agent is generating, smooth scroll when idle
+- Updated dependencies: `eslint`, `typescript-eslint`, `lucide`, `openai`
+
+### Fixed
+- Ghost (temporary) chats are no longer lost after converting to a stored session
+- Decision tool now returns an error to the LLM instead of failing silently when `options` contains non-string entries
+- Prevented UI freezes by rejecting/tokenizing oversized user-attached context files instead of loading their full content
+- Agent mode no longer inlines full file contents for editor-attached context (path reference only, since the agent reads files via its own tools)
+- Loading dots and pending-intercept banner spacing/margins adjusted for consistent symmetric padding
+
 ## [1.7.19] - 2026-06-02
 
 ### Added

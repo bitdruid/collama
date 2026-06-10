@@ -7,10 +7,12 @@ export const chatTransferButtonStyles = css`
         align-items: center;
         justify-content: center;
         border: none;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         background: transparent;
         cursor: pointer;
-        transition: background 0.2s ease, color 0.2s ease;
+        transition:
+            background 0.2s ease,
+            color 0.2s ease;
     }
 
     .icon-button:active:not(:disabled) {

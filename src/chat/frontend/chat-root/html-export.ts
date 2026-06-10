@@ -49,7 +49,7 @@ html, body {
   overflow: visible;
   background: var(--vscode-sideBar-background, #1e1e1e);
   color: var(--vscode-foreground, #d4d4d4);
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif);
   font-size: var(--vscode-font-size, 13px);
 }
 body { padding: 16px; }

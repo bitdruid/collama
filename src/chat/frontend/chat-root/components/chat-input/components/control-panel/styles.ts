@@ -38,6 +38,7 @@ export const controlPanelButtonStyles = css`
     }
 
     button-submit,
+    button-intercept,
     button-context,
     button-cancel,
     button-compress,
@@ -54,7 +55,7 @@ export const controlPanelButtonStyles = css`
         height: 28px;
         aspect-ratio: 1 / 1;
         padding: 0;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         line-height: 1;
         color: ${themeColors.cleanWhite};
         border: none;
@@ -86,13 +87,21 @@ export const controlPanelButtonStyles = css`
         justify-content: center;
         width: 16px;
         height: 16px;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         background-color: ${themeColors.usageDanger};
         color: ${themeColors.cleanWhite};
         font-size: 10px;
         font-weight: ${themeFonts.weight.bold};
         line-height: 1;
         box-shadow: 0 1px 3px ${themeColors.uiShadow};
+    }
+
+    /* Intercept shares submit's colour but pulses (like cancel/auto-accept) to signal it acts live. */
+    button-intercept {
+        ${themeAnimations.loadingPulse(themeColors.submit)}
+    }
+    button-intercept:hover {
+        background-color: ${themeColors.submitHover};
     }
 
     button-cancel {
@@ -106,10 +115,19 @@ export const controlPanelButtonStyles = css`
         opacity: 0.45;
     }
 
+    /* Session-level actions are locked while the agent streams: greyed, with a forbidden cursor
+       (clicks are also guarded in the handlers). */
+    button-ghost-chat[disabled],
+    button-clear-chat[disabled],
+    button-compress[disabled] {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
     button-compress {
         background-color: ${themeColors.compress};
     }
-    button-compress:hover {
+    button-compress:hover:not([disabled]) {
         background-color: ${themeColors.compressHover};
     }
 
@@ -134,7 +152,7 @@ export const controlPanelButtonStyles = css`
     button-ghost-chat {
         background-color: ${themeColors.ghostChat};
     }
-    button-ghost-chat:hover {
+    button-ghost-chat:hover:not([disabled]) {
         background-color: ${themeColors.ghostChatHover};
     }
 
@@ -145,7 +163,7 @@ export const controlPanelButtonStyles = css`
     button-clear-chat {
         background-color: ${themeColors.clearChat};
     }
-    button-clear-chat:hover {
+    button-clear-chat:hover:not([disabled]) {
         background-color: ${themeColors.clearChatHover};
     }
 
@@ -155,7 +173,7 @@ export const controlPanelButtonStyles = css`
         width: auto;
         aspect-ratio: auto;
         padding: 0 10px;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         font-size: ${themeFonts.size.normal};
         font-weight: ${themeFonts.weight.bold};
         cursor: default;

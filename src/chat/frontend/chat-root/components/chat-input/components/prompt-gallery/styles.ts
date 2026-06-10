@@ -18,7 +18,7 @@ export const galleryStyles = css`
         align-items: center;
         padding: 6px 8px;
         cursor: pointer;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         border-bottom: 1px solid ${themeColors.uiBorderDimm};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.size.normal};
@@ -70,7 +70,7 @@ export const galleryStyles = css`
             ${themeColors.uiBackgroundHoverDimm} 40%,
             ${themeColors.uiBackgroundHoverDimm} 100%
         );
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
     }
 
     .prompt-item:hover .prompt-actions,
@@ -87,8 +87,8 @@ export const galleryStyles = css`
     .custom-prompt-input {
         width: 100%;
         padding: 8px;
-        ${themeStyles.border.normal}
-        ${themeStyles.borderRadius.small}
+        border: ${themeStyles.border.normal};
+        border-radius: ${themeStyles.borderRadius.small};
         background: ${themeColors.uiBackground};
         color: ${themeColors.uiFont};
         font-family: ${themeFonts.familyMono};
@@ -119,7 +119,7 @@ export const galleryButtonStyles = css`
         padding: 4px 8px;
         cursor: pointer;
         border: none;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         align-items: center;
         justify-content: center;
         color: ${themeColors.cleanWhite};

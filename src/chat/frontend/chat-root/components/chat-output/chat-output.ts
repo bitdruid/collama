@@ -63,6 +63,7 @@ export class ChatOutput extends LitElement {
     @property({ type: Array }) messages: ChatHistory[] = [];
     @property({ type: Number }) contextStartIndex: number = 0;
     @property({ type: Boolean }) isGenerating: boolean = false;
+    @property({ type: Boolean }) showLoadingDots: boolean = false;
     @property({ type: Boolean }) showThinking: boolean = false;
     @state() editingIndex: number | null = null;
 
@@ -163,8 +164,10 @@ export class ChatOutput extends LitElement {
 
     updated(changed: Map<string, unknown>) {
         if ((changed.has("messages") || changed.has("isGenerating")) && this._stickyScroll) {
+            // Instant scroll while streaming; Smooth only when idle.
+            const behavior = this.isGenerating ? "auto" : "smooth";
             requestAnimationFrame(() => {
-                this.scrollTo({ top: this.scrollHeight, behavior: "smooth" });
+                this.scrollTo({ top: this.scrollHeight, behavior });
             });
         }
         if ((changed.has("messages") || changed.has("isGenerating")) && !this.isGenerating) {
@@ -269,7 +272,7 @@ export class ChatOutput extends LitElement {
                         });
                     },
                 )}
-                ${this.isGenerating ? html`<collama-loading-dots visible></collama-loading-dots>` : ""}
+                ${this.showLoadingDots ? html`<collama-loading-dots visible></collama-loading-dots>` : ""}
             </div>
         `;
     }

@@ -20,7 +20,7 @@ export const actionButtonStyles = css`
         height: 28px;
         padding: 0;
         border: none;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         color: ${themeColors.cleanWhite};
         cursor: pointer;
         transition: background-color 0.15s ease;

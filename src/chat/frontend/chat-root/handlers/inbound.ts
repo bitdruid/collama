@@ -10,6 +10,7 @@ export function createInboundDispatcher(host: ChatRoot) {
     const handlers: Record<string, (m: any) => void> = {
         init: (m) => handleInit(host, m),
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
+        "agent-inject-message": (m) => handleAgentInjectMessage(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "agent-error": (m) => handleAgentError(host, m),
         "agent-reasoning": (m) => handleAgentReasoning(host, m),
@@ -114,6 +115,14 @@ function handleAgentAddMessage(host: ChatRoot, msg: any) {
     host.syncMessages();
 }
 
+/** Inserts a mid-run user interjection at the index the backend reserved before the next turn. */
+function handleAgentInjectMessage(host: ChatRoot, msg: any) {
+    host.chatContext?.replaceRange(msg.index, msg.index, [msg.message]);
+    host.syncMessages();
+    // The real message now renders in-stream; drop its pending banner by id.
+    host.pendingIntercepts = host.pendingIntercepts.filter((p) => p.id !== msg.injectId);
+}
+
 /** Attaches tool-call metadata to the assistant message that initiated the tool run. */
 function handleAgentToolCalls(host: ChatRoot, msg: any) {
     const target = host.chatContext?.getMsgByIndex(msg.index);
@@ -147,6 +156,8 @@ function handleChatComplete(host: ChatRoot, msg: any) {
     host.isSummarizing = false;
     host.agentToken = 0;
     host.hasTokenData = false;
+    // Run ended — clear any intercepts that never got drained (e.g. after a cancel).
+    host.pendingIntercepts = [];
     host.contextUsed = msg.contextUsed ?? 0;
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
     host.completeAutoSummaryContextUpdate();
@@ -158,6 +169,7 @@ function handleAgentError(host: ChatRoot, msg: any) {
     host.isSummarizing = false;
     host.agentToken = 0;
     host.hasTokenData = false;
+    host.pendingIntercepts = [];
 
     const errorMessage = (msg.errorMessage || "").trim().replace(/^--- ERROR ---\s*/, "");
     const history = (msg.exportedChat || "").trim();

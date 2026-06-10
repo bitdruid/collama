@@ -62,8 +62,8 @@ export const sliderStyles = css`
         height: 12px;
         margin: 0;
         padding: 0;
-        ${themeStyles.border.normal}
-        ${themeStyles.borderRadius.round}
+        border: ${themeStyles.border.normal};
+        border-radius: ${themeStyles.borderRadius.round};
         background: linear-gradient(
             to right,
             ${themeColors.submit} 0%,
@@ -77,7 +77,7 @@ export const sliderStyles = css`
 
     .slider-input::-webkit-slider-runnable-track {
         height: 10px;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         background: transparent;
     }
 
@@ -86,7 +86,7 @@ export const sliderStyles = css`
         height: 12px;
         margin-top: -1px;
         border: 0;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         background: ${themeColors.uiFont};
         appearance: none;
         transition:
@@ -96,7 +96,7 @@ export const sliderStyles = css`
 
     .slider-input::-moz-range-track {
         height: 10px;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         background: transparent;
     }
 
@@ -104,7 +104,7 @@ export const sliderStyles = css`
         width: 12px;
         height: 12px;
         border: 0;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         background: ${themeColors.uiFont};
         transition:
             background 0.15s ease,
@@ -136,7 +136,7 @@ export const sliderStyles = css`
         top: 50%;
         width: 4px;
         height: 4px;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         background: ${themeColors.placeholder};
         opacity: 0.8;
         transform: translate(-50%, -50%);

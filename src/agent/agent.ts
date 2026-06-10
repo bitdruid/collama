@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { buildAgentOptions, emptyStop, LlmChatSettings, LlmClientFactory, ToolCall } from "../common/client";
-import { ChatContext } from "../common/context-chat";
+import { ChatContext, ChatHistory } from "../common/context-chat";
 import { getAgentTemplate } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import { userConfig } from "../config";
@@ -19,6 +19,8 @@ export class Agent {
     private client: LlmClientFactory;
     private abortController: AbortController | null = null;
     private agentMode: AgentMode;
+    /** User messages queued mid-run via {@link injectMessage}, drained at the next turn boundary. */
+    private injected: { message: ChatHistory; id: string }[] = [];
 
     /**
      * Creates a new Agent instance.
@@ -48,6 +50,39 @@ export class Agent {
     }
 
     /**
+     * Queues a user message to be injected into the running loop without stopping it.
+     * The message is appended to the history at the next turn boundary (after the current
+     * turn's tools resolve), so the following turn sees the interjection.
+     * @param content - The user message content (with any contexts already embedded).
+     * @param customKeys - Optional display metadata (e.g. attached contexts) for the webview.
+     * @param id - Correlation id so the webview can match the pending ghost on drain/cancel.
+     */
+    injectMessage(content: string, customKeys: ChatHistory["customKeys"] | undefined, id: string): void {
+        this.injected.push({ message: { role: "user", content, customKeys }, id });
+    }
+
+    /** Removes a still-queued interjection by id (no-op if it already drained). */
+    cancelInjected(id: string): void {
+        this.injected = this.injected.filter((q) => q.id !== id);
+    }
+
+    /**
+     * Drains queued interjections into the history and notifies the host so it can render them.
+     * Called at the top of the loop, before the next turn is built.
+     * @param history - The agent's live conversation history.
+     * @param onEvent - Optional callback for agent events.
+     */
+    private drainInjected(history: ChatContext, onEvent?: (event: AgentEvent) => void) {
+        if (this.injected.length === 0) {
+            return;
+        }
+        for (const { message, id } of this.injected.splice(0)) {
+            history.push(message);
+            onEvent?.({ type: "agent-injected", message, injectId: id });
+        }
+    }
+
+    /**
      * Executes the agent work loop, processing messages and handling tool calls.
      * @param messages - The chat context containing conversation history.
      * @param onChunk - Callback for streaming response chunks.
@@ -71,10 +106,21 @@ export class Agent {
                             break;
                         }
 
+                        // Pull in any user messages queued mid-run so the upcoming turn sees them.
+                        this.drainInjected(history, onEvent);
+
                         const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
                         if (result.toolCalls.length === 0) {
-                            break;
+                            // Agent is done — unless the user interjected while it was answering.
+                            if (this.injected.length === 0) {
+                                break;
+                            }
+                            // Persist the streamed final answer, open a fresh assistant slot, and
+                            // loop so the next turn responds to the interjection.
+                            history.push({ role: "assistant", content: result.content });
+                            onEvent?.({ type: "agent-new-assistant" });
+                            continue;
                         }
 
                         history.push({ role: "assistant", content: result.content, tool_calls: result.toolCalls });

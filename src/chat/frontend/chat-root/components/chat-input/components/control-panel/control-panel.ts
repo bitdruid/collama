@@ -53,9 +53,7 @@ export class ControlPanel extends LitElement {
     }
 
     private _handleSubmit() {
-        if (this.isGenerating) {
-            return;
-        }
+        // While generating, this emits an intercept; onSubmit branches on isGenerating.
         emit(this, "submit", { value: this.userInput, contexts: this.contexts });
         this.userInput = "";
         this.contexts = [];
@@ -85,12 +83,12 @@ export class ControlPanel extends LitElement {
                     .value=${this.userInput}
                     @input=${this._handleInput}
                     @keydown=${this._handleKeyDown}
-                    placeholder="Chat with AI..."
-                    ?disabled=${this.isGenerating}
+                    placeholder=${this.isGenerating ? "Add to the running agent…" : "Chat with AI..."}
                 ></textarea>
 
                 <collama-control-panel-buttons
                     .contexts=${this.contexts}
+                    .hasInput=${this.userInput.trim().length > 0}
                     .isGenerating=${this.isGenerating}
                     .isSummarizing=${this.isSummarizing}
                     .agentToken=${this.agentToken}

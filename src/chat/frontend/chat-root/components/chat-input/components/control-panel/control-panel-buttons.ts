@@ -24,6 +24,7 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @property({ type: Boolean }) autoAccept = false;
+    @property({ type: Boolean }) hasInput = false;
     @state() private showContextTree = false;
     @state() private showGallery = false;
     @state() private showClearConfirm = false;
@@ -39,6 +40,9 @@ export class ControlPanelButtons extends LitElement {
 
     private handleAutoAccept = () => this._handleAutoAccept();
     private handleConvertToGhost = () => {
+        if (this.isGenerating) {
+            return;
+        }
         if (this.isGhost) {
             emit(this, "convert-to-ghost");
         } else {
@@ -47,7 +51,12 @@ export class ControlPanelButtons extends LitElement {
     };
     private handleConvertGhostConfirmed = () => emit(this, "convert-to-ghost");
     private handleConvertGhostClose = () => (this.showConvertGhostConfirm = false);
-    private handleClearChat = () => (this.showClearConfirm = true);
+    private handleClearChat = () => {
+        if (this.isGenerating) {
+            return;
+        }
+        this.showClearConfirm = true;
+    };
     private handleClearChatConfirmed = () => emit(this, "clear-chat");
     private handleClearConfirmClose = () => (this.showClearConfirm = false);
     private handleToggleContextTree = () => this._toggleContextTree();
@@ -58,7 +67,12 @@ export class ControlPanelButtons extends LitElement {
         emit(this, "cancel");
     };
     private handleToggleGallery = () => (this.showGallery = true);
-    private handleSummarizeConversation = () => emit(this, "summarize-conversation");
+    private handleSummarizeConversation = () => {
+        if (this.isGenerating) {
+            return;
+        }
+        emit(this, "summarize-conversation");
+    };
     private handleSubmitClick = () => emit(this, "submit-click");
     private handlePopupClose = () => (this.showContextTree = false);
     private handleGalleryPopupClose = () => (this.showGallery = false);
@@ -193,6 +207,7 @@ export class ControlPanelButtons extends LitElement {
                 title=${this.isGhost ? "Convert to stored chat" : "Convert to temp chat"}
                 data-base-overlay-anchor
                 ?active=${this.isGhost}
+                ?disabled=${this.isGenerating}
                 @click=${this.handleConvertToGhost}
             >
                 ${themeIcons.ghostChat.medium}
@@ -209,7 +224,12 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderClearChat() {
         return html`
-            <button-clear-chat title="Clear conversation" data-base-overlay-anchor @click=${this.handleClearChat}>
+            <button-clear-chat
+                title="Clear conversation"
+                data-base-overlay-anchor
+                ?disabled=${this.isGenerating}
+                @click=${this.handleClearChat}
+            >
                 ${themeIcons.trash.medium}
             </button-clear-chat>
             ${this.showClearConfirm
@@ -224,7 +244,11 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderCompress() {
         return html`
-            <button-compress title="Summarize conversation" @click=${this.handleSummarizeConversation}>
+            <button-compress
+                title="Summarize conversation"
+                ?disabled=${this.isGenerating}
+                @click=${this.handleSummarizeConversation}
+            >
                 ${themeIcons.compress.medium}
             </button-compress>
         `;
@@ -236,21 +260,37 @@ export class ControlPanelButtons extends LitElement {
         `;
     }
 
-    render() {
-        if (this.isGenerating) {
-            return html`
-                <button-row>
-                    <span class="spacer"></span> ${this._renderTokenCounter()} ${this._renderDurationCounter()}
-                    ${this._renderAutoAccept()} ${this._renderCancel()}
-                </button-row>
-            `;
-        }
+    private _renderIntercept() {
+        return html`
+            <button-intercept title="Intercept with a follow-up message" @click=${this.handleSubmitClick}>
+                ${themeIcons.betweenHorizontalStart.medium}
+            </button-intercept>
+        `;
+    }
 
+    /**
+     * Rightmost action button morphs by state: submit when idle, intercept while streaming with
+     * text typed (queue it into the loop), otherwise cancel to stop the run.
+     */
+    private _renderActionButton() {
+        if (!this.isGenerating) {
+            return this._renderSubmit();
+        }
+        if (this.hasInput && !this.isSummarizing) {
+            return this._renderIntercept();
+        }
+        return this._renderCancel();
+    }
+
+    render() {
+        // One stable row in all states; unusable buttons are disabled/greyed rather than removed,
+        // and the trailing action button morphs (submit ↔ cancel ↔ intercept).
         return html`
             <button-row>
                 ${this._renderGhostChat()} ${this._renderClearChat()} <span class="spacer"></span>
+                ${this.isGenerating ? html`${this._renderTokenCounter()} ${this._renderDurationCounter()}` : ""}
                 ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
-                ${this._renderAutoAccept()} ${this._renderSubmit()}
+                ${this._renderAutoAccept()} ${this._renderActionButton()}
             </button-row>
         `;
     }

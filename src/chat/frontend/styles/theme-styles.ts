@@ -1,29 +1,17 @@
-import { css } from "lit";
+import { css, unsafeCSS } from "lit";
 import { themeColors } from "./theme-colors";
 import { themeFonts } from "./theme-fonts";
 
 const borderRadius = {
-    small: css`
-        border-radius: 4px;
-    `,
-    medium: css`
-        border-radius: 6px;
-    `,
-    large: css`
-        border-radius: 8px;
-    `,
-    round: css`
-        border-radius: 999px;
-    `,
+    small: unsafeCSS("6px"),
+    medium: unsafeCSS("6px"),
+    large: unsafeCSS("8px"),
+    round: unsafeCSS("999px"),
 } as const;
 
 const border = {
-    normal: css`
-        border: 1px solid ${themeColors.uiBorder};
-    `,
-    dimm: css`
-        border: 1px solid ${themeColors.uiBorderDimm};
-    `,
+    normal: css`1px solid ${themeColors.uiBorder}`,
+    dimm: css`1px solid ${themeColors.uiBorderDimm}`,
 } as const;
 
 const focus = css`
@@ -46,7 +34,7 @@ const input = css`
     flex: 1;
     padding: 6px 8px;
     border: none;
-    ${borderRadius.large}
+    border-radius: ${borderRadius.large};
     background: ${themeColors.uiBackground};
     color: ${themeColors.uiFont};
     font-size: ${themeFonts.size.normal};
@@ -58,10 +46,12 @@ const textarea = css`
     flex: 1;
     width: 100%;
     padding: 8px;
-    ${borderRadius.large}
+    border-radius: ${borderRadius.large};
     background: ${themeColors.uiBackground};
     color: ${themeColors.uiFont};
     font-size: ${themeFonts.size.user};
+    /* Line-height explicit needed for auto-grow; else is "normal"; breaks the adjustTextareaRows (parseFloat("normal") → NaN). */
+    line-height: ${themeFonts.lineHeight.normal};
     border: none;
     resize: vertical;
     overflow: hidden;

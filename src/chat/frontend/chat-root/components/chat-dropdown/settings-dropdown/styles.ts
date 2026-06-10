@@ -57,7 +57,7 @@ export const settingsDropdownStyles = css`
         padding: 2px 8px;
         border-radius: 999px;
         background: ${themeColors.uiBackground};
-        ${themeStyles.border.normal}
+        border: ${themeStyles.border.normal};
         text-decoration: none;
     }
 

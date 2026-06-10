@@ -11,8 +11,8 @@ export const scrollDownButtonStyles = css`
         justify-content: center;
         width: 32px;
         height: 32px;
-        ${themeStyles.borderRadius.round}
-        ${themeStyles.border.dimm}
+        border-radius: ${themeStyles.borderRadius.round};
+        border: ${themeStyles.border.dimm};
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         cursor: pointer;

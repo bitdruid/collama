@@ -1,7 +1,7 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { adjustTextareaRows } from "../../utils";
 import { themeColors, themeFonts, themeIcons, themeStyles } from "../../../styles";
+import { adjustTextareaRows } from "../../utils";
 
 const editStyles = css`
     :host {
@@ -31,7 +31,7 @@ const editStyles = css`
         justify-content: center;
         padding: 4px 12px;
         border: none;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         font-size: ${themeFonts.size.normal};
         line-height: 1;
         vertical-align: middle;

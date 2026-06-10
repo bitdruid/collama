@@ -34,14 +34,14 @@ export const accordionStyles = [
         /* Clip-layer to round the scrollbar of the child-element */
         .accordion-body-clip {
             overflow: hidden;
-            ${themeStyles.borderRadius.large}
+            border-radius: ${themeStyles.borderRadius.large};
         }
 
         /* Border collapses inside to clip to zero (not viewable then) with own radius */
         .accordion-body-content {
             background: ${themeColors.uiBackgroundDimm};
-            ${themeStyles.border.dimm}
-            ${themeStyles.borderRadius.large}
+            border: ${themeStyles.border.dimm};
+            border-radius: ${themeStyles.borderRadius.large};
             max-height: 50vh;
             overflow-y: auto;
             overflow-x: auto;

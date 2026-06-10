@@ -26,7 +26,7 @@ export const outputStyles = [
         }
 
         .bubble-user {
-            ${themeStyles.border.normal}
+            border: ${themeStyles.border.normal};
             background: ${themeColors.uiBackground};
         }
 
@@ -35,9 +35,20 @@ export const outputStyles = [
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin: -8px -8px 4px -8px;
+            margin: -8px -8px 0px -8px;
             padding: 2px 8px;
-            border: ${themeStyles.border.normal};
+            border-bottom: ${themeStyles.border.normal};
+        }
+
+        .user-content {
+            margin-top: 6px;
+        }
+        .user-content p {
+            margin: 0;
+        }
+        .user-content pre {
+            margin: 8px 0;
+            white-space: pre;
         }
 
         .role-datetime {
@@ -62,7 +73,7 @@ export const outputStyles = [
             gap: 4px;
             padding: 2px;
             border: none;
-            ${themeStyles.borderRadius.small}
+            border-radius: ${themeStyles.borderRadius.small};
             background: transparent;
             color: ${themeColors.uiFont};
             font-size: ${themeFonts.size.small};
@@ -102,18 +113,9 @@ export const outputStyles = [
 
         .bubble {
             padding: 8px;
-            ${themeStyles.borderRadius.large}
+            border-radius: ${themeStyles.borderRadius.large};
             overflow-x: auto;
             max-width: 100%;
-        }
-
-        .bubble > p {
-            margin: 0;
-        }
-
-        .bubble > pre {
-            margin: 8px 0;
-            white-space: pre;
         }
 
         table {
@@ -128,7 +130,7 @@ export const outputStyles = [
 
         th,
         td {
-            ${themeStyles.border.normal}
+            border: ${themeStyles.border.normal};
             padding: 6px 10px;
             text-align: left;
         }
@@ -151,9 +153,10 @@ export const outputStyles = [
             scroll-behavior: smooth;
         }
 
+        /* loading dots under the streaming text and scroll with it */
         collama-loading-dots {
             display: block;
-            margin: 24px 0 24px 8px;
+            margin: 24px 0 24px 24px;
         }
 
         .warning-icon {

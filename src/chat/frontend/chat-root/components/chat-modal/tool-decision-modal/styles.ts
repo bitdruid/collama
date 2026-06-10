@@ -18,11 +18,11 @@ export const toolDecisionStyles = css`
         text-align: left;
         padding: 8px 12px;
         cursor: pointer;
-        ${themeStyles.border.dimm}
+        border: ${themeStyles.border.dimm};
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.size.normal};
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
     }
 
     .decision-option:hover {

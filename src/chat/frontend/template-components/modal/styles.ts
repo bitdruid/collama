@@ -15,8 +15,8 @@ export const baseModalStyles = css`
         padding: 16px;
         margin-bottom: 8px;
         overflow: auto;
-        ${themeStyles.borderRadius.large}
-        ${themeStyles.border.dimm}
+        border-radius: ${themeStyles.borderRadius.large};
+        border: ${themeStyles.border.dimm};
         background: ${themeColors.uiBackgroundDimm};
         ${themeStyles.boxShadow}
         ${themeAnimations.fadeAnimate}

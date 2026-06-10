@@ -39,7 +39,7 @@ export const settingsButtonStyles = css`
         right: 3px;
         width: ${themeFonts.size.small};
         height: ${themeFonts.size.small};
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         background-color: ${themeColors.usageDanger};
         box-shadow: 0 1px 3px ${themeColors.uiShadow};
     }

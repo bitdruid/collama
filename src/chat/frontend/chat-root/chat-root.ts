@@ -1,18 +1,19 @@
 import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext, ChatContext, ChatHistory } from "../../../common/context-chat";
-import { BaseDropdown } from "../template-components/dropdown/base-dropdown";
 import {
     defaultChatSettings,
-    type ChatSettings,
     type ChatSession,
+    type ChatSettings,
     type ToolConfirmRequest,
     type ToolDecisionRequest,
 } from "../../shared";
+import { BaseDropdown } from "../template-components/dropdown/base-dropdown";
 import "./components/chat-dropdown";
 import { ChatSessionStore } from "./components/chat-header/chat-session-store";
 import "./components/chat-modal";
 import "./components/chat-notification/context-notification/context-notification";
+import "./components/chat-pending-intercept/chat-pending-intercept";
 import { createInboundDispatcher } from "./handlers/inbound";
 import {
     onAcquireAutoSummaryAccept,
@@ -31,6 +32,7 @@ import {
     onExportSession,
     onExportSessionHtml,
     onImportSession,
+    onInterceptCancel,
     onNearBottomChanged,
     onNewChat,
     onNewGhostChat,
@@ -75,6 +77,7 @@ export class ChatRoot extends LitElement {
     @state() config: ChatSettings = defaultChatSettings;
     @state() contextStartIndex: number = 0;
     @state() currentContexts: AttachedContext[] = [];
+    @state() pendingIntercepts: { id: string; text: string; contextCount: number }[] = [];
     @state() messages: ChatHistory[] = [];
     @state() showScrollButton: boolean = false;
     @state() toolConfirmRequest: ToolConfirmRequest | null = null;
@@ -97,6 +100,8 @@ export class ChatRoot extends LitElement {
     private _updateTimer: number | null = null;
     private _inputResizeObserver: ResizeObserver | null = null;
     private _lastInputHeight = 0;
+    private _pendingResizeObserver: ResizeObserver | null = null;
+    private _lastPendingHeight = 0;
     private _messageHandler: ((e: MessageEvent) => void) | null = null;
     private _wasContextAtAutoSummaryThreshold = false;
     private _autoSummaryInProgress = false;
@@ -110,6 +115,9 @@ export class ChatRoot extends LitElement {
 
     @query("collama-scroll-down")
     private scrollDown!: HTMLElement;
+
+    @query(".bottom-overlay")
+    private bottomOverlay!: HTMLElement;
 
     @query("collama-session-dropdown, collama-settings-dropdown")
     private activeDropdownElement?: BaseDropdown;
@@ -131,6 +139,7 @@ export class ChatRoot extends LitElement {
     private handleSummarizeConversation = () => onSummarizeConversation(this);
     private handleAcquireAutoSummaryAccept = () => onAcquireAutoSummaryAccept(this);
     private handleContextCleared = (e: CustomEvent) => onContextCleared(this, e);
+    private handleInterceptCancel = (e: CustomEvent) => onInterceptCancel(this, e);
     private handleToolConfirmAccept = (e: CustomEvent) => onToolConfirmAccept(this, e);
     private handleToolConfirmAcceptAll = (e: CustomEvent) => onToolConfirmAcceptAll(this, e);
     private handleToolConfirmCancel = (e: CustomEvent) => onToolConfirmCancel(this, e);
@@ -254,6 +263,23 @@ export class ChatRoot extends LitElement {
             }
         });
         this._inputResizeObserver.observe(this.chatInput);
+
+        // The bottom overlay (pending-intercept banner) floats over the output's bottom. Reserve
+        // matching scroll padding (so the last message + in-flow loading dots clear it) and nudge
+        // scrollTop by the delta, keeping the visible content put instead of jumping — same
+        // approach as the input observer above.
+        if (this.bottomOverlay) {
+            this._pendingResizeObserver = new ResizeObserver(() => {
+                const height = this.bottomOverlay.getBoundingClientRect().height;
+                const delta = height - this._lastPendingHeight;
+                this._lastPendingHeight = height;
+                this.chatOutput.style.paddingBottom = height > 0 ? `${height}px` : "";
+                if (Math.abs(delta) > 1) {
+                    this.chatOutput.scrollTop += delta;
+                }
+            });
+            this._pendingResizeObserver.observe(this.bottomOverlay);
+        }
     }
 
     /**
@@ -265,6 +291,7 @@ export class ChatRoot extends LitElement {
     disconnectedCallback() {
         super.disconnectedCallback();
         this._inputResizeObserver?.disconnect();
+        this._pendingResizeObserver?.disconnect();
         if (this._messageHandler) {
             window.removeEventListener("message", this._messageHandler);
             this._messageHandler = null;
@@ -474,6 +501,8 @@ export class ChatRoot extends LitElement {
         const hasOutOfContextMessages = this.contextStartIndex > 0;
         const showContextNotification = hasOutOfContextMessages || this._shouldShowContextNotification();
         const contextNotificationKind = hasOutOfContextMessages ? "out-of-context" : "threshold";
+
+        const showLoadingDots = this.isGenerating && !this.snakeLoadingEnabled;
         return html`
             <collama-chatheader
                 .contextUsed=${this.contextUsed}
@@ -500,6 +529,7 @@ export class ChatRoot extends LitElement {
                         .messages=${this.messages}
                         .contextStartIndex=${this.contextStartIndex}
                         .isGenerating=${this.isGenerating}
+                        .showLoadingDots=${showLoadingDots}
                         .showThinking=${this.showThinking}
                         @resend-message=${this.handleResendMessage}
                         @edit-message=${this.handleEditMessage}
@@ -519,6 +549,12 @@ export class ChatRoot extends LitElement {
                         .visible=${this.showScrollButton}
                         @scroll-down=${this.handleScrollDown}
                     ></collama-scroll-down>
+                    <div class="bottom-overlay">
+                        <collama-pending-intercept
+                            .items=${this.pendingIntercepts}
+                            @cancel-intercept=${this.handleInterceptCancel}
+                        ></collama-pending-intercept>
+                    </div>
                 </div>
                 ${this.renderActiveModal()}
                 <collama-chatinput

@@ -20,7 +20,7 @@ export const toolConfirmStyles = css`
         line-height: 1;
         text-box: trim-both cap alphabetic;
         padding: 8px 12px;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         background: ${themeColors.settings};
         color: ${themeColors.cleanWhite};
         text-transform: capitalize;
@@ -40,7 +40,7 @@ export const toolConfirmStyles = css`
         padding: 6px 12px;
         cursor: pointer;
         border: none;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         color: ${themeColors.cleanWhite};
     }
 
@@ -56,7 +56,7 @@ export const toolConfirmStyles = css`
         padding: 6px 12px;
         cursor: pointer;
         border: none;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         color: ${themeColors.cleanWhite};
     }
     .btn-send:hover {
@@ -73,9 +73,9 @@ export const toolConfirmStyles = css`
         font-size: ${themeFonts.size.small};
         color: ${themeColors.uiFont};
         padding: 6px 8px;
-        ${themeStyles.borderRadius.small}
+        border-radius: ${themeStyles.borderRadius.small};
         background: ${themeColors.uiBackgroundDimm};
-        ${themeStyles.border.dimm}
+        border: ${themeStyles.border.dimm};
         white-space: nowrap;
         overflow-x: auto;
         overflow-y: hidden;

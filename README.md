@@ -49,10 +49,11 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - **Send to chat from file tree** — right-click files/folders in VSCode explorer
 - Real-time context usage bar with automatic trimming
 - Edit messages, copy sessions, scroll navigation
-- Export chat history to JSON for backup and sharing
+- Import/export chat history as JSON for backup and sharing
 - Auto-accept all toggle for edits and creates to streamline workflow
 - Summarize individual turns or entire conversations to reduce context usage
 - **AGENTS.md support** — define custom agent rules by placing an `AGENTS.md` file in your project root
+- **Intercept a running agent** — queue a follow-up message while the agent is still working; it's injected at the next turn boundary without interrupting the current one
 
 **AI Agent with Tool Calling**
 - Tools for filesystem, git, and code diagnostics (see [Available Tools](#ai-agent-usage))
@@ -99,7 +100,8 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 | `collama.suggestMode`                  | string  | `inline`                 | Suggestion style: `inline`, `multiline`, or `multiblock` |
 | `collama.suggestDelay`                 | number  | `1500`                   | Delay (ms) before requesting completion                  |
 | `collama.verbosityMode`                | string  | `medium`                 | Chat response detail: `compact`, `medium`, or `detailed` |
-| `collama.agenticMode`                  | string  | `plain`                  | Agent mode: `plain`, `lite`, or `default`                |
+| `collama.agenticMode`                  | boolean | `true`                   | Use agentic (tool use) mode for chat                     |
+| `collama.liteMode`                     | boolean | `false`                  | Reduce the agent system prompt for small/weak models     |
 | `collama.enableEditTools`              | boolean | `true`                   | Enable edit tools (read-only mode when disabled)         |
 | `collama.enableShellTool`              | boolean | `false`                  | Enable shell tool usage                                  |
 | `collama.tlsRejectUnauthorized`        | boolean | `true`                   | Verify TLS certificates for HTTPS endpoints              |

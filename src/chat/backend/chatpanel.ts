@@ -5,7 +5,7 @@ import { resolveToolDecision } from "../../agent/tools/decision";
 import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../../agent/tools/confirm";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
-import { ChatContext, ChatHistory } from "../../common/context-chat";
+import { AttachedContext, ChatContext, ChatHistory } from "../../common/context-chat";
 import { parseContextUri } from "../../common/context-editor";
 import { getChatSettings, userConfig } from "../../config";
 import { logMsg } from "../../logging";
@@ -69,6 +69,8 @@ export class ChatPanel {
         "summarize-request": (msg, webview) =>
             handleSummarizeRequest(msg, webview, this.sessionManager, this.agentRunner),
         "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
+        "chat-intercept": (msg) => this.handleChatIntercept(msg),
+        "chat-intercept-cancel": (msg) => this.agentRunner.cancelInjected(msg.id),
         "context-search": (msg, webview) => handleContextSearch(msg, webview),
         "context-add": (msg, webview) => addContext(parseContextUri(msg.relativePath), webview),
         "config-update-request": (msg, webview) => this.handleConfigUpdateRequest(msg, webview),
@@ -267,6 +269,20 @@ export class ChatPanel {
     }
 
     /**
+     * Queues a user interjection into the running agent loop. The message is inserted at the
+     * next turn boundary via the `agent-injected` event; if no agent is running it is ignored
+     * (the frontend only sends this while generating).
+     */
+    private handleChatIntercept(msg: { content: string; contexts?: AttachedContext[]; id: string }) {
+        if (!this.agentRunner.isRunning()) {
+            return;
+        }
+        const customKeys = msg.contexts && msg.contexts.length > 0 ? { contexts: msg.contexts } : undefined;
+        this.agentRunner.injectMessage(msg.content, customKeys, msg.id);
+        logMsg("Intercept queued into running agent loop");
+    }
+
+    /**
      * Handles a new chat request from the user.
      */
     private async handleChatRequest(msg: { messages: ChatHistory[]; sessionId: string }, webview: vscode.Webview) {
@@ -388,6 +404,37 @@ export class ChatPanel {
                         type: "agent-tool-calls",
                         index: currentIndex,
                         toolCalls: event.toolCalls as ToolCall[],
+                    });
+                }
+
+                if (event.type === "agent-injected") {
+                    // Insert the user interjection just before the trailing empty assistant slot,
+                    // then re-point currentIndex at that assistant for the upcoming turn's stream.
+                    const message = event.message as ChatHistory;
+                    this.sessionManager.updateSession(session, (s) => {
+                        s.messages.replaceRange(currentIndex, currentIndex, [message]);
+                    });
+                    webview.postMessage({
+                        type: "agent-inject-message",
+                        index: currentIndex,
+                        message,
+                        injectId: event.injectId,
+                    });
+                    currentIndex++;
+                }
+
+                if (event.type === "agent-new-assistant") {
+                    // The final answer slot was filled; open a fresh assistant slot for the
+                    // post-interjection turn (mirrors the toolLastCall slot creation).
+                    currentIndex++;
+                    this.sessionManager.updateSession(session, (s) => {
+                        s.messages.replaceRange(currentIndex, currentIndex, [
+                            { role: "assistant" as const, content: "" },
+                        ]);
+                    });
+                    webview.postMessage({
+                        type: "agent-add-message",
+                        message: { role: "assistant", content: "" },
                     });
                 }
             },

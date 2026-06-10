@@ -37,7 +37,7 @@ export const contextTreeStyles = css`
         height: 20px;
         margin-left: 4px;
         flex-shrink: 0;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         border: none;
         background: transparent;
         color: ${themeColors.uiFont};
@@ -117,7 +117,7 @@ export const contextTreeStyles = css`
         height: 22px;
         margin-left: 6px;
         flex-shrink: 0;
-        ${themeStyles.borderRadius.round}
+        border-radius: ${themeStyles.borderRadius.round};
         border: none;
         background: ${themeColors.context};
         color: ${themeColors.cleanWhite};
