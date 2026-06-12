@@ -25,32 +25,35 @@ type PromptTemplate = (p: PromptParams) => string;
  */
 export const contextCommand_Template: PromptTemplate = ({ instruction, snippet, fullContext, outputFormat }) => {
     const lines: string[] = [
-        "SYSTEM:",
-        "You are a senior software engineer.",
-        "",
-        "STRICT RULES:",
+        "<rules>",
         "- Never output full files",
         "- Never explain",
         "- You MUST output a full snippet",
+        "</rules>",
         "",
-        "===== TASK =====",
+        "<task>",
         "Edit the target snippet according to the instruction.",
+        "</task>",
         "",
     ];
 
     if (fullContext) {
-        lines.push("===== FULL CONTEXT (READ ONLY) =====", fullContext, "");
+        lines.push("<full_context>", fullContext, "</full_context>");
     }
 
     if (instruction) {
-        lines.push("===== INSTRUCTION =====", instruction, "");
+        lines.push("<instruction>", instruction, "</instruction>");
     }
 
     if (snippet) {
-        lines.push("===== TARGET SNIPPET =====", snippet, "");
+        lines.push("<target_snippet>", snippet, "</target_snippet>");
     }
 
-    lines.push("===== OUTPUT FORMAT =====", outputFormat ?? "Raw code without explanations in code fences.");
+    lines.push(
+        "<output_formatting>",
+        outputFormat ?? "Raw code without explanations in code fences.",
+        "</output_formatting>",
+    );
 
     return lines.join("\n");
 };
@@ -90,11 +93,13 @@ export const chatSummarize_Template: string = [
     "- Key details: file names, values, decisions, constraints",
     "",
     "Rules:",
-    "- Use Markdown: ## User Request; ## Assistant Answer",
+    "- Use Markdown: ## User Message; ## Assistant Message",
     "- Be concise but complete — keep every detail that matters",
     "- Past tense, neutral tone",
     "- No opinions, no new information",
     "- Never mention summary",
+    "- Only summarize messages that exist",
+    "- If a user message has no assistant reply, do not invent a message",
 ].join("\n");
 
 /**
@@ -114,26 +119,26 @@ export function getAgentTemplate(): string {
 function getLiteTemplate(): string {
     const lines: string[] = [];
 
-    // General
-    lines.push(...GENERAL.LITE);
+    // general
+    lines.push("<general>", ...GENERAL.LITE, "</general>");
 
-    // output formating
-    lines.push(...OUTPUT_FORMATING.LITE);
+    // output formatting
+    lines.push("", "<output_formatting>", ...OUTPUT_FORMATING.LITE, "</output_formatting>");
 
     // agent rules
     if (userConfig.agenticMode) {
-        lines.push("", ...AGENT_RULES.LITE);
+        lines.push("", "<agent_rules>", ...AGENT_RULES.LITE, "</agent_rules>");
     }
 
     // edit rules
     if (userConfig.agenticMode && userConfig.enableEditTools) {
-        lines.push("", ...EDIT_RULES.LITE);
+        lines.push("", "<edit_rules>", ...EDIT_RULES.LITE, "</edit_rules>");
     }
 
     // agents.md
     const agentsMd = getAgentsMdContent();
     if (agentsMd) {
-        lines.push("", "===== PROJECT AGENT RULES (AGENTS.md) =====", agentsMd);
+        lines.push("", "<project_agent_rules>", agentsMd, "</project_agent_rules>");
     }
 
     return lines.join("\n");
@@ -145,36 +150,49 @@ function getLiteTemplate(): string {
 function getDefaultTemplate(): string {
     const lines: string[] = [];
 
-    // General
-    lines.push(...GENERAL.DEFAULT);
+    // general
+    lines.push("<general>", ...GENERAL.DEFAULT, "</general>");
 
     // verbosity
-    lines.push(...VERBOSITY_RULES[userConfig.verbosityMode]);
+    lines.push("", "<output_verbosity>", ...VERBOSITY_RULES[userConfig.verbosityMode], "</output_verbosity>");
 
-    // output formating
-    lines.push(...OUTPUT_FORMATING.DEFAULT);
+    // output formatting
+    lines.push("", "<output_formatting>", ...OUTPUT_FORMATING.DEFAULT, "</output_formatting>");
 
     // agent rules
     if (userConfig.agenticMode) {
-        lines.push("", ...AGENT_RULES.DEFAULT);
+        lines.push("", "<agent_rules>", ...AGENT_RULES.DEFAULT, "</agent_rules>");
     }
 
     // edit rules
     if (userConfig.agenticMode && userConfig.enableEditTools) {
-        lines.push("", ...EDIT_RULES.DEFAULT);
+        lines.push("", "<edit_rules>", ...EDIT_RULES.DEFAULT, "</edit_rules>");
     }
+
+    // const skillsMd = getSkillsMdContent();
+    // if (skillsMd) {
+    //     lines.push("", "<agent_skills>", ...SKILLS_RULES, ...skillsMd, "</agent_skills>");
+    // }
 
     const agentsMd = getAgentsMdContent();
     if (agentsMd) {
-        lines.push("", "===== PROJECT AGENT RULES (AGENTS.md) =====", agentsMd);
+        lines.push("", "<agent_project_rules>", agentsMd, "</agent_project_rules>");
     }
 
     return lines.join("\n");
 }
 
 const GENERAL = {
-    DEFAULT: ["Don't hide your thinking. Keep it compact and output to the user instead."],
-    LITE: ["- Think compact; Output instead of thinking"],
+    DEFAULT: [
+        "Keep your reasoning brief and compact.",
+        "Reasoning is no response: You MUST always conclude with a separate final answer in your normal response.",
+        "If you notice a loop in your thinking choose a response and commit it to the user urgent.",
+    ],
+    LITE: [
+        "- Keep reasoning brief",
+        "- Reasoning is no response: Always write a separate final answer after reasoning",
+        "- Don't loop on reasoning; commit to best answer",
+    ],
 };
 
 const OUTPUT_FORMATING = {
@@ -187,6 +205,7 @@ const OUTPUT_FORMATING = {
         "- Separate every block element (heading, paragraph, list, code block) with a blank line.",
         "- No raw HTML. No horizontal rules. No setext-style headings (underline style).",
         "- Do not write code into tables.",
+        "- Use diff-blocks ```diff for suggested edits.",
         "- Do not use emojis - only plain text:",
         "   - ✅, ❌, ⚠️ allowed to approve or disapprove statements or circumstances.",
         "   - 🟢, 🟡, 🔴 allowed to categorize quality or severity.",
@@ -199,6 +218,7 @@ const OUTPUT_FORMATING = {
         "- Put a blank line before and after every heading, paragraph, list, and code block.",
         "- No HTML. No --- separators.",
         "- No code in tables.",
+        "- Diff-blocks '```diff' for suggested edits.",
         "- No emojis. Use plain text with ✅, ❌, ⚠️ to approve or disapprove; 🟢, 🟡, 🔴 to categorize quality",
         "- Output always relative filepaths in the workspace.",
     ],
@@ -242,7 +262,7 @@ const EDIT_RULES = {
         "Before you use tools, you have to tell the user what you are about to do. Your steps must be clarified.",
         "Finish your answer with a summary of your actions and the resulting conclusion.",
         "Respect the following rules when using tools to edit files or run shell commands:",
-        "1. Before you start editing: If multiple matches or approaches exist, the target location is ambiguous or a detail you need is missing use the decision-tool.",
+        "1. Before you start editing: If multiple solutions exist you must use the decision-tool..",
         "2. After you finished editing: Use the shell tool to lint/test/compile/build for validation.",
         "3. If you are not 100% sure, you are doing great if you ask the user with the decision-tool.",
         "4. Use the shell tool as last resort and always prefer native tools instead of shell commands.",

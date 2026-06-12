@@ -140,5 +140,4 @@ vite.config.ts.timestamp-*
 
 # custom
 *.vsix
-test.py
-test.ts
+test/
