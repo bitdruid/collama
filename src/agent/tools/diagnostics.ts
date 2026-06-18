@@ -1,7 +1,6 @@
 import path from "path";
 import * as vscode from "vscode";
-import { logMsg } from "../../logging";
-import { ToolAnswer, getWorkspaceRoot, isWithinRoot, toolError, toolSuccess } from "../tools";
+import { ToolAnswer, isWithinRoot, toolError, toolSuccess } from "../tools";
 
 const DIAGNOSTIC_SEVERITY: Record<number, string> = {
     0: "error",
@@ -76,7 +75,9 @@ async function runDiagnostics(root: string, filePath: string): Promise<ToolAnswe
     }
     const uri = vscode.Uri.file(fullPath);
     await vscode.workspace.openTextDocument(uri);
-    await waitForDiagnostics(uri);
+    // Short hard timeout: files without a language server never publish, and this runs
+    // inline after every write — cap the wasted wait instead of the tool's old 5s.
+    await waitForDiagnostics(uri, 1500);
     const filtered = vscode.languages
         .getDiagnostics(uri)
         .filter((d) => d.severity <= MAX_SEVERITY)
@@ -84,40 +85,31 @@ async function runDiagnostics(root: string, filePath: string): Promise<ToolAnswe
     return toolSuccess({ diagnostics: filtered, count: filtered.length });
 }
 
-export async function diagnostics_exec(args: { filePath: string }): Promise<ToolAnswer<DiagnosticsOutput>> {
-    logMsg(`Agent - use diagnostics-tool file=${args.filePath}`);
-
-    const root = getWorkspaceRoot();
-    if (!root) {
-        return toolError("No workspace root");
-    }
-
+/**
+ * Collects LSP errors/warnings for a file after a write. Never throws — returns empty on
+ * failure so a diagnostics hiccup can't fail an edit that already applied.
+ */
+async function collectFileDiagnostics(root: string, filePath: string): Promise<DiagnosticsOutput> {
     try {
-        return await runDiagnostics(root, args.filePath);
-    } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        return toolError(`diagnostics failed: ${msg}`);
+        const result = await runDiagnostics(root, filePath);
+        return result.output ?? { diagnostics: [], count: 0 };
+    } catch {
+        return { diagnostics: [], count: 0 };
     }
 }
 
-export const diagnostics_def = {
-    type: "function" as const,
-    function: {
-        name: "diagnostics",
-        description: "Returns LSP errors/warnings for a file. Call this after editing a file to verify the changes.",
-        parameters: {
-            type: "object",
-            properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence explaining why this tool call is needed for the user's request.",
-                },
-                filePath: {
-                    type: "string",
-                    description: "Path relative to workspace root.",
-                },
-            },
-            required: ["explanation", "filePath"],
-        },
-    },
-};
+/**
+ * Success answer for a file-writing tool, with the file's current LSP problems appended when
+ * present so the model sees its own errors without a follow-up call.
+ */
+export async function successWithDiagnostics(
+    root: string,
+    filePath: string,
+    message: string,
+): Promise<ToolAnswer<{ filePath: string; diagnostics?: DiagnosticEntry[] }>> {
+    const { diagnostics, count } = await collectFileDiagnostics(root, filePath);
+    return toolSuccess(
+        { filePath, ...(count > 0 && { diagnostics }) },
+        count > 0 ? `${message} File now has ${count} problem(s).` : message,
+    );
+}

@@ -33,7 +33,7 @@ const boxShadow = css`
 const input = css`
     flex: 1;
     padding: 6px 8px;
-    border: none;
+    border: ${border.dimm};
     border-radius: ${borderRadius.large};
     background: ${themeColors.uiBackground};
     color: ${themeColors.uiFont};

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { ChatContext, ChatHistory } from "../../../common/context-chat";
-import { chatSummarize_Template } from "../../../common/prompt";
+import { PromptConstructor } from "../../../common/prompt";
 import { populateMsgTokens } from "../../../common/tokenizer";
 import { AgentRunner } from "../agent-runner";
 import { recomputeContextState } from "../context-state";
@@ -18,7 +18,8 @@ async function summarizeText(
     webview: vscode.Webview,
     sourceMessages: ChatHistory[],
 ): Promise<string | null> {
-    const prompt = [...sourceMessages, { role: "user" as const, content: chatSummarize_Template }];
+    const summary = PromptConstructor.summaryTemplate();
+    const prompt = [summary.system, ...sourceMessages, summary.user];
     let text = "";
     const ok = await agentRunner.run({
         webview,
@@ -44,7 +45,6 @@ async function summarizeContent(
     agentRunner: AgentRunner,
     webview: vscode.Webview,
     sourceMessages: ChatHistory[],
-    promptTemplate: string,
     label: string,
 ): Promise<ChatHistory[] | null> {
     if (label === "Conversation") {
@@ -78,28 +78,33 @@ async function summarizeContent(
         return result;
     }
 
-    const summaryPrompt = [...sourceMessages, { role: "user" as const, content: promptTemplate }];
-    let summaryContent = "";
+    if (label === "Turn") {
+        const summary = PromptConstructor.summaryTemplate();
+        const summaryPrompt = [summary.system, ...sourceMessages, summary.user];
+        let summaryContent = "";
 
-    const ok = await agentRunner.run({
-        webview,
-        messages: new ChatContext(summaryPrompt),
-        onChunk: (chunk) => {
-            summaryContent += chunk;
-        },
-        mode: "plain",
-    });
-    if (!ok) {
-        return null;
+        const ok = await agentRunner.run({
+            webview,
+            messages: new ChatContext(summaryPrompt),
+            onChunk: (chunk) => {
+                summaryContent += chunk;
+            },
+            mode: "plain",
+        });
+        if (!ok) {
+            return null;
+        }
+
+        const fenced = `\`\`\`Summary: ${label}\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
+        const result: ChatHistory[] = [
+            { role: "user" as const, content: "Context summary:" },
+            { role: "assistant" as const, content: fenced },
+        ];
+        await populateMsgTokens(result);
+        return result;
     }
 
-    const fenced = `\`\`\`Summary: ${label}\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
-    const result: ChatHistory[] = [
-        { role: "user" as const, content: "Context summary:" },
-        { role: "assistant" as const, content: fenced },
-    ];
-    await populateMsgTokens(result);
-    return result;
+    return null;
 }
 
 /**
@@ -131,7 +136,7 @@ export async function handleSummarizeRequest(
     const isConversation = turnStart === 0 && turnEnd === session.messages.length();
     const label = isConversation ? "Conversation" : "Turn";
     const sourceMessages = session.messages.getMessages().slice(turnStart, turnEnd);
-    const summarized = await summarizeContent(agentRunner, webview, sourceMessages, chatSummarize_Template, label);
+    const summarized = await summarizeContent(agentRunner, webview, sourceMessages, label);
     if (summarized === null) {
         webview.postMessage({ type: "summary-error", isConversation });
         webview.postMessage({

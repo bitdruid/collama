@@ -130,10 +130,6 @@ export const gitLog_def = {
         parameters: {
             type: "object",
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence explaining why this tool call is needed for the user's request.",
-                },
                 mode: {
                     type: "string",
                     description: "'commits' (default) to list commits, 'branches' to list branches.",
@@ -156,7 +152,7 @@ export const gitLog_def = {
                     description: "Include remote branches (default false). Only for mode 'branches'.",
                 },
             },
-            required: ["explanation"],
+            required: [],
         },
     },
 };
@@ -255,10 +251,6 @@ export const gitDiff_def = {
         parameters: {
             type: "object",
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence explaining why this tool call is needed for the user's request.",
-                },
                 fromCommit: {
                     type: "string",
                     description: "Starting commit hash or branch name. If omitted, shows working tree changes instead.",
@@ -276,7 +268,7 @@ export const gitDiff_def = {
                     description: "Filter the diff to a specific file (relative to workspace root).",
                 },
             },
-            required: ["explanation"],
+            required: [],
         },
     },
 };

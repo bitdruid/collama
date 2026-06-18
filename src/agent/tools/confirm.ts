@@ -23,6 +23,7 @@ export function requestToolConfirm(
     action: string,
     filePath: string,
     explanation: string,
+    dangerous = false,
 ): Promise<{ value: string | null; reason: string }> {
     const webview = getWebview();
     if (!webview) {
@@ -31,7 +32,7 @@ export function requestToolConfirm(
     const id = String(++_idCounter);
     return new Promise((resolve) => {
         _pending.set(id, resolve);
-        webview.postMessage({ type: "tool-confirm-request", id, action, filePath, explanation });
+        webview.postMessage({ type: "tool-confirm-request", id, action, filePath, explanation, dangerous });
     });
 }
 

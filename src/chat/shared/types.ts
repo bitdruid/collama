@@ -49,6 +49,7 @@ export interface ToolConfirmRequest {
     action: string;
     filePath: string;
     explanation: string;
+    dangerous?: boolean;
 }
 
 /**

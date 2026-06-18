@@ -83,7 +83,7 @@ export const themeColors = {
 
     /* Usage Bar Colors */
     usagePrimary: unsafeCSS("#4ec9b0"),
-    usageWarning: unsafeCSS("#cca700"),
+    usageWarning: unsafeCSS("#b19000"),
     usageDanger: unsafeCSS("#f14c4c"),
 
     /* Shadow Color */

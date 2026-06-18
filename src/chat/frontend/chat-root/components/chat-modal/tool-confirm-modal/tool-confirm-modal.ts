@@ -3,8 +3,8 @@ import { customElement, property, query, state } from "lit/decorators.js";
 
 import type { ToolConfirmRequest } from "../../../../../shared";
 import { themeIcons } from "../../../../styles";
-import "../../../../template-components/action-button";
 import "../../../../template-components/banner";
+import "../../../../template-components/button-box";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
 import { buildOpenFileCommandUri } from "../../../utils";
 import { toolConfirmStyles } from "./styles";
@@ -103,6 +103,24 @@ export class ToolConfirmModal extends BaseModal {
         this._cancelReason = "";
     }
 
+    protected override renderTitle() {
+        if (!this.request) {
+            return html`${this.title}`;
+        }
+        return html`<span class="confirm-action">${this.request.action}</span>`;
+    }
+
+    protected override renderHeaderExtra() {
+        if (!this.request?.dangerous) {
+            return html``;
+        }
+        return html`<collama-button-box
+            variant="warning"
+            .icon=${themeIcons.alertTriangle.medium}
+            title="Check this shell command twice"
+        ></collama-button-box>`;
+    }
+
     protected override renderContent() {
         if (!this.request) {
             return html``;
@@ -113,15 +131,12 @@ export class ToolConfirmModal extends BaseModal {
                 ${this.request.explanation
                     ? html`<collama-banner type="info" .description=${this.request.explanation}></collama-banner>`
                     : null}
-                <div class="confirm-summary">
-                    <span class="confirm-action">${this.request.action}</span>
-                    <a
-                        class="confirm-filepath"
-                        href="${buildOpenFileCommandUri(this.request.filePath)}"
-                        title="${this.request.filePath}"
-                        >${this.request.filePath}</a
-                    >
-                </div>
+                <a
+                    class="confirm-filepath ${this.request.dangerous ? "danger" : ""}"
+                    href="${buildOpenFileCommandUri(this.request.filePath)}"
+                    title="${this.request.filePath}"
+                    >${this.request.filePath}</a
+                >
 
                 ${this._showCancelInput
                     ? html`
@@ -141,9 +156,10 @@ export class ToolConfirmModal extends BaseModal {
 
                 <div class="confirm-buttons">
                     <collama-accept-button title="Accept" @action=${this.handleAccept}></collama-accept-button>
-                    <button class="confirm-btn btn-accept-all" @click=${this.handleAcceptAll} title="Accept All">
-                        ${themeIcons.checkCheck.medium}
-                    </button>
+                    <collama-accept-all-button
+                        title="Accept All"
+                        @action=${this.handleAcceptAll}
+                    ></collama-accept-all-button>
                     <collama-cancel-button title="Cancel" @action=${this.handleCancel}></collama-cancel-button>
                 </div>
             </div>

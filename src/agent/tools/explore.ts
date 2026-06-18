@@ -96,15 +96,11 @@ export const read_def = {
         parameters: {
             type: "object",
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence explaining why this tool call is needed for the user's request.",
-                },
                 filePath: { type: "string", description: "Path to the file (relative to workspace root)." },
                 startLine: { type: "number", description: "Starting line (1-based, inclusive)" },
                 endLine: { type: "number", description: "Ending line (1-based, inclusive)" },
             },
-            required: ["explanation", "filePath"],
+            required: ["filePath"],
         },
     },
 };
@@ -246,10 +242,6 @@ export const grep_def = {
         parameters: {
             type: "object",
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence explaining why this tool call is needed for the user's request.",
-                },
                 pattern: {
                     type: "string",
                     description: "Valid regex pattern to search for.",
@@ -259,7 +251,7 @@ export const grep_def = {
                     description: "Optional glob pattern to restrict files (e.g. '**/*.ts'). Defaults to all files.",
                 },
             },
-            required: ["explanation", "pattern"],
+            required: ["pattern"],
         },
     },
 };
@@ -322,16 +314,12 @@ export const glob_def = {
         parameters: {
             type: "object",
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence explaining why this tool call is needed for the user's request.",
-                },
                 pattern: {
                     type: "string",
                     description: "Glob pattern (e.g. '**/*.ts', 'src/**/*.js', or just 'file.ts' to search anywhere).",
                 },
             },
-            required: ["explanation", "pattern"],
+            required: ["pattern"],
         },
     },
 };

@@ -1,6 +1,60 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
+import * as vscode from "vscode";
 import type { ExtensionConfig } from "../config";
 import { userConfig } from "../config";
 import { getAgentsMdContent } from "./agents-md";
+
+/**
+ * Returns the current date (day granularity) as a formatted string.
+ * Keep cache by skipping time.
+ */
+function getDate(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Returns OS name, version, and architecture as a string.
+ */
+function getOSInfo(): string {
+    return `${os.type()} ${os.release()} ${os.arch()}`;
+}
+
+/**
+ * Returns "true" when the workspace root is a git repository, "false" otherwise.
+ * Checks for a .git entry (directory for a normal repo, file for worktrees/submodules).
+ */
+function getGitActive(): string {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceRoot) {
+        return "false";
+    }
+    return fs.existsSync(path.join(workspaceRoot, ".git")) ? "true" : "false";
+}
+
+/**
+ * Returns a list of files and directories in the project root (max 20).
+ */
+function getProjectRootFiles(): string {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceRoot) {
+        return "";
+    }
+
+    try {
+        const entries = fs.readdirSync(workspaceRoot, { withFileTypes: true });
+        const names = entries.map((entry) => `${entry.name}${entry.isDirectory() ? path.sep : ""}`);
+
+        if (names.length > 20) {
+            return [...names.slice(0, 20), `... (${names.length} total)`].join("\n");
+        }
+        return names.join("\n");
+    } catch {
+        return "";
+    }
+}
 
 /**
  * Parameters for constructing a prompt string.
@@ -11,102 +65,14 @@ export type PromptParams = {
     fullContext?: string;
     diff?: string;
     outputFormat?: string;
+    targetSnippet?: string;
 };
-
-/**
- * A function type that formats prompt parameters into a string.
- */
-type PromptTemplate = (p: PromptParams) => string;
-
-/**
- * Generates a structured prompt for editing code snippets based on instructions.
- * @param {PromptParams} { instruction, snippet, fullContext, outputFormat }
- * @returns {string} The formatted prompt string.
- */
-export const contextCommand_Template: PromptTemplate = ({ instruction, snippet, fullContext, outputFormat }) => {
-    const lines: string[] = [
-        "<rules>",
-        "- Never output full files",
-        "- Never explain",
-        "- You MUST output a full snippet",
-        "</rules>",
-        "",
-        "<task>",
-        "Edit the target snippet according to the instruction.",
-        "</task>",
-        "",
-    ];
-
-    if (fullContext) {
-        lines.push("<full_context>", fullContext, "</full_context>");
-    }
-
-    if (instruction) {
-        lines.push("<instruction>", instruction, "</instruction>");
-    }
-
-    if (snippet) {
-        lines.push("<target_snippet>", snippet, "</target_snippet>");
-    }
-
-    lines.push(
-        "<output_formatting>",
-        outputFormat ?? "Raw code without explanations in code fences.",
-        "</output_formatting>",
-    );
-
-    return lines.join("\n");
-};
-
-/**
- * Prompt template for generating concise commit messages from a git diff.
- * @param {Object} param0
- * @param {string} param0.diff - Git diff string.
- * @returns {string}
- */
-export const commitMsgCommand_Template: PromptTemplate = ({ diff }) =>
-    contextCommand_Template({
-        instruction: [
-            "Write a concise, descriptive commit message for the following git diff.",
-            "- Use conventional commits format (type: description)",
-            "- Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci",
-            "- Keep the first line under 72 characters",
-            "- Be specific about what changed",
-            "- Do not include any explanation, only output the commit message",
-            "- If there are multiple logical changes, use bullet points for the body",
-            "- Keep it minimal",
-        ].join("\n"),
-        snippet: `<diff>\n${diff ?? ""}\n</diff>`,
-        outputFormat: "Common git commit message format. Without explanations in code fences.",
-    });
-
-/**
- * Prompt template for summarizing a conversation exchange.
- * Instructs the LLM to extract user requests, assistant answers, and key details concisely.
- */
-export const chatSummarize_Template: string = [
-    "Summarize this exchange. Output only the summary, no preamble.",
-    "",
-    "Include:",
-    "- The user's request or question",
-    "- The assistant's answer, action, or outcome",
-    "- Key details: file names, values, decisions, constraints",
-    "",
-    "Rules:",
-    "- Use Markdown: ## User Message; ## Assistant Message",
-    "- Be concise but complete — keep every detail that matters",
-    "- Past tense, neutral tone",
-    "- No opinions, no new information",
-    "- Never mention summary",
-    "- Only summarize messages that exist",
-    "- If a user message has no assistant reply, do not invent a message",
-].join("\n");
 
 /**
  * System prompt prepended to the agent's conversation history.
  * Routes to lite or default template based on config.
  */
-export function getAgentTemplate(): string {
+function getAgentTemplate(): string {
     if (userConfig.liteMode) {
         return getLiteTemplate();
     }
@@ -120,7 +86,7 @@ function getLiteTemplate(): string {
     const lines: string[] = [];
 
     // general
-    lines.push("<general>", ...GENERAL.LITE, "</general>");
+    lines.push("<general>", ...getGeneral("LITE"), "</general>");
 
     // output formatting
     lines.push("", "<output_formatting>", ...OUTPUT_FORMATING.LITE, "</output_formatting>");
@@ -151,7 +117,7 @@ function getDefaultTemplate(): string {
     const lines: string[] = [];
 
     // general
-    lines.push("<general>", ...GENERAL.DEFAULT, "</general>");
+    lines.push("<general>", ...getGeneral("DEFAULT"), "</general>");
 
     // verbosity
     lines.push("", "<output_verbosity>", ...VERBOSITY_RULES[userConfig.verbosityMode], "</output_verbosity>");
@@ -182,18 +148,37 @@ function getDefaultTemplate(): string {
     return lines.join("\n");
 }
 
-const GENERAL = {
-    DEFAULT: [
-        "Keep your reasoning brief and compact.",
-        "Reasoning is no response: You MUST always conclude with a separate final answer in your normal response.",
-        "If you notice a loop in your thinking choose a response and commit it to the user urgent.",
-    ],
-    LITE: [
-        "- Keep reasoning brief",
-        "- Reasoning is no response: Always write a separate final answer after reasoning",
-        "- Don't loop on reasoning; commit to best answer",
-    ],
-};
+function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
+    if (mode === "DEFAULT") {
+        return [
+            "<reasoning>",
+            "Keep your reasoning brief and compact.",
+            "Reasoning is no response: You MUST always conclude with a separate final answer in your normal response.",
+            "If you notice a loop in your thinking choose a response and commit it to the user urgent.",
+            "</reasoning>",
+            "<environment>",
+            `<date>${getDate()}</date>`,
+            `<os_info>${getOSInfo()}</os_info>`,
+            `<git_repo>${getGitActive()}</git_repo>`,
+            `<workspace_files>${getProjectRootFiles()}</workspace_files>`,
+            "</environment>",
+        ];
+    }
+    if (mode === "LITE") {
+        return [
+            "<reasoning>",
+            "- Keep reasoning brief",
+            "- Reasoning is no response: Always write a separate final answer after reasoning",
+            "- Don't loop on reasoning; commit to best answer",
+            "</reasoning>",
+            "<environment>",
+            `<date>${getDate()}</date>`,
+            `<os_info>${getOSInfo()}</os_info>`,
+            "</environment>",
+        ];
+    }
+    return [];
+}
 
 const OUTPUT_FORMATING = {
     DEFAULT: [
@@ -278,3 +263,163 @@ const EDIT_RULES = {
         "- Make several small edits instead of one large",
     ],
 };
+
+/**
+ * Chat message with system role.
+ */
+export type SystemMessage = {
+    role: "system";
+    content: string;
+};
+
+/**
+ * Chat message with user role.
+ */
+export type UserMessage = {
+    role: "user";
+    content: string;
+};
+
+/**
+ * Encapsulates system prompt generation for the agent.
+ * Provides getters that return wrapped system-role chat messages.
+ *
+ * XML-Tags:
+ * <general>:               General behavior and constraints (contains reasoning, environment)
+ *   <reasoning>:           Reasoning guidelines and conventions
+ *   <environment>:         Runtime environment context
+ *     <date>:              Current date
+ *     <os_info>:           Operating system information
+ *     <git_repo>:          Git repository status (DEFAULT only)
+ *     <workspace_files>:   Project root files listing (DEFAULT only)
+ * <output_verbosity>:      Verbosity level rules (DEFAULT only)
+ * <output_formatting>:     Expected output format conventions
+ * <agent_rules>:           Agent behavioral rules (conditional on agenticMode)
+ * <edit_rules>:            File editing rules (conditional on agenticMode + enableEditTools)
+ * <agent_project_rules>:   Project-specific agent rules from AGENTS.md
+ * <rules>:                 Strict output constraints (edit/commit prompts)
+ * <task>:                  Job description (edit/commit prompts)
+ * <full_context>:          Full file or conversation context (edit prompt)
+ * <target_snippet>:        Code snippet to edit (edit prompt)
+ * <diff>:                  Git diff content (commit user message)
+ */
+export class PromptConstructor {
+    /**
+     * Generates a structured prompt for editing code snippets based on instructions.
+     * @param {PromptParams} params - Parameters containing instruction, snippet, fullContext, and outputFormat.
+     * @returns {UserMessage} The formatted user message object.
+     */
+    static EDITCOMMAND_SYSTEM_PROMPT(targetSnippet: string, fullContext: string): SystemMessage {
+        return {
+            role: "system",
+            content: [
+                "<rules>",
+                "- Never output full files",
+                "- Never explain",
+                "- You MUST output a full snippet",
+                "</rules>",
+                "<task>",
+                "Edit the target snippet according to the user instruction.",
+                "</task>",
+                `<full_context>${fullContext}</full_context>`,
+                `<target_snippet>${targetSnippet}</target_snippet>`,
+                `<output_formatting>Raw code without explanations in code fences.</output_formatting>`,
+            ].join("\n"),
+        };
+    }
+
+    static EDITCOMMAND_USER_MESSAGE(instruction: string): UserMessage {
+        return { role: "user" as const, content: instruction };
+    }
+
+    static COMMITMESSAGE_SYSTEM_PROMPT(): SystemMessage {
+        return {
+            role: "system",
+            content: [
+                "<rules>",
+                "- Never output full files",
+                "- Never explain",
+                "- You MUST output a full snippet",
+                "</rules>",
+                "<task>",
+                "Write a concise, descriptive commit message for the following git diff.",
+                "- Use conventional commits format (type: description)",
+                "- Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci",
+                "- Keep the first line under 72 characters",
+                "- Be specific about what changed",
+                "- Do not include any explanation, only output the commit message",
+                "- If there are multiple logical changes, use bullet points for the body",
+                "- Keep it minimal",
+                "</task>",
+                "<output_formatting>",
+                "Common git commit message format. Without explanations in code fences.",
+                "</output_formatting>",
+            ].join("\n"),
+        };
+    }
+
+    static COMMITMESSAGE_USER_MESSAGE(diff: string): UserMessage {
+        return { role: "user", content: `<diff>\n${diff ?? ""}\n</diff>` };
+    }
+
+    static SUMMARY_SYSTEM_PROMPT(): SystemMessage {
+        return {
+            role: "system",
+            content: [
+                "<rules>",
+                "- Use Markdown: ## User Message; ## Assistant Message",
+                "- If the assistant role is not present, omit '## Assistant' entirely",
+                "- If the user role is not present, omit '## User' entirely",
+                "- Past tense, neutral tone",
+                "- Concise but complete — keep every detail that matters.",
+                "- No opinions, no new information, no restating these rules.",
+                "- Never mention a summary request",
+                "</rules>",
+            ].join("\n"),
+        };
+    }
+
+    static SUMMARY_USER_MESSAGE(): UserMessage {
+        return {
+            role: "user",
+            content: [
+                "Summarize the conversation above. Output only the summary.",
+                "Content:",
+                "- What the user asked or said",
+                "- What the assistant answered, did, or concluded",
+                "- Concrete details that matter: file names, identifiers, values, decisions, constraints",
+            ].join("\n"),
+        };
+    }
+
+    /**
+     * Returns the agent system prompt as a system-role chat message.
+     */
+    static agentTemplate(): SystemMessage {
+        return { role: "system", content: getAgentTemplate() };
+    }
+
+    /**
+     * Returns the summary template as an object with system and user messages.
+     */
+    static summaryTemplate() {
+        return {
+            system: PromptConstructor.SUMMARY_SYSTEM_PROMPT(),
+            user: PromptConstructor.SUMMARY_USER_MESSAGE(),
+        };
+    }
+
+    static editCommandTemplate(targetSnippet: string, fullContext: string, instruction: string) {
+        return {
+            system: PromptConstructor.EDITCOMMAND_SYSTEM_PROMPT(targetSnippet, fullContext),
+            user: PromptConstructor.EDITCOMMAND_USER_MESSAGE(instruction),
+        };
+    }
+
+    static commitMessageTemplate(diff: string) {
+        return {
+            system: PromptConstructor.COMMITMESSAGE_SYSTEM_PROMPT(),
+            user: PromptConstructor.COMMITMESSAGE_USER_MESSAGE(diff),
+        };
+    }
+}

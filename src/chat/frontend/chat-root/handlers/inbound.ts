@@ -218,7 +218,13 @@ function handleContextTrimmed(host: ChatRoot, msg: any) {
 
 /** Shows the tool confirmation modal when the backend requests user approval. */
 function handleToolConfirmRequest(host: ChatRoot, msg: any) {
-    host.toolConfirmRequest = { id: msg.id, action: msg.action, filePath: msg.filePath, explanation: msg.explanation };
+    host.toolConfirmRequest = {
+        id: msg.id,
+        action: msg.action,
+        filePath: msg.filePath,
+        explanation: msg.explanation,
+        dangerous: msg.dangerous,
+    };
     host.activeModal = "toolConfirm";
     logWebview(`Tool confirm request: ${msg.action} ${msg.filePath}`);
     host.updateComplete.then(() => {

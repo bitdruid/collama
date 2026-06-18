@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import * as vscode from "vscode";
 import { logMsg } from "../../logging";
-import { ToolAnswer, secureWorkspace, toolError, toolSuccess } from "../tools";
+import { ToolAnswer, secureWorkspace, toolError } from "../tools";
 import { getAutoAcceptEdits, setAutoAcceptEdits } from "./confirm";
+import { successWithDiagnostics } from "./diagnostics";
 import { confirmWithDiff } from "./diff-preview";
 
 type CellType = "code" | "markdown";
@@ -150,7 +151,7 @@ export async function notebook_exec(args: NotebookInput): Promise<ToolAnswer<{ f
     // Auto-accept: write without preview (mirrors the edit tool).
     if (getAutoAcceptEdits()) {
         await vscode.workspace.fs.writeFile(targetUri, encoded);
-        return toolSuccess({ filePath: args.filePath }, "Notebook updated (auto-accepted).");
+        return successWithDiagnostics(ws.root, args.filePath, "Notebook updated (auto-accepted).");
     }
 
     const { value, reason } = await confirmWithDiff({
@@ -169,9 +170,9 @@ export async function notebook_exec(args: NotebookInput): Promise<ToolAnswer<{ f
     await vscode.workspace.fs.writeFile(targetUri, encoded);
     if (value === "acceptAll") {
         setAutoAcceptEdits(true);
-        return toolSuccess({ filePath: args.filePath }, "Notebook updated. Auto-accepting future edits.");
+        return successWithDiagnostics(ws.root, args.filePath, "Notebook updated. Auto-accepting future edits.");
     }
-    return toolSuccess({ filePath: args.filePath }, "Notebook updated.");
+    return successWithDiagnostics(ws.root, args.filePath, "Notebook updated.");
 }
 
 export const notebook_def = {

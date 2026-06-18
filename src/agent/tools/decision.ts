@@ -115,10 +115,6 @@ export const decision_def = {
         parameters: {
             type: "object",
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence explaining why this tool call is needed for the user's request.",
-                },
                 question: {
                     type: "string",
                     description: "The question to show the user. Phrase clearly; the user sees this as a prompt.",
@@ -130,7 +126,7 @@ export const decision_def = {
                         "Short, mutually-exclusive options for the user to choose from. At least 2 entries. Each label should be self-explanatory with descriptive context.",
                 },
             },
-            required: ["explanation", "question", "options"],
+            required: ["question", "options"],
         },
     },
 };

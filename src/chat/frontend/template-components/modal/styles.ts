@@ -40,7 +40,14 @@ export const baseModalStyles = css`
 
     .modal-header h3 {
         margin: 0;
+        font-size: ${themeFonts.size.large};
         color: ${themeColors.uiFont};
+    }
+
+    .modal-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .close-btn {

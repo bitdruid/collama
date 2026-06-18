@@ -13,7 +13,7 @@ import {
 } from "./client";
 import { EditorContext } from "./context-editor";
 import { getCompletionModelConfig } from "./models";
-import { commitMsgCommand_Template, contextCommand_Template, PromptParams } from "./prompt";
+import { PromptConstructor, PromptParams } from "./prompt";
 
 /**
  * Generates a completion from the editor context.
@@ -53,12 +53,13 @@ export async function requestCompletion(context: EditorContext): Promise<string>
  * @returns {Promise<string>} A promise that resolves to the generated response as a string.
  * @throws {Error} If the LLM request fails.
  */
-async function requestContextCommand(promptParams: PromptParams): Promise<string> {
+async function requestContextCommand({ instruction, snippet, fullContext }: PromptParams): Promise<string> {
     const clientFactory = new LlmClientFactory("instruction");
+    const template = PromptConstructor.editCommandTemplate(snippet ?? "", fullContext ?? "", instruction ?? "");
     const result = await clientFactory.chat({
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
-        messages: [{ role: "user", content: contextCommand_Template(promptParams) }],
+        messages: [template.system, template.user],
         options: buildInstructionOptions(),
         stop: emptyStop(),
     });
@@ -80,10 +81,11 @@ export async function requestCommitMessage(stagedDiff: string): Promise<string> 
     logMsg("Generating commit message...");
 
     const clientFactory = new LlmClientFactory("instruction");
+    const template = PromptConstructor.commitMessageTemplate(stagedDiff);
     const result = await clientFactory.chat({
         apiEndpoint: { url: userConfig.apiEndpointInstruct, bearer: await getBearerInstruct() },
         model: userConfig.apiModelInstruct,
-        messages: [{ role: "user", content: commitMsgCommand_Template({ diff: stagedDiff }) }],
+        messages: [template.system, template.user],
         options: buildCommitOptions(),
         stop: emptyStop(),
     });

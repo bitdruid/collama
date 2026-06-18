@@ -331,8 +331,8 @@ export class ChatContext {
 
     /**
      * Returns true if any edit-type tool call on the given filePath appears after `fromIndex`.
-     * Paths are compared verbatim; the agent canonicalizes `filePath` args before they reach
-     * the history, so the same file always has a single representation here.
+     * Paths are compared verbatim; the agent canonicalizes `filePath` args to absolute paths
+     * before execution (normalizeToolArgs), so the same file has a single representation here.
      */
     private isFileEditedAfter(fromIndex: number, filePath: string): boolean {
         const editTools = new Set(["edit", "create", "delete", "notebook"]);

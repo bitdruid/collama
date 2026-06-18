@@ -14,6 +14,7 @@ import {
     setAutoAcceptFileCreates,
     setAutoAcceptFolderCreates,
 } from "./confirm";
+import { successWithDiagnostics } from "./diagnostics";
 import { confirmWithDiff, confirmWithPreview } from "./diff-preview";
 
 /**
@@ -100,7 +101,7 @@ export async function edit_exec(args: {
         // Auto-accept: apply without diff preview
         if (getAutoAcceptEdits()) {
             await applyFileChanges(vscode.Uri.file(ws.fullPath), newContent);
-            return toolSuccess({ filePath: args.filePath }, "Changes applied (auto-accepted).");
+            return successWithDiagnostics(ws.root, args.filePath, "Changes applied (auto-accepted).");
         }
 
         const { value, reason } = await confirmWithDiff({
@@ -119,9 +120,9 @@ export async function edit_exec(args: {
         await applyFileChanges(vscode.Uri.file(ws.fullPath), newContent);
         if (value === "acceptAll") {
             setAutoAcceptEdits(true);
-            return toolSuccess({ filePath: args.filePath }, "Changes applied. Auto-accepting future edits.");
+            return successWithDiagnostics(ws.root, args.filePath, "Changes applied. Auto-accepting future edits.");
         }
-        return toolSuccess({ filePath: args.filePath }, "Changes applied.");
+        return successWithDiagnostics(ws.root, args.filePath, "Changes applied.");
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         return toolError(`Failed to edit file: ${msg}`);
@@ -219,7 +220,7 @@ export async function create_exec(args: {
         if (getAutoAcceptFileCreates()) {
             const encoder = new TextEncoder();
             await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), encoder.encode(args.content!));
-            return toolSuccess({ filePath: args.filePath }, "File created (auto-created).");
+            return successWithDiagnostics(ws.root, args.filePath, "File created (auto-created).");
         }
 
         // Create file with preview
@@ -237,9 +238,9 @@ export async function create_exec(args: {
         await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), new TextEncoder().encode(args.content!));
         if (value === "acceptAll") {
             setAutoAcceptFileCreates(true);
-            return toolSuccess({ filePath: args.filePath }, "File created. Auto-creating future files.");
+            return successWithDiagnostics(ws.root, args.filePath, "File created. Auto-creating future files.");
         }
-        return toolSuccess({ filePath: args.filePath }, "File created.");
+        return successWithDiagnostics(ws.root, args.filePath, "File created.");
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         return toolError(`Failed to create ${isFolder ? "folder" : "file"}: ${msg}`);

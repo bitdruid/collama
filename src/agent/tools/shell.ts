@@ -2,10 +2,24 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 import { logMsg } from "../../logging";
 import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
 import { requestToolConfirm } from "./confirm";
-import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
+
+// Dangerous constructs within a segment:
+//   $( … )   command substitution (but NOT $(( … )) arithmetic)
+//   ` … `    backtick command substitution
+//   > / >>   file redirection
+//   \n       newline can smuggle a second command
+const WRITE_CONSTRUCTS = /\$\((?!\()|`|>|\n/;
+
+// fd duplication / close — reroutes existing streams, never touches disk:
+//   2>&1, 1>&2, >&2, 2>&-, etc.
+const FD_DUP = /\d*>&(?:\d+|-)/g;
+
+const SHELL_MAX_OUTPUT_CHARS = EXTENSION_HARD_TOKEN_CAP * 4;
+const TEMP_DIR_NAME = "collama-tmp";
 
 type ShellType = "bash" | "powershell";
 
@@ -23,10 +37,12 @@ function getDefaultShellType(): ShellType {
 type ShellInput = {
     command: string;
     explanation: string;
+    dangerous: boolean;
 };
 
-const SHELL_MAX_OUTPUT_CHARS = EXTENSION_HARD_TOKEN_CAP * 4;
-const TEMP_DIR_NAME = "collama-tmp";
+function hasWriteConstructs(command: string): boolean {
+    return command.split(/&&|\|\||[;|]/).some((segment) => WRITE_CONSTRUCTS.test(segment.replace(FD_DUP, "")));
+}
 
 /**
  * Represents the captured output from a shell command.
@@ -179,7 +195,10 @@ export async function shell_exec(
         return toolError("No workspace root found");
     }
 
-    const { value, reason } = await requestToolConfirm(`Shell:${shellType}`, command, explanation);
+    // The model's dangerous flag is advisory only: it can mark a command dangerous, and the
+    // backend additionally flags any write-capable shell construct the model may have missed.
+    const dangerous = args.dangerous || hasWriteConstructs(command);
+    const { value, reason } = await requestToolConfirm(`Shell:${shellType}`, command, explanation, dangerous);
     if (!value) {
         return { success: false, message: reason };
     }
@@ -233,8 +252,12 @@ export const shell_def = {
                     type: "string",
                     description: `The full ${shellName} command to execute.`,
                 },
+                dangerous: {
+                    type: "boolean",
+                    description: "Set 'true' unless you are certain the command is read-only.",
+                },
             },
-            required: ["explanation", "command"],
+            required: ["explanation", "command", "dangerous"],
         },
     },
 };

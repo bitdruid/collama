@@ -8,47 +8,16 @@ export const toolConfirmStyles = css`
         gap: 12px;
     }
 
-    .confirm-summary {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
     .confirm-action {
-        display: inline-flex;
-        align-items: center;
-        line-height: 1;
-        text-box: trim-both cap alphabetic;
-        padding: 8px 12px;
-        border-radius: ${themeStyles.borderRadius.small};
-        background: ${themeColors.settings};
-        color: ${themeColors.cleanWhite};
-        text-transform: capitalize;
+        color: ${themeColors.uiFont};
         font-weight: ${themeFonts.weight.bold};
+        text-transform: capitalize;
     }
 
     .confirm-buttons {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-    }
-
-    .confirm-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 6px 12px;
-        cursor: pointer;
-        border: none;
-        border-radius: ${themeStyles.borderRadius.small};
-        color: ${themeColors.cleanWhite};
-    }
-
-    .btn-accept-all {
-        background: ${themeColors.context};
-    }
-    .btn-accept-all:hover {
-        background: ${themeColors.contextHover};
     }
 
     .btn-send {
@@ -87,6 +56,17 @@ export const toolConfirmStyles = css`
     .confirm-filepath:hover {
         background: ${themeColors.uiBackground};
         border-color: ${themeColors.uiBorder};
+    }
+
+    .confirm-filepath.danger {
+        color: ${themeColors.usageDanger};
+        border-color: ${themeColors.uiBorderDimm};
+        background: color-mix(in srgb, ${themeColors.usageDanger} 5%, ${themeColors.uiBackgroundDimm});
+    }
+
+    .confirm-filepath.danger:hover {
+        border-color: ${themeColors.uiBorderHoverDimm};
+        background: color-mix(in srgb, ${themeColors.usageDanger} 10%, ${themeColors.uiBackgroundDimm});
     }
 
     .cancel-input-row {

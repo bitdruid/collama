@@ -56,7 +56,7 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - **Intercept a running agent** — queue a follow-up message while the agent is still working; it's injected at the next turn boundary without interrupting the current one
 
 **AI Agent with Tool Calling**
-- Tools for filesystem, git, and code diagnostics (see [Available Tools](#ai-agent-usage))
+- Tools for filesystem, git, and shell (see [Available Tools](#ai-agent-usage))
 - Workspace-boundary and `.gitignore` protection; optional read-only mode
 - Confirmation flow with Accept / Accept All / Cancel-with-reason, plus a duration counter
 
@@ -96,7 +96,7 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 | `collama.apiTokenContextLenInstruct`   | number  | `4096`                   | Context window size (tokens) for the instruct/chat model |
 | `collama.apiTokenPredictCompletion`    | number  | `400`                    | Max tokens to generate per completion request            |
 | `collama.apiTokenPredictInstruct`      | number  | `4096`                   | Max tokens to generate per instruct/chat request         |
-| `collama.autoComplete`                 | boolean | `false`                   | Enable auto-suggestions                                  |
+| `collama.autoComplete`                 | boolean | `false`                  | Enable auto-suggestions                                  |
 | `collama.suggestMode`                  | string  | `inline`                 | Suggestion style: `inline`, `multiline`, or `multiblock` |
 | `collama.suggestDelay`                 | number  | `1500`                   | Delay (ms) before requesting completion                  |
 | `collama.verbosityMode`                | string  | `medium`                 | Chat response detail: `compact`, `medium`, or `detailed` |
@@ -197,9 +197,6 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
     - `gitLog` - List commits or branches with optional filters
     - `gitDiff` - Show working tree, staged, or commit/branch diffs
 
-- **Code Analysis**
-    - `diagnostics` - Language-server analysis. Returns errors/warnings/hints for a file
-
 - **Decision**
     - `decision` - Ask the user to choose between options when the right next step is ambiguous
 
@@ -210,7 +207,7 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
     - `notebook` - Edit Jupyter notebook cells with rich diff preview support
 
 - **Shell Tool**
-    - `shell` - Run shell commands with confirmation when `collama.enableShellTool` is enabled; large output is written to a temp file instead of truncating
+    - `shell` - Run shell commands with confirmation when `collama.enableShellTool` is enabled; large output is written to a temp file instead of truncating. Commands containing write-capable shell constructs (redirection, substitution, ...) are marked with a warning in the confirmation dialog
 
 ## Contributing
 

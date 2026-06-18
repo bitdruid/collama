@@ -1,9 +1,10 @@
 import { html } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { classMap } from "lit/directives/class-map.js";
 
+import type { ToolDecisionRequest } from "../../../../../shared";
 import "../../../../template-components/banner";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
-import type { ToolDecisionRequest } from "../../../../../shared";
 import { toolDecisionStyles } from "./styles";
 
 @customElement("collama-tool-decision-modal")
@@ -12,8 +13,14 @@ export class ToolDecisionModal extends BaseModal {
 
     @property({ type: Object }) request: ToolDecisionRequest | null = null;
 
+    @state() private _showCustomInput = false;
+    @state() private _customValue = "";
+
     @query(".decision-option")
     private firstOption!: HTMLButtonElement;
+
+    @query(".custom-textarea")
+    private customTextarea!: HTMLTextAreaElement;
 
     constructor() {
         super();
@@ -23,6 +30,8 @@ export class ToolDecisionModal extends BaseModal {
     }
 
     override show(title?: string) {
+        this._showCustomInput = false;
+        this._customValue = "";
         super.show(title);
         this._focusFirstOption();
     }
@@ -34,7 +43,11 @@ export class ToolDecisionModal extends BaseModal {
 
     private _focusFirstOption() {
         this.updateComplete.then(() => {
-            this.firstOption?.focus();
+            if (this._showCustomInput) {
+                this.customTextarea?.focus();
+            } else {
+                this.firstOption?.focus();
+            }
         });
     }
 
@@ -48,6 +61,31 @@ export class ToolDecisionModal extends BaseModal {
         );
     }
 
+    private _openCustomInput() {
+        this._showCustomInput = true;
+        this._focusFirstOption();
+    }
+
+    private _submitCustom() {
+        const value = this._customValue.trim();
+        if (value) {
+            this._select(value);
+        }
+    }
+
+    private _onCustomKeydown(e: KeyboardEvent) {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            this._submitCustom();
+        }
+        if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            this._showCustomInput = false;
+            this._focusFirstOption();
+        }
+    }
+
     private _keepFocus = (e: FocusEvent) => {
         if (e.relatedTarget && this.shadowRoot?.contains(e.relatedTarget as Node)) {
             return;
@@ -59,6 +97,9 @@ export class ToolDecisionModal extends BaseModal {
         if (e.key === "Escape") {
             e.preventDefault();
             e.stopPropagation();
+            if (this._showCustomInput) {
+                this._showCustomInput = false;
+            }
             this._focusFirstOption();
         }
     };
@@ -95,6 +136,31 @@ export class ToolDecisionModal extends BaseModal {
                             <button class="decision-option" @click=${() => this._select(option)}>${option}</button>
                         `,
                     )}
+                    <button
+                        class="decision-option decision-other ${classMap({ hidden: this._showCustomInput })}"
+                        @click=${this._openCustomInput}
+                    >
+                        Describe other...
+                    </button>
+                </div>
+                <div class="custom-input-area ${classMap({ visible: this._showCustomInput })}">
+                    <div class="custom-input-row">
+                        <textarea
+                            class="custom-textarea"
+                            .value=${this._customValue}
+                            @input=${(e: InputEvent) => {
+                                this._customValue = (e.target as HTMLTextAreaElement).value;
+                            }}
+                            @keydown=${this._onCustomKeydown}
+                            placeholder="Describe your own option..."
+                            rows="1"
+                        ></textarea>
+                        <collama-accept-button
+                            title="Submit"
+                            ?disabled=${!this._customValue.trim()}
+                            @action=${this._submitCustom}
+                        ></collama-accept-button>
+                    </div>
                 </div>
             </div>
         `;

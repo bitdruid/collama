@@ -38,6 +38,20 @@ export class BaseModal extends BaseOverlay {
         return html`<slot></slot>`;
     }
 
+    /**
+     * Override this method to render extra content next to the title (e.g. a warning sign)
+     */
+    protected renderHeaderExtra(): TemplateResult {
+        return html``;
+    }
+
+    /**
+     * Override this method to customize the title content (defaults to the plain title text)
+     */
+    protected renderTitle(): TemplateResult {
+        return html`${this.title}`;
+    }
+
     override render() {
         if (!this._open) {
             return html``;
@@ -46,7 +60,10 @@ export class BaseModal extends BaseOverlay {
         return html`
             <div class="modal-content ${this._visible ? "fade-in" : "fade-out"}">
                 <div class="modal-header">
-                    <h3>${this.title}</h3>
+                    <div class="modal-title">
+                        <h3>${this.renderTitle()}</h3>
+                        ${this.renderHeaderExtra()}
+                    </div>
                     <span class="close-btn" @click=${this.close}>${themeIcons.x.large}</span>
                 </div>
                 <div class="modal-body">${this.renderContent()}</div>

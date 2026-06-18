@@ -6,7 +6,6 @@ import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { resetAutoAcceptEdits } from "./tools/confirm";
 import { decision_def, decision_exec } from "./tools/decision";
-import { diagnostics_def, diagnostics_exec } from "./tools/diagnostics";
 import { create_def, create_exec, delete_def, delete_exec, edit_def, edit_exec } from "./tools/edit";
 import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
@@ -14,7 +13,7 @@ import { notebook_def, notebook_exec } from "./tools/notebook";
 import { shell_def, shell_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
-export type ToolCategory = "explore" | "git" | "edit" | "diagnostics" | "shell";
+export type ToolCategory = "explore" | "git" | "edit" | "shell";
 export type { ToolHistoryPolicy };
 
 export interface ToolAnswer<TOutput = unknown> {
@@ -29,8 +28,6 @@ export function toolSuccess<TOutput>(output: TOutput, message?: string): ToolAns
 }
 
 export function toolError(error: string): ToolAnswer<never> {
-    const caller = new Error().stack?.split("\n")[2]?.match(/at\s+(.*)\s/)?.[1] ?? "unknown";
-    logAgent(`[${caller}-tool] ${error}`);
     return { success: false, error };
 }
 
@@ -121,7 +118,6 @@ function getAllowedTools() {
         switch (tool.category) {
             case "explore":
             case "git":
-            case "diagnostics":
                 return true;
             case "edit":
                 return userConfig.enableEditTools;
@@ -141,18 +137,20 @@ export function getToolHistoryPolicy(toolName: string): ToolHistoryPolicy {
  * Executes a specific tool by name after validating the input arguments.
  *
  * @param name - The name of the tool to execute.
- * @param args - The arguments to pass to the tool (will be validated against the tool's schema).
+ * @param args - The arguments to pass to the tool; required keys are validated against the tool's schema.
  * @returns A JSON string representing the result of the tool execution.
- * @throws Error if the tool name is not found in the registry or if validation fails.
  */
 export async function executeTool(name: string, args: unknown): Promise<string> {
     let response: ToolAnswer;
 
     const tool = toolRegistry[name];
+    const missingArg = tool && findMissingRequiredArg(tool, args);
     if (!tool) {
         response = toolError(`Unknown tool: ${name}. Available: ${getToolNames().join(", ")}`);
     } else if (!getAllowedTools().includes(tool)) {
         response = toolError(`Tool is disabled: ${name}. Available: ${getToolNames().join(", ")}`);
+    } else if (missingArg) {
+        response = toolError(`Missing required argument '${missingArg}' for tool: ${name}`);
     } else {
         try {
             response = await tool.execute(args);
@@ -163,7 +161,24 @@ export async function executeTool(name: string, args: unknown): Promise<string> 
         }
     }
 
+    if (!response.success) {
+        logAgent(`[${name}-tool] ${response.error}`);
+    }
+
     return JSON.stringify(response);
+}
+
+/**
+ * Returns the name of the first required parameter (per the tool's schema) missing from args,
+ * or null if all are present. Gives the model a precise, correctable error instead of a
+ * downstream `undefined` crash.
+ */
+function findMissingRequiredArg(tool: Tool, args: unknown): string | null {
+    const required = tool.definition.function.parameters?.required;
+    if (!Array.isArray(required) || typeof args !== "object" || args === null) {
+        return null;
+    }
+    return required.find((key) => (args as Record<string, unknown>)[key] === undefined) ?? null;
 }
 
 /**
@@ -197,6 +212,24 @@ export function isWithinAllowedTemp(resolvedPath: string): boolean {
     const tmpDir = os.tmpdir();
     const normalizedTmp = path.resolve(tmpDir);
     return normalizedPath === normalizedTmp || normalizedPath.startsWith(normalizedTmp + path.sep);
+}
+
+/**
+ * Canonicalizes `filePath` in a tool call's raw JSON arguments to an absolute path and returns
+ * the re-serialized string. Gives the same file a single representation everywhere (history,
+ * execution, evalOutdated comparison). Unparseable or filePath-less args are returned unchanged.
+ */
+export function normalizeToolArgs(argsJson: string): string {
+    try {
+        const args = JSON.parse(argsJson);
+        if (typeof args.filePath === "string") {
+            args.filePath = path.resolve(getWorkspaceRoot() ?? "", args.filePath);
+            return JSON.stringify(args);
+        }
+    } catch {
+        // leave invalid JSON for executeTools' own parsing to report
+    }
+    return argsJson;
 }
 
 /**
@@ -338,13 +371,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
             return `${args.mode} #${args.cellIndex} → ${filePath}`;
         },
         execute: notebook_exec,
-    },
-    diagnostics: {
-        category: "diagnostics",
-        historyPolicy: "dropAll",
-        definition: diagnostics_def,
-        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
-        execute: diagnostics_exec,
     },
     decision: {
         category: "edit",

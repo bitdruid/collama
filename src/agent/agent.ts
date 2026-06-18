@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import { buildAgentOptions, emptyStop, LlmChatSettings, LlmClientFactory, ToolCall } from "../common/client";
 import { ChatContext, ChatHistory } from "../common/context-chat";
-import { getAgentTemplate } from "../common/prompt";
+import { PromptConstructor } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import { executeTool, getToolDefinitions, getToolTarget, resetAutoAcceptEdits } from "./tools";
+import { executeTool, getToolDefinitions, getToolTarget, normalizeToolArgs, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
 export type AgentMode = "plain" | "default" | "sub";
@@ -155,7 +155,7 @@ export class Agent {
     } {
         const history = new ChatContext();
         if (this.agentMode !== "plain") {
-            history.setMessages([{ role: "system" as const, content: getAgentTemplate() }, ...messages.getMessages()]);
+            history.setMessages([PromptConstructor.agentTemplate(), ...messages.getMessages()]);
         } else {
             history.setMessages(messages.getMessages());
         }
@@ -237,6 +237,9 @@ export class Agent {
                 break;
             }
 
+            // Mutates the tool call in place: history holds the same reference, so the
+            // canonical filePath is what evalOutdated compares later.
+            toolCall.function.arguments = normalizeToolArgs(toolCall.function.arguments);
             const args = JSON.parse(toolCall.function.arguments);
             const argsBody = Object.entries(args)
                 .map(([k, v]) => `${k}:\n${v}`)
