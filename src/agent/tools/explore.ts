@@ -73,7 +73,7 @@ export async function read_exec(args: {
 
     const numbered = slice.map((line, i) => `${start + i + 1}\t${line}`).join("\n");
 
-    if (numbered.length > READ_MAX_TOTAL_CHARS * 4) {
+    if (numbered.length > READ_MAX_TOTAL_CHARS) {
         return toolError(
             `Read exceeds ~10k tokens. File has ${lines.length} lines total. Use startLine/endLine to read a smaller range.`,
         );
@@ -256,6 +256,8 @@ export const grep_def = {
     },
 };
 
+const GLOB_MAX_TOTAL_CHARS = EXTENSION_HARD_TOKEN_CAP * 4;
+
 /**
  * Finds files and folders matching a glob pattern within the workspace.
  * Simple filenames are normalized for recursive matching.
@@ -303,7 +305,26 @@ export async function glob_exec(args: {
         return toolError(`Invalid glob pattern: ${args.pattern}`);
     }
 
-    return toolSuccess({ matches: matches.sort(), pattern: args.pattern, total: matches.length });
+    const sorted = matches.sort();
+    const total = sorted.length;
+
+    if (joinedSize(sorted) <= GLOB_MAX_TOTAL_CHARS) {
+        return toolSuccess({ matches: sorted, pattern: args.pattern, total });
+    }
+
+    const truncated: string[] = [];
+    let runningSize = 0;
+    for (const entry of sorted) {
+        if (runningSize + entry.length + 1 > GLOB_MAX_TOTAL_CHARS) {
+            break;
+        }
+        truncated.push(entry);
+        runningSize += entry.length + 1;
+    }
+    return toolSuccess(
+        { matches: truncated, pattern: args.pattern, total },
+        `[showing ${truncated.length} of ${total} matches — refine pattern to see more]`,
+    );
 }
 
 export const glob_def = {
