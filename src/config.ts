@@ -29,6 +29,7 @@ export interface ExtensionConfig {
     apiTokenContextLenInstruct: number;
     apiTokenPredictCompletion: number;
     apiTokenPredictInstruct: number;
+    extraBody: Record<string, any>;
 }
 
 export const defaultExtensionConfig: ExtensionConfig = {
@@ -49,6 +50,7 @@ export const defaultExtensionConfig: ExtensionConfig = {
     apiTokenContextLenInstruct: 4096,
     apiTokenPredictCompletion: 400,
     apiTokenPredictInstruct: 4096,
+    extraBody: {},
 };
 
 /**
@@ -153,6 +155,7 @@ export function updateVSConfig(): void {
         apiTokenContextLenInstruct: cfg.get("apiTokenContextLenInstruct", userConfig.apiTokenContextLenInstruct),
         apiTokenPredictCompletion: cfg.get("apiTokenPredictCompletion", userConfig.apiTokenPredictCompletion),
         apiTokenPredictInstruct: cfg.get("apiTokenPredictInstruct", userConfig.apiTokenPredictInstruct),
+        extraBody: cfg.get("extraBody", userConfig.extraBody),
     };
 
     // Re-detect a backend only when its endpoint or model changed.

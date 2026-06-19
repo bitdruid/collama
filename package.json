@@ -129,6 +129,11 @@
                         "type": "boolean",
                         "default": false,
                         "description": "Lite-Mode. When enabled, the agent system prompt is reduced to a minimal form. Useful for small models that struggle with longer system prompts."
+                    },
+                    "collama.extraBody": {
+                        "type": "object",
+                        "default": {},
+                        "markdownDescription": "Extra JSON body fields for every LLM request (Instruct). Use for provider-specific params like `chat_template_kwargs` for thinking/reasoning.\n\nExample:\n```json\n{\n    \"chat_template_kwargs\": {\n        \"thinking\": true,\n        \"reasoning_effort\": \"high\"\n    }\n}\n```"
                     }
                 }
             }

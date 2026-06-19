@@ -5,10 +5,10 @@ import {
     buildStopTokens,
     cleanupResult,
     handleError,
-    summupPerformance,
     logRequest,
     optionsToOllama,
     proxyFetch,
+    summupPerformance,
 } from "./utils";
 
 /** Creates an Ollama SDK client for the configured host and optional bearer token. */

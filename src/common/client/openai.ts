@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+import { userConfig } from "../../config";
 import { ToolCallAccumulator } from "../litellmfix";
 import { emitGated, finalizeChat, ToolCallStreamGate } from "./toolparse";
 import type { ChatResult, LlmChatSettings, LlmClient, LlmGenerateSettings } from "./types";
@@ -7,10 +8,10 @@ import {
     buildStopTokens,
     cleanupResult,
     handleError,
-    summupPerformance,
     logRequest,
     optionsToOpenAI,
     proxyFetch,
+    summupPerformance,
 } from "./utils";
 
 /** Creates an OpenAI SDK client for OpenAI-compatible endpoints. */
@@ -44,6 +45,7 @@ export class OpenAiClient implements LlmClient {
                 tool_choice: tools.length > 0 ? "auto" : undefined,
                 stream: true,
                 ...optionsToOpenAI(options),
+                ...userConfig.extraBody,
                 stop: buildStopTokens(stop),
                 stream_options: { include_usage: true },
             });
