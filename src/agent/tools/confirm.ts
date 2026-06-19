@@ -46,6 +46,7 @@ let autoAcceptEdits = false;
 let autoAcceptFileCreates = false;
 let autoAcceptFolderCreates = false;
 let autoAcceptDeletes = false;
+let autoAcceptShell = false;
 let frontendAutoAcceptActive = false;
 
 /** Whether the frontend "auto-accept all" toggle is on (persists across turns). */
@@ -60,6 +61,7 @@ export function setAutoAcceptAll(enabled: boolean): void {
     autoAcceptFileCreates = enabled;
     autoAcceptFolderCreates = enabled;
     autoAcceptDeletes = enabled;
+    autoAcceptShell = enabled;
     logMsg(`Auto-accept ${enabled ? "enabled" : "disabled"}`);
 }
 
@@ -75,6 +77,7 @@ export function resetAutoAcceptEdits(): void {
     autoAcceptFileCreates = false;
     autoAcceptFolderCreates = false;
     autoAcceptDeletes = false;
+    autoAcceptShell = false;
 }
 
 /** Whether edits currently apply without showing a diff preview. */
@@ -112,4 +115,13 @@ export function getAutoAcceptDeletes(): boolean {
 
 export function setAutoAcceptDeletes(enabled: boolean): void {
     autoAcceptDeletes = enabled;
+}
+
+/** Whether shell commands currently run without confirmation. */
+export function getAutoAcceptShell(): boolean {
+    return autoAcceptShell;
+}
+
+export function setAutoAcceptShell(enabled: boolean): void {
+    autoAcceptShell = enabled;
 }

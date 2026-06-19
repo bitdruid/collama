@@ -60,13 +60,13 @@ export const toolConfirmStyles = css`
 
     .confirm-filepath.danger {
         color: ${themeColors.usageDanger};
-        border-color: ${themeColors.uiBorderDimm};
-        background: color-mix(in srgb, ${themeColors.usageDanger} 5%, ${themeColors.uiBackgroundDimm});
+        border-color: color-mix(in srgb, ${themeColors.usageDanger} 5%, ${themeColors.uiBackgroundDimm});
+        background: ${themeColors.uiBackgroundDimm};
     }
 
     .confirm-filepath.danger:hover {
-        border-color: ${themeColors.uiBorderHoverDimm};
-        background: color-mix(in srgb, ${themeColors.usageDanger} 10%, ${themeColors.uiBackgroundDimm});
+        border-color: color-mix(in srgb, ${themeColors.usageDanger} 10%, ${themeColors.uiBackgroundDimm});
+        background: ${themeColors.uiBackgroundDimm};
     }
 
     .cancel-input-row {
