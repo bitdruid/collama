@@ -1,6 +1,69 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.5] - 2026-06-19
+
+### Added
+- `extraBody` config parameter for OpenAI client — passes additional body parameters to the API request
+- Shell command read-only allowlist: git read-only subcommands, bash/coreutils, and PowerShell cmdlets auto-accept without confirmation when provably read-only
+- Process substitution `<( ... )` detection as a write construct in shell commands
+- Auto-accept for provably read-only shell commands with `autoAcceptShell` state management
+
+### Changed
+- Edit rules restructured with clearer exploration-before-editing workflow in agent prompts
+- Summary prompt rules clarified (omit missing roles, never invent content)
+- Import order cleanup in ollama/openai clients
+
+### Fixed
+- Glob output now truncated when exceeding token limit instead of returning all matches
+- Read tool token limit calculation (removed erroneous `* 4` multiplier causing false oversized-read errors)
+
+## [1.8.4] - 2026-06-18
+
+### Added
+- `dangerous` flag to shell tool definition (required parameter) — model marks commands as dangerous, backend also auto-detects write constructs
+- Write construct detection in shell commands (`$(...)`, backticks, `>`, `>>`, newlines) — flagged as dangerous even if model omits the flag
+- `normalizeToolArgs()` — canonicalizes `filePath` to absolute paths before execution for consistent history comparison
+- Missing required argument validation for tool calls — returns a precise, correctable error instead of a downstream crash
+- `successWithDiagnostics()` — LSP diagnostics appended to edit/create/notebook tool results so the model sees errors without a follow-up call
+- `button-box` template component replacing `action-button` (AcceptButton, CancelButton, AcceptAllButton) — 28x28 square icon buttons with `action` event
+- Custom text input option in decision modal ("Describe other...") with Enter/Escape handling
+- `dangerous` flag propagation to tool confirm modal (warning icon for dangerous shell commands)
+- Environment context injected into agent prompts (date, OS info, git status, workspace files listing)
+
+### Changed
+- Removed `explanation` required field from read/grep/glob/gitLog/gitDiff/decision tool definitions — reduces token overhead
+- Removed standalone `diagnostics` tool — folded into edit/create/notebook success responses via `successWithDiagnostics()`
+- Prompt templates refactored into `PromptConstructor` class with static methods — edit/commit/summary prompts use system+user message pairs
+- Summary handler refactored to use `PromptConstructor` with system+user message split
+- Modal title rendering extensible via `renderTitle()`/`renderHeaderExtra()` hooks
+- Input fields now have border styling (was `border: none`)
+- Usage warning color adjusted for better contrast (`#cca700` → `#b19000`)
+- Tool confirm modal restyled — action label moved to title area, danger styling for filePath on dangerous commands
+- Decision modal supports custom text input with Enter to submit, Escape to go back
+
+### Fixed
+- Diagnostics wait timeout reduced from 5s to 1500ms — files without a language server no longer waste time
+
+## [1.8.3] - 2026-06-12
+
+### Changed
+- Prompt templates restructured with XML tags (`<rules>`, `<task>`, `<full_context>`, `<instruction>`, `<target_snippet>`, `<output_formatting>`) replacing `===== ... =====` markers
+- Agent template sections wrapped in XML tags (`<general>`, `<output_verbosity>`, `<output_formatting>`, `<agent_rules>`, `<edit_rules>`, `<agent_project_rules>`)
+- General reasoning rules updated for compactness — explicit reasoning-is-no-response guidance
+- Output formatting rules updated with diff-block instruction (```diff for suggested edits)
+- Summary template improved — only summarize messages that exist, never invent missing content
+
+## [1.8.2] - 2026-06-10
+
+### Fixed
+- Empty API key causes OpenAI error when using Ollama v1 — fallback to `"ollama"` as default API key
+
+## [1.8.1] - 2026-06-10
+
+### Changed
+- Default `autoComplete` setting changed from `true` to `false` — auto-completion now opt-in
+
 ## [1.8.0] - 2026-06-10
 
 ### Added
