@@ -40,8 +40,8 @@ function formatToolTargetValue(key: string, raw: unknown): string {
     // Truncate file paths for compact UI display.
     if (key === "filePath") {
         const parts = value.split("/");
-        if (parts.length > 2) {
-            return ".../" + parts.slice(-2).join("/");
+        if (parts.length > 3) {
+            return "... /" + parts.slice(-3).join("/");
         }
     }
     return value;
@@ -69,18 +69,13 @@ export function getToolTarget(toolName: string, args: Record<string, any>): stri
 }
 
 /**
- * Renders an edit tool's oldString → newString as a git-style unified diff
- * (`--- a/… / +++ b/…` header + hunks) so the chat accordion highlights it as a `diff` block.
+ * Renders an edit tool's oldString → newString as the changed lines only
+ * (`+`/`-`/context, no file header or hunk markers) so the chat accordion highlights it as a `diff` block.
  */
 function buildEditDiff(filePath: string, oldString: string, newString: string): string {
     const { hunks } = structuredPatch(filePath, filePath, oldString, newString, "", "", { context: 3 });
-    const header = `--- a/${filePath}\n+++ b/${filePath}`;
-    const body = hunks
-        .map((h) => `@@ -${h.oldStart},${h.oldLines} +${h.newStart},${h.newLines} @@\n${h.lines.join("\n")}`)
-        .join("\n");
-    return `${header}\n${body}`;
+    return hunks.map((h) => h.lines.join("\n")).join("\n");
 }
-
 
 /**
  * Represents a tool that can be executed by the agent.
@@ -252,7 +247,7 @@ export function normalizeToolArgs(toolName: string, argsJson: string): Normalize
     }
     const body =
         toolName === "edit"
-            ? `explanation:\n${args.explanation}\n\n${buildEditDiff(relPath, args.oldString ?? "", args.newString ?? "")}`
+            ? `${buildEditDiff(relPath, args.oldString ?? "", args.newString ?? "")}`
             : Object.entries(args)
                   .map(([k, v]) => `${k}:\n${v}`)
                   .join("\n");

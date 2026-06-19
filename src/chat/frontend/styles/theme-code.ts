@@ -40,16 +40,22 @@ export const codeBlockStyles = [
             font-size: 0.95em;
         }
 
+        pre code.hljs * {
+            font-style: normal !important;
+        }
+
         pre code.hljs .hljs-addition {
             display: inline-block;
             width: 100%;
-            background: rgba(63, 185, 80, 0.15);
+            background: rgba(63, 185, 80, 0.25);
+            font-weight: ${themeFonts.weight.bold} !important;
         }
 
         pre code.hljs .hljs-deletion {
             display: inline-block;
             width: 100%;
-            background: rgba(248, 81, 73, 0.15);
+            background: rgba(248, 81, 73, 0.25);
+            font-weight: ${themeFonts.weight.bold} !important;
         }
     `,
 ];

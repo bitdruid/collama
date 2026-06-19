@@ -12,6 +12,7 @@ import { loadAgentsMdContent, registerAgentsMdWatcher } from "./common/agents-md
 import { initTokenizer } from "./common/tokenizer";
 import { registerConfigAutoUpdateCommand, updateVSConfig } from "./config";
 import {
+    registerDiffPreviewCommands,
     registerEditManualCommand,
     registerExtractFunctionsCommand,
     registerFixSyntaxCommand,
@@ -48,6 +49,7 @@ export async function activate(extContext: vscode.ExtensionContext) {
     registerSimplifyCommand(extContext);
     registerFixSyntaxCommand(extContext);
     registerEditManualCommand(extContext);
+    registerDiffPreviewCommands(extContext);
 
     registerAutoCompleteProvider(extContext);
 

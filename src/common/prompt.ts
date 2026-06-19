@@ -35,6 +35,13 @@ function getGitActive(): string {
 }
 
 /**
+ * Returns the absolute path of the workspace root, or "" when no workspace is open.
+ */
+function getWorkspaceRoot(): string {
+    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? "";
+}
+
+/**
  * Returns a list of files and directories in the project root (max 20).
  */
 function getProjectRootFiles(): string {
@@ -160,6 +167,7 @@ function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
             `<date>${getDate()}</date>`,
             `<os_info>${getOSInfo()}</os_info>`,
             `<git_repo>${getGitActive()}</git_repo>`,
+            `<workspace_root>${getWorkspaceRoot()}</workspace_root>`,
             `<workspace_files>${getProjectRootFiles()}</workspace_files>`,
             "</environment>",
         ];
@@ -174,6 +182,7 @@ function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
             "<environment>",
             `<date>${getDate()}</date>`,
             `<os_info>${getOSInfo()}</os_info>`,
+            `<workspace_root>${getWorkspaceRoot()}</workspace_root>`,
             "</environment>",
         ];
     }
@@ -190,7 +199,7 @@ const OUTPUT_FORMATING = {
         "- Separate every block element (heading, paragraph, list, code block) with a blank line.",
         "- No raw HTML. No horizontal rules. No setext-style headings (underline style).",
         "- Do not write code into tables.",
-        "- Use diff-blocks ```diff for suggested edits.",
+        "- Use diff-blocks ```diff for suggested edits - no file header and no hunk header on diffs.",
         "- Do not use emojis - only plain text:",
         "   - ✅, ❌, ⚠️ allowed to approve or disapprove statements or circumstances.",
         "   - 🟢, 🟡, 🔴 allowed to categorize quality or severity.",
@@ -203,7 +212,7 @@ const OUTPUT_FORMATING = {
         "- Put a blank line before and after every heading, paragraph, list, and code block.",
         "- No HTML. No --- separators.",
         "- No code in tables.",
-        "- Diff-blocks '```diff' for suggested edits.",
+        "- Diff-blocks '```diff' for suggested edits - no file header and no hunk header on diffs.",
         "- No emojis. Use plain text with ✅, ❌, ⚠️ to approve or disapprove; 🟢, 🟡, 🔴 to categorize quality",
         "- Output always relative filepaths in the workspace.",
     ],
@@ -298,6 +307,7 @@ export type UserMessage = {
  *     <date>:              Current date
  *     <os_info>:           Operating system information
  *     <git_repo>:          Git repository status (DEFAULT only)
+ *     <workspace_root>:    Absolute workspace root path (DEFAULT only)
  *     <workspace_files>:   Project root files listing (DEFAULT only)
  * <output_verbosity>:      Verbosity level rules (DEFAULT only)
  * <output_formatting>:     Expected output format conventions

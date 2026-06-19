@@ -194,6 +194,16 @@
             {
                 "command": "collama.setBearerInstruct",
                 "title": "collama: Set Bearer Token (Instruct)"
+            },
+            {
+                "command": "collama.acceptEdit",
+                "title": "collama: Accept Changes",
+                "icon": "$(check)"
+            },
+            {
+                "command": "collama.rejectEdit",
+                "title": "collama: Discard Changes",
+                "icon": "$(close)"
             }
         ],
         "submenus": [
@@ -252,6 +262,18 @@
                     "command": "collama.requestCommitMessage",
                     "group": "navigation",
                     "when": "scmProvider == git"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "collama.acceptEdit",
+                    "group": "navigation@1",
+                    "when": "collama.diffPreviewActive"
+                },
+                {
+                    "command": "collama.rejectEdit",
+                    "group": "navigation@2",
+                    "when": "collama.diffPreviewActive"
                 }
             ]
         }
