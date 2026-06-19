@@ -237,13 +237,10 @@ export class Agent {
                 break;
             }
 
+            const { argsJson, args, body } = normalizeToolArgs(toolCall.function.name, toolCall.function.arguments);
             // Mutates the tool call in place: history holds the same reference, so the
             // canonical filePath is what evalOutdated compares later.
-            toolCall.function.arguments = normalizeToolArgs(toolCall.function.arguments);
-            const args = JSON.parse(toolCall.function.arguments);
-            const argsBody = Object.entries(args)
-                .map(([k, v]) => `${k}:\n${v}`)
-                .join("\n");
+            toolCall.function.arguments = argsJson;
             const toolResult = await executeTool(toolCall.function.name, args);
 
             history.push({ role: "tool", tool_call_id: toolCall.id, content: toolResult });
@@ -252,7 +249,7 @@ export class Agent {
                 type: "agent-tool-done",
                 toolCallId: toolCall.id,
                 toolName: toolCall.function.name,
-                toolArgs: argsBody,
+                toolArgs: body,
                 toolTarget: getToolTarget(toolCall.function.name, args),
                 toolResult,
                 toolLastCall: toolCall === toolCalls.at(-1) && !signal.aborted,

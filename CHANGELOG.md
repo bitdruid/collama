@@ -1,6 +1,12 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.6] - 2026-06-19
+
+### Added
+- Diff highlighting in chat code blocks (green additions / red deletions)
+- Edit tool accordion now renders a git-style unified diff instead of raw `oldString`/`newString`
+
 ## [1.8.5] - 2026-06-19
 
 ### Added

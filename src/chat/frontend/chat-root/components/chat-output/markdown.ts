@@ -178,6 +178,8 @@ function createChatMarkdown(): MarkdownIt {
         } else if (lang.startsWith("Context:")) {
             accordionType = "context";
             expandedAttr = "";
+        } else if (lang === "diff") {
+            languageAttr = 'language="diff"';
         }
 
         if (accordionType !== "code") {

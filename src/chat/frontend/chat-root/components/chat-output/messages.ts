@@ -67,6 +67,7 @@ export function renderToolMessage(opts: ToolRenderOptions) {
             description="${toolTarget}"
             .code="${toolArgs}"
             .copyCode="${toolArgs}"
+            language="${toolName === "edit" ? "diff" : ""}"
         ></collama-accordion>
     `;
 

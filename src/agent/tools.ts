@@ -1,3 +1,4 @@
+import { structuredPatch } from "diff";
 import os from "os";
 import path from "path";
 import * as vscode from "vscode";
@@ -66,6 +67,20 @@ export function getToolTarget(toolName: string, args: Record<string, any>): stri
     }
     return formatToolTargetValue(key, args[key]);
 }
+
+/**
+ * Renders an edit tool's oldString → newString as a git-style unified diff
+ * (`--- a/… / +++ b/…` header + hunks) so the chat accordion highlights it as a `diff` block.
+ */
+function buildEditDiff(filePath: string, oldString: string, newString: string): string {
+    const { hunks } = structuredPatch(filePath, filePath, oldString, newString, "", "", { context: 3 });
+    const header = `--- a/${filePath}\n+++ b/${filePath}`;
+    const body = hunks
+        .map((h) => `@@ -${h.oldStart},${h.oldLines} +${h.newStart},${h.newLines} @@\n${h.lines.join("\n")}`)
+        .join("\n");
+    return `${header}\n${body}`;
+}
+
 
 /**
  * Represents a tool that can be executed by the agent.
@@ -214,22 +229,34 @@ export function isWithinAllowedTemp(resolvedPath: string): boolean {
     return normalizedPath === normalizedTmp || normalizedPath.startsWith(normalizedTmp + path.sep);
 }
 
+export interface NormalizedToolArgs {
+    /** Args re-serialized with `filePath` canonicalized to an absolute path (for history / execution / evalOutdated). */
+    argsJson: string;
+    /** The parsed args, with `filePath` already canonicalized. */
+    args: Record<string, any>;
+    /** UI display body for the chat accordion: a unified diff for edits, else a `key:\nvalue` dump. */
+    body: string;
+}
+
 /**
- * Canonicalizes `filePath` in a tool call's raw JSON arguments to an absolute path and returns
- * the re-serialized string. Gives the same file a single representation everywhere (history,
- * execution, evalOutdated comparison). Unparseable or filePath-less args are returned unchanged.
+ * Parses a tool call's raw JSON arguments once and derives everything downstream needs:
+ * a canonical `filePath` (absolute, so the same file has one representation everywhere), the
+ * parsed args for execution, and the display body for the UI. Throws on unparseable JSON.
  */
-export function normalizeToolArgs(argsJson: string): string {
-    try {
-        const args = JSON.parse(argsJson);
-        if (typeof args.filePath === "string") {
-            args.filePath = path.resolve(getWorkspaceRoot() ?? "", args.filePath);
-            return JSON.stringify(args);
-        }
-    } catch {
-        // leave invalid JSON for executeTools' own parsing to report
+export function normalizeToolArgs(toolName: string, argsJson: string): NormalizedToolArgs {
+    const args = JSON.parse(argsJson);
+    const relPath = typeof args.filePath === "string" ? args.filePath : "";
+    if (relPath) {
+        args.filePath = path.resolve(getWorkspaceRoot() ?? "", relPath);
+        argsJson = JSON.stringify(args);
     }
-    return argsJson;
+    const body =
+        toolName === "edit"
+            ? `explanation:\n${args.explanation}\n\n${buildEditDiff(relPath, args.oldString ?? "", args.newString ?? "")}`
+            : Object.entries(args)
+                  .map(([k, v]) => `${k}:\n${v}`)
+                  .join("\n");
+    return { argsJson, args, body };
 }
 
 /**

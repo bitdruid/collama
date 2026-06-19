@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.8.5",
+    "version": "1.8.6",
     "engines": {
         "vscode": "^1.120.0"
     },
@@ -271,6 +271,7 @@
         "test": "vscode-test"
     },
     "devDependencies": {
+        "@types/diff": "^7.0.2",
         "@types/markdown-it": "^14.1.2",
         "@types/node": "25.x",
         "@types/vscode": "^1.120.0",
@@ -287,6 +288,7 @@
         "@fontsource/jetbrains-mono": "^5.2.8",
         "@fontsource/roboto": "^5.2.10",
         "@microsoft/tiktokenizer": "^1.0.10",
+        "diff": "^9.0.0",
         "globby": "^16.2.0",
         "highlight.js": "^11.11.1",
         "lit": "^3.3.3",

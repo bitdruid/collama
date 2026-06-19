@@ -39,6 +39,18 @@ export const codeBlockStyles = [
             font-weight: ${themeFonts.weight.light} !important;
             font-size: 0.95em;
         }
+
+        pre code.hljs .hljs-addition {
+            display: inline-block;
+            width: 100%;
+            background: rgba(63, 185, 80, 0.15);
+        }
+
+        pre code.hljs .hljs-deletion {
+            display: inline-block;
+            width: 100%;
+            background: rgba(248, 81, 73, 0.15);
+        }
     `,
 ];
 
