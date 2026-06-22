@@ -5,6 +5,8 @@ import type { ToolConfirmRequest } from "../../../../../shared";
 import { themeIcons } from "../../../../styles";
 import "../../../../template-components/banner";
 import "../../../../template-components/button-box";
+import "../../../../template-components/button-row";
+import "../../../../template-components/text-box";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
 import { buildOpenFileCommandUri } from "../../../utils";
 import { toolConfirmStyles } from "./styles";
@@ -18,14 +20,17 @@ export class ToolConfirmModal extends BaseModal {
     @state() private _cancelReason = "";
 
     @query(".cancel-input")
-    private cancelInput!: HTMLInputElement;
+    private cancelInput!: HTMLElement;
 
     private handleAccept = () => this._accept();
     private handleAcceptAll = () => this._acceptAll();
     private handleCancel = () => this._cancel();
     private handleSendCancel = () => this._sendCancel();
-    private handleCancelInput = (e: Event) => (this._cancelReason = (e.target as HTMLInputElement).value);
-    private handleCancelKeyDown = (e: KeyboardEvent) => this._cancelKeyDown(e);
+    private handleCancelInput = (e: CustomEvent<{ value: string }>) => (this._cancelReason = e.detail.value);
+    private handleCancelDismiss = () => {
+        this._showCancelInput = false;
+        this._cancelReason = "";
+    };
 
     constructor() {
         super();
@@ -50,10 +55,6 @@ export class ToolConfirmModal extends BaseModal {
     }
 
     private _cancel() {
-        if (this._showCancelInput) {
-            this._sendCancel();
-            return;
-        }
         this._showCancelInput = true;
         this.updateComplete.then(() => {
             this.cancelInput?.focus();
@@ -73,18 +74,6 @@ export class ToolConfirmModal extends BaseModal {
             }),
         );
         this._reset();
-    }
-
-    private _cancelKeyDown(e: KeyboardEvent) {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            this._sendCancel();
-        }
-        if (e.key === "Escape") {
-            e.preventDefault();
-            this._showCancelInput = false;
-            this._cancelReason = "";
-        }
     }
 
     private _emit(eventName: string) {
@@ -140,28 +129,35 @@ export class ToolConfirmModal extends BaseModal {
 
                 ${this._showCancelInput
                     ? html`
-                          <div class="cancel-input-row">
-                              <input
-                                  class="cancel-input"
-                                  type="text"
-                                  placeholder="What should the agent do instead?"
-                                  .value=${this._cancelReason}
-                                  @input=${this.handleCancelInput}
-                                  @keydown=${this.handleCancelKeyDown}
-                              />
-                              <button class="btn-send" @click=${this.handleSendCancel}>Send</button>
-                          </div>
+                          <collama-textbox
+                              class="cancel-input"
+                              mode="input"
+                              placeholder="What should the agent do instead?"
+                              .value=${this._cancelReason}
+                              @textbox-input=${this.handleCancelInput}
+                              @textbox-submit=${this.handleSendCancel}
+                              @textbox-cancel=${this.handleCancelDismiss}
+                          ></collama-textbox>
                       `
                     : null}
 
-                <div class="confirm-buttons">
+                <collama-button-row>
                     <collama-accept-button title="Accept" @action=${this.handleAccept}></collama-accept-button>
                     <collama-accept-all-button
                         title="Accept All"
                         @action=${this.handleAcceptAll}
                     ></collama-accept-all-button>
                     <collama-cancel-button title="Cancel" @action=${this.handleCancel}></collama-cancel-button>
-                </div>
+                    ${this._showCancelInput
+                        ? html`
+                              <collama-send-button
+                                  title="Submit"
+                                  ?disabled=${!this._cancelReason.trim()}
+                                  @action=${this.handleSendCancel}
+                              ></collama-send-button>
+                          `
+                        : null}
+                </collama-button-row>
             </div>
         `;
     }

@@ -11,7 +11,6 @@ export const controlPanelStyles = css`
 
     textarea {
         ${themeStyles.textarea}
-        resize: none;
         margin-bottom: 4px;
     }
 
@@ -20,7 +19,7 @@ export const controlPanelStyles = css`
     }
 
     textarea::placeholder {
-        color: ${themeColors.placeholder};
+        ${themeStyles.placeholder}
     }
 
     textarea:disabled {

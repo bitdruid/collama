@@ -27,7 +27,7 @@ export const chatTransferButtonStyles = css`
     }
 
     .transfer-button:hover:not(:disabled) {
-        background-color: ${themeColors.uiBackgroundDimm};
+        background-color: ${themeColors.uiBackground};
     }
 
     .transfer-button:disabled {

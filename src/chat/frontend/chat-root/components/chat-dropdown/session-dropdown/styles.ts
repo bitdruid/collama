@@ -11,8 +11,12 @@ export const sessionItemStyles = css`
         transition: background 0.1s ease;
     }
 
+    .session-item + .session-item {
+        border-top: 1px solid ${themeColors.uiBorder};
+    }
+
     .session-item:hover {
-        background: ${themeColors.uiBackgroundHoverDimm};
+        background: ${themeColors.uiBackgroundHover};
     }
 
     .session-item.active {
@@ -78,7 +82,7 @@ export const sessionItemStyles = css`
     }
 
     .action-button:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .copy-button,

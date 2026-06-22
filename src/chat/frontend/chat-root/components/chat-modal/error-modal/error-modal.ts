@@ -1,5 +1,6 @@
 import { html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import "../../../../template-components/button-row";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
 import { errorModalStyles } from "./styles";
 
@@ -37,10 +38,10 @@ export class ErrorModal extends BaseModal {
     protected renderContent() {
         return html`
             <pre class="error-content">${this.content}</pre>
-            <div class="error-actions">
+            <collama-button-row>
                 <button class="btn-copy" @click=${this._copy}>${this._copyLabel}</button>
                 <button class="btn-close" @click=${this.close}>Close</button>
-            </div>
+            </collama-button-row>
         `;
     }
 }

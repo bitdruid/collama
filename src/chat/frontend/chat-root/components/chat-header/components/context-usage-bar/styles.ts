@@ -17,7 +17,7 @@ export const contextUsageBarStyles = css`
         flex: 1;
         min-width: 70px;
         height: 10px;
-        background: ${themeColors.uiBackgroundDimm};
+        background: ${themeColors.uiBackground};
         border: ${themeStyles.border.normal};
         border-radius: ${themeStyles.borderRadius.medium};
         overflow: hidden;

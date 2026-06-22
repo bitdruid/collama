@@ -9,6 +9,11 @@ export class ContextUsageBar extends LitElement {
 
     static styles = [contextUsageBarStyles];
 
+    /** Formats a number with locale-aware thousands separator. */
+    private formatNumber(n: number): string {
+        return n.toLocaleString();
+    }
+
     render() {
         if (this.max <= 0) {
             return html``;
@@ -16,7 +21,10 @@ export class ContextUsageBar extends LitElement {
         const pct = Math.min((this.used / this.max) * 100, 100);
         const barClass = pct >= 90 ? "danger" : pct >= 75 ? "warning" : "";
         return html`
-            <div class="context-usage" title="Context usage: ${this.used} / ${this.max} tokens">
+            <div
+                class="context-usage"
+                title="Context usage: ${this.formatNumber(this.used)} / ${this.formatNumber(this.max)} tokens"
+            >
                 <div class="context-bar-container">
                     <div class="context-bar ${barClass}" style="width: ${pct}%"></div>
                 </div>

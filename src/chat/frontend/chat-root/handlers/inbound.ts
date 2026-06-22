@@ -29,7 +29,9 @@ export function createInboundDispatcher(host: ChatRoot) {
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
         "tool-decision-request": (m) => handleToolDecisionRequest(host, m),
     };
-    return (msg: any) => handlers[msg.type]?.(msg);
+    return (msg: any) => {
+        handlers[msg.type]?.(msg);
+    };
 }
 
 // ---------- session ----------

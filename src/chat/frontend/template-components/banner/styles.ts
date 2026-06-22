@@ -16,9 +16,12 @@ export const bannerStyles = css`
         cursor: pointer;
         user-select: none;
         border: ${themeStyles.border.dimm};
-        border-radius: ${themeStyles.borderRadius.medium};
+        border-radius: ${themeStyles.borderRadius.large};
         box-sizing: border-box;
         text-align: left;
+        font-size: ${themeFonts.size.normal};
+        line-height: ${themeFonts.lineHeight.normal};
+        border-radius: ${themeStyles.borderRadius.large};
         transition: background 0.15s;
     }
 
@@ -26,9 +29,21 @@ export const bannerStyles = css`
         background: ${themeColors.uiBackgroundHoverDimm};
     }
 
-    /* Height for box banner without icon */
     .banner:not(.bare) {
         min-height: 24px;
+    }
+
+    .banner.bare {
+        min-height: calc(${themeFonts.size.normal} * ${themeFonts.lineHeight.normal} + 8px);
+        align-items: flex-start;
+    }
+
+    .banner.bare .banner-pill {
+        height: calc(${themeFonts.size.normal} * ${themeFonts.lineHeight.normal});
+    }
+
+    .banner.bare .banner-label {
+        text-box: normal;
     }
 
     .banner.type-info {

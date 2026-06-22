@@ -1,6 +1,24 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.7] - 2026-06-22
+
+### Added
+- Fancy typing effect — char-by-char reveal for streaming assistant text with animated glyph particles
+- Visual indicator for characters inside thinking/reasoning content
+- Scroll-down button now animates while the agent is generating
+- Context usage bar now uses thousands delimiter for readability
+
+### Changed
+- Reduced color variations and detail across UI (simplified theme tokens, button-box, modals, accordions)
+- Updated UI shadows and dropdown animation (uniform shadow, no clip-path)
+- Replaced "eyecandy" toggle with fancy typing effect (always-on particle effect)
+- Removed snake loading animation
+- Banner styling fixes and minimum size adjustments
+
+### Fixed
+- Action button hover styling in session items
+
 ## [1.8.6] - 2026-06-19
 
 ### Added

@@ -86,8 +86,7 @@ export class ChatRoot extends LitElement {
     @state() acquireModalDescription = "";
     @state() errorModalContent = "";
     @state() activeModal: ActiveModal = "";
-    @state() snakeLoadingEnabled = false;
-    @state() snakeEyecandyMode = false;
+    @state() fancyTyping = false;
     @state() flatDesign = false;
     @state() showThinking = false;
     @state() agentsMdActive = false;
@@ -150,15 +149,10 @@ export class ChatRoot extends LitElement {
         this.errorModalContent = "";
     };
     private handleSettingsUpdate = (e: CustomEvent) => onSettingsUpdate(this, e);
-    private handleSnakeLoadingEnabledUpdate = (e: CustomEvent) => {
-        this.snakeLoadingEnabled = Boolean(e.detail?.value);
+    private handleFancyTypingUpdate = (e: CustomEvent) => {
+        this.fancyTyping = Boolean(e.detail?.value);
         const state = window.vscode.getState?.() || {};
-        window.vscode.setState?.({ ...state, snakeLoadingEnabled: this.snakeLoadingEnabled });
-    };
-    private handleSnakeEyecandyUpdate = (e: CustomEvent) => {
-        this.snakeEyecandyMode = Boolean(e.detail?.value);
-        const state = window.vscode.getState?.() || {};
-        window.vscode.setState?.({ ...state, snakeEyecandyMode: this.snakeEyecandyMode });
+        window.vscode.setState?.({ ...state, fancyTyping: this.fancyTyping });
     };
     private handleFlatDesignUpdate = (e: CustomEvent) => {
         this.flatDesign = Boolean(e.detail?.value);
@@ -216,11 +210,8 @@ export class ChatRoot extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         const state = window.vscode.getState?.() || {};
-        if (typeof state.snakeLoadingEnabled === "boolean") {
-            this.snakeLoadingEnabled = state.snakeLoadingEnabled;
-        }
-        if (typeof state.snakeEyecandyMode === "boolean") {
-            this.snakeEyecandyMode = state.snakeEyecandyMode;
+        if (typeof state.fancyTyping === "boolean") {
+            this.fancyTyping = state.fancyTyping;
         }
         if (typeof state.flatDesign === "boolean") {
             this.flatDesign = state.flatDesign;
@@ -426,15 +417,13 @@ export class ChatRoot extends LitElement {
                 <collama-settings-dropdown
                     .autoShow=${true}
                     .config=${this.config}
-                    .snakeLoadingEnabled=${this.snakeLoadingEnabled}
-                    .snakeEyecandyMode=${this.snakeEyecandyMode}
+                    .fancyTyping=${this.fancyTyping}
                     .flatDesign=${this.flatDesign}
                     .showThinking=${this.showThinking}
                     .agentsMdActive=${this.agentsMdActive}
                     @dropdown-close=${this.handleDropdownClose}
                     @settings-update=${this.handleSettingsUpdate}
-                    @snake-loading-enabled-update=${this.handleSnakeLoadingEnabledUpdate}
-                    @snake-eyecandy-update=${this.handleSnakeEyecandyUpdate}
+                    @fancy-typing-update=${this.handleFancyTypingUpdate}
                     @flat-design-update=${this.handleFlatDesignUpdate}
                     @show-thinking-update=${this.handleShowThinkingUpdate}
                 ></collama-settings-dropdown>
@@ -502,7 +491,7 @@ export class ChatRoot extends LitElement {
         const showContextNotification = hasOutOfContextMessages || this._shouldShowContextNotification();
         const contextNotificationKind = hasOutOfContextMessages ? "out-of-context" : "threshold";
 
-        const showLoadingDots = this.isGenerating && !this.snakeLoadingEnabled;
+        const showLoadingDots = this.isGenerating;
         return html`
             <collama-chatheader
                 .contextUsed=${this.contextUsed}
@@ -531,6 +520,7 @@ export class ChatRoot extends LitElement {
                         .isGenerating=${this.isGenerating}
                         .showLoadingDots=${showLoadingDots}
                         .showThinking=${this.showThinking}
+                        .fancyTyping=${this.fancyTyping}
                         @resend-message=${this.handleResendMessage}
                         @edit-message=${this.handleEditMessage}
                         @delete-message=${this.handleDeleteMessage}
@@ -547,6 +537,7 @@ export class ChatRoot extends LitElement {
                         : ""}
                     <collama-scroll-down
                         .visible=${this.showScrollButton}
+                        .isGenerating=${this.isGenerating}
                         @scroll-down=${this.handleScrollDown}
                     ></collama-scroll-down>
                     <div class="bottom-overlay">
@@ -578,12 +569,6 @@ export class ChatRoot extends LitElement {
                     .autoAccept=${this.autoAccept}
                 ></collama-chatinput>
             </div>
-            ${this.snakeLoadingEnabled
-                ? html`<collama-loading-snake
-                      .isGenerating=${this.isGenerating}
-                      .eyecandy=${this.snakeEyecandyMode}
-                  ></collama-loading-snake>`
-                : ""}
         `;
     }
 }

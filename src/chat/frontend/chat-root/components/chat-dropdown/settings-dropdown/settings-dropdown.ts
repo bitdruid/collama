@@ -24,8 +24,7 @@ export class SettingsDropdown extends BaseDropdown {
     `;
 
     @property({ type: Object }) config: ChatSettings = defaultChatSettings;
-    @property({ type: Boolean }) snakeLoadingEnabled = false;
-    @property({ type: Boolean }) snakeEyecandyMode = false;
+    @property({ type: Boolean }) fancyTyping = false;
     @property({ type: Boolean }) flatDesign = false;
     @property({ type: Boolean }) showThinking = false;
     @property({ type: Boolean }) agentsMdActive = false;
@@ -41,14 +40,9 @@ export class SettingsDropdown extends BaseDropdown {
         emit(this, "settings-update", { key: "verbosityMode", value });
     };
 
-    private _updateSnakeLoadingEnabled = (event: Event) => {
+    private _updateFancyTyping = (event: Event) => {
         const value = Number((event.target as HTMLInputElement).value) === 1;
-        emit(this, "snake-loading-enabled-update", { value });
-    };
-
-    private _updateSnakeEyecandy = (event: Event) => {
-        const value = Number((event.target as HTMLInputElement).value) === 1;
-        emit(this, "snake-eyecandy-update", { value });
+        emit(this, "fancy-typing-update", { value });
     };
 
     private _updateFlatDesign = (event: Event) => {
@@ -94,8 +88,7 @@ export class SettingsDropdown extends BaseDropdown {
             <section class="settings-section">
                 <div class="settings-header">Style</div>
                 ${this._renderStyleToggle("Flat Design", this.flatDesign, this._updateFlatDesign)}
-                ${this._renderStyleToggle("Loading Snake", this.snakeLoadingEnabled, this._updateSnakeLoadingEnabled)}
-                ${this._renderStyleToggle("Eyecandy-Mode", this.snakeEyecandyMode, this._updateSnakeEyecandy)}
+                ${this._renderStyleToggle("Fancy Typing", this.fancyTyping, this._updateFancyTyping)}
             </section>
             <section class="settings-section">
                 <div class="settings-header">Agent</div>

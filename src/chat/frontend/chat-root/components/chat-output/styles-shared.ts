@@ -136,7 +136,7 @@ export const outputStyles = [
         }
 
         th {
-            background: ${themeColors.uiBackgroundDimm};
+            background: ${themeColors.uiBackground};
             font-weight: ${themeFonts.weight.bold};
         }
 

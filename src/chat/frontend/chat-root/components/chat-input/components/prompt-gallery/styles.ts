@@ -19,7 +19,7 @@ export const galleryStyles = css`
         padding: 6px 8px;
         cursor: pointer;
         border-radius: ${themeStyles.borderRadius.small};
-        border-bottom: 1px solid ${themeColors.uiBorderDimm};
+        border-bottom: 1px solid ${themeColors.uiBorder};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.size.normal};
     }
@@ -29,7 +29,7 @@ export const galleryStyles = css`
     }
 
     .prompt-item:hover {
-        background: ${themeColors.uiBackgroundHoverDimm};
+        background: ${themeColors.uiBackgroundHover};
     }
 
     .prompt-list {
@@ -67,8 +67,8 @@ export const galleryStyles = css`
         background: linear-gradient(
             to right,
             transparent 0%,
-            ${themeColors.uiBackgroundHoverDimm} 40%,
-            ${themeColors.uiBackgroundHoverDimm} 100%
+            ${themeColors.uiBackgroundHover} 40%,
+            ${themeColors.uiBackgroundHover} 100%
         );
         border-radius: ${themeStyles.borderRadius.small};
     }

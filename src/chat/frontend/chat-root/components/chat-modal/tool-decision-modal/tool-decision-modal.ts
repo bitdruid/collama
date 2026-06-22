@@ -4,6 +4,9 @@ import { classMap } from "lit/directives/class-map.js";
 
 import type { ToolDecisionRequest } from "../../../../../shared";
 import "../../../../template-components/banner";
+import "../../../../template-components/button-box";
+import "../../../../template-components/button-row";
+import "../../../../template-components/text-box";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
 import { toolDecisionStyles } from "./styles";
 
@@ -15,12 +18,13 @@ export class ToolDecisionModal extends BaseModal {
 
     @state() private _showCustomInput = false;
     @state() private _customValue = "";
+    @state() private _selectedOption: string | null = null;
 
-    @query(".decision-option")
-    private firstOption!: HTMLButtonElement;
+    @query("collama-textbox")
+    private firstOption!: HTMLElement;
 
-    @query(".custom-textarea")
-    private customTextarea!: HTMLTextAreaElement;
+    @query(".custom-textbox")
+    private customTextarea!: HTMLElement;
 
     constructor() {
         super();
@@ -32,6 +36,7 @@ export class ToolDecisionModal extends BaseModal {
     override show(title?: string) {
         this._showCustomInput = false;
         this._customValue = "";
+        this._selectedOption = null;
         super.show(title);
         this._focusFirstOption();
     }
@@ -61,29 +66,39 @@ export class ToolDecisionModal extends BaseModal {
         );
     }
 
+    private _selectOption(option: string) {
+        this._selectedOption = option;
+        this._showCustomInput = false;
+    }
+
     private _openCustomInput() {
         this._showCustomInput = true;
+        this._selectedOption = null;
         this._focusFirstOption();
     }
 
-    private _submitCustom() {
-        const value = this._customValue.trim();
+    /** The value the Submit button would commit: the typed "other", or the selected option. */
+    private get _pendingValue(): string | null {
+        if (this._showCustomInput) {
+            return this._customValue.trim() || null;
+        }
+        return this._selectedOption;
+    }
+
+    private _submit() {
+        const value = this._pendingValue;
         if (value) {
             this._select(value);
         }
     }
 
-    private _onCustomKeydown(e: KeyboardEvent) {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            this._submitCustom();
-        }
-        if (e.key === "Escape") {
-            e.preventDefault();
-            e.stopPropagation();
-            this._showCustomInput = false;
-            this._focusFirstOption();
-        }
+    private _onCustomInput(e: CustomEvent<{ value: string }>) {
+        this._customValue = e.detail.value;
+    }
+
+    private _closeCustomInput() {
+        this._showCustomInput = false;
+        this._focusFirstOption();
     }
 
     private _keepFocus = (e: FocusEvent) => {
@@ -133,35 +148,39 @@ export class ToolDecisionModal extends BaseModal {
                 <div class="decision-options">
                     ${this.request.options.map(
                         (option) => html`
-                            <button class="decision-option" @click=${() => this._select(option)}>${option}</button>
+                            <collama-textbox
+                                ?selected=${this._selectedOption === option}
+                                @action=${() => this._selectOption(option)}
+                            >
+                                ${option}
+                            </collama-textbox>
                         `,
                     )}
-                    <button
-                        class="decision-option decision-other ${classMap({ hidden: this._showCustomInput })}"
-                        @click=${this._openCustomInput}
+                    <collama-textbox
+                        class="decision-other ${classMap({ hidden: this._showCustomInput })}"
+                        @action=${this._openCustomInput}
                     >
                         Describe other...
-                    </button>
-                </div>
-                <div class="custom-input-area ${classMap({ visible: this._showCustomInput })}">
-                    <div class="custom-input-row">
-                        <textarea
-                            class="custom-textarea"
+                    </collama-textbox>
+                    <div class="custom-input-area ${classMap({ visible: this._showCustomInput })}">
+                        <collama-textbox
+                            class="custom-textbox"
+                            mode="input"
                             .value=${this._customValue}
-                            @input=${(e: InputEvent) => {
-                                this._customValue = (e.target as HTMLTextAreaElement).value;
-                            }}
-                            @keydown=${this._onCustomKeydown}
-                            placeholder="Describe your own option..."
-                            rows="1"
-                        ></textarea>
-                        <collama-accept-button
-                            title="Submit"
-                            ?disabled=${!this._customValue.trim()}
-                            @action=${this._submitCustom}
-                        ></collama-accept-button>
+                            placeholder="Describe other..."
+                            @textbox-input=${this._onCustomInput}
+                            @textbox-submit=${this._submit}
+                            @textbox-cancel=${this._closeCustomInput}
+                        ></collama-textbox>
                     </div>
                 </div>
+                <collama-button-row>
+                    <collama-send-button
+                        title="Submit"
+                        ?disabled=${!this._pendingValue}
+                        @action=${this._submit}
+                    ></collama-send-button>
+                </collama-button-row>
             </div>
         `;
     }

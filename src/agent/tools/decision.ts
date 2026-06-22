@@ -111,7 +111,7 @@ export const decision_def = {
     function: {
         name: "decision",
         description:
-            "Use to ask the user a question with multiple choices before you edit to verify the right way. For arguments use plain text only, no Markdown.",
+            "Use to ask the user a question with multiple choices before you edit to verify the right way. Minimum 2 options. For arguments use plain text only, no Markdown.",
         parameters: {
             type: "object",
             properties: {

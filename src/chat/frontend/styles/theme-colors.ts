@@ -17,12 +17,12 @@ const lighten = (c: Color, n: number) => unsafeCSS(`hsl(from ${cssOf(c)} h s min
 
 const getBorder = (color: Color) =>
     unsafeCSS(
-        `color-mix(in srgb, ${cssOf(color)} calc(var(--theme-flat, 0) * 100%), ${contrast(color, 11).cssText} calc((1 - var(--theme-flat, 0)) * 100%))`,
+        `color-mix(in srgb, ${cssOf(color)} calc(var(--theme-flat, 0) * 100%), ${contrast(color, 15).cssText} calc((1 - var(--theme-flat, 0)) * 100%))`,
     );
 const getHover = (color: Color) => contrast(color, 6);
 
 export const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
-const defaultColor = contrast(baseColor, 6);
+const defaultColor = contrast(baseColor, 5);
 const dimmColor = darken(baseColor, 4);
 
 /**
@@ -87,7 +87,7 @@ export const themeColors = {
     usageDanger: unsafeCSS("#f14c4c"),
 
     /* Shadow Color */
-    uiShadow: defaultColor,
+    uiShadow: contrast(defaultColor, 15),
 
     /* User interactive element Colors */
     placeholder: contrast(defaultColor, 20),
@@ -121,3 +121,5 @@ export const themeColors = {
     hyperlink: unsafeCSS("var(--vscode-textLink-foreground)"),
     hyperlinkHover: unsafeCSS("var(--vscode-textLink-activeForeground)"),
 } as const;
+
+export const rainbowPalette = ["#ff004c", "#ff9f00", "#fff200", "#00ff66", "#00c8ff", "#8f00ff"] as const;

@@ -7,7 +7,7 @@ export const accordionStyles = [
     bannerStyles,
     css`
         :host {
-            font-familiy: ${themeFonts.familyMono};
+            font-family: ${themeFonts.familyMono};
             display: block;
             max-width: 750px;
             margin: 0px 0px;

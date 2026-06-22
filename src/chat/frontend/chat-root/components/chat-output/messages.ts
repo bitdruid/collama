@@ -1,6 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory, ToolMessage } from "../../../../../common/context-chat";
+import { estTokens } from "../../../../../common/utils";
 import { themeIcons } from "../../../styles";
 import "./edit";
 
@@ -28,12 +29,12 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
 
     return html`
         <div class="message assistant ${outOfContextClass}">
-            <div class="bubble-assistant">
+            <div class="bubble-assistant ${isStreaming ? "streaming" : ""}">
                 ${renderThinking
                     ? html`<collama-accordion
                           type="think"
                           label="Thinking"
-                          description=${isStreaming && !msg.content ? "…" : ""}
+                          description=${thinking ? `(~${estTokens(thinking.length).toLocaleString()} tokens)` : ""}
                           >${unsafeHTML(opts.getCachedMarkdown(thinking, isStreaming))}</collama-accordion
                       >`
                     : ""}

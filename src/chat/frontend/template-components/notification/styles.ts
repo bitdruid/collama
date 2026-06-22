@@ -23,7 +23,7 @@ export const baseNotificationStyles = css`
         border: ${themeStyles.border.normal};
         border-radius: ${themeStyles.borderRadius.large};
         background: ${themeColors.uiBackground};
-        ${themeStyles.boxShadow}
+        box-shadow: ${themeStyles.boxShadow};
         color: ${themeColors.uiFont};
         font-family: ${themeFonts.familyMono};
         font-size: ${themeFonts.size.small};

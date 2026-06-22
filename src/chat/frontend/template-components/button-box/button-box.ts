@@ -66,6 +66,13 @@ export class AcceptButton extends ButtonBox {
     protected override defaultTitle = "Accept";
 }
 
+@customElement("collama-send-button")
+export class SendButton extends ButtonBox {
+    override variant = "send";
+    override icon = themeIcons.send.large;
+    protected override defaultTitle = "Send";
+}
+
 @customElement("collama-cancel-button")
 export class CancelButton extends ButtonBox {
     override variant = "cancel";

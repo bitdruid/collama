@@ -6,8 +6,10 @@ import { themeIcons } from "../../../styles";
 import "../chat-loading-animation/dots";
 import "./empty-state";
 import { chatMarkdown } from "./markdown";
+import { CharReveal } from "./char-reveal";
 import { renderAssistantMessage, renderToolMessage, renderUserMessage } from "./messages";
 import { outputStyles } from "./styles-shared";
+import { TypingFx, typingFxStyles } from "./typing-fx";
 
 type MessageGroup =
     | { type: "tool-group"; tools: ToolMessage[]; startIndex: number }
@@ -58,14 +60,27 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
 
 @customElement("collama-chatoutput")
 export class ChatOutput extends LitElement {
-    static styles = outputStyles;
+    static styles = [outputStyles, typingFxStyles];
 
     @property({ type: Array }) messages: ChatHistory[] = [];
     @property({ type: Number }) contextStartIndex: number = 0;
     @property({ type: Boolean }) isGenerating: boolean = false;
     @property({ type: Boolean }) showLoadingDots: boolean = false;
     @property({ type: Boolean }) showThinking: boolean = false;
+    @property({ type: Boolean, reflect: true }) fancyTyping: boolean = false;
     @state() editingIndex: number | null = null;
+
+    /** Display-only char-by-char reveal of the streaming message (fancy typing). */
+    private _charReveal = new CharReveal(
+        () => this._streamingMessage(),
+        () => this.requestUpdate(),
+    );
+
+    /** "Blast-in" particle effect for streaming text (fancy typing only). */
+    private _typingFx = new TypingFx(
+        () => (this.shadowRoot?.getElementById("collama-fx-layer") as HTMLElement) ?? null,
+        () => (this.shadowRoot?.querySelector(".bubble-assistant.streaming") as HTMLElement) ?? null,
+    );
 
     // private highlightedBlocks = new WeakSet<Element>();
     private renderedMarkdownCache = new Map<string, string>();
@@ -159,11 +174,16 @@ export class ChatOutput extends LitElement {
         this.removeEventListener("wheel", this.handleWheel);
         this.removeEventListener("scroll", this.handleScroll);
         this._clearShowButtonTimer();
+        this._charReveal.stop();
         super.disconnectedCallback();
     }
 
     updated(changed: Map<string, unknown>) {
-        if ((changed.has("messages") || changed.has("isGenerating")) && this._stickyScroll) {
+        const revealing = this.fancyTyping && this.isGenerating;
+        // While revealing, the text grows every frame (via requestUpdate) with no
+        // property change, so keep the view pinned on each of those renders too.
+        const grew = changed.has("messages") || changed.has("isGenerating") || revealing;
+        if (grew && this._stickyScroll) {
             // Instant scroll while streaming; Smooth only when idle.
             const behavior = this.isGenerating ? "auto" : "smooth";
             requestAnimationFrame(() => {
@@ -173,6 +193,24 @@ export class ChatOutput extends LitElement {
         if ((changed.has("messages") || changed.has("isGenerating")) && !this.isGenerating) {
             this._highlightAllAccordions();
         }
+
+        // Pace the char-by-char reveal, then blast in a glyph for each newly
+        // revealed char (fancy typing only). Feeding the typing-fx the *revealed*
+        // prefix keeps the glyphs in lockstep with the text.
+        this._charReveal.sync(revealing);
+        const content = this._streamingMessage().content;
+        this._typingFx.update(revealing, revealing ? this._charReveal.cap(content) : content);
+    }
+
+    /** The in-flight assistant message's content and id, or empty. */
+    private _streamingMessage(): { content: string; id: string | null } {
+        for (let i = this.messages.length - 1; i >= 0; i--) {
+            if (this.messages[i].role === "assistant") {
+                const m = this.messages[i];
+                return { content: m.content ?? "", id: m.customKeys?.id ?? null };
+            }
+        }
+        return { content: "", id: null };
     }
 
     private _highlightAllAccordions() {
@@ -263,10 +301,18 @@ export class ChatOutput extends LitElement {
                             });
                         }
 
+                        const isStreaming = this.isGenerating && index === lastAssistantIndex && !!msg.content;
+                        // Cap the in-flight message to the revealed prefix so the
+                        // text streams in char by char (fancy typing only).
+                        const revealMsg =
+                            isStreaming && this.fancyTyping
+                                ? { ...msg, content: this._charReveal.cap(msg.content) }
+                                : msg;
+
                         return renderAssistantMessage({
-                            msg,
+                            msg: revealMsg,
                             outOfContextClass,
-                            isStreaming: this.isGenerating && index === lastAssistantIndex && !!msg.content,
+                            isStreaming,
                             showThinking: this.showThinking,
                             getCachedMarkdown: this._getCachedMarkdown,
                         });
@@ -274,6 +320,7 @@ export class ChatOutput extends LitElement {
                 )}
                 ${this.showLoadingDots ? html`<collama-loading-dots visible></collama-loading-dots>` : ""}
             </div>
+            ${this.fancyTyping ? html`<div class="fx-layer" id="collama-fx-layer"></div>` : ""}
         `;
     }
 }

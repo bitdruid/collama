@@ -1,7 +1,8 @@
 import jetbrainsMono200 from "@fontsource/jetbrains-mono/latin-200.css";
 import jetbrainsMono400 from "@fontsource/jetbrains-mono/latin-400.css";
 import jetbrainsMono700 from "@fontsource/jetbrains-mono/latin-700.css";
-import { unsafeCSS } from "lit";
+import { css, unsafeCSS } from "lit";
+import { themeColors } from "./theme-colors";
 
 const STYLE_ID = "collama-fonts";
 
@@ -26,7 +27,6 @@ export const themeFonts = {
         small: unsafeCSS("11px"),
         normal: unsafeCSS("13px"),
         large: unsafeCSS("16px"),
-        user: unsafeCSS("14px"),
     },
     family: unsafeCSS(
         "var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif)",

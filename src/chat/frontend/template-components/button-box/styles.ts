@@ -33,12 +33,6 @@ export const buttonBoxStyles = css`
         stroke-width: 3;
     }
 
-    .button-box:disabled {
-        color: ${themeColors.disabled};
-        cursor: not-allowed;
-        opacity: 0.7;
-    }
-
     .button-box.accept {
         color: ${themeColors.submit};
     }
@@ -55,6 +49,14 @@ export const buttonBoxStyles = css`
         border-color: ${themeColors.cancelHover};
     }
 
+    .button-box.send {
+        color: ${themeColors.submit};
+    }
+    .button-box.send:hover:not(:disabled) {
+        color: ${themeColors.submitHover};
+        border-color: ${themeColors.submitHover};
+    }
+
     .button-box.accept-all {
         color: ${themeColors.context};
     }
@@ -66,5 +68,12 @@ export const buttonBoxStyles = css`
     .button-box.warning {
         color: ${themeColors.usageDanger};
         cursor: default;
+    }
+
+    /* Disabled overrides any variant color — must come last to win on source order. */
+    .button-box:disabled {
+        color: ${themeColors.disabled};
+        cursor: not-allowed;
+        opacity: 0.7;
     }
 `;

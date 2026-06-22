@@ -16,14 +16,8 @@ export const errorModalStyles = css`
         color: ${themeColors.uiFont};
     }
 
-    .error-actions {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-        margin-top: 8px;
-    }
-
-    .error-actions button {
+    .btn-copy,
+    .btn-close {
         padding: 6px 16px;
         border: none;
         border-radius: ${themeStyles.borderRadius.small};

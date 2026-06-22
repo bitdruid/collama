@@ -5,7 +5,7 @@ export const basePopupStyles = css`
     :host {
         display: block;
         position: absolute;
-        bottom: 100%;
+        bottom: calc(100% + 6px);
         right: 0;
         max-width: 100%;
         z-index: 200;
@@ -14,10 +14,10 @@ export const basePopupStyles = css`
     .popup-content {
         max-width: 100%;
         box-sizing: border-box;
-        background: ${themeColors.uiBackgroundDimm};
-        border: ${themeStyles.border.dimm};
+        background: ${themeColors.uiBackground};
+        border: ${themeStyles.border.normal};
         border-radius: ${themeStyles.borderRadius.large};
-        ${themeStyles.boxShadow}
+        box-shadow: ${themeStyles.boxShadow};
         overflow: hidden;
         ${themeAnimations.fadeAnimate}
     }

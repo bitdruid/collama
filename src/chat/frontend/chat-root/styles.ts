@@ -16,7 +16,7 @@ export const ChatRootStyles = css`
 
     collama-chatheader {
         flex: 0 0 auto;
-        border-bottom: 1px solid ${themeColors.uiBorderDimm};
+        border-bottom: 1px solid ${themeColors.uiBorder};
     }
 
     .chat-area {

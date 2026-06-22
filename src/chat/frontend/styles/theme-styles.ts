@@ -24,17 +24,18 @@ const hover = css`
     box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHoverDimm};
 `;
 
-const boxShadow = css`
-    box-shadow:
-        0 1px 4px ${themeColors.uiShadow},
-        0 4px 16px ${themeColors.uiShadow};
+const boxShadow = unsafeCSS(`0px 0px 4px 2px ${themeColors.uiShadow}`);
+
+const placeholder = css`
+    font-family: ${themeFonts.familyMono};
+    color: ${themeColors.placeholder};
 `;
 
 const input = css`
     flex: 1;
     padding: 6px 8px;
-    border: ${border.dimm};
-    border-radius: ${borderRadius.large};
+    border: ${border.normal};
+    border-radius: ${borderRadius.medium};
     background: ${themeColors.uiBackground};
     color: ${themeColors.uiFont};
     font-size: ${themeFonts.size.normal};
@@ -44,16 +45,17 @@ const input = css`
 
 const textarea = css`
     flex: 1;
+    display: block;
     width: 100%;
-    padding: 8px;
-    border-radius: ${borderRadius.large};
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: ${borderRadius.medium};
     background: ${themeColors.uiBackground};
     color: ${themeColors.uiFont};
-    font-size: ${themeFonts.size.user};
+    font-size: ${themeFonts.size.normal};
     /* Line-height explicit needed for auto-grow; else is "normal"; breaks the adjustTextareaRows (parseFloat("normal") → NaN). */
     line-height: ${themeFonts.lineHeight.normal};
-    border: none;
-    resize: vertical;
+    resize: none;
     overflow: hidden;
     box-sizing: border-box;
 `;
@@ -63,4 +65,4 @@ const textarea = css`
  * Usage: .my-input:focus { ${themeStyles.focus} }
  *        .my-item:hover { ${themeStyles.hover} }
  */
-export const themeStyles = { borderRadius, border, focus, hover, boxShadow, input, textarea } as const;
+export const themeStyles = { borderRadius, border, focus, hover, boxShadow, placeholder, input, textarea } as const;
