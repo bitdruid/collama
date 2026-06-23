@@ -20,6 +20,21 @@ export const defaultChatSettings: ChatSettings = {
     verbosityMode: "medium",
 };
 
+/** Where a memory lives: machine-wide (`global`) or scoped to this workspace. */
+export type MemoryScope = "global" | "workspace";
+
+/** A single stored memory: `short` is injected into the prompt, `long` fetched on demand. */
+export interface MemoryEntry {
+    short: string;
+    long: string;
+}
+
+/** A memory flattened with its scope and key, sent to the webview viewer. */
+export interface MemoryViewEntry extends MemoryEntry {
+    scope: MemoryScope;
+    key: string;
+}
+
 /**
  * Chat session data structure
  */

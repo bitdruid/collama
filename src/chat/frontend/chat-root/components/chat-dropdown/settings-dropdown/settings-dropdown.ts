@@ -28,6 +28,7 @@ export class SettingsDropdown extends BaseDropdown {
     @property({ type: Boolean }) flatDesign = false;
     @property({ type: Boolean }) showThinking = false;
     @property({ type: Boolean }) agentsMdActive = false;
+    @property({ type: Boolean }) memoryActive = false;
 
     private _updateBoolean(key: "agenticMode" | "enableEditTools" | "enableShellTool" | "liteMode", event: Event) {
         const value = Number((event.target as HTMLInputElement).value);
@@ -94,6 +95,7 @@ export class SettingsDropdown extends BaseDropdown {
                 <div class="settings-header">Agent</div>
                 ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking, {})}
                 ${this._renderAgentsMdIndicator()}
+                ${this._renderMemoryIndicator()}
             </section>
         `;
     }
@@ -142,6 +144,23 @@ export class SettingsDropdown extends BaseDropdown {
                     title="Create AGENTS.md draft"
                     >create</a
                 >
+            </div>
+        `;
+    }
+
+    private _renderMemoryIndicator() {
+        return html`
+            <div class="setting-row info-row">
+                <span class="setting-title">Memory</span>
+                <a
+                    class="${this.memoryActive ? "agents-md-active" : "agents-md-create"}"
+                    title="View stored memory"
+                    @click=${() => emit(this, "open-memory")}
+                >
+                    ${this.memoryActive
+                        ? html`<span class="agents-md-check">${themeIcons.check.medium}</span> view`
+                        : "empty"}
+                </a>
             </div>
         `;
     }

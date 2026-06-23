@@ -41,13 +41,14 @@ export const textboxStyles = css`
         opacity: 0.7;
     }
 
-    /* Input mode: same box dimensions as .textbox; border is revealed on focus. */
+    /* Input mode: same box dimensions as .textbox. Unlike the chat user-input field
+       (control-panel), the shared textbox keeps a visible border at rest. */
     .textbox-input {
         ${themeStyles.textarea}
+        border-color: ${themeColors.uiBorder};
     }
 
     .textbox-input:focus {
-        border-color: ${themeColors.uiBorder};
         ${themeStyles.focus}
     }
 `;

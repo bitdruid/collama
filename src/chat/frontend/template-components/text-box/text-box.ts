@@ -33,14 +33,18 @@ export class TextBox extends LitElement {
         this.control?.focus(options);
     }
 
+    protected override firstUpdated() {
+        this._autoResize();
+    }
+
     protected override render() {
         if (this.mode === "input") {
             return html`<textarea
                 class="textbox-input"
+                rows="1"
                 .value=${this.value}
                 placeholder=${this.placeholder}
                 ?disabled=${this.disabled}
-                rows="1"
                 @input=${this._onInput}
                 @keydown=${this._onKeydown}
             ></textarea>`;
@@ -58,10 +62,19 @@ export class TextBox extends LitElement {
         this.dispatchEvent(new CustomEvent("action", { bubbles: true, composed: true }));
     };
 
+    private _autoResize() {
+        const ta = this.shadowRoot?.querySelector("textarea");
+        if (ta) {
+            ta.style.height = "auto";
+            ta.style.height = `${ta.scrollHeight}px`;
+        }
+    }
+
     private _onInput = (e: InputEvent) => {
         // Stop the native input from leaking past the shadow boundary; re-emit with the value.
         e.stopPropagation();
         this.value = (e.target as HTMLTextAreaElement).value;
+        this._autoResize();
         this.dispatchEvent(
             new CustomEvent("textbox-input", { detail: { value: this.value }, bubbles: true, composed: true }),
         );

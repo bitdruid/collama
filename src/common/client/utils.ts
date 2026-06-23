@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import * as vscode from "vscode";
 
 import { logIO, logMsg } from "../../logging";
+import { formatTokenEstimate } from "../utils";
 import type { Options, Stop } from "./types";
 
 const { showWarningMessage } = vscode.window;
@@ -79,9 +80,7 @@ export function logRequest(url: string, model: string, options: Options, stop: S
     logMsg(`Requesting to ${url}; Model: ${model};`);
     logMsg(`Options:\n${JSON.stringify(options, null, 2)}`);
     logMsg(`Stop:\n${JSON.stringify([...stop.userStop, ...stop.modelStop], null, 2)}`);
-    logMsg(
-        `Input [${input.length} chars ~ ${Math.ceil(input.length / 4)} tokens]:\n${input.length > 50 ? `${input.slice(0, 250)}...` : input}`,
-    );
+    logMsg(`Input ${formatTokenEstimate(input.length)}`);
     logIO(`\n${"-".repeat(18)}\n--- Input (plain):\n${"-".repeat(18)}\n${input}`, "input");
 }
 
@@ -89,9 +88,7 @@ export function logRequest(url: string, model: string, options: Options, stop: S
 function logPerformance(tokenLimit: number, resultTokens: number, resultDurationNano: number, result: string): void {
     const resultDuration = (resultDurationNano / 1_000_000_000).toFixed(3);
     const resultTPS = resultDurationNano > 0 ? (resultTokens / (resultDurationNano / 1_000_000_000)).toFixed(1) : "0";
-    logMsg(
-        `Output [${result.length} chars ~ ${Math.ceil(result.length / 4)} tokens]:\n${result.length > 50 ? `${result.slice(0, 250)}...` : result}`,
-    );
+    logMsg(`Output ${formatTokenEstimate(result.length)}`);
     logMsg(`Receive: tokens [${resultTokens}]; duration seconds [${resultDuration}]; tokens/sec [${resultTPS}]`);
     logIO(`\n${"-".repeat(18)}\n-- Output (plain):\n${"-".repeat(18)}\n${result}`, "output");
     if (tokenLimit === resultTokens) {

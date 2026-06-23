@@ -1,6 +1,8 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { themeIcons } from "../../../../../styles";
+import "../../../../../template-components/button-box";
+import "../../../../../template-components/button-row";
 import { galleryButtonStyles } from "./styles";
 
 @customElement("prompt-gallery-buttons")
@@ -17,9 +19,9 @@ export class PromptGalleryButtons extends LitElement {
     render() {
         if (this.index !== undefined) {
             return html`
-                <div class="row-actions">
-                    <button
-                        class="gallery-btn edit-btn"
+                <div class="prompt-actions">
+                    <span
+                        class="prompt-action prompt-edit"
                         title="Edit prompt"
                         @click=${() =>
                             this.dispatchEvent(
@@ -31,10 +33,10 @@ export class PromptGalleryButtons extends LitElement {
                             )}
                     >
                         ${themeIcons.pencil.medium}
-                    </button>
+                    </span>
 
-                    <button
-                        class="gallery-btn delete-btn"
+                    <span
+                        class="prompt-action prompt-delete"
                         title="Delete prompt"
                         @click=${() =>
                             this.dispatchEvent(
@@ -46,48 +48,37 @@ export class PromptGalleryButtons extends LitElement {
                             )}
                     >
                         ${themeIcons.trash.medium}
-                    </button>
+                    </span>
                 </div>
             `;
         }
 
         if (this.adding) {
             return html`
-                <div class="button-container">
-                    <button
-                        class="gallery-btn prompt-btn"
-                        @click=${() =>
+                <collama-button-row>
+                    <collama-accept-button
+                        @action=${() =>
                             this.dispatchEvent(new CustomEvent("save-new-prompt", { bubbles: true, composed: true }))}
-                    >
-                        ${themeIcons.check.medium}
-                    </button>
-                    <button
-                        class="gallery-btn cancel-btn"
-                        @click=${() =>
+                    ></collama-accept-button>
+                    <collama-cancel-button
+                        @action=${() =>
                             this.dispatchEvent(new CustomEvent("cancel-new-prompt", { bubbles: true, composed: true }))}
-                    >
-                        ${themeIcons.x.medium}
-                    </button>
-                </div>
+                    ></collama-cancel-button>
+                </collama-button-row>
             `;
         }
 
         return html`
-            <div class="button-container">
-                <button
-                    class="gallery-btn prompt-btn"
-                    @click=${() => this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
-                >
-                    ${themeIcons.plus.medium}
-                </button>
-                <button
-                    class="gallery-btn cancel-btn"
-                    @click=${() =>
+            <collama-button-row>
+                <collama-add-button
+                    @action=${() =>
+                        this.dispatchEvent(new CustomEvent("add-prompt", { bubbles: true, composed: true }))}
+                ></collama-add-button>
+                <collama-cancel-button
+                    @action=${() =>
                         this.dispatchEvent(new CustomEvent("close-gallery", { bubbles: true, composed: true }))}
-                >
-                    ${themeIcons.x.medium}
-                </button>
-            </div>
+                ></collama-cancel-button>
+            </collama-button-row>
         `;
     }
 }

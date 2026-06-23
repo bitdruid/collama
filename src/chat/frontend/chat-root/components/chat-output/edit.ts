@@ -1,6 +1,7 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { themeColors, themeFonts, themeIcons, themeStyles } from "../../../styles";
+import { themeStyles } from "../../../styles";
+import "../../../template-components/button-box";
 import { adjustTextareaRows } from "../../utils";
 
 const editStyles = css`
@@ -22,45 +23,6 @@ const editStyles = css`
         gap: 6px;
         margin-top: 6px;
         justify-content: flex-end;
-    }
-
-    .edit-send,
-    .edit-cancel {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 12px;
-        border: none;
-        border-radius: ${themeStyles.borderRadius.small};
-        font-size: ${themeFonts.size.normal};
-        line-height: 1;
-        vertical-align: middle;
-        cursor: pointer;
-        color: ${themeColors.cleanWhite};
-    }
-
-    .edit-send {
-        background: ${themeColors.submit};
-    }
-
-    .edit-send:hover {
-        background: ${themeColors.submitHover};
-    }
-
-    .edit-send:active {
-        background: ${themeColors.submit};
-    }
-
-    .edit-cancel {
-        background: ${themeColors.cancel};
-    }
-
-    .edit-cancel:hover {
-        background: ${themeColors.cancelHover};
-    }
-
-    .edit-cancel:active {
-        background: ${themeColors.cancel};
     }
 `;
 
@@ -86,7 +48,6 @@ export class ChatEditMessage extends LitElement {
     private handleInput = () => this._handleInput();
     private handleSend = () => this._handleSend();
     private handleCancel = () => this._handleCancel();
-    private handleMouseDown = (e: Event) => e.preventDefault();
 
     /**
      * Called after the component's DOM has been updated the first time.
@@ -164,12 +125,8 @@ export class ChatEditMessage extends LitElement {
         return html`
             <textarea class="edit-textarea" rows=${this.rows} @input=${this.handleInput}>${this.content}</textarea>
             <div class="edit-actions">
-                <button class="edit-send" @mousedown=${this.handleMouseDown} @click=${this.handleSend}>
-                    ${themeIcons.check.medium}
-                </button>
-                <button class="edit-cancel" @mousedown=${this.handleMouseDown} @click=${this.handleCancel}>
-                    ${themeIcons.x.medium}
-                </button>
+                <collama-accept-button title="Send" @action=${this.handleSend}></collama-accept-button>
+                <collama-cancel-button title="Cancel" @action=${this.handleCancel}></collama-cancel-button>
             </div>
         `;
     }

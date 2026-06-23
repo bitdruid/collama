@@ -118,6 +118,14 @@ export const bannerStyles = css`
         color: ${themeColors.settings};
     }
 
+    .banner.type-memory .banner-pill {
+        color: ${themeColors.submit};
+    }
+
+    .banner.bare .banner-pill .banner-icon svg {
+        stroke-width: 3;
+    }
+
     .banner-icon {
         display: inline-flex;
         align-items: center;

@@ -5,6 +5,7 @@ import {
     defaultChatSettings,
     type ChatSession,
     type ChatSettings,
+    type MemoryViewEntry,
     type ToolConfirmRequest,
     type ToolDecisionRequest,
 } from "../../shared";
@@ -17,6 +18,7 @@ import "./components/chat-pending-intercept/chat-pending-intercept";
 import { createInboundDispatcher } from "./handlers/inbound";
 import {
     onAcquireAutoSummaryAccept,
+    onAddMemory,
     onAutoAccept,
     onCancel,
     onChatReady,
@@ -26,8 +28,10 @@ import {
     onContextSearch,
     onConvertToGhost,
     onCopySession,
+    onDeleteMemory,
     onDeleteMessage,
     onDeleteSession,
+    onEditMemory,
     onEditMessage,
     onExportSession,
     onExportSessionHtml,
@@ -36,6 +40,7 @@ import {
     onNearBottomChanged,
     onNewChat,
     onNewGhostChat,
+    onOpenMemory,
     onRenameSession,
     onResendMessage,
     onSelectSession,
@@ -51,7 +56,7 @@ import {
 import { ChatRootStyles } from "./styles";
 
 type ActiveDropdown = "" | "session" | "settings";
-type ActiveModal = "" | "error" | "toolConfirm" | "toolDecision" | "acquire";
+type ActiveModal = "" | "error" | "toolConfirm" | "toolDecision" | "acquire" | "memory";
 
 /**
  * Root webview component that orchestrates the chat UI.
@@ -90,6 +95,8 @@ export class ChatRoot extends LitElement {
     @state() flatDesign = false;
     @state() showThinking = false;
     @state() agentsMdActive = false;
+    @state() memoryActive = false;
+    @state() memoryEntries: MemoryViewEntry[] = [];
     @state() autoAccept = false;
     @state() activeDropdown: ActiveDropdown = "";
 
@@ -149,6 +156,16 @@ export class ChatRoot extends LitElement {
         this.errorModalContent = "";
     };
     private handleSettingsUpdate = (e: CustomEvent) => onSettingsUpdate(this, e);
+    private handleOpenMemory = () => {
+        this.activeDropdown = "";
+        onOpenMemory(this);
+    };
+    private handleDeleteMemory = (e: CustomEvent) => onDeleteMemory(this, e);
+    private handleAddMemory = (e: CustomEvent) => onAddMemory(this, e);
+    private handleEditMemory = (e: CustomEvent) => onEditMemory(this, e);
+    private handleMemoryModalClose = () => {
+        this.activeModal = "";
+    };
     private handleFancyTypingUpdate = (e: CustomEvent) => {
         this.fancyTyping = Boolean(e.detail?.value);
         const state = window.vscode.getState?.() || {};
@@ -421,11 +438,13 @@ export class ChatRoot extends LitElement {
                     .flatDesign=${this.flatDesign}
                     .showThinking=${this.showThinking}
                     .agentsMdActive=${this.agentsMdActive}
+                    .memoryActive=${this.memoryActive}
                     @dropdown-close=${this.handleDropdownClose}
                     @settings-update=${this.handleSettingsUpdate}
                     @fancy-typing-update=${this.handleFancyTypingUpdate}
                     @flat-design-update=${this.handleFlatDesignUpdate}
                     @show-thinking-update=${this.handleShowThinkingUpdate}
+                    @open-memory=${this.handleOpenMemory}
                 ></collama-settings-dropdown>
             `;
         }
@@ -474,6 +493,19 @@ export class ChatRoot extends LitElement {
                     .description=${this.acquireModalDescription}
                     @acquire-accept=${this.handleAcquireAutoSummaryAccept}
                 ></collama-acquire-modal>
+            `;
+        }
+
+        if (this.activeModal === "memory") {
+            return html`
+                <collama-memory-modal
+                    autoShow
+                    .entries=${this.memoryEntries}
+                    @memory-delete-request=${this.handleDeleteMemory}
+                    @memory-add-request=${this.handleAddMemory}
+                    @memory-edit-request=${this.handleEditMemory}
+                    @overlay-close=${this.handleMemoryModalClose}
+                ></collama-memory-modal>
             `;
         }
 

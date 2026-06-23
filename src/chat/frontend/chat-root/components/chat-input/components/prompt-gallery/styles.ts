@@ -16,26 +16,24 @@ export const galleryStyles = css`
         position: relative;
         display: flex;
         align-items: center;
-        padding: 6px 8px;
+        padding: 8px 10px;
         cursor: pointer;
+        border: ${themeStyles.border.dimm};
         border-radius: ${themeStyles.borderRadius.small};
-        border-bottom: 1px solid ${themeColors.uiBorder};
+        background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
         font-size: ${themeFonts.size.normal};
-    }
-
-    .prompt-item:last-child {
-        border-bottom: none;
+        overflow: hidden;
     }
 
     .prompt-item:hover {
-        background: ${themeColors.uiBackgroundHover};
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .prompt-list {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 6px;
         max-height: 50vh;
         overflow-y: auto;
         overflow-x: hidden;
@@ -57,20 +55,13 @@ export const galleryStyles = css`
         bottom: 0;
         display: flex;
         align-items: center;
-        padding: 0 8px 0 24px;
+        padding: 0 8px;
         pointer-events: none;
         opacity: 0;
         transform: translateX(6px);
         transition:
             opacity 0.15s ease-out,
             transform 0.15s ease-out;
-        background: linear-gradient(
-            to right,
-            transparent 0%,
-            ${themeColors.uiBackgroundHover} 40%,
-            ${themeColors.uiBackgroundHover} 100%
-        );
-        border-radius: ${themeStyles.borderRadius.small};
     }
 
     .prompt-item:hover .prompt-actions,
@@ -103,63 +94,22 @@ export const galleryStyles = css`
 `;
 
 export const galleryButtonStyles = css`
-    .button-container {
-        display: flex;
-        gap: 8px;
-        margin-top: 6px;
-    }
-
-    .row-actions {
-        display: flex;
-        gap: 2px;
-    }
-
-    .gallery-btn {
+    .prompt-action {
         display: inline-flex;
-        padding: 4px 8px;
         cursor: pointer;
-        border: none;
+        padding: 4px;
         border-radius: ${themeStyles.borderRadius.small};
-        align-items: center;
-        justify-content: center;
-        color: ${themeColors.cleanWhite};
-    }
-
-    .row-actions .gallery-btn {
-        width: 22px;
-        height: 22px;
-        padding: 0;
-        background: transparent;
         color: ${themeColors.uiFont};
+        background: ${themeColors.uiBackground};
     }
 
-    .row-actions .edit-btn:hover {
+    .prompt-edit:hover {
         background: ${themeColors.submitHover};
         color: ${themeColors.cleanWhite};
     }
 
-    .row-actions .delete-btn:hover {
+    .prompt-delete:hover {
         background: ${themeColors.cancelHover};
         color: ${themeColors.cleanWhite};
-    }
-
-    .prompt-btn {
-        background: ${themeColors.submit};
-    }
-    .prompt-btn:hover {
-        background: ${themeColors.submitHover};
-    }
-    .prompt-btn:active {
-        background: ${themeColors.submit};
-    }
-
-    .cancel-btn {
-        background: ${themeColors.cancel};
-    }
-    .cancel-btn:hover {
-        background: ${themeColors.cancelHover};
-    }
-    .cancel-btn:active {
-        background: ${themeColors.cancel};
     }
 `;

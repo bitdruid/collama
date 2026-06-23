@@ -10,11 +10,12 @@ import { decision_def, decision_exec } from "./tools/decision";
 import { create_def, create_exec, delete_def, delete_exec, edit_def, edit_exec } from "./tools/edit";
 import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
 import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
+import { memory_def, memory_exec } from "./tools/memory";
 import { notebook_def, notebook_exec } from "./tools/notebook";
 import { shell_def, shell_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
-export type ToolCategory = "explore" | "git" | "edit" | "shell";
+export type ToolCategory = "explore" | "git" | "edit" | "shell" | "memory";
 export type { ToolHistoryPolicy };
 
 export interface ToolAnswer<TOutput = unknown> {
@@ -133,6 +134,9 @@ function getAllowedTools() {
                 return userConfig.enableEditTools;
             case "shell":
                 return userConfig.enableShellTool;
+            case "memory":
+                // Memory is deliberately withheld from lite mode (small models).
+                return !userConfig.liteMode;
             default:
                 return true;
         }
@@ -400,5 +404,16 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         definition: decision_def,
         toolTarget: (args) => formatToolTargetValue("question", args.question),
         execute: decision_exec,
+    },
+    memory: {
+        category: "memory",
+        historyPolicy: "dropAll",
+        definition: memory_def,
+        toolTarget: (args) => {
+            const action = formatToolTargetValue("action", args.action);
+            const key = formatToolTargetValue("key", args.key);
+            return key ? `${action}: ${key}` : action;
+        },
+        execute: memory_exec,
     },
 };

@@ -65,6 +65,14 @@ export const buttonBoxStyles = css`
         border-color: ${themeColors.contextHover};
     }
 
+    .button-box.add {
+        color: ${themeColors.submit};
+    }
+    .button-box.add:hover:not(:disabled) {
+        color: ${themeColors.submitHover};
+        border-color: ${themeColors.submitHover};
+    }
+
     .button-box.warning {
         color: ${themeColors.usageDanger};
         cursor: default;

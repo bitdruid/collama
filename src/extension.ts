@@ -9,6 +9,7 @@ import {
 } from "./chat/backend/subscriptions";
 import { registerRequestCommitMessageCommand } from "./commit/subscriptions";
 import { loadAgentsMdContent, registerAgentsMdWatcher } from "./common/agents-md";
+import { initMemory, loadWorkspaceMemory, registerMemoryWatcher } from "./common/memory";
 import { initTokenizer } from "./common/tokenizer";
 import { registerConfigAutoUpdateCommand, updateVSConfig } from "./config";
 import {
@@ -41,6 +42,10 @@ export async function activate(extContext: vscode.ExtensionContext) {
 
     await loadAgentsMdContent();
     registerAgentsMdWatcher(extContext);
+
+    initMemory(extContext);
+    await loadWorkspaceMemory();
+    registerMemoryWatcher(extContext);
 
     setStatusbar(extContext);
 

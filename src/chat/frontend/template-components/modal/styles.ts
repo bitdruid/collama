@@ -18,7 +18,6 @@ export const baseModalStyles = css`
         border-radius: ${themeStyles.borderRadius.large};
         border: ${themeStyles.border.normal};
         background: ${themeColors.uiBackground};
-        box-shadow: ${themeStyles.boxShadow};
         ${themeAnimations.fadeAnimate}
     }
 
@@ -62,5 +61,13 @@ export const baseModalStyles = css`
 
     .modal-body {
         /* Placeholder for body styles */
+    }
+
+    /* When a footer button row is present, separate it from the body and let it
+       hug the bottom border a bit closer than the title hugs the top. */
+    .modal-body collama-button-row {
+        display: block;
+        margin-top: 12px;
+        margin-bottom: -6px;
     }
 `;

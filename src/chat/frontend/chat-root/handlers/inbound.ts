@@ -18,6 +18,7 @@ export function createInboundDispatcher(host: ChatRoot) {
         "agent-tool-calls": (m) => handleAgentToolCalls(host, m),
         "chat-complete": (m) => handleChatComplete(host, m),
         "config-update": (m) => handleConfigUpdate(host, m),
+        "memory-list": (m) => handleMemoryList(host, m),
         "context-search-results": (m) => handleContextSearchResults(host, m),
         "context-trimmed": (m) => handleContextTrimmed(host, m),
         "context-update": (m) => handleContextUpdate(host, m),
@@ -77,6 +78,9 @@ function applyConfig(host: ChatRoot, msg: any) {
     if (msg.agentsMdActive !== undefined) {
         host.agentsMdActive = msg.agentsMdActive;
     }
+    if (msg.memoryActive !== undefined) {
+        host.memoryActive = msg.memoryActive;
+    }
 }
 
 function applyState(host: ChatRoot, msg: any) {
@@ -96,6 +100,11 @@ function handleInit(host: ChatRoot, msg: any) {
 /** Updates tool enable/disable state when config changes. */
 function handleConfigUpdate(host: ChatRoot, msg: any) {
     applyConfig(host, msg);
+}
+
+/** Populates the memory viewer with the entries sent by the host. */
+function handleMemoryList(host: ChatRoot, msg: any) {
+    host.memoryEntries = msg.entries || [];
 }
 
 /** Replaces the full session state when the user switches sessions or sessions change on the host. */

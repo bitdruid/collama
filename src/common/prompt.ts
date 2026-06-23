@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import type { ExtensionConfig } from "../config";
 import { userConfig } from "../config";
 import { getAgentsMdContent } from "./agents-md";
+import { getMemoryPromptBlock } from "./memory";
 
 /**
  * Returns the current date (day granularity) as a formatted string.
@@ -146,6 +147,13 @@ function getDefaultTemplate(): string {
     // if (skillsMd) {
     //     lines.push("", "<agent_skills>", ...SKILLS_RULES, ...skillsMd, "</agent_skills>");
     // }
+
+    // Memory is injected before project rules, and only in default mode —
+    // lite mode (small models) deliberately gets no memory.
+    const memory = getMemoryPromptBlock();
+    if (memory) {
+        lines.push("", "<agent_memory>", memory, "</agent_memory>");
+    }
 
     const agentsMd = getAgentsMdContent();
     if (agentsMd) {

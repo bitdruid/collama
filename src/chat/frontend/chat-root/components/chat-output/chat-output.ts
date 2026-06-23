@@ -4,9 +4,9 @@ import { repeat } from "lit/directives/repeat.js";
 import { ChatHistory, ToolMessage } from "../../../../../common/context-chat";
 import { themeIcons } from "../../../styles";
 import "../chat-loading-animation/dots";
+import { CharReveal } from "./char-reveal";
 import "./empty-state";
 import { chatMarkdown } from "./markdown";
-import { CharReveal } from "./char-reveal";
 import { renderAssistantMessage, renderToolMessage, renderUserMessage } from "./messages";
 import { outputStyles } from "./styles-shared";
 import { TypingFx, typingFxStyles } from "./typing-fx";
@@ -41,6 +41,12 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
             ((msg.tool_calls?.length ?? 0) > 0 || messages[i + 1]?.role === "tool");
 
         if (msg.role === "tool" || isToolBridge) {
+            // Memory tools are standalone (flat banner, not grouped)
+            if (msg.role === "tool" && msg.customKeys?.toolName === "memory") {
+                flushTools();
+                groups.push({ type: "single", msg, index: i });
+                continue;
+            }
             if (msg.role === "tool" && toolBuffer.length === 0) {
                 toolStartIndex = i;
             }
@@ -298,6 +304,14 @@ export class ChatOutput extends LitElement {
                                 outOfContextClass,
                                 warningIcon,
                                 getCachedMarkdown: this._getCachedMarkdown,
+                            });
+                        }
+
+                        if (msg.role === "tool") {
+                            return renderToolMessage({
+                                msg: msg as ToolMessage,
+                                outOfContextClass,
+                                warningIcon,
                             });
                         }
 

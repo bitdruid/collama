@@ -1,6 +1,15 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.8] - 2026-06-23
+
+### Added
+- Memory tool as global storage for facts and preferences with add/edit/delete operations in a dedicated modal
+- Memory tool banner and edit button UI
+
+### Fixed
+- Modal styles
+
 ## [1.8.7] - 2026-06-22
 
 ### Added

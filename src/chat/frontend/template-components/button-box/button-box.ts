@@ -86,3 +86,10 @@ export class AcceptAllButton extends ButtonBox {
     override icon = themeIcons.checkCheck.large;
     protected override defaultTitle = "Accept All";
 }
+
+@customElement("collama-add-button")
+export class AddButton extends ButtonBox {
+    override variant = "add";
+    override icon = themeIcons.plus.large;
+    protected override defaultTitle = "Add";
+}

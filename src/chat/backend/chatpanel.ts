@@ -1,12 +1,13 @@
 import * as vscode from "vscode";
 
 import { getToolHistoryPolicy } from "../../agent/tools";
-import { resolveToolDecision } from "../../agent/tools/decision";
 import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../../agent/tools/confirm";
+import { resolveToolDecision } from "../../agent/tools/decision";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
 import { AttachedContext, ChatContext, ChatHistory } from "../../common/context-chat";
 import { parseContextUri } from "../../common/context-editor";
+import { deleteMemory, getAllMemory, isMemoryActive, writeMemory } from "../../common/memory";
 import { getChatSettings, userConfig } from "../../config";
 import { logMsg } from "../../logging";
 import { StartPage } from "../frontend/chat-init";
@@ -74,8 +75,45 @@ export class ChatPanel {
         "context-search": (msg, webview) => handleContextSearch(msg, webview),
         "context-add": (msg, webview) => addContext(parseContextUri(msg.relativePath), webview),
         "config-update-request": (msg, webview) => this.handleConfigUpdateRequest(msg, webview),
+        "memory-list-request": (_, webview) => this.handleMemoryListRequest(webview),
+        "memory-delete": (msg, webview) => this.handleMemoryDelete(msg, webview),
+        "memory-add": (msg, webview) => this.handleMemoryAdd(msg, webview),
+        "memory-edit": (msg, webview) => this.handleMemoryEdit(msg, webview),
         log: (msg) => logMsg(`WEBVIEW - ${msg.message}`),
     };
+
+    /** Sends all stored memories (both scopes) to the webview for the viewer. */
+    private handleMemoryListRequest(webview: vscode.Webview) {
+        webview.postMessage({ type: "memory-list", entries: getAllMemory() });
+    }
+
+    /** Deletes a memory at the user's request, then re-sends the list. */
+    private async handleMemoryDelete(msg: { key: string; scope: "global" | "workspace" }, webview: vscode.Webview) {
+        await deleteMemory(msg.key, msg.scope);
+        webview.postMessage({ type: "memory-list", entries: getAllMemory() });
+        webview.postMessage({ type: "config-update", memoryActive: isMemoryActive() });
+    }
+
+    /** Adds a memory at the user's request, then re-sends the list. */
+    private async handleMemoryAdd(
+        msg: { key: string; short: string; long: string; scope: "global" | "workspace" },
+        webview: vscode.Webview,
+    ) {
+        await writeMemory(msg.key, msg.short, msg.long, msg.scope);
+        webview.postMessage({ type: "memory-list", entries: getAllMemory() });
+        webview.postMessage({ type: "config-update", memoryActive: isMemoryActive() });
+    }
+
+    /** Edits a memory at the user's request, then re-sends the list. */
+    private async handleMemoryEdit(
+        msg: { oldKey: string; key: string; short: string; long: string; scope: "global" | "workspace" },
+        webview: vscode.Webview,
+    ) {
+        await deleteMemory(msg.oldKey, msg.scope);
+        await writeMemory(msg.key, msg.short, msg.long, msg.scope);
+        webview.postMessage({ type: "memory-list", entries: getAllMemory() });
+        webview.postMessage({ type: "config-update", memoryActive: isMemoryActive() });
+    }
 
     /**
      * Renders the initial chat page inside the webview.
@@ -118,6 +156,7 @@ export class ChatPanel {
             contextStartIndex: activeSession?.contextStartIndex || 0,
             config: getChatSettings(),
             agentsMdActive: isAgentsMdActive(),
+            memoryActive: isMemoryActive(),
             autoAcceptAll: getAutoAcceptAll(),
         });
     }

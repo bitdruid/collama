@@ -3,6 +3,7 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory, ToolMessage } from "../../../../../common/context-chat";
 import { estTokens } from "../../../../../common/utils";
 import { themeIcons } from "../../../styles";
+import "../../../template-components/banner";
 import "./edit";
 
 // Assistant
@@ -60,6 +61,21 @@ export function renderToolMessage(opts: ToolRenderOptions) {
     const toolName = msg.customKeys?.toolName || "unknown";
     const toolTarget = msg.customKeys?.toolTarget || "";
     const toolArgs = msg.customKeys?.toolArgs || "";
+
+    // Memory tool: flat banner with brain icon, no accordion body
+    if (toolName === "memory") {
+        const banner = html`
+            <collama-banner type="memory" label="Memory" .description=${toolTarget}></collama-banner>
+        `;
+        if (bare) {
+            return banner;
+        }
+        return html`
+            <div class="message tool ${outOfContextClass}">
+                <div class="bubble-tool">${banner}</div>
+            </div>
+        `;
+    }
 
     const accordion = html`
         <collama-accordion

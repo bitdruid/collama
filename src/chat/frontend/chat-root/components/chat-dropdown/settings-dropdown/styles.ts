@@ -59,6 +59,7 @@ export const settingsDropdownStyles = css`
         background: ${themeColors.uiBackground};
         border: ${themeStyles.border.normal};
         text-decoration: none;
+        cursor: pointer;
     }
 
     .agents-md-active {

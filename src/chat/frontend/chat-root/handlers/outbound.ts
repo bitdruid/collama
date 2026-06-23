@@ -1,9 +1,9 @@
 import { LitElement } from "lit";
 import { AttachedContext, ChatHistory } from "../../../../common/context-chat";
 import type { ChatSettings } from "../../../shared";
+import type { ChatRoot } from "../chat-root";
 import { buildSelfContainedHtml } from "../html-export";
 import { buildUserContent, logWebview, showToast } from "../utils";
-import type { ChatRoot } from "../chat-root";
 
 declare global {
     interface Window {
@@ -51,11 +51,53 @@ const backendApi = {
         window.vscode.postMessage({ type: "context-add", relativePath, isFolder }),
     updateConfig: (key: string, value: unknown) =>
         window.vscode.postMessage({ type: "config-update-request", key, value }),
+    requestMemoryList: () => window.vscode.postMessage({ type: "memory-list-request" }),
+    deleteMemory: (key: string, scope: "global" | "workspace") =>
+        window.vscode.postMessage({ type: "memory-delete", key, scope }),
+    addMemory: (key: string, short: string, long: string, scope: "global" | "workspace") =>
+        window.vscode.postMessage({ type: "memory-add", key, short, long, scope }),
+    editMemory: (oldKey: string, key: string, short: string, long: string, scope: "global" | "workspace") =>
+        window.vscode.postMessage({ type: "memory-edit", oldKey, key, short, long, scope }),
 };
 
 /** Signals the host that the webview is ready to receive the initial state. */
 export function onChatReady() {
     backendApi.ready();
+}
+
+/** Opens the memory viewer and requests the current entries from the host. */
+export function onOpenMemory(host: ChatRoot) {
+    backendApi.requestMemoryList();
+    host.activeModal = "memory";
+}
+
+/** Deletes a memory at the user's request; the host re-sends the updated list. */
+export function onDeleteMemory(_host: ChatRoot, e: CustomEvent) {
+    const { key, scope } = e.detail as { key: string; scope: "global" | "workspace" };
+    backendApi.deleteMemory(key, scope);
+}
+
+/** Adds a memory at the user's request; the host re-sends the updated list. */
+export function onAddMemory(_host: ChatRoot, e: CustomEvent) {
+    const { key, short, long, scope } = e.detail as {
+        key: string;
+        short: string;
+        long: string;
+        scope: "global" | "workspace";
+    };
+    backendApi.addMemory(key, short, long, scope);
+}
+
+/** Edits a memory at the user's request; the host re-sends the updated list. */
+export function onEditMemory(_host: ChatRoot, e: CustomEvent) {
+    const { oldKey, key, short, long, scope } = e.detail as {
+        oldKey: string;
+        key: string;
+        short: string;
+        long: string;
+        scope: "global" | "workspace";
+    };
+    backendApi.editMemory(oldKey, key, short, long, scope);
 }
 
 /** Applies a settings change locally and persists it on the host. */

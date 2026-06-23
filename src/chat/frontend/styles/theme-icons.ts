@@ -35,6 +35,19 @@ const icon = (Icon: any) => ({
     large: html`${unsafeSVG(createElement(Icon, { width: 18, height: 18 }).outerHTML)}`,
 });
 
+/** Filled dot. */
+const dotIcon = {
+    small: html`<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="6" cy="6" r="2.5" fill="currentColor" />
+    </svg>`,
+    medium: html`<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7" cy="7" r="3" fill="currentColor" />
+    </svg>`,
+    large: html`<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="9" cy="9" r="4" fill="currentColor" />
+    </svg>`,
+};
+
 export const themeIcons = {
     alertTriangle: icon(AlertTriangle),
     betweenHorizontalStart: icon(BetweenHorizontalStart),
@@ -47,6 +60,7 @@ export const themeIcons = {
     compress: icon(Minimize2),
     copy: icon(Copy),
     download: icon(Download),
+    dot: dotIcon,
     enter: icon(CornerDownLeft),
     fileText: icon(FileText),
     folder: icon(Folder),

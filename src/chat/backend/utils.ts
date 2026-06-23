@@ -17,9 +17,9 @@ export function getWebview(): vscode.Webview | null {
 }
 
 /** Broadcasts the current chat settings to the webview. */
-export function postConfigToWebview(config: ChatSettings, agentsMdActive: boolean): void {
+export function postConfigToWebview(config: ChatSettings, agentsMdActive: boolean, memoryActive: boolean): void {
     if (_webview) {
-        _webview.postMessage({ type: "config-update", config, agentsMdActive });
+        _webview.postMessage({ type: "config-update", config, agentsMdActive, memoryActive });
     }
 }
 

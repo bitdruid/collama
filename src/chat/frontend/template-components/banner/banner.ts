@@ -4,7 +4,16 @@ import { customElement, property } from "lit/decorators.js";
 import { themeIcons } from "../../styles";
 import { bannerStyles } from "./styles";
 
-export type BannerType = "tool" | "think" | "summary" | "code" | "context" | "tool-group" | "info" | "banner";
+export type BannerType =
+    | "tool"
+    | "think"
+    | "summary"
+    | "code"
+    | "context"
+    | "tool-group"
+    | "info"
+    | "banner"
+    | "memory";
 
 type BannerVariant = "box" | "bare";
 
@@ -26,6 +35,7 @@ const BANNERS: Record<BannerType, BannerSpec> = {
     summary: { heading: "Summary", icon: null, variant: "bare" },
     "tool-group": { heading: "Tools", icon: null, variant: "bare" },
     context: { heading: "Context", icon: null, variant: "bare" },
+    memory: { heading: "Memory", icon: null, variant: "bare" },
     banner: { heading: "", icon: null, variant: "bare" },
 };
 
@@ -67,15 +77,16 @@ export class Banner extends LitElement {
         // Code/info: bordered box with an optional leading icon, chevron trailing.
         if (spec.variant === "box") {
             const icon = spec.icon ? html`<span class="banner-icon">${spec.icon}</span>` : null;
-            return html`
-                <div class="banner type-${this.type}">${icon} ${labelTpl} ${actions} ${chevron}</div>
-            `;
+            return html` <div class="banner type-${this.type}">${icon} ${labelTpl} ${actions} ${chevron}</div> `;
         }
 
-        // Everything else: bare text with the chevron leading in its type color.
+        // Everything else: bare text with the chevron (or type icon) leading in its type color.
+        const pillIcon = !this.collapsible
+            ? html`<span class="banner-icon">${spec.icon ?? themeIcons.dot.large}</span>`
+            : chevron;
         return html`
             <div class="banner bare type-${this.type}">
-                <span class="banner-pill">${chevron}</span>
+                <span class="banner-pill">${pillIcon}</span>
                 ${labelTpl} ${actions}
             </div>
         `;
