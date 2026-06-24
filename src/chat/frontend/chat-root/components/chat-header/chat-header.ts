@@ -2,8 +2,8 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-import "./components/context-usage-bar/context-usage-bar";
 import "./components/chat-transfer-button/chat-transfer-button";
+import "./components/context-usage-bar/context-usage-bar";
 import "./components/create-chat-button/create-chat-button";
 import "./components/session-button/session-button";
 import "./components/settings-button/settings-button";
@@ -49,7 +49,6 @@ export class ChatHeader extends LitElement {
                     ></collama-settings-button>
                 </div>
                 <div class="header-actions">
-                    <span class="usage-icon">${themeIcons.brain.large}</span>
                     <collama-context-usage-bar
                         .used=${this.contextUsed}
                         .max=${this.contextMax}

@@ -22,8 +22,8 @@ const getBorder = (color: Color) =>
 const getHover = (color: Color) => contrast(color, 6);
 
 export const baseColor = unsafeCSS("var(--vscode-sideBar-background)");
-const defaultColor = lighten(contrast(baseColor, 6), 2);
-const dimmColor = darken(contrast(baseColor, 3), 2);
+const defaultColor = lighten(contrast(baseColor, 6), 3);
+const dimmColor = darken(contrast(baseColor, 3), 5);
 
 /**
  * Reusable color values for consistent color usage.

@@ -41,8 +41,11 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
             ((msg.tool_calls?.length ?? 0) > 0 || messages[i + 1]?.role === "tool");
 
         if (msg.role === "tool" || isToolBridge) {
-            // Memory tools are standalone (flat banner, not grouped)
-            if (msg.role === "tool" && msg.customKeys?.toolName === "memory") {
+            // Memory and background-shell tools are standalone (own banner, not grouped).
+            const ck = msg.customKeys;
+            const isStandalone =
+                msg.role === "tool" && (ck?.toolName === "memory" || (ck?.toolName === "shell" && !!ck?.toolStatus));
+            if (isStandalone) {
                 flushTools();
                 groups.push({ type: "single", msg, index: i });
                 continue;
@@ -200,12 +203,23 @@ export class ChatOutput extends LitElement {
             this._highlightAllAccordions();
         }
 
-        // Pace the char-by-char reveal, then blast in a glyph for each newly
-        // revealed char (fancy typing only). Feeding the typing-fx the *revealed*
-        // prefix keeps the glyphs in lockstep with the text.
+        // Sync reveal index, then feed typing-fx the revealed prefix so glyphs
+        // stay in lockstep with the text.
         this._charReveal.sync(revealing);
         const content = this._streamingMessage().content;
-        this._typingFx.update(revealing, revealing ? this._charReveal.cap(content) : content);
+        const capped = revealing ? this._charReveal.cap(content) : content;
+
+        // Accordions paint one microtask after update(); measuring now would
+        // read zero height and anchor following text inside the block. Wait
+        // for them to render, then measure. Nodes survive until next frame.
+        const pending = this.shadowRoot?.querySelectorAll<HTMLElement & { updateComplete?: Promise<unknown> }>(
+            ".bubble-assistant.streaming collama-accordion",
+        );
+        if (pending && pending.length) {
+            Promise.all([...pending].map((a) => a.updateComplete)).then(() => this._typingFx.update(revealing, capped));
+        } else {
+            this._typingFx.update(revealing, capped);
+        }
     }
 
     /** The in-flight assistant message's content and id, or empty. */

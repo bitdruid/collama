@@ -13,7 +13,8 @@ export type BannerType =
     | "tool-group"
     | "info"
     | "banner"
-    | "memory";
+    | "memory"
+    | "shell";
 
 type BannerVariant = "box" | "bare";
 
@@ -36,6 +37,7 @@ const BANNERS: Record<BannerType, BannerSpec> = {
     "tool-group": { heading: "Tools", icon: null, variant: "bare" },
     context: { heading: "Context", icon: null, variant: "bare" },
     memory: { heading: "Memory", icon: null, variant: "bare" },
+    shell: { heading: "Background", icon: themeIcons.dot.large, variant: "bare" },
     banner: { heading: "", icon: null, variant: "bare" },
 };
 
@@ -77,15 +79,23 @@ export class Banner extends LitElement {
         // Code/info: bordered box with an optional leading icon, chevron trailing.
         if (spec.variant === "box") {
             const icon = spec.icon ? html`<span class="banner-icon">${spec.icon}</span>` : null;
-            return html` <div class="banner type-${this.type}">${icon} ${labelTpl} ${actions} ${chevron}</div> `;
+            return html`
+                <div class="banner type-${this.type} ${this.collapsible ? "collapsible" : ""}">
+                    ${icon} ${labelTpl} ${actions} ${chevron}
+                </div>
+            `;
         }
 
-        // Everything else: bare text with the chevron (or type icon) leading in its type color.
-        const pillIcon = !this.collapsible
-            ? html`<span class="banner-icon">${spec.icon ?? themeIcons.dot.large}</span>`
-            : chevron;
+        // Everything else: bare text with a leading glyph in its type color. A type with its
+        // own icon (e.g. shell's dot) keeps it even when collapsible; otherwise collapsible
+        // headers lead with the rotating chevron and the rest with a plain dot.
+        const pillIcon = spec.icon
+            ? html`<span class="banner-icon">${spec.icon}</span>`
+            : this.collapsible
+              ? chevron
+              : html`<span class="banner-icon">${themeIcons.dot.large}</span>`;
         return html`
-            <div class="banner bare type-${this.type}">
+            <div class="banner bare type-${this.type} ${this.collapsible ? "collapsible" : ""}">
                 <span class="banner-pill">${pillIcon}</span>
                 ${labelTpl} ${actions}
             </div>

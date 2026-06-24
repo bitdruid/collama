@@ -2,26 +2,32 @@ import { css } from "lit";
 import { themeColors, themeFonts, themeStyles } from "../../../../styles";
 
 export const sessionItemStyles = css`
+    :host {
+        display: block;
+    }
+
     .session-item {
         display: flex;
         align-items: center;
         padding: 8px 12px;
         cursor: pointer;
-        border-left: 5px solid transparent;
+        box-shadow: inset 5px 0 0 0 transparent;
         transition: background 0.1s ease;
     }
 
     .session-item + .session-item {
-        border-top: 1px solid ${themeColors.uiBorder};
+        border-top: ${themeStyles.border.normal};
     }
 
     .session-item:hover {
         background: ${themeColors.uiBackgroundHover};
+        outline: 1px solid ${themeColors.uiBorderHover};
+        outline-offset: -1px;
     }
 
     .session-item.active {
         color: ${themeColors.uiFont};
-        border-left-color: ${themeColors.submit};
+        box-shadow: inset 5px 0 0 0 ${themeColors.submit};
     }
 
     .session-info {
@@ -92,5 +98,13 @@ export const sessionItemStyles = css`
 
     .delete-button {
         color: ${themeColors.cancel};
+    }
+`;
+
+export const sessionDropdownStyles = css`
+    .dropdown-content {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
     }
 `;

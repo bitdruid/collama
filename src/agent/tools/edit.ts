@@ -140,7 +140,7 @@ export const edit_def = {
             properties: {
                 explanation: {
                     type: "string",
-                    description: "One sentence describing what the command does in the repo.",
+                    description: "One sentence describing what the command does in the repo. Is required!",
                 },
                 filePath: {
                     type: "string",
@@ -258,7 +258,7 @@ export const create_def = {
             properties: {
                 explanation: {
                     type: "string",
-                    description: "One sentence describing what the command does in the repo.",
+                    description: "One sentence describing what the command does in the repo. Is required!",
                 },
                 filePath: {
                     type: "string",
@@ -340,7 +340,7 @@ export const delete_def = {
             properties: {
                 explanation: {
                     type: "string",
-                    description: "One sentence describing what the command does in the repo.",
+                    description: "One sentence describing what the command does in the repo. Is required!",
                 },
                 filePath: {
                     type: "string",

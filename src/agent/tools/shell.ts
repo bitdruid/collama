@@ -6,6 +6,7 @@ import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 import { logMsg } from "../../logging";
 import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
 import { getAutoAcceptShell, requestToolConfirm, setAutoAcceptShell } from "./confirm";
+import { createSession, getSession, killSession } from "./shell-session";
 
 // Dangerous constructs within a segment:
 //   $( … )   command substitution (but NOT $(( … )) arithmetic)
@@ -32,13 +33,29 @@ function getDefaultShellType(): ShellType {
     return process.platform === "win32" ? "powershell" : "bash";
 }
 
+type ShellAction = "run" | "start" | "check" | "stop";
+
 /**
- * Input type for the shell execution tool.
+ * Input type for the shell execution tool. `command`/`explanation`/`dangerous` apply to
+ * `run` and `start`; `sessionId` to `check` and `stop`. Per-action presence is validated
+ * inside the handlers (the central schema only knows `action` is optional).
  */
 type ShellInput = {
-    command: string;
-    explanation: string;
-    dangerous: boolean;
+    action?: ShellAction;
+    command?: string;
+    explanation?: string;
+    dangerous?: boolean;
+    sessionId?: string;
+};
+
+type ShellOutput = {
+    output?: string;
+    filePath?: string;
+    lineCount?: number;
+    sessionId?: string;
+    command?: string;
+    status?: string;
+    exitCode?: number | null;
 };
 
 function hasWriteConstructs(command: string): boolean {
@@ -258,17 +275,47 @@ async function runPowerShell(command: string, cwd: string): Promise<{ output: st
 }
 
 /**
- * Executes a shell command with user confirmation and workspace safety checks.
- * @param args - The shell input containing command and explanation.
- * @returns A promise resolving to a ToolAnswer with output, filePath, or lineCount.
- * @throws Error if workspace root is not found or command execution fails.
+ * Shell tool entrypoint. Dispatches by action: `run` (default) is the one-shot command;
+ * `start`/`check`/`stop` manage background sessions (see shell-session.ts).
  */
-export async function shell_exec(
-    args: ShellInput,
-): Promise<ToolAnswer<{ output?: string; filePath?: string; lineCount?: number }>> {
+export async function shell_exec(args: ShellInput): Promise<ToolAnswer<ShellOutput>> {
+    function normalizeDangerous(v: unknown): boolean {
+        // flag may be a real boolean or a stringified one - convert
+        if (v === false || v === "false") {
+            return false;
+        }
+        if (v === true || v === "true") {
+            return true;
+        }
+        return true; // anything else (e.g. "yes", 1, null, garbage) fails closed
+    }
+
+    const normalized = { ...args, dangerous: normalizeDangerous(args.dangerous) };
+    switch (normalized.action ?? "run") {
+        case "run":
+            return runOneShot(normalized);
+        case "start":
+            return startSession(normalized);
+        case "check":
+            return checkSession(args);
+        case "stop":
+            return stopSession(args);
+        default:
+            return toolError(`Unknown shell action: ${String(args.action)}. Use run | start | check | stop.`);
+    }
+}
+
+/**
+ * One-shot command with user confirmation and workspace safety checks. Spawns, waits for the
+ * process to close, and returns its output.
+ */
+async function runOneShot(args: ShellInput): Promise<ToolAnswer<ShellOutput>> {
     const shellType = getDefaultShellType();
-    const command = args.command.trim();
-    const explanation = args.explanation.trim();
+    const command = (args.command ?? "").trim();
+    const explanation = (args.explanation ?? "").trim();
+    if (!command) {
+        return toolError("run requires a command.");
+    }
     logMsg(`Agent - use Shell-tool shellType=${shellType} command="${command}" explanation="${explanation}"`);
 
     // matches `cd` at start or after &&, ;, | separators
@@ -283,11 +330,11 @@ export async function shell_exec(
 
     // The model's dangerous flag is advisory only: it can mark a command dangerous, and the
     // backend additionally flags any write-capable shell construct the model may have missed.
-    const dangerous = args.dangerous || hasWriteConstructs(command);
+    const dangerous = (args.dangerous ?? false) || hasWriteConstructs(command);
     // Every command prompts - auto-accept only not-flagged and not-read-only
     const autoAccept = getAutoAcceptShell() && !dangerous && isReadOnly(command, shellType);
     if (!autoAccept) {
-        const { value, reason } = await requestToolConfirm(`Shell:${shellType}`, command, explanation, dangerous);
+        const { value, reason } = await requestToolConfirm("Shell", command, explanation, dangerous);
         if (!value) {
             return { success: false, message: reason };
         }
@@ -320,6 +367,95 @@ export async function shell_exec(
         return toolError(msg);
     }
 }
+
+/**
+ * Starts a background command and returns its session id. Always prompts (no auto-accept: a
+ * detached long-running process keeps running unsupervised), but surfaces the same dangerous
+ * flag as `run` so the user can see whether the background job is write-capable.
+ */
+async function startSession(args: ShellInput): Promise<ToolAnswer<ShellOutput>> {
+    const shellType = getDefaultShellType();
+    const command = (args.command ?? "").trim();
+    const explanation = (args.explanation ?? "").trim();
+    if (!command) {
+        return toolError("start requires a command.");
+    }
+    logMsg(`Agent - use Shell-tool start shellType=${shellType} command="${command}" explanation="${explanation}"`);
+
+    if (/(?:^|[;&|])\s*cd\b/.test(command)) {
+        return toolError("cd is not allowed. The shell always runs with the workspace root as cwd.");
+    }
+
+    const root = getWorkspaceRoot();
+    if (!root) {
+        return toolError("No workspace root found");
+    }
+
+    const dangerous = (args.dangerous ?? false) || hasWriteConstructs(command);
+    const { value, reason } = await requestToolConfirm("Shell:Background", command, explanation, dangerous);
+    if (!value) {
+        return { success: false, message: reason };
+    }
+
+    const session = createSession(command, root, shellType);
+    if ("error" in session) {
+        return toolError(session.error);
+    }
+    return toolSuccess(
+        { sessionId: session.id, status: session.status, command },
+        `Started background shell ${session.id}. Poll it with action "check" (sessionId "${session.id}"); ` +
+            `terminate it with action "stop".`,
+    );
+}
+
+/**
+ * Returns output produced since the last check for a background session, plus its current
+ * status/exit code. Output is incremental; large output spills to a temp file like `run`.
+ */
+async function checkSession(args: ShellInput): Promise<ToolAnswer<ShellOutput>> {
+    const id = (args.sessionId ?? "").trim();
+    if (!id) {
+        return toolError("check requires a sessionId.");
+    }
+    const session = getSession(id);
+    if (!session) {
+        return toolError(`No shell session "${id}". It may have been stopped, expired, or never existed.`);
+    }
+
+    const captured = captureOutput(session.readNew());
+    const statusMsg =
+        session.status === "running"
+            ? `Session ${id} still running.`
+            : `Session ${id} exited with code ${session.exitCode}.`;
+    // command is echoed back so the UI banner body can show the running command;
+    // the agent still reads output/status for reasoning.
+    return toolSuccess(
+        {
+            output: captured.output,
+            filePath: captured.filePath,
+            lineCount: captured.lineCount,
+            status: session.status,
+            exitCode: session.exitCode,
+            sessionId: id,
+            command: session.command,
+        },
+        captured.message ? `${statusMsg} ${captured.message}` : statusMsg,
+    );
+}
+
+/** Terminates and forgets a background session. */
+async function stopSession(args: ShellInput): Promise<ToolAnswer<ShellOutput>> {
+    const id = (args.sessionId ?? "").trim();
+    if (!id) {
+        return toolError("stop requires a sessionId.");
+    }
+    // Grab the command before killSession forgets the session, so the banner body stays filled.
+    const command = getSession(id)?.command;
+    if (!killSession(id)) {
+        return toolError(`No shell session "${id}".`);
+    }
+    return toolSuccess({ sessionId: id, status: "exited", command }, `Stopped shell session ${id}.`);
+}
 const shellType = getDefaultShellType();
 const shellName = shellType === "bash" ? "bash" : "PowerShell";
 
@@ -333,24 +469,40 @@ export const shell_def = {
             "Use as a last resort — prefer just for debugging and testing. " +
             "Restrictive, simple command logics. " +
             "Small output is returned inline; output over ~10k tokens is written to a temp file and " +
-            "returned as filePath with lineCount — read it in ranges with the read tool.",
+            "returned as filePath with lineCount — read it in ranges with the read tool. " +
+            "Use 'run' for one-shot plain commands. " +
+            "Use 'start' to start a command in the background and move on with other tasks while its processing. " +
+            "Use 'check' with sessionId to read the output and exit status. Use 'stop' to terminate it. ",
         parameters: {
             type: "object",
             properties: {
+                action: {
+                    type: "string",
+                    enum: ["run", "start", "check", "stop"],
+                    description:
+                        "'run' (default): one-shot command. 'start': run command in the background, returns sessionId. " +
+                        "'check': read new output of a background sessionId. 'stop': terminate a background sessionId.",
+                },
                 explanation: {
                     type: "string",
-                    description: "One sentence describing what the command does in the repo.",
+                    description: "One sentence describing what this action does in the repo.",
                 },
                 command: {
                     type: "string",
-                    description: `The full ${shellName} command to execute.`,
+                    description: `The full ${shellName} command to execute. Required for run/start.`,
                 },
                 dangerous: {
                     type: "boolean",
-                    description: "Set 'true' unless you are certain the command is read-only.",
+                    description:
+                        "Set 'true' unless you are certain the command is read-only." +
+                        "The user must see whether the command (incl. a background job) is write-capable.",
+                },
+                sessionId: {
+                    type: "string",
+                    description: "The background session id returned by 'start'. Required for check/stop.",
                 },
             },
-            required: ["explanation", "command", "dangerous"],
+            required: ["explanation"],
         },
     },
 };

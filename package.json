@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.8.8",
+    "version": "1.8.9",
     "engines": {
         "vscode": "^1.120.0"
     },
@@ -77,7 +77,7 @@
                 "properties": {
                     "collama.tlsRejectUnauthorized": {
                         "type": "boolean",
-                        "default": true,
+                        "default": false,
                         "markdownDescription": "Verify TLS certificates for HTTPS endpoints. **Disable only if you trust the network** (equivalent to `NODE_TLS_REJECT_UNAUTHORIZED=0`)."
                     },
                     "collama.autoComplete": {

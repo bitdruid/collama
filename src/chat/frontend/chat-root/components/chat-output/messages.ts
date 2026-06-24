@@ -61,40 +61,40 @@ export function renderToolMessage(opts: ToolRenderOptions) {
     const toolName = msg.customKeys?.toolName || "unknown";
     const toolTarget = msg.customKeys?.toolTarget || "";
     const toolArgs = msg.customKeys?.toolArgs || "";
+    const toolStatus = msg.customKeys?.toolStatus || "";
 
-    // Memory tool: flat banner with brain icon, no accordion body
-    if (toolName === "memory") {
-        const banner = html`
-            <collama-banner type="memory" label="Memory" .description=${toolTarget}></collama-banner>
-        `;
-        if (bare) {
-            return banner;
-        }
-        return html`
-            <div class="message tool ${outOfContextClass}">
-                <div class="bubble-tool">${banner}</div>
-            </div>
-        `;
-    }
-
-    const accordion = html`
-        <collama-accordion
+    // Edit is the only tool with an expandable body: the diff is primary content worth opening.
+    let body;
+    if (toolName === "edit") {
+        body = html`<collama-accordion
             type="tool"
-            label="${toolName}"
+            label="edit"
             description="${toolTarget}"
             .code="${toolArgs}"
             .copyCode="${toolArgs}"
-            language="${toolName === "edit" ? "diff" : ""}"
-        ></collama-accordion>
-    `;
+            language="diff"
+        ></collama-accordion>`;
+    } else if (toolName === "shell" && toolStatus) {
+        // Background shell: header is the session id (+ liveness); body is just the command,
+        // slotted as plain text in a code-chip (no pre/hljs)
+        body = html`<collama-accordion type="shell" label="Background" description="${toolTarget}">
+            <code>${toolArgs}</code>
+        </collama-accordion>`;
+    } else {
+        body = html`<collama-banner
+            type="${toolName === "memory" ? "memory" : "tool"}"
+            label="${toolName === "memory" ? "Memory" : toolName}"
+            .description=${toolTarget}
+        ></collama-banner>`;
+    }
 
     if (bare) {
-        return accordion;
+        return body;
     }
 
     return html`
         <div class="message tool ${outOfContextClass}">
-            <div class="bubble-tool">${accordion}</div>
+            <div class="bubble-tool">${body}</div>
         </div>
     `;
 }

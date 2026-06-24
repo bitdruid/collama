@@ -56,9 +56,11 @@ Collama is a VS Code extension that provides code completions, refactoring sugge
 - **Intercept a running agent** — queue a follow-up message while the agent is still working; it's injected at the next turn boundary without interrupting the current one
 
 **AI Agent with Tool Calling**
-- Tools for filesystem, git, and shell (see [Available Tools](#ai-agent-usage))
+- Tools for filesystem, git, shell, and memory (see [Available Tools](#ai-agent-usage))
 - Workspace-boundary and `.gitignore` protection; optional read-only mode
 - Confirmation flow with Accept / Accept All / Cancel-with-reason, plus a duration counter
+- **Memory tool** — persist facts and preferences across sessions with a dedicated viewer/editor modal
+- **Background shell sessions** — start long-running commands, poll output incrementally, and stop them across agent turns
 
 **Commit Messages**
 - AI-generated conventional commits from staged changes
@@ -105,7 +107,7 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 | `collama.enableEditTools`              | boolean | `true`                   | Enable edit tools (read-only mode when disabled)                                                                                             |
 | `collama.enableShellTool`              | boolean | `false`                  | Enable shell tool usage                                                                                                                      |
 | `collama.extraBody`                    | object  | `{}`                     | Extra JSON body fields for every LLM request (Instruct). Use for provider-specific params like `chat_template_kwargs` for thinking/reasoning |
-| `collama.tlsRejectUnauthorized`        | boolean | `true`                   | Verify TLS certificates for HTTPS endpoints                                                                                                  |
+| `collama.tlsRejectUnauthorized`        | boolean | `false`                  | Verify TLS certificates for HTTPS endpoints                                                                                                  |
 
 ### Manual Token Settings
 
@@ -190,25 +192,32 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
 **Available Tools:**
 
 - **Explore**
-    - `read` - Read a workspace file, optionally by line range
-    - `grep` - Search workspace files with a regex pattern
-    - `glob` - Find files and folders by glob pattern
+    - `read` — Read a workspace file, optionally by line range
+    - `grep` — Search workspace files with a regex pattern
+    - `glob` — Find files and folders by glob pattern
 
 - **Git**
-    - `gitLog` - List commits or branches with optional filters
-    - `gitDiff` - Show working tree, staged, or commit/branch diffs
+    - `gitLog` — List commits or branches with optional filters
+    - `gitDiff` — Show working tree, staged, or commit/branch diffs
 
-- **Decision**
-    - `decision` - Ask the user to choose between options when the right next step is ambiguous
+- **Flow**
+    - `decision` — Ask the user to choose between options when the right next step is ambiguous
+    - `memory` — Persist useful facts across sessions with `write`/`read`/`delete` actions; stored memories are listed in the system prompt as `[scope] key — summary`
 
 - **Edit Tools**
-    - `edit` - Replace an exact string in a workspace file with preview and confirmation
-    - `create` - Create a new file or folder with confirmation
-    - `delete` - Delete a file or folder with confirmation
-    - `notebook` - Edit Jupyter notebook cells with rich diff preview support
+    - `edit` — Replace an exact string in a workspace file with preview and confirmation
+    - `create` — Create a new file or folder with confirmation
+    - `delete` — Delete a file or folder with confirmation
+    - `notebook` — Edit Jupyter notebook cells with rich diff preview support
 
 - **Shell Tool**
-    - `shell` - Run shell commands with confirmation when `collama.enableShellTool` is enabled; large output is written to a temp file instead of truncating. Commands containing write-capable shell constructs (redirection, substitution, ...) are marked with a warning in the confirmation dialog
+    - `shell` — Run shell commands with confirmation when `collama.enableShellTool` is enabled. Supports four actions:
+        - `run` (default) — one-shot command; large output is written to a temp file instead of truncating
+        - `start` — launch a command in the background and return a session id
+        - `check` — poll incremental output and status of a background session
+        - `stop` — terminate a background session
+    - Commands containing write-capable shell constructs (redirection, substitution, ...) are marked with a warning in the confirmation dialog
+    - Provably read-only commands (git read subcommands, bash/coreutils, PowerShell cmdlets) can beauto-accepted
 
 ## Contributing
 

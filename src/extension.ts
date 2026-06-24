@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import { killAllSessions } from "./agent/tools/shell-session";
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
 import {
     registerChatProvider,
@@ -70,4 +71,5 @@ export async function activate(extContext: vscode.ExtensionContext) {
 
 export function deactivate() {
     clearDebounce();
+    killAllSessions();
 }

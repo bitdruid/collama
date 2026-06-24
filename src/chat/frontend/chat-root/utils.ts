@@ -1,6 +1,6 @@
 import hljs from "highlight.js";
 import { AttachedContext } from "../../../common/context-chat";
-import { themeColors } from "../styles";
+import { themeColors, themeStyles } from "../styles";
 
 /**
  * Matches file paths in plain text (`src/foo.ts`, `./bar.js`,
@@ -114,7 +114,7 @@ export function showToast(message: string) {
             left: "50%",
             transform: "translateX(-50%)",
             background: String(themeColors.uiBackground),
-            border: `1px solid ${themeColors.uiBorder}`,
+            border: `${themeStyles.border.normal}`,
             color: String(themeColors.uiFont),
             padding: "6px 14px",
             borderRadius: "6px",

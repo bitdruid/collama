@@ -5,7 +5,7 @@ import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../../ag
 import { resolveToolDecision } from "../../agent/tools/decision";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
-import { AttachedContext, ChatContext, ChatHistory } from "../../common/context-chat";
+import { AttachedContext, ChatContext, ChatHistory, CustomMessageKeys } from "../../common/context-chat";
 import { parseContextUri } from "../../common/context-editor";
 import { deleteMemory, getAllMemory, isMemoryActive, writeMemory } from "../../common/memory";
 import { getChatSettings, userConfig } from "../../config";
@@ -393,11 +393,26 @@ export class ChatPanel {
                     const toolCallId = event.toolCallId as string;
                     const toolContent = event.toolResult as string;
 
-                    const customKeys = {
+                    const customKeys: CustomMessageKeys = {
                         toolName,
                         toolArgs: event.toolArgs as string,
                         toolTarget: event.toolTarget as string,
                     };
+
+                    // Background shell (start/check/stop) renders as its own accordion
+                    if (toolName === "shell") {
+                        try {
+                            const out = JSON.parse(toolContent)?.output;
+                            if (out?.sessionId) {
+                                customKeys.toolStatus = out.status;
+                                const liveness = out.status === "running" ? "running" : "exited";
+                                customKeys.toolTarget = `${out.sessionId} · ${liveness}`;
+                                customKeys.toolArgs = out.command ?? "";
+                            }
+                        } catch {
+                            // Non-JSON result: leave the default toolTarget in place.
+                        }
+                    }
                     this.sessionManager.updateSession(session, (s) => {
                         s.messages.replaceRange(currentIndex, currentIndex, [
                             {

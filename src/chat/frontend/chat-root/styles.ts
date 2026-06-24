@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { themeColors, themeFonts } from "../styles";
+import { themeColors, themeFonts, themeStyles } from "../styles";
 
 export const ChatRootStyles = css`
     :host {
@@ -16,7 +16,7 @@ export const ChatRootStyles = css`
 
     collama-chatheader {
         flex: 0 0 auto;
-        border-bottom: 1px solid ${themeColors.uiBorder};
+        border-bottom: ${themeStyles.border.normal};
     }
 
     .chat-area {

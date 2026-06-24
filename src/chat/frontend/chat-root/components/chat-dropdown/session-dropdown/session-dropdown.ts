@@ -1,12 +1,18 @@
-import { html } from "lit";
+import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import { BaseDropdown } from "../../../../template-components/dropdown/base-dropdown";
 import { ChatSession } from "../../../../../shared";
+import { BaseDropdown } from "../../../../template-components/dropdown/base-dropdown";
+import { baseDropdownStyles } from "../../../../template-components/dropdown/styles";
 import "./session-item";
+import { sessionDropdownStyles } from "./styles";
 
 @customElement("collama-session-dropdown")
 export class SessionDropdown extends BaseDropdown {
+    static override styles = css`
+        ${baseDropdownStyles}
+        ${sessionDropdownStyles}
+    `;
     @property({ type: Array }) sessions: ChatSession[] = [];
     @property({ type: String }) activeSessionId = "";
 

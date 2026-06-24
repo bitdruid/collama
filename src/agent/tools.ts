@@ -15,8 +15,19 @@ import { notebook_def, notebook_exec } from "./tools/notebook";
 import { shell_def, shell_exec } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
-export type ToolCategory = "explore" | "git" | "edit" | "shell" | "memory";
 export type { ToolHistoryPolicy };
+
+/**
+ * Tool roles: the semantic partition of the registry, independent of user settings.
+ * Membership is a plain name list — add/remove a tool by editing the array, nothing else.
+ * A future sub-agent orchestrator composes these per agent role; the user-facing
+ * orchestrator (getAllowedTools) composes them per user settings.
+ */
+const EXPLORATION_TOOLS = ["read", "grep", "glob"];
+const MANIPULATION_TOOLS = ["edit", "create", "delete", "notebook"];
+const SHELL_TOOLS = ["shell"];
+const FLOW_TOOLS = ["decision", "memory"];
+const GIT_TOOLS = ["gitLog", "gitDiff"];
 
 export interface ToolAnswer<TOutput = unknown> {
     success: boolean;
@@ -84,7 +95,6 @@ function buildEditDiff(filePath: string, oldString: string, newString: string): 
  * @template TData The type of data returned on success.
  */
 export interface Tool<TInput = any, TData = unknown> {
-    category: ToolCategory;
     historyPolicy: ToolHistoryPolicy;
     definition: {
         type: "function";
@@ -122,25 +132,36 @@ function getToolNames() {
     return getAllowedTools().map((tool) => tool.definition.function.name);
 }
 
-function getAllowedTools() {
-    const tools = Object.values(toolRegistry);
-
-    return tools.filter((tool) => {
-        switch (tool.category) {
-            case "explore":
-            case "git":
-                return true;
-            case "edit":
-                return userConfig.enableEditTools;
-            case "shell":
-                return userConfig.enableShellTool;
-            case "memory":
-                // Memory is deliberately withheld from lite mode (small models).
-                return !userConfig.liteMode;
-            default:
-                return true;
+/**
+ * User-facing orchestrator: maps the current user settings onto the tool roles.
+ * Lite-mode and the per-role enable flags live here and nowhere else.
+ */
+function getAllowedTools(): Tool[] {
+    const names = [
+        ...EXPLORATION_TOOLS, // always on
+        ...(userConfig.enableEditTools ? MANIPULATION_TOOLS : []),
+        ...(userConfig.enableShellTool ? SHELL_TOOLS : []),
+        ...(userConfig.liteMode || !userConfig.enableShellTool ? GIT_TOOLS : []),
+        ...FLOW_TOOLS.filter(isFlowEnabled),
+    ];
+    return names.map((n) => {
+        const tool = toolRegistry[n];
+        if (!tool) {
+            throw new Error(`Role list references unknown tool "${n}".`);
         }
+        return tool;
     });
+
+    // Flow gate: memory not for lite-mode; decision only if edit or shell enabled
+    function isFlowEnabled(tool: string): boolean {
+        if (tool === "memory") {
+            return !userConfig.liteMode;
+        }
+        if (tool === "decision") {
+            return userConfig.enableEditTools || userConfig.enableShellTool;
+        }
+        return true;
+    }
 }
 
 export function getToolHistoryPolicy(toolName: string): ToolHistoryPolicy {
@@ -274,7 +295,7 @@ export function secureWorkspace(relPath: string, toolName: string): { root: stri
         return { root, fullPath, error: "" };
     }
     // Explore tools are read-only and may inspect temporary files. Edit tools stay workspace-bound.
-    if (toolRegistry[toolName]?.category === "explore" && isWithinAllowedTemp(fullPath)) {
+    if (EXPLORATION_TOOLS.includes(toolName) && isWithinAllowedTemp(fullPath)) {
         return { root: os.tmpdir(), fullPath, error: "" };
     }
     logAgent(`[${toolName}] Path must not escape the workspace root: ${relPath}`);
@@ -301,7 +322,6 @@ export async function confirmAction(action: string, placeHolder: string): Promis
  */
 export const toolRegistry: Record<string, Tool<any, any>> = {
     read: {
-        category: "explore",
         historyPolicy: "evalOutdated",
         definition: read_def,
         toolTarget: (args) => {
@@ -314,7 +334,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         execute: read_exec,
     },
     grep: {
-        category: "explore",
         historyPolicy: "dropAll",
         definition: grep_def,
         toolTarget: (args) => {
@@ -325,14 +344,12 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         execute: grep_exec,
     },
     glob: {
-        category: "explore",
         historyPolicy: "dropAll",
         definition: glob_def,
         toolTarget: "pattern",
         execute: glob_exec,
     },
     gitLog: {
-        category: "git",
         historyPolicy: "dropAll",
         definition: gitLog_def,
         toolTarget: (args) => {
@@ -348,7 +365,6 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         execute: gitLog_exec,
     },
     gitDiff: {
-        category: "git",
         historyPolicy: "dropAll",
         definition: gitDiff_def,
         toolTarget: (args) => {
@@ -361,35 +377,31 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         execute: gitDiff_exec,
     },
     shell: {
-        category: "shell",
         historyPolicy: "keepAll",
         definition: shell_def,
-        toolTarget: (args) => formatToolTargetValue("command", args.command),
+        toolTarget: (args) =>
+            formatToolTargetValue("command", args.command) || formatToolTargetValue("sessionId", args.sessionId),
         execute: shell_exec,
     },
     edit: {
-        category: "edit",
         historyPolicy: "keepAll",
         definition: edit_def,
         toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: edit_exec,
     },
     create: {
-        category: "edit",
         historyPolicy: "keepAll",
         definition: create_def,
         toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: create_exec,
     },
     delete: {
-        category: "edit",
         historyPolicy: "keepAll",
         definition: delete_def,
         toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
         execute: delete_exec,
     },
     notebook: {
-        category: "edit",
         historyPolicy: "keepAll",
         definition: notebook_def,
         toolTarget: (args) => {
@@ -399,14 +411,12 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
         execute: notebook_exec,
     },
     decision: {
-        category: "edit",
         historyPolicy: "dropAll",
         definition: decision_def,
         toolTarget: (args) => formatToolTargetValue("question", args.question),
         execute: decision_exec,
     },
     memory: {
-        category: "memory",
         historyPolicy: "dropAll",
         definition: memory_def,
         toolTarget: (args) => {

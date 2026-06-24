@@ -60,7 +60,7 @@ export class SettingsDropdown extends BaseDropdown {
         return html`
             <section class="settings-section">
                 <div class="settings-header">Extension</div>
-                ${this._renderToggle("Agentic-Mode", "agenticMode", this.config.agenticMode, false, {
+                ${this._renderToggle("Agentic-Mode", "agenticMode", this.config.agenticMode, !this.config.agenticMode, {
                     description: "Let the agent use tools.",
                 })}
                 ${this._renderToggle(
@@ -94,8 +94,7 @@ export class SettingsDropdown extends BaseDropdown {
             <section class="settings-section">
                 <div class="settings-header">Agent</div>
                 ${this._renderStyleToggle("Show Thinking", this.showThinking, this._updateShowThinking, {})}
-                ${this._renderAgentsMdIndicator()}
-                ${this._renderMemoryIndicator()}
+                ${this._renderAgentsMdIndicator()} ${this._renderMemoryIndicator()}
             </section>
         `;
     }

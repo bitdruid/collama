@@ -78,10 +78,10 @@ export const accordionStyles = [
             overflow-x: visible;
         }
 
-        /* think/summary: wrap prose, no horizontal scroll */
         .accordion.type-think .accordion-body-content,
         .accordion.type-summary .accordion-body-content {
             overflow-x: hidden;
+            font-family: ${themeFonts.family};
         }
 
         .accordion.type-think .accordion-body-clip pre,

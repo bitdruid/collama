@@ -18,6 +18,7 @@ export interface CustomMessageKeys {
     toolName?: string;
     toolArgs?: string;
     toolTarget?: string;
+    toolStatus?: string; // present ⇒ background shell action; renders standalone (not in the tool group)
     contexts?: AttachedContext[];
     loading?: boolean;
     msgTokens?: number;

@@ -63,7 +63,7 @@ export const contextTreeStyles = css`
         font-size: ${themeFonts.size.small};
         font-weight: ${themeFonts.weight.bold};
         color: ${themeColors.uiFont};
-        border-bottom: 1px solid ${themeColors.uiBorder};
+        border-bottom: ${themeStyles.border.normal};
         margin-bottom: 4px;
     }
 

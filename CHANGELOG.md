@@ -1,6 +1,22 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.9] - 2026-06-24
+
+### Added
+- Background shell sessions — `start`/`check`/`stop` actions for long-running commands that persist across agent turns, with incremental output polling and temp-file spillover for large output
+- Settings badge and warning indicator on Agentic-Mode toggle when agentic mode is off (consistent with edit/shell tool warnings)
+
+### Changed
+- Tool roles restructured — dropped categories - added roles
+- Default `tlsRejectUnauthorized` changed from `true` to `false` for easier local/trusted-network setups
+- Removed unused Brain icon from chat header
+- Improved session dropdown hover/active states with box-shadow and outline
+- Adjusted theme color lightness values for better contrast
+
+### Fixed
+- shell tool could not resolve string boolean to real boolean
+
 ## [1.8.8] - 2026-06-23
 
 ### Added

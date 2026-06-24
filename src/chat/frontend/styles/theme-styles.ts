@@ -12,6 +12,8 @@ const borderRadius = {
 const border = {
     normal: css`1px solid ${themeColors.uiBorder}`,
     dimm: css`1px solid ${themeColors.uiBorderDimm}`,
+    normalHover: css`1px solid ${themeColors.uiBorderHover}`,
+    dimmHover: css`1px solid ${themeColors.uiBorderHoverDimm}`,
 } as const;
 
 const focus = css`

@@ -37,7 +37,6 @@ export const outputStyles = [
             justify-content: space-between;
             margin: -8px -8px 0px -8px;
             padding: 2px 8px;
-            border-bottom: ${themeStyles.border.normal};
         }
 
         .user-content {

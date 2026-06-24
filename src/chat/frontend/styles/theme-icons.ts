@@ -3,7 +3,6 @@ import { html } from "lit/static-html.js";
 import {
     AlertTriangle,
     BetweenHorizontalStart,
-    Brain,
     Check,
     CheckCheck,
     ChevronDown,
@@ -51,7 +50,6 @@ const dotIcon = {
 export const themeIcons = {
     alertTriangle: icon(AlertTriangle),
     betweenHorizontalStart: icon(BetweenHorizontalStart),
-    brain: icon(Brain),
     check: icon(Check),
     checkCheck: icon(CheckCheck),
     chevronDown: icon(ChevronDown),

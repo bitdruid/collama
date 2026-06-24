@@ -17,20 +17,6 @@ export const chatHeaderStyles = css`
         flex-shrink: 0;
     }
 
-    .usage-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: ${themeColors.uiFont};
-        flex-shrink: 1;
-        width: 18px;
-        height: 18px;
-        transform: translateY(1px);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     .header-actions {
         display: flex;
         align-items: center;

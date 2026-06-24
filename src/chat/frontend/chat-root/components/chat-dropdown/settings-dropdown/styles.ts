@@ -19,7 +19,7 @@ export const settingsDropdownStyles = css`
     }
 
     .settings-section + .settings-section {
-        border-top: 1px solid ${themeColors.uiBorder};
+        border-top: ${themeStyles.border.normal};
     }
 
     .settings-header {

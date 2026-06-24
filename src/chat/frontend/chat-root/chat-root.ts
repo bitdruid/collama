@@ -408,6 +408,7 @@ export class ChatRoot extends LitElement {
     private get showSettingsBadge(): boolean {
         return (
             this.config.liteMode ||
+            !this.config.agenticMode ||
             (this.config.agenticMode && (!this.config.enableEditTools || !this.config.enableShellTool))
         );
     }

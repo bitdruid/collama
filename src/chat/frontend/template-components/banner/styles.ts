@@ -13,19 +13,23 @@ export const bannerStyles = css`
         padding: 4px 10px;
         background: ${themeColors.uiBackgroundDimm};
         color: ${themeColors.uiFont};
-        cursor: pointer;
         user-select: none;
         border: ${themeStyles.border.dimm};
         border-radius: ${themeStyles.borderRadius.large};
         box-sizing: border-box;
         text-align: left;
+        font-family: ${themeFonts.family};
         font-size: ${themeFonts.size.normal};
         line-height: ${themeFonts.lineHeight.normal};
         border-radius: ${themeStyles.borderRadius.large};
         transition: background 0.15s;
     }
 
-    .banner:hover {
+    .banner.collapsible {
+        cursor: pointer;
+    }
+
+    .banner.collapsible:hover {
         background: ${themeColors.uiBackgroundHoverDimm};
     }
 
@@ -55,15 +59,14 @@ export const bannerStyles = css`
         margin-left: 0;
     }
 
-    /* Bare variant: no box, monospace label, a colored chevron leading. */
+    /* Bare variant: no box, a colored chevron leading. */
     .banner.bare {
         background: none;
         border: none;
         padding: 4px 0;
-        font-family: ${themeFonts.family};
     }
 
-    .banner.bare:hover {
+    .banner.bare.collapsible:hover {
         background: none;
     }
 
@@ -74,7 +77,7 @@ export const bannerStyles = css`
         flex-shrink: 0;
     }
 
-    .banner.bare:hover .banner-pill {
+    .banner.bare.collapsible:hover .banner-pill {
         filter: brightness(1.2);
     }
 
@@ -122,6 +125,10 @@ export const bannerStyles = css`
         color: ${themeColors.submit};
     }
 
+    .banner.type-shell .banner-pill {
+        color: ${themeColors.autoAccept};
+    }
+
     .banner.bare .banner-pill .banner-icon svg {
         stroke-width: 3;
     }
@@ -142,7 +149,6 @@ export const bannerStyles = css`
     }
 
     .banner-description {
-        font-family: ${themeFonts.family};
         font-weight: ${themeFonts.weight.normal};
         font-style: italic;
         opacity: 0.85;
