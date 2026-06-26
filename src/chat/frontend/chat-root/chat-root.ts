@@ -93,7 +93,7 @@ export class ChatRoot extends LitElement {
     @state() activeModal: ActiveModal = "";
     @state() fancyTyping = false;
     @state() flatDesign = false;
-    @state() showThinking = false;
+    @state() showThinking = true;
     @state() agentsMdActive = false;
     @state() memoryActive = false;
     @state() memoryEntries: MemoryViewEntry[] = [];

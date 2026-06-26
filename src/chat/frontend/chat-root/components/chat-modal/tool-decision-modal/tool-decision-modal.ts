@@ -4,10 +4,10 @@ import { classMap } from "lit/directives/class-map.js";
 
 import type { ToolDecisionRequest } from "../../../../../shared";
 import "../../../../template-components/banner";
-import "../../../../template-components/button-box";
+import "../../../../template-components/button";
 import "../../../../template-components/button-row";
-import "../../../../template-components/text-box";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
+import "../../../../template-components/text-box";
 import { toolDecisionStyles } from "./styles";
 
 @customElement("collama-tool-decision-modal")

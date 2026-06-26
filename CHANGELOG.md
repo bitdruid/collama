@@ -1,6 +1,19 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.11] - 2026-06-26
+
+### Changed
+- Refactored button components into a shared `ButtonBase` class under `template-components/button/` — `ButtonBox` (border-style) and `ControlButton` (filled-round) now share title/disabled/icon/focus/emitAction logic
+- Cleaned up control-panel `styles.ts` — removed ~150 lines of per-button CSS now owned by the components
+- Reordered agent edit rules in prompt: notepad facts/todos first, then exploration
+- Changed `enableShellTool` default from `false` to `true`
+- Changed `showThinking` default to `true` (show agent thinking by default)
+
+### Fixed
+- Windows CRLF handling in edit and explore tools
+- Minimal styles for dangerous commands in tool-confirm-modal
+
 ## [1.8.10] - 2026-06-26
 
 ### Added

@@ -1,7 +1,7 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { themeStyles } from "../../../styles";
-import "../../../template-components/button-box";
+import "../../../template-components/button";
 import { adjustTextareaRows } from "../../utils";
 
 const editStyles = css`

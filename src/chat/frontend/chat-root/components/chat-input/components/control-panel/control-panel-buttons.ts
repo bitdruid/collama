@@ -1,8 +1,8 @@
 import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../../common/context-chat";
-import { themeIcons } from "../../../../../styles";
 import { type ContextSearchResult } from "../../../../../../shared";
+import "../../../../../template-components/button";
 import "./clear-chat-confirm/clear-chat-confirm";
 import "./convert-ghost-confirm/convert-ghost-confirm";
 import { controlPanelButtonStyles } from "./styles";
@@ -95,16 +95,6 @@ export class ControlPanelButtons extends LitElement {
         this.showContextTree = true;
     }
 
-    private _formatTokens(n: number): string {
-        return n >= 1000 ? n.toLocaleString("de-DE") : String(n);
-    }
-
-    private _formatDuration(seconds: number): string {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-
     override willUpdate(changedProperties: Map<PropertyKey, unknown>) {
         if (changedProperties.has("isGenerating")) {
             if (this._durationInterval) {
@@ -128,13 +118,10 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderAutoAccept() {
         return html`
-            <button-auto-accept
-                title=${this.autoAccept ? "Turn off auto-accept edits" : "Turn on auto-accept edits"}
-                @click=${this.handleAutoAccept}
+            <collama-auto-accept-button
                 ?active=${this.autoAccept}
-            >
-                ${this.autoAccept ? themeIcons.alertTriangle.medium : themeIcons.circleCheckBig.medium}
-            </button-auto-accept>
+                @action=${this.handleAutoAccept}
+            ></collama-auto-accept-button>
         `;
     }
 
@@ -142,36 +129,26 @@ export class ControlPanelButtons extends LitElement {
         if (!this.hasTokenData) {
             return "";
         }
-        return html`
-            <button-token-counter title="Agent token usage">
-                ${this._formatTokens(this.agentToken)}
-            </button-token-counter>
-        `;
+        return html` <collama-token-counter .value=${this.agentToken}></collama-token-counter> `;
     }
 
     private _renderDurationCounter() {
-        return html`
-            <button-duration-counter title="Agent duration">
-                ${this._formatDuration(this.agentDuration)}
-            </button-duration-counter>
-        `;
+        return html` <collama-duration-counter .value=${this.agentDuration}></collama-duration-counter> `;
     }
 
     private _renderCancel() {
         return html`
-            <button-cancel title="Cancel" ?disabled=${this.isSummarizing} @click=${this.handleCancel}>
-                ${themeIcons.x.medium}
-            </button-cancel>
+            <collama-input-cancel-button ?disabled=${this.isSummarizing} @action=${this.handleCancel}></collama-cancel-button>
         `;
     }
 
     private _renderContextButton() {
-        const hasContext = this.contexts.length > 0;
         return html`
-            <button-context title="Add context" data-base-overlay-anchor @click=${this.handleToggleContextTree}>
-                ${themeIcons.paperclip.medium}
-                ${hasContext ? html`<span class="button-badge">${this.contexts.length}</span>` : ""}
-            </button-context>
+            <collama-context-button
+                data-base-overlay-anchor
+                .badge=${this.contexts.length}
+                @action=${this.handleToggleContextTree}
+            ></collama-context-button>
             ${this.showContextTree
                 ? html`<collama-context-search
                       autoShow
@@ -188,9 +165,10 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderGallery() {
         return html`
-            <button-gallery title="Open Prompt Gallery" data-base-overlay-anchor @click=${this.handleToggleGallery}>
-                ${themeIcons.gallery.medium}
-            </button-gallery>
+            <collama-gallery-button
+                data-base-overlay-anchor
+                @action=${this.handleToggleGallery}
+            ></collama-gallery-button>
             ${this.showGallery
                 ? html`<collama-prompt-gallery
                       autoShow
@@ -203,15 +181,12 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderGhostChat() {
         return html`
-            <button-ghost-chat
-                title=${this.isGhost ? "Convert to stored chat" : "Convert to temp chat"}
+            <collama-ghost-chat-button
                 data-base-overlay-anchor
                 ?active=${this.isGhost}
                 ?disabled=${this.isGenerating}
-                @click=${this.handleConvertToGhost}
-            >
-                ${themeIcons.ghostChat.medium}
-            </button-ghost-chat>
+                @action=${this.handleConvertToGhost}
+            ></collama-ghost-chat-button>
             ${this.showConvertGhostConfirm
                 ? html`<collama-convert-ghost-confirm
                       autoShow
@@ -224,14 +199,11 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderClearChat() {
         return html`
-            <button-clear-chat
-                title="Clear conversation"
+            <collama-clear-chat-button
                 data-base-overlay-anchor
                 ?disabled=${this.isGenerating}
-                @click=${this.handleClearChat}
-            >
-                ${themeIcons.trash.medium}
-            </button-clear-chat>
+                @action=${this.handleClearChat}
+            ></collama-clear-chat-button>
             ${this.showClearConfirm
                 ? html`<collama-clear-chat-confirm
                       autoShow
@@ -244,28 +216,19 @@ export class ControlPanelButtons extends LitElement {
 
     private _renderCompress() {
         return html`
-            <button-compress
-                title="Summarize conversation"
+            <collama-compress-button
                 ?disabled=${this.isGenerating}
-                @click=${this.handleSummarizeConversation}
-            >
-                ${themeIcons.compress.medium}
-            </button-compress>
+                @action=${this.handleSummarizeConversation}
+            ></collama-compress-button>
         `;
     }
 
     private _renderSubmit() {
-        return html`
-            <button-submit title="Submit" @click=${this.handleSubmitClick}> ${themeIcons.enter.medium} </button-submit>
-        `;
+        return html` <collama-submit-button @action=${this.handleSubmitClick}></collama-submit-button> `;
     }
 
     private _renderIntercept() {
-        return html`
-            <button-intercept title="Intercept with a follow-up message" @click=${this.handleSubmitClick}>
-                ${themeIcons.betweenHorizontalStart.medium}
-            </button-intercept>
-        `;
+        return html` <collama-intercept-button @action=${this.handleSubmitClick}></collama-intercept-button> `;
     }
 
     /**

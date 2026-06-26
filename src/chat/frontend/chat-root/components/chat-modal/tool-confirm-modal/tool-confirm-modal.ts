@@ -4,7 +4,7 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import type { ToolConfirmRequest } from "../../../../../shared";
 import { themeIcons } from "../../../../styles";
 import "../../../../template-components/banner";
-import "../../../../template-components/button-box";
+import "../../../../template-components/button";
 import "../../../../template-components/button-row";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
 import "../../../../template-components/text-box";

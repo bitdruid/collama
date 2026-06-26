@@ -85,7 +85,7 @@ export class ChatOutput extends LitElement {
     @property({ type: Number }) contextStartIndex: number = 0;
     @property({ type: Boolean }) isGenerating: boolean = false;
     @property({ type: Boolean }) showLoadingDots: boolean = false;
-    @property({ type: Boolean }) showThinking: boolean = false;
+    @property({ type: Boolean }) showThinking: boolean = true;
     @property({ type: Boolean, reflect: true }) fancyTyping: boolean = false;
     @state() editingIndex: number | null = null;
 

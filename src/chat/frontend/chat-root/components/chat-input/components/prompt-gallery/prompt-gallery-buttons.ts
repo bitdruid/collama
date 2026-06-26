@@ -1,7 +1,7 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { themeIcons } from "../../../../../styles";
-import "../../../../../template-components/button-box";
+import "../../../../../template-components/button";
 import "../../../../../template-components/button-row";
 import { galleryButtonStyles } from "./styles";
 

@@ -1,6 +1,6 @@
 import { html } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
-import "../../../../template-components/button-box";
+import "../../../../template-components/button";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
 import { acquireModalStyles } from "./styles";
 

@@ -1,6 +1,6 @@
 import { html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import "../../../../../../template-components/button-box";
+import "../../../../../../template-components/button";
 import { BasePopup } from "../../../../../../template-components/popup/base-popup";
 import { basePopupStyles } from "../../../../../../template-components/popup/styles";
 import { convertGhostConfirmStyles } from "./styles";

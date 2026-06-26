@@ -26,7 +26,7 @@ export class SettingsDropdown extends BaseDropdown {
     @property({ type: Object }) config: ChatSettings = defaultChatSettings;
     @property({ type: Boolean }) fancyTyping = false;
     @property({ type: Boolean }) flatDesign = false;
-    @property({ type: Boolean }) showThinking = false;
+    @property({ type: Boolean }) showThinking = true;
     @property({ type: Boolean }) agentsMdActive = false;
     @property({ type: Boolean }) memoryActive = false;
 

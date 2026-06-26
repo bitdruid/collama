@@ -1,7 +1,7 @@
 import { css } from "lit";
-import { themeColors, themeStyles } from "../../styles";
+import { themeColors, themeStyles } from "../../../styles";
 
-export const buttonBoxStyles = css`
+export const boxButtonStyles = css`
     :host {
         display: inline-flex;
         width: 28px;

@@ -3,8 +3,8 @@ import * as vscode from "vscode";
 import { postConfigToWebview } from "./chat/backend/utils";
 import type { ChatSettings } from "./chat/shared";
 import { isAgentsMdActive } from "./common/agents-md";
-import { isMemoryActive } from "./common/memory";
 import { requestOllama, requestOpenAI, type LlmBackendType } from "./common/client";
+import { isMemoryActive } from "./common/memory";
 import { logMsg } from "./logging";
 import { getBearerCompletion, getBearerInstruct } from "./secrets";
 
@@ -44,7 +44,7 @@ export const defaultExtensionConfig: ExtensionConfig = {
     verbosityMode: "medium",
     suggestDelay: 1500,
     enableEditTools: true,
-    enableShellTool: false,
+    enableShellTool: true,
     liteMode: false,
     tlsRejectUnauthorized: false,
     apiTokenContextLenCompletion: 4096,
