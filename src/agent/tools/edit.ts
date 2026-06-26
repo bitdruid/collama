@@ -66,37 +66,49 @@ export async function edit_exec(args: {
     }
 
     try {
-        const content = readFileContent(ws.fullPath);
-        let newContent: string;
+        // bytes on disk — preserved for diff and final write.
+        const rawContent = readFileContent(ws.fullPath);
+        // normalize to LF so the model's "\n" matches a file's "\r\n".
+        const eol = detectEol(rawContent);
+        const content = rawContent.replace(/\r\n/g, "\n");
+        const oldString = args.oldString.replace(/\r\n/g, "\n");
+        const newString = args.newString.replace(/\r\n/g, "\n");
 
-        if (content === "" && args.oldString === "") {
+        // new content in LF space, then restore the file's original EOL
+        let newContentLf: string;
+
+        if (content === "" && oldString === "") {
             // Insert into an empty file
-            if (!args.newString) {
+            if (!newString) {
                 return toolError("newString must not be empty when inserting into an empty file.");
             }
-            newContent = args.newString;
+            newContentLf = newString;
         } else {
             // Validate that oldString exists and is unique
-            const firstIndex = content.indexOf(args.oldString);
+            const firstIndex = content.indexOf(oldString);
             if (firstIndex === -1) {
                 return toolError(
                     "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
                 );
             }
 
-            const secondIndex = content.indexOf(args.oldString, firstIndex + 1);
+            const secondIndex = content.indexOf(oldString, firstIndex + 1);
             if (secondIndex !== -1) {
                 return toolError(
                     "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
                 );
             }
 
-            if (args.oldString === args.newString) {
+            if (oldString === newString) {
                 return toolError("oldString and newString are identical. No changes to apply.");
             }
 
-            newContent = content.replace(args.oldString, args.newString);
+            newContentLf = content.replace(oldString, newString);
         }
+
+        // Restore the file's original line-ending style so a Windows (CRLF) file
+        // stays CRLF — only the edited region changes, not every line.
+        const newContent = eol === "\r\n" ? newContentLf.replace(/\n/g, "\r\n") : newContentLf;
 
         // Auto-accept: apply without diff preview
         if (getAutoAcceptEdits()) {
@@ -105,7 +117,7 @@ export async function edit_exec(args: {
         }
 
         const { value, reason } = await confirmWithDiff({
-            original: content,
+            original: rawContent,
             proposed: newContent,
             ext: getFileExtension(args.filePath),
             action: "edit",
@@ -355,6 +367,16 @@ export const delete_def = {
 /** Reads file content from disk (consistent with read tool). */
 function readFileContent(fullPath: string): string {
     return fs.readFileSync(fullPath, "utf-8");
+}
+
+/**
+ * Detects the dominant line-ending style of a file's content.
+ * Returns "\r\n" if CRLF endings outnumber bare LF, otherwise "\n".
+ */
+function detectEol(content: string): "\r\n" | "\n" {
+    const crlf = (content.match(/\r\n/g) || []).length;
+    const lf = (content.match(/(?<!\r)\n/g) || []).length;
+    return crlf > lf ? "\r\n" : "\n";
 }
 
 // role registry

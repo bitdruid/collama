@@ -2,6 +2,7 @@ import fs from "fs";
 import { globby } from "globby";
 import os from "os";
 import path from "path";
+import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 import { logMsg } from "../../logging";
 import {
     Tool,
@@ -13,7 +14,6 @@ import {
     toolError,
     toolSuccess,
 } from "../tools";
-import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 
 /** Returns true if the pattern contains '..' path segments. */
 function hasPathTraversal(pattern: string): boolean {
@@ -75,7 +75,7 @@ export async function read_exec(args: {
     }
 
     const content = fs.readFileSync(ws.fullPath, "utf-8");
-    const lines = content.split("\n");
+    const lines = content.split(/\r?\n/);
     const start = (args.startLine ?? 1) - 1;
     const end = args.endLine ?? lines.length;
     const slice = lines.slice(start, end);
@@ -194,7 +194,7 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
         } catch {
             continue;
         }
-        const lines = content.split("\n");
+        const lines = content.split(/\r?\n/);
         for (let i = 0; i < lines.length; i++) {
             const m = regex.exec(lines[i]);
             if (m) {
