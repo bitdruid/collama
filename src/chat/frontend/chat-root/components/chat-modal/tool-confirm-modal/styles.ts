@@ -14,7 +14,6 @@ export const toolConfirmStyles = css`
         text-transform: capitalize;
     }
 
-
     .confirm-filepath {
         flex: 1;
         min-width: 0;
@@ -39,14 +38,13 @@ export const toolConfirmStyles = css`
     }
 
     .confirm-filepath.danger {
-        color: ${themeColors.usageDanger};
-        border-color: color-mix(in srgb, ${themeColors.usageDanger} 5%, ${themeColors.uiBackgroundDimm});
+        border-color: color-mix(in srgb, ${themeColors.usageDanger} 60%, ${themeColors.uiBackgroundDimm});
         background: ${themeColors.uiBackgroundDimm};
     }
 
     .confirm-filepath.danger:hover {
-        border-color: color-mix(in srgb, ${themeColors.usageDanger} 10%, ${themeColors.uiBackgroundDimm});
-        background: ${themeColors.uiBackgroundDimm};
+        border-color: color-mix(in srgb, ${themeColors.usageDanger} 80%, ${themeColors.uiBackgroundDimm});
+        background: ${themeColors.uiBackgroundHoverDimm};
     }
 
     .cancel-input {

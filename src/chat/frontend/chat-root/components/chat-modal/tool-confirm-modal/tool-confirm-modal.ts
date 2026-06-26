@@ -6,8 +6,8 @@ import { themeIcons } from "../../../../styles";
 import "../../../../template-components/banner";
 import "../../../../template-components/button-box";
 import "../../../../template-components/button-row";
-import "../../../../template-components/text-box";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
+import "../../../../template-components/text-box";
 import { buildOpenFileCommandUri } from "../../../utils";
 import { toolConfirmStyles } from "./styles";
 
@@ -106,7 +106,7 @@ export class ToolConfirmModal extends BaseModal {
         return html`<collama-button-box
             variant="warning"
             .icon=${themeIcons.alertTriangle.medium}
-            title="Check this shell command twice"
+            title="Command may not be read-only - check twice"
         ></collama-button-box>`;
     }
 
