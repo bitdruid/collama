@@ -1,7 +1,15 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { logMsg } from "../../logging";
-import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
+import {
+    Tool,
+    ToolAnswer,
+    formatGitRefTarget,
+    formatToolTargetValue,
+    getWorkspaceRoot,
+    toolError,
+    toolSuccess,
+} from "../tools";
 
 const execFileAsync = promisify(execFile);
 
@@ -145,7 +153,8 @@ export const gitLog_def = {
                 },
                 filePath: {
                     type: "string",
-                    description: "Filter to commits affecting this file (relative to workspace root). Only for mode 'commits'.",
+                    description:
+                        "Filter to commits affecting this file (relative to workspace root). Only for mode 'commits'.",
                 },
                 includeRemote: {
                     type: "boolean",
@@ -270,5 +279,39 @@ export const gitDiff_def = {
             },
             required: [],
         },
+    },
+};
+
+// role registry
+// role registry
+// role registry
+
+export const gitTools: Record<string, Tool> = {
+    gitLog: {
+        historyPolicy: "dropAll",
+        definition: gitLog_def,
+        toolTarget: (args) => {
+            const mode = formatToolTargetValue("mode", args.mode ?? "commits");
+            if (mode === "branches") {
+                return args.includeRemote ? "branches (all)" : "branches";
+            }
+            const branch = formatGitRefTarget(args.branch ?? "HEAD");
+            const filePath = formatToolTargetValue("filePath", args.filePath);
+            const target = filePath ? `${branch} → ${filePath}` : branch;
+            return `${mode}: ${target}`;
+        },
+        execute: gitLog_exec,
+    },
+    gitDiff: {
+        historyPolicy: "dropAll",
+        definition: gitDiff_def,
+        toolTarget: (args) => {
+            const from = formatGitRefTarget(args.fromCommit);
+            const to = formatGitRefTarget(args.toCommit ?? "HEAD");
+            const filePath = formatToolTargetValue("filePath", args.filePath);
+            const base = from ? `${from}..${to}` : args.staged ? "staged" : "working-tree";
+            return filePath ? `${base} → ${filePath}` : base;
+        },
+        execute: gitDiff_exec,
     },
 };

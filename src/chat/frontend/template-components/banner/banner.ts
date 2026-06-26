@@ -13,8 +13,8 @@ export type BannerType =
     | "tool-group"
     | "info"
     | "banner"
-    | "memory"
-    | "shell";
+    | "shell"
+    | "flow";
 
 type BannerVariant = "box" | "bare";
 
@@ -36,8 +36,8 @@ const BANNERS: Record<BannerType, BannerSpec> = {
     summary: { heading: "Summary", icon: null, variant: "bare" },
     "tool-group": { heading: "Tools", icon: null, variant: "bare" },
     context: { heading: "Context", icon: null, variant: "bare" },
-    memory: { heading: "Memory", icon: null, variant: "bare" },
     shell: { heading: "Background", icon: themeIcons.dot.large, variant: "bare" },
+    flow: { heading: "", icon: null, variant: "bare" },
     banner: { heading: "", icon: null, variant: "bare" },
 };
 

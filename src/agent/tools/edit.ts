@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../../logging";
-import { ToolAnswer, secureWorkspace, toolError, toolSuccess } from "../tools";
+import { Tool, ToolAnswer, formatToolTargetValue, secureWorkspace, toolError, toolSuccess } from "../tools";
 import {
     getAutoAcceptDeletes,
     getAutoAcceptEdits,
@@ -356,3 +356,28 @@ export const delete_def = {
 function readFileContent(fullPath: string): string {
     return fs.readFileSync(fullPath, "utf-8");
 }
+
+// role registry
+// role registry
+// role registry
+
+export const editTools: Record<string, Tool> = {
+    edit: {
+        historyPolicy: "keepAll",
+        definition: edit_def,
+        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
+        execute: edit_exec,
+    },
+    create: {
+        historyPolicy: "keepAll",
+        definition: create_def,
+        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
+        execute: create_exec,
+    },
+    delete: {
+        historyPolicy: "keepAll",
+        definition: delete_def,
+        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
+        execute: delete_exec,
+    },
+};

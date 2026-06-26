@@ -1,6 +1,20 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.10] - 2026-06-26
+
+### Added
+- Notepad tool to keep facts and todos while looping
+- Flow banner/accordion type for memory, decision, and notepad tools
+- Failed tool calls are now hidden from the webview
+
+### Changed
+- Tool metadata restructured — `CustomMessageKeys` now nests tool info under `toolMeta` with a `toolSuccess` flag
+- Prompt rules updated
+
+### Fixed
+- Decisions and tool-confirmations now close properly on cancelation
+
 ## [1.8.9] - 2026-06-24
 
 ### Added

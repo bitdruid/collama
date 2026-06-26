@@ -165,6 +165,10 @@ export function onCancel(host: ChatRoot) {
     if (!host.isGenerating || host.isSummarizing) {
         return;
     }
+    // Close any open tool modals immediately for instant UI feedback.
+    host.activeModal = "";
+    host.toolConfirmRequest = null;
+    host.toolDecisionRequest = null;
     backendApi.cancel();
 }
 

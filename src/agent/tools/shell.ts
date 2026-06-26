@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 import { logMsg } from "../../logging";
-import { ToolAnswer, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
+import { Tool, ToolAnswer, formatToolTargetValue, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
 import { getAutoAcceptShell, requestToolConfirm, setAutoAcceptShell } from "./confirm";
 import { createSession, getSession, killSession } from "./shell-session";
 
@@ -504,5 +504,19 @@ export const shell_def = {
             },
             required: ["explanation"],
         },
+    },
+};
+
+// role registry
+// role registry
+// role registry
+
+export const shellTools: Record<string, Tool> = {
+    shell: {
+        historyPolicy: "keepAll",
+        definition: shell_def,
+        toolTarget: (args) =>
+            formatToolTargetValue("command", args.command) || formatToolTargetValue("sessionId", args.sessionId),
+        execute: shell_exec,
     },
 };

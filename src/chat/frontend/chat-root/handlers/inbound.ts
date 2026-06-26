@@ -1,9 +1,9 @@
 import type { ToolCall } from "../../../../common/client";
-import { logWebview, showToast } from "../utils";
+import { estTokens, EXTENSION_HARD_TOKEN_CAP } from "../../../../common/utils";
 import type { ChatSettings } from "../../../shared";
 import type { ChatRoot } from "../chat-root";
 import { ChatSessionStore } from "../components/chat-header/chat-session-store";
-import { estTokens, EXTENSION_HARD_TOKEN_CAP } from "../../../../common/utils";
+import { logWebview, showToast } from "../utils";
 
 /** Creates a dispatcher function that routes inbound host messages to their handlers. */
 export function createInboundDispatcher(host: ChatRoot) {
@@ -124,6 +124,12 @@ function handleHistoryReplace(host: ChatRoot, msg: any) {
 function handleAgentAddMessage(host: ChatRoot, msg: any) {
     host.chatContext?.push(msg.message);
     host.syncMessages();
+
+    // Toast for failed tool calls (fires once per new incoming message, not on re-render).
+    const ck = msg.message?.customKeys;
+    if (ck?.toolMeta && !ck.toolMeta.toolSuccess) {
+        showToast(`Tool ${ck.toolMeta.toolName} — failed`);
+    }
 }
 
 /** Inserts a mid-run user interjection at the index the backend reserved before the next turn. */
@@ -169,6 +175,10 @@ function handleChatComplete(host: ChatRoot, msg: any) {
     host.hasTokenData = false;
     // Run ended — clear any intercepts that never got drained (e.g. after a cancel).
     host.pendingIntercepts = [];
+    // Close any open tool modals (e.g. after a cancel).
+    host.activeModal = "";
+    host.toolConfirmRequest = null;
+    host.toolDecisionRequest = null;
     host.contextUsed = msg.contextUsed ?? 0;
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
     host.completeAutoSummaryContextUpdate();
@@ -181,6 +191,9 @@ function handleAgentError(host: ChatRoot, msg: any) {
     host.agentToken = 0;
     host.hasTokenData = false;
     host.pendingIntercepts = [];
+    // Clear any open tool modals so the error modal takes over cleanly.
+    host.toolConfirmRequest = null;
+    host.toolDecisionRequest = null;
 
     const errorMessage = (msg.errorMessage || "").trim().replace(/^--- ERROR ---\s*/, "");
     const history = (msg.exportedChat || "").trim();

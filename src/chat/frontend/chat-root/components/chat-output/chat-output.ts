@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { ChatHistory, ToolMessage } from "../../../../../common/context-chat";
 import { themeIcons } from "../../../styles";
+
 import "../chat-loading-animation/dots";
 import { CharReveal } from "./char-reveal";
 import "./empty-state";
@@ -41,10 +42,19 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
             ((msg.tool_calls?.length ?? 0) > 0 || messages[i + 1]?.role === "tool");
 
         if (msg.role === "tool" || isToolBridge) {
-            // Memory and background-shell tools are standalone (own banner, not grouped).
+            // Skip failed tool calls — hide them from the webview entirely
+            if (msg.role === "tool" && msg.customKeys?.toolMeta && !msg.customKeys.toolMeta.toolSuccess) {
+                continue;
+            }
+            // Memory, decision, notepad, and background-shell tools are standalone
+            // (own banner/accordion, not grouped into a tool-group).
             const ck = msg.customKeys;
             const isStandalone =
-                msg.role === "tool" && (ck?.toolName === "memory" || (ck?.toolName === "shell" && !!ck?.toolStatus));
+                msg.role === "tool" &&
+                (ck?.toolMeta?.toolName === "memory" ||
+                    ck?.toolMeta?.toolName === "decision" ||
+                    ck?.toolMeta?.toolName === "notepad" ||
+                    (ck?.toolMeta?.toolName === "shell" && !!ck?.toolMeta?.toolStatus));
             if (isStandalone) {
                 flushTools();
                 groups.push({ type: "single", msg, index: i });

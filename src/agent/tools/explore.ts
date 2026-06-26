@@ -3,7 +3,16 @@ import { globby } from "globby";
 import os from "os";
 import path from "path";
 import { logMsg } from "../../logging";
-import { ToolAnswer, isWithinAllowedTemp, isWithinRoot, secureWorkspace, toolError, toolSuccess } from "../tools";
+import {
+    Tool,
+    ToolAnswer,
+    formatToolTargetValue,
+    isWithinAllowedTemp,
+    isWithinRoot,
+    secureWorkspace,
+    toolError,
+    toolSuccess,
+} from "../tools";
 import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
 
 /** Returns true if the pattern contains '..' path segments. */
@@ -342,5 +351,40 @@ export const glob_def = {
             },
             required: ["pattern"],
         },
+    },
+};
+
+// role registry
+// role registry
+// role registry
+
+export const exploreTools: Record<string, Tool> = {
+    read: {
+        historyPolicy: "evalOutdated",
+        definition: read_def,
+        toolTarget: (args) => {
+            const path = formatToolTargetValue("filePath", args.filePath);
+            if (args.startLine || args.endLine) {
+                return `${path} → ${args.startLine ?? 1} - ${args.endLine ?? "?"}`;
+            }
+            return path;
+        },
+        execute: read_exec,
+    },
+    grep: {
+        historyPolicy: "dropAll",
+        definition: grep_def,
+        toolTarget: (args) => {
+            const pattern = formatToolTargetValue("pattern", args.pattern);
+            const glob = formatToolTargetValue("filePath", args.glob);
+            return glob ? `${pattern} → ${glob}` : pattern;
+        },
+        execute: grep_exec,
+    },
+    glob: {
+        historyPolicy: "dropAll",
+        definition: glob_def,
+        toolTarget: "pattern",
+        execute: glob_exec,
     },
 };

@@ -15,10 +15,13 @@ export interface AttachedContext {
 
 /** Custom keys attached to messages for UI/internal use (not sent to LLM). */
 export interface CustomMessageKeys {
-    toolName?: string;
-    toolArgs?: string;
-    toolTarget?: string;
-    toolStatus?: string; // present ⇒ background shell action; renders standalone (not in the tool group)
+    toolMeta?: {
+        toolName: string;
+        toolArgs: string;
+        toolTarget: string;
+        toolStatus?: string; // present ⇒ background shell action; renders standalone (not in the tool group)
+        toolSuccess: boolean; // false ⇒ hide from webview (the error is in msg.content for the LLM)
+    };
     contexts?: AttachedContext[];
     loading?: boolean;
     msgTokens?: number;

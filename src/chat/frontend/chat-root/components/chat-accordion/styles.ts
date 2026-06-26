@@ -78,12 +78,14 @@ export const accordionStyles = [
             overflow-x: visible;
         }
 
+        .accordion.type-flow .accordion-body-content,
         .accordion.type-think .accordion-body-content,
         .accordion.type-summary .accordion-body-content {
             overflow-x: hidden;
             font-family: ${themeFonts.family};
         }
 
+        .accordion.type-flow .accordion-body-clip pre,
         .accordion.type-think .accordion-body-clip pre,
         .accordion.type-summary .accordion-body-clip pre {
             min-width: 0;
@@ -91,9 +93,11 @@ export const accordionStyles = [
             word-break: break-word;
         }
 
+        .accordion.type-flow .accordion-body-clip pre code,
         .accordion.type-think .accordion-body-clip pre code,
         .accordion.type-summary .accordion-body-clip pre code {
             white-space: pre-wrap;
+            font-family: inherit;
         }
 
         /* Tool group: nested tool rows hang under a left guide line, indented

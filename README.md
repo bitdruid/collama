@@ -201,23 +201,18 @@ If a chat already contains tool calls, switch to a fresh chat after turning `Age
     - `gitDiff` — Show working tree, staged, or commit/branch diffs
 
 - **Flow**
-    - `decision` — Ask the user to choose between options when the right next step is ambiguous
-    - `memory` — Persist useful facts across sessions with `write`/`read`/`delete` actions; stored memories are listed in the system prompt as `[scope] key — summary`
+    - `decision` — Ask the user to choose between options
+    - `memory` — Persist/recall/forget facts across sessions
+    - `notepad` — Per-task working memory (facts + todos)
 
 - **Edit Tools**
-    - `edit` — Replace an exact string in a workspace file with preview and confirmation
-    - `create` — Create a new file or folder with confirmation
-    - `delete` — Delete a file or folder with confirmation
-    - `notebook` — Edit Jupyter notebook cells with rich diff preview support
+    - `edit` — Replace an exact string in a file
+    - `create` — Create a file or folder
+    - `delete` — Delete a file or folder
+    - `notebook` — Edit Jupyter notebook cells
 
 - **Shell Tool**
-    - `shell` — Run shell commands with confirmation when `collama.enableShellTool` is enabled. Supports four actions:
-        - `run` (default) — one-shot command; large output is written to a temp file instead of truncating
-        - `start` — launch a command in the background and return a session id
-        - `check` — poll incremental output and status of a background session
-        - `stop` — terminate a background session
-    - Commands containing write-capable shell constructs (redirection, substitution, ...) are marked with a warning in the confirmation dialog
-    - Provably read-only commands (git read subcommands, bash/coreutils, PowerShell cmdlets) can beauto-accepted
+    - `shell` — Run commands (`run`/`start`/`check`/`stop` actions); large output written to temp file; write-capable commands warned; read-only commands auto-accepted
 
 ## Contributing
 

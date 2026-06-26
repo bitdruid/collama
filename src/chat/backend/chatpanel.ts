@@ -1,8 +1,13 @@
 import * as vscode from "vscode";
 
 import { getToolHistoryPolicy } from "../../agent/tools";
-import { getAutoAcceptAll, resolveToolConfirm, setAutoAcceptAll } from "../../agent/tools/confirm";
-import { resolveToolDecision } from "../../agent/tools/decision";
+import {
+    cancelAllPendingConfirms,
+    getAutoAcceptAll,
+    resolveToolConfirm,
+    setAutoAcceptAll,
+} from "../../agent/tools/confirm";
+import { cancelAllPendingDecisions, resolveToolDecision } from "../../agent/tools/flow";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
 import { AttachedContext, ChatContext, ChatHistory, CustomMessageKeys } from "../../common/context-chat";
@@ -285,6 +290,10 @@ export class ChatPanel {
             logMsg("Cancelling agent execution");
             this.agentRunner.cancel();
 
+            // Resolve any pending tool confirm/decision promises so the agent doesn't hang.
+            cancelAllPendingDecisions();
+            cancelAllPendingConfirms();
+
             const active = this.sessionManager.getActiveSession();
             if (active) {
                 // Strip the incomplete assistant/tool tail produced by the cancelled run,
@@ -393,10 +402,20 @@ export class ChatPanel {
                     const toolCallId = event.toolCallId as string;
                     const toolContent = event.toolResult as string;
 
-                    const customKeys: CustomMessageKeys = {
+                    // Parse the tool result for success/failure info
+                    let toolSuccess = false;
+                    try {
+                        const parsed = JSON.parse(toolContent);
+                        toolSuccess = parsed.success === true;
+                    } catch {
+                        // Non-JSON result: keep defaults
+                    }
+
+                    const toolMeta: CustomMessageKeys["toolMeta"] = {
                         toolName,
                         toolArgs: event.toolArgs as string,
                         toolTarget: event.toolTarget as string,
+                        toolSuccess,
                     };
 
                     // Background shell (start/check/stop) renders as its own accordion
@@ -404,15 +423,17 @@ export class ChatPanel {
                         try {
                             const out = JSON.parse(toolContent)?.output;
                             if (out?.sessionId) {
-                                customKeys.toolStatus = out.status;
+                                toolMeta.toolStatus = out.status;
                                 const liveness = out.status === "running" ? "running" : "exited";
-                                customKeys.toolTarget = `${out.sessionId} · ${liveness}`;
-                                customKeys.toolArgs = out.command ?? "";
+                                toolMeta.toolTarget = `${out.sessionId} · ${liveness}`;
+                                toolMeta.toolArgs = out.command ?? "";
                             }
                         } catch {
                             // Non-JSON result: leave the default toolTarget in place.
                         }
                     }
+
+                    const customKeys: CustomMessageKeys = { toolMeta };
                     this.sessionManager.updateSession(session, (s) => {
                         s.messages.replaceRange(currentIndex, currentIndex, [
                             {

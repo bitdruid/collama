@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import * as vscode from "vscode";
 import { logMsg } from "../../logging";
-import { ToolAnswer, secureWorkspace, toolError } from "../tools";
+import { Tool, ToolAnswer, formatToolTargetValue, secureWorkspace, toolError } from "../tools";
 import { getAutoAcceptEdits, setAutoAcceptEdits } from "./confirm";
 import { successWithDiagnostics } from "./diagnostics";
 import { confirmWithDiff } from "./diff-preview";
@@ -217,5 +217,21 @@ export const notebook_def = {
             },
             required: ["explanation", "filePath", "mode", "cellIndex"],
         },
+    },
+};
+
+// role registry
+// role registry
+// role registry
+
+export const notebookTools: Record<string, Tool> = {
+    notebook: {
+        historyPolicy: "keepAll",
+        definition: notebook_def,
+        toolTarget: (args) => {
+            const filePath = formatToolTargetValue("filePath", args.filePath);
+            return `${args.mode} #${args.cellIndex} → ${filePath}`;
+        },
+        execute: notebook_exec,
     },
 };

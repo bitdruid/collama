@@ -18,6 +18,14 @@ export function resolveToolConfirm(id: string, value: string, reason: string): v
     }
 }
 
+/** Resolves all pending tool confirmations with null (used when the agent is cancelled). */
+export function cancelAllPendingConfirms(): void {
+    for (const [id, resolve] of _pending) {
+        _pending.delete(id);
+        resolve({ value: null, reason: "Agent was cancelled" });
+    }
+}
+
 /** Sends a confirmation request to the webview and awaits the user's response. */
 export function requestToolConfirm(
     action: string,

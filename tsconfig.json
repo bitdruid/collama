@@ -18,5 +18,8 @@
 		// FOR LIT
 		"experimentalDecorators": true,
 		"useDefineForClassFields": false
-	}
+	},
+	"exclude": [
+		"test"
+	]
 }

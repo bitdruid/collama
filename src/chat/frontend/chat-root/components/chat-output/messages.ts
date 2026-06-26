@@ -58,10 +58,15 @@ export interface ToolRenderOptions {
 
 export function renderToolMessage(opts: ToolRenderOptions) {
     const { msg, outOfContextClass, bare } = opts;
-    const toolName = msg.customKeys?.toolName || "unknown";
-    const toolTarget = msg.customKeys?.toolTarget || "";
-    const toolArgs = msg.customKeys?.toolArgs || "";
-    const toolStatus = msg.customKeys?.toolStatus || "";
+    const toolMeta = msg.customKeys?.toolMeta;
+    // Hide failed tool calls from the webview entirely
+    if (toolMeta && !toolMeta.toolSuccess) {
+        return html``;
+    }
+    const toolName = toolMeta?.toolName || "unknown";
+    const toolTarget = toolMeta?.toolTarget || "";
+    const toolArgs = toolMeta?.toolArgs || "";
+    const toolStatus = toolMeta?.toolStatus || "";
 
     // Edit is the only tool with an expandable body: the diff is primary content worth opening.
     let body;
@@ -80,12 +85,23 @@ export function renderToolMessage(opts: ToolRenderOptions) {
         body = html`<collama-accordion type="shell" label="Background" description="${toolTarget}">
             <code>${toolArgs}</code>
         </collama-accordion>`;
-    } else {
+    } else if (toolName === "notepad") {
+        // Working memory: header summarizes counts; expanding shows the full facts/todos
+        // list as plain preformatted text (slotted, so no hljs highlighting).
+        // Uses type="flow" for non-mono font and no-scrollbar styling (same as thinking).
+        body = html`<collama-accordion type="flow" label="Notepad" description="${toolTarget}">
+            <div style="white-space: pre-wrap;">${toolArgs}</div>
+        </collama-accordion>`;
+    } else if (toolName === "memory" || toolName === "decision") {
+        // Memory and decision: standalone flow banner (purple gallery color, no icon).
         body = html`<collama-banner
-            type="${toolName === "memory" ? "memory" : "tool"}"
+            type="flow"
             label="${toolName === "memory" ? "Memory" : toolName}"
             .description=${toolTarget}
         ></collama-banner>`;
+    } else {
+        // All other tools (read, grep, glob, etc.): generic tool banner.
+        body = html`<collama-banner type="tool" label="${toolName}" .description=${toolTarget}></collama-banner>`;
     }
 
     if (bare) {

@@ -121,8 +121,8 @@ export const bannerStyles = css`
         color: ${themeColors.settings};
     }
 
-    .banner.type-memory .banner-pill {
-        color: ${themeColors.submit};
+    .banner.type-flow .banner-pill {
+        color: ${themeColors.gallery};
     }
 
     .banner.type-shell .banner-pill {

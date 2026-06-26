@@ -6,28 +6,30 @@ import { ToolHistoryPolicy } from "../common/context-chat";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { resetAutoAcceptEdits } from "./tools/confirm";
-import { decision_def, decision_exec } from "./tools/decision";
-import { create_def, create_exec, delete_def, delete_exec, edit_def, edit_exec } from "./tools/edit";
-import { glob_def, glob_exec, grep_def, grep_exec, read_def, read_exec } from "./tools/explore";
-import { gitDiff_def, gitDiff_exec, gitLog_def, gitLog_exec } from "./tools/git";
-import { memory_def, memory_exec } from "./tools/memory";
-import { notebook_def, notebook_exec } from "./tools/notebook";
-import { shell_def, shell_exec } from "./tools/shell";
+import { editTools } from "./tools/edit";
+import { exploreTools } from "./tools/explore";
+import { flowTools, notepadBody } from "./tools/flow";
+import { gitTools } from "./tools/git";
+import { notebookTools } from "./tools/notebook";
+import { shellTools } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
 export type { ToolHistoryPolicy };
 
 /**
  * Tool roles: the semantic partition of the registry, independent of user settings.
- * Membership is a plain name list — add/remove a tool by editing the array, nothing else.
+ * Each role's membership is owned by its role file (the keys of its exported group);
+ * here we only derive the name lists the orchestrators reason over. Manipulation spans
+ * two files (edit + notebook), so it is composed here.
  * A future sub-agent orchestrator composes these per agent role; the user-facing
  * orchestrator (getAllowedTools) composes them per user settings.
  */
-const EXPLORATION_TOOLS = ["read", "grep", "glob"];
-const MANIPULATION_TOOLS = ["edit", "create", "delete", "notebook"];
-const SHELL_TOOLS = ["shell"];
-const FLOW_TOOLS = ["decision", "memory"];
-const GIT_TOOLS = ["gitLog", "gitDiff"];
+const manipulationTools: Record<string, Tool> = { ...editTools, ...notebookTools };
+const EXPLORATION_TOOLS = Object.keys(exploreTools);
+const MANIPULATION_TOOLS = Object.keys(manipulationTools);
+const SHELL_TOOLS = Object.keys(shellTools);
+const FLOW_TOOLS = Object.keys(flowTools);
+const GIT_TOOLS = Object.keys(gitTools);
 
 export interface ToolAnswer<TOutput = unknown> {
     success: boolean;
@@ -44,7 +46,7 @@ export function toolError(error: string): ToolAnswer<never> {
     return { success: false, error };
 }
 
-function formatToolTargetValue(key: string, raw: unknown): string {
+export function formatToolTargetValue(key: string, raw: unknown): string {
     if (!raw) {
         return "";
     }
@@ -59,7 +61,7 @@ function formatToolTargetValue(key: string, raw: unknown): string {
     return value;
 }
 
-function formatGitRefTarget(raw: unknown): string {
+export function formatGitRefTarget(raw: unknown): string {
     const value = formatToolTargetValue("branch", raw);
     return /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(value) ? value.slice(0, 7) : value;
 }
@@ -154,7 +156,7 @@ function getAllowedTools(): Tool[] {
 
     // Flow gate: memory not for lite-mode; decision only if edit or shell enabled
     function isFlowEnabled(tool: string): boolean {
-        if (tool === "memory") {
+        if (tool === "memory" || tool === "notepad") {
             return !userConfig.liteMode;
         }
         if (tool === "decision") {
@@ -273,9 +275,11 @@ export function normalizeToolArgs(toolName: string, argsJson: string): Normalize
     const body =
         toolName === "edit"
             ? `${buildEditDiff(relPath, args.oldString ?? "", args.newString ?? "")}`
-            : Object.entries(args)
-                  .map(([k, v]) => `${k}:\n${v}`)
-                  .join("\n");
+            : toolName === "notepad"
+              ? notepadBody(args)
+              : Object.entries(args)
+                    .map(([k, v]) => `${k}:\n${v}`)
+                    .join("\n");
     return { argsJson, args, body };
 }
 
@@ -318,112 +322,12 @@ export async function confirmAction(action: string, placeHolder: string): Promis
 }
 
 /**
- * Registry of available tools.
+ * Registry of available tools, assembled from the per-role groups.
  */
 export const toolRegistry: Record<string, Tool<any, any>> = {
-    read: {
-        historyPolicy: "evalOutdated",
-        definition: read_def,
-        toolTarget: (args) => {
-            const path = formatToolTargetValue("filePath", args.filePath);
-            if (args.startLine || args.endLine) {
-                return `${path} → ${args.startLine ?? 1} - ${args.endLine ?? "?"}`;
-            }
-            return path;
-        },
-        execute: read_exec,
-    },
-    grep: {
-        historyPolicy: "dropAll",
-        definition: grep_def,
-        toolTarget: (args) => {
-            const pattern = formatToolTargetValue("pattern", args.pattern);
-            const glob = formatToolTargetValue("filePath", args.glob);
-            return glob ? `${pattern} → ${glob}` : pattern;
-        },
-        execute: grep_exec,
-    },
-    glob: {
-        historyPolicy: "dropAll",
-        definition: glob_def,
-        toolTarget: "pattern",
-        execute: glob_exec,
-    },
-    gitLog: {
-        historyPolicy: "dropAll",
-        definition: gitLog_def,
-        toolTarget: (args) => {
-            const mode = formatToolTargetValue("mode", args.mode ?? "commits");
-            if (mode === "branches") {
-                return args.includeRemote ? "branches (all)" : "branches";
-            }
-            const branch = formatGitRefTarget(args.branch ?? "HEAD");
-            const filePath = formatToolTargetValue("filePath", args.filePath);
-            const target = filePath ? `${branch} → ${filePath}` : branch;
-            return `${mode}: ${target}`;
-        },
-        execute: gitLog_exec,
-    },
-    gitDiff: {
-        historyPolicy: "dropAll",
-        definition: gitDiff_def,
-        toolTarget: (args) => {
-            const from = formatGitRefTarget(args.fromCommit);
-            const to = formatGitRefTarget(args.toCommit ?? "HEAD");
-            const filePath = formatToolTargetValue("filePath", args.filePath);
-            const base = from ? `${from}..${to}` : args.staged ? "staged" : "working-tree";
-            return filePath ? `${base} → ${filePath}` : base;
-        },
-        execute: gitDiff_exec,
-    },
-    shell: {
-        historyPolicy: "keepAll",
-        definition: shell_def,
-        toolTarget: (args) =>
-            formatToolTargetValue("command", args.command) || formatToolTargetValue("sessionId", args.sessionId),
-        execute: shell_exec,
-    },
-    edit: {
-        historyPolicy: "keepAll",
-        definition: edit_def,
-        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
-        execute: edit_exec,
-    },
-    create: {
-        historyPolicy: "keepAll",
-        definition: create_def,
-        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
-        execute: create_exec,
-    },
-    delete: {
-        historyPolicy: "keepAll",
-        definition: delete_def,
-        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
-        execute: delete_exec,
-    },
-    notebook: {
-        historyPolicy: "keepAll",
-        definition: notebook_def,
-        toolTarget: (args) => {
-            const filePath = formatToolTargetValue("filePath", args.filePath);
-            return `${args.mode} #${args.cellIndex} → ${filePath}`;
-        },
-        execute: notebook_exec,
-    },
-    decision: {
-        historyPolicy: "dropAll",
-        definition: decision_def,
-        toolTarget: (args) => formatToolTargetValue("question", args.question),
-        execute: decision_exec,
-    },
-    memory: {
-        historyPolicy: "dropAll",
-        definition: memory_def,
-        toolTarget: (args) => {
-            const action = formatToolTargetValue("action", args.action);
-            const key = formatToolTargetValue("key", args.key);
-            return key ? `${action}: ${key}` : action;
-        },
-        execute: memory_exec,
-    },
+    ...exploreTools,
+    ...manipulationTools,
+    ...shellTools,
+    ...flowTools,
+    ...gitTools,
 };
