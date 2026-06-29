@@ -10,6 +10,7 @@ export const controlButtonStyles = css`
     }
 
     .control-button {
+        position: relative;
         display: inline-flex;
         align-items: center;
         justify-content: center;

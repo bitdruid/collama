@@ -64,7 +64,8 @@ export class TextBox extends LitElement {
 
     private _autoResize() {
         const ta = this.shadowRoot?.querySelector("textarea");
-        if (ta) {
+        // skip hidden (offsetParent null) — scrollHeight=0 then and would height to 0px, collapsing field once visible.
+        if (ta && ta.offsetParent !== null) {
             ta.style.height = "auto";
             ta.style.height = `${ta.scrollHeight}px`;
         }
