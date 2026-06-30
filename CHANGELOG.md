@@ -1,6 +1,13 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.12] - 2026-06-30
+
+### Fixed
+- Commit message on multiple repositories
+- Height on "other" decision option
+- Context indicator missplaced
+
 ## [1.8.11] - 2026-06-26
 
 ### Changed

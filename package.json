@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.8.11",
+    "version": "1.8.12",
     "engines": {
         "vscode": "^1.120.0"
     },
@@ -213,6 +213,12 @@
             }
         ],
         "menus": {
+            "scm/inputBox": [
+                {
+                    "command": "collama.requestCommitMessage",
+                    "when": "scmProvider == git"
+                }
+            ],
             "editor/context": [
                 {
                     "submenu": "collama.submenu1",
