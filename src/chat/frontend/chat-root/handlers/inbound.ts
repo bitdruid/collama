@@ -29,6 +29,7 @@ export function createInboundDispatcher(host: ChatRoot) {
         "summary-progress": (m) => handleSummaryProgress(host, m),
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
         "tool-decision-request": (m) => handleToolDecisionRequest(host, m),
+        "shell-sessions-update": (m) => handleShellSessionsUpdate(host, m),
     };
     return (msg: any) => {
         handlers[msg.type]?.(msg);
@@ -302,4 +303,9 @@ function handleContextUpdate(host: ChatRoot, msg: any) {
         host.currentContexts = [...host.currentContexts, newCtx];
         logWebview(`Context received: ${newCtx.fileName} (total: ${host.currentContexts.length})`);
     }
+}
+
+/** Updates the active shell session count in the header. */
+function handleShellSessionsUpdate(host: ChatRoot, msg: any) {
+    host.activeShells = msg.activeShells ?? 0;
 }

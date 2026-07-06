@@ -21,6 +21,7 @@ export class ChatHeader extends LitElement {
     @property({ type: Boolean }) sessionDropdownOpen = false;
     @property({ type: Boolean }) settingsDropdownOpen = false;
     @property({ type: Boolean }) showSettingsBadge = false;
+    @property({ type: Number }) activeShells = 0;
 
     private _handleNewGhostChat(event: Event) {
         event.stopPropagation();
@@ -47,6 +48,15 @@ export class ChatHeader extends LitElement {
                         .disabled=${this.isGenerating}
                         .showBadge=${this.showSettingsBadge}
                     ></collama-settings-button>
+                    <span
+                        class="shell-indicator ${this.activeShells > 0 ? "visible" : ""}"
+                        title="${this.activeShells > 0
+                            ? `${this.activeShells} active shell session${this.activeShells > 1 ? "s" : ""}`
+                            : ""}"
+                    >
+                        <span class="shell-dot"></span>
+                        <span class="shell-count">${this.activeShells}</span>
+                    </span>
                 </div>
                 <div class="header-actions">
                     <collama-context-usage-bar

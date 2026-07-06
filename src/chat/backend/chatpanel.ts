@@ -8,6 +8,7 @@ import {
     setAutoAcceptAll,
 } from "../../agent/tools/confirm";
 import { cancelAllPendingDecisions, resolveToolDecision } from "../../agent/tools/flow";
+import { getActiveSessionCount, onSessionChange } from "../../agent/tools/shell-session";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
 import { AttachedContext, ChatContext, ChatHistory, CustomMessageKeys } from "../../common/context-chat";
@@ -49,6 +50,18 @@ export class ChatPanel {
         this.sessionManager = new SessionManager(extContext, webviewView);
         this.sessionHandlers = new SessionHandlers(this.sessionManager, extContext);
         this.agentRunner = new AgentRunner();
+
+        // Forward shell session count changes to the webview
+        onSessionChange(() => {
+            try {
+                this.webviewView.webview.postMessage({
+                    type: "shell-sessions-update",
+                    activeShells: getActiveSessionCount(),
+                });
+            } catch {
+                // webview may be disposed
+            }
+        });
     }
 
     /**
@@ -163,6 +176,7 @@ export class ChatPanel {
             agentsMdActive: isAgentsMdActive(),
             memoryActive: isMemoryActive(),
             autoAcceptAll: getAutoAcceptAll(),
+            activeShells: getActiveSessionCount(),
         });
     }
 

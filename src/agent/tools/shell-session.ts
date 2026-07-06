@@ -20,6 +20,32 @@ const MAX_LIFETIME_MS = 30 * 60 * 1000;
 const _sessions = new Map<string, ShellSession>();
 let _idCounter = 0;
 
+// Event system for session lifecycle changes
+const _sessionEventTarget = new EventTarget();
+const _sessionChangeEvent = "session-change";
+
+/** Subscribe to session create/kill events. */
+export function onSessionChange(fn: () => void): () => void {
+    const handler = () => fn();
+    _sessionEventTarget.addEventListener(_sessionChangeEvent, handler);
+    return () => _sessionEventTarget.removeEventListener(_sessionChangeEvent, handler);
+}
+
+function notifySessionChange() {
+    _sessionEventTarget.dispatchEvent(new Event(_sessionChangeEvent));
+}
+
+/** Returns the number of currently running (not exited) shell sessions. */
+export function getActiveSessionCount(): number {
+    let count = 0;
+    for (const s of _sessions.values()) {
+        if (s.status === "running") {
+            count++;
+        }
+    }
+    return count;
+}
+
 export class ShellSession {
     readonly id: string;
     readonly command: string;
@@ -74,6 +100,7 @@ export class ShellSession {
         this.status = "exited";
         this.exitCode = code;
         clearTimeout(this.lifetimeTimer);
+        notifySessionChange();
     }
 }
 
@@ -94,14 +121,13 @@ export function createSession(command: string, cwd: string, shellType: ShellType
     const isPwsh = shellType === "powershell";
     const bin = isPwsh ? (process.platform === "win32" ? "powershell.exe" : "pwsh") : "/bin/bash";
     const cmdArgs = isPwsh ? ["-Command", command] : ["-c", command];
-    const env = isPwsh
-        ? { ...process.env, CI: "true" }
-        : { ...process.env, FORCE_COLOR: "0", CI: "true" };
+    const env = isPwsh ? { ...process.env, CI: "true" } : { ...process.env, FORCE_COLOR: "0", CI: "true" };
 
     const child = spawn(bin, cmdArgs, { cwd, shell: false, env });
     const id = `sh${++_idCounter}`;
     const session = new ShellSession(id, command, child);
     _sessions.set(id, session);
+    notifySessionChange();
     return session;
 }
 
@@ -117,6 +143,7 @@ export function killSession(id: string): boolean {
     }
     session.kill();
     _sessions.delete(id);
+    notifySessionChange();
     return true;
 }
 

@@ -1,6 +1,12 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.13] - 2026-07-06
+
+### Added
+- Background shell session indicators — status bar shows `sh:N` count, chat header shows green dot + count, composer banner shows "Shell N session(s) running" with green dot and pill badge
+- Shell session change notification system — `onSessionChange()` and `getActiveSessionCount()` in shell-session module, forwarded to webview via `shell-sessions-update` message
+
 ## [1.8.12] - 2026-06-30
 
 ### Fixed

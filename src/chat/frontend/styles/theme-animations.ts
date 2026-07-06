@@ -49,4 +49,18 @@ export const themeAnimations = {
     fadeOut: css`
         opacity: 0;
     `,
+    shellPulse: css`
+        @keyframes shell-pulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.85);
+            }
+        }
+        animation: shell-pulse 1.5s ease-in-out infinite;
+    `,
 } as const;

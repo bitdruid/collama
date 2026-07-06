@@ -10,6 +10,7 @@ import {
     type ToolDecisionRequest,
 } from "../../shared";
 import { BaseDropdown } from "../template-components/dropdown/base-dropdown";
+import "./components/chat-active-shells/chat-active-shells";
 import "./components/chat-dropdown";
 import { ChatSessionStore } from "./components/chat-header/chat-session-store";
 import "./components/chat-modal";
@@ -99,6 +100,7 @@ export class ChatRoot extends LitElement {
     @state() memoryEntries: MemoryViewEntry[] = [];
     @state() autoAccept = false;
     @state() activeDropdown: ActiveDropdown = "";
+    @state() activeShells = 0;
 
     // Reference to store's ChatContext (single source of truth)
     // Public so handlers can access it
@@ -533,6 +535,7 @@ export class ChatRoot extends LitElement {
                 .sessionDropdownOpen=${this.activeDropdown === "session"}
                 .settingsDropdownOpen=${this.activeDropdown === "settings"}
                 .showSettingsBadge=${this.showSettingsBadge}
+                .activeShells=${this.activeShells}
                 @export-session=${this.handleExportSession}
                 @import-session=${onImportSession}
                 @new-chat=${onNewChat}
@@ -574,6 +577,7 @@ export class ChatRoot extends LitElement {
                         @scroll-down=${this.handleScrollDown}
                     ></collama-scroll-down>
                     <div class="bottom-overlay">
+                        <collama-active-shells .count=${this.activeShells}></collama-active-shells>
                         <collama-pending-intercept
                             .items=${this.pendingIntercepts}
                             @cancel-intercept=${this.handleInterceptCancel}

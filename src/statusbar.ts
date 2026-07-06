@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 const { showErrorMessage } = vscode.window;
 
+import { getActiveSessionCount, onSessionChange } from "./agent/tools/shell-session";
 import { getConfig } from "./config";
 import { logMsg } from "./logging";
 
@@ -14,15 +15,28 @@ let statusBarItem: vscode.StatusBarItem | undefined;
  *
  * @param context - The extension context for subscription management.
  */
+function updateStatusbarText() {
+    if (!statusBarItem) {
+        return;
+    }
+    const shellCount = getActiveSessionCount();
+    const shellPart = shellCount > 0 ? ` sh:${shellCount}` : "";
+    statusBarItem.text = `🦙 collama${shellPart}`;
+}
+
 export function setStatusbar(extContext: vscode.ExtensionContext) {
     try {
         statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-        statusBarItem.text = "🦙 collama 🦙";
+        updateStatusbarText();
         statusBarItem.tooltip = "Toggle collama - Auto-Suggestions";
         statusBarItem.command = "collama.showStatusbar";
 
         extContext.subscriptions.push(statusBarItem);
         extContext.subscriptions.push(vscode.commands.registerCommand("collama.showStatusbar", showStatusbar));
+
+        // Subscribe to shell session changes
+        const unsub = onSessionChange(() => updateStatusbarText());
+        extContext.subscriptions.push({ dispose: unsub });
 
         statusBarItem.show();
         logMsg("Statusbar initialized");
