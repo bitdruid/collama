@@ -143,9 +143,22 @@ export const outputStyles = [
             background: ${themeColors.uiBackgroundHover};
         }
 
+        /* user keeps its bubble coloring */
         .out-of-context .bubble {
             background: ${themeColors.outOfContextBackground};
             border-color: ${themeColors.outOfContextBorder};
+        }
+
+        /* left rail marks the whole out-of-context turn */
+        .message.out-of-context {
+            border-left: 3px solid ${themeColors.outOfContextBorder};
+            padding-left: 8px;
+        }
+
+        /* fade agent/tool blocks, keep user readable */
+        .message.assistant.out-of-context,
+        .message.tool.out-of-context {
+            opacity: 0.55;
         }
 
         .output-container {

@@ -176,8 +176,10 @@ function handleChatComplete(host: ChatRoot, msg: any) {
     host.hasTokenData = false;
     // Run ended — clear any intercepts that never got drained (e.g. after a cancel).
     host.pendingIntercepts = [];
-    // Close any open tool modals (e.g. after a cancel).
-    host.activeModal = "";
+    // close leftover tool modals but keep an error modal that a failed run just opened
+    if (host.activeModal !== "error") {
+        host.activeModal = "";
+    }
     host.toolConfirmRequest = null;
     host.toolDecisionRequest = null;
     host.contextUsed = msg.contextUsed ?? 0;
@@ -200,7 +202,7 @@ function handleAgentError(host: ChatRoot, msg: any) {
     const history = (msg.exportedChat || "").trim();
     host.errorModalContent = `ERROR:\n${errorMessage}\n\nHISTORY:\n${history}`;
     host.activeModal = "error";
-    logWebview(`Agent error: ${msg.error?.message}`);
+    logWebview(`Agent error: ${errorMessage}`);
 }
 
 // ---------- summarization ----------
@@ -235,6 +237,7 @@ function handleContextTrimmed(host: ChatRoot, msg: any) {
     host.contextStartIndex = msg.contextStartIndex || 0;
     if (msg.turnsRemoved > 0) {
         const turns = msg.turnsRemoved;
+        host.flashContextTrim(turns, msg.tokensFreed || 0);
         showToast(`Context exceeded — ${turns} old turn${turns > 1 ? "s" : ""} removed (~${msg.tokensFreed} tokens)`);
     }
 }

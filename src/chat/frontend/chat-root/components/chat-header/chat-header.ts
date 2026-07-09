@@ -17,6 +17,8 @@ export class ChatHeader extends LitElement {
 
     @property({ type: Number }) contextUsed = 0;
     @property({ type: Number }) contextMax = 0;
+    @property({ type: Number }) contextTrimmed = 0;
+    @property({ type: String }) contextFlash = "";
     @property({ type: Boolean }) isGenerating = false;
     @property({ type: Boolean }) sessionDropdownOpen = false;
     @property({ type: Boolean }) settingsDropdownOpen = false;
@@ -62,6 +64,8 @@ export class ChatHeader extends LitElement {
                     <collama-context-usage-bar
                         .used=${this.contextUsed}
                         .max=${this.contextMax}
+                        .trimmed=${this.contextTrimmed}
+                        .flash=${this.contextFlash}
                     ></collama-context-usage-bar>
                     <collama-chat-transfer-button
                         mode="import"

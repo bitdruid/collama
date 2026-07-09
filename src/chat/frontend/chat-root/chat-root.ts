@@ -101,6 +101,9 @@ export class ChatRoot extends LitElement {
     @state() autoAccept = false;
     @state() activeDropdown: ActiveDropdown = "";
     @state() activeShells = 0;
+    // transient "−Xk · N turns" label on the context bar after a trim
+    @state() contextFlash = "";
+    private _contextFlashTimer: number | null = null;
 
     // Reference to store's ChatContext (single source of truth)
     // Public so handlers can access it
@@ -146,6 +149,12 @@ export class ChatRoot extends LitElement {
     private handleClearChat = () => onClearChat(this);
     private handleSummarizeConversation = () => onSummarizeConversation(this);
     private handleAcquireAutoSummaryAccept = () => onAcquireAutoSummaryAccept(this);
+    // dismissing the summary recommendation just closes it, threshold guard keeps it from nagging
+    private handleAcquireDismiss = () => {
+        if (this.activeModal === "acquire") {
+            this.activeModal = "";
+        }
+    };
     private handleContextCleared = (e: CustomEvent) => onContextCleared(this, e);
     private handleInterceptCancel = (e: CustomEvent) => onInterceptCancel(this, e);
     private handleToolConfirmAccept = (e: CustomEvent) => onToolConfirmAccept(this, e);
@@ -341,6 +350,30 @@ export class ChatRoot extends LitElement {
         return this.contextUsed / this.contextMax;
     }
 
+    // tokens trimmed out of the live window (before contextStartIndex)
+    private _contextTrimmedTokens(): number {
+        if (this.contextStartIndex <= 0 || !this.chatContext) {
+            return 0;
+        }
+        return this.chatContext.sumTokensInRange(0, this.contextStartIndex);
+    }
+
+    // flash the trim annotation so the drop reads as intentional, auto-clears after the fade
+    public flashContextTrim(turnsRemoved: number, tokensFreed: number): void {
+        if (turnsRemoved <= 0) {
+            return;
+        }
+        const tokens = tokensFreed >= 1000 ? `${(tokensFreed / 1000).toFixed(1)}k` : `${tokensFreed}`;
+        this.contextFlash = `−${tokens} · ${turnsRemoved} turn${turnsRemoved > 1 ? "s" : ""}`;
+        if (this._contextFlashTimer !== null) {
+            clearTimeout(this._contextFlashTimer);
+        }
+        this._contextFlashTimer = window.setTimeout(() => {
+            this.contextFlash = "";
+            this._contextFlashTimer = null;
+        }, 4000);
+    }
+
     private _autoSummarizeAtContextThreshold() {
         if (!this._shouldShowAutoSummaryConfirm()) {
             this._wasContextAtAutoSummaryThreshold = false;
@@ -352,7 +385,7 @@ export class ChatRoot extends LitElement {
         }
 
         this._wasContextAtAutoSummaryThreshold = true;
-        this._showAcquireModal("Auto-Summary", "Accept to summarize the conversation.");
+        this._showAcquireModal("Auto-Summary", "Summary recommended.");
     }
 
     private _showAcquireModal(title: string, description: string) {
@@ -378,7 +411,7 @@ export class ChatRoot extends LitElement {
         this._autoSummaryWaitingForContextUsage = false;
         this._wasContextAtAutoSummaryThreshold = this._shouldShowAutoSummaryConfirm();
         if (this._wasContextAtAutoSummaryThreshold) {
-            this._showAcquireModal("Auto-Summary", "Accept to summarize the conversation.");
+            this._showAcquireModal("Auto-Summary", "Summary recommended.");
         }
     }
 
@@ -388,7 +421,7 @@ export class ChatRoot extends LitElement {
         }
         this._autoSummaryInProgress = false;
         this._autoSummaryWaitingForContextUsage = false;
-        this._showAcquireModal("Auto-Summary", "Accept to summarize the conversation.");
+        this._showAcquireModal("Auto-Summary", "Summary recommended.");
     }
 
     private _shouldShowContextNotification(): boolean {
@@ -495,6 +528,7 @@ export class ChatRoot extends LitElement {
                     .title=${this.acquireModalTitle}
                     .description=${this.acquireModalDescription}
                     @acquire-accept=${this.handleAcquireAutoSummaryAccept}
+                    @overlay-close=${this.handleAcquireDismiss}
                 ></collama-acquire-modal>
             `;
         }
@@ -531,6 +565,8 @@ export class ChatRoot extends LitElement {
             <collama-chatheader
                 .contextUsed=${this.contextUsed}
                 .contextMax=${this.contextMax}
+                .contextTrimmed=${this._contextTrimmedTokens()}
+                .contextFlash=${this.contextFlash}
                 .isGenerating=${this.isGenerating}
                 .sessionDropdownOpen=${this.activeDropdown === "session"}
                 .settingsDropdownOpen=${this.activeDropdown === "settings"}

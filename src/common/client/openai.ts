@@ -33,7 +33,7 @@ export class OpenAiClient implements LlmClient {
         onReasoning?: (chunk: string) => void,
     ): Promise<ChatResult> {
         try {
-            const { apiEndpoint, model, messages, tools = [], options, stop, signal } = settings;
+            const { apiEndpoint, model, messages, tools = [], toolChoice, options, stop, signal } = settings;
             logRequest(apiEndpoint.url, model, options, stop, JSON.stringify(messages));
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
@@ -42,7 +42,7 @@ export class OpenAiClient implements LlmClient {
                 model,
                 messages,
                 tools: tools.length > 0 ? tools : undefined,
-                tool_choice: tools.length > 0 ? "auto" : undefined,
+                tool_choice: tools.length > 0 ? (toolChoice ?? "auto") : undefined,
                 stream: true,
                 ...optionsToOpenAI(options),
                 ...userConfig.extraBody,

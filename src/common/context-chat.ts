@@ -232,6 +232,13 @@ export class ChatContext {
 
     // -- ToolCall accessors (host-side only) --
 
+    // true if any message made or answered a tool call
+    public hasToolCalls(): boolean {
+        return this.messages.some(
+            (msg) => msg.role === "tool" || (msg.role === "assistant" && (msg.tool_calls?.length ?? 0) > 0),
+        );
+    }
+
     /**
      * Returns the tool_call_id of a tool message at the given index, or undefined.
      */

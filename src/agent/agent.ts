@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { buildAgentOptions, emptyStop, LlmChatSettings, LlmClientFactory, ToolCall } from "../common/client";
 import { ChatContext, ChatHistory } from "../common/context-chat";
+import { checkPredictFitsContextLength } from "../common/models";
 import { PromptConstructor } from "../common/prompt";
 import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import { userConfig } from "../config";
@@ -111,7 +112,8 @@ export class Agent {
 
                         const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
-                        if (result.toolCalls.length === 0) {
+                        // no tool calls, or tools disabled so any returned calls are ignored
+                        if (result.toolCalls.length === 0 || !this.toolsCallable) {
                             // Agent is done — unless the user interjected while it was answering.
                             if (this.injected.length === 0) {
                                 break;
@@ -126,9 +128,15 @@ export class Agent {
                         history.push({ role: "assistant", content: result.content, tool_calls: result.toolCalls });
                         onEvent?.({ type: "agent-tool-calls", toolCalls: result.toolCalls });
 
-                        await this.executeTools(result.toolCalls, history, signal, onEvent);
+                        const overflowed = await this.executeTools(result.toolCalls, history, signal, onEvent);
 
                         if (signal.aborted) {
+                            break;
+                        }
+
+                        // tool results overflowed the window: force a conclusion and end the run
+                        if (overflowed) {
+                            await this.escapeOnContextLimit(history, settings, signal, onChunk, onEvent);
                             break;
                         }
                     }
@@ -160,10 +168,22 @@ export class Agent {
             history.setMessages(messages.getMessages());
         }
 
+        // send the tool schema when agentic is on, or when the chat already has tool calls
+        // prevents hallucination (+ tool_choice forbids use), pure chats do not send scheme
+        const wantsSchema = this.agentMode === "default" && (userConfig.agenticMode || messages.hasToolCalls());
         return {
             history,
-            tools: this.agentMode === "default" && userConfig.agenticMode ? getToolDefinitions() : [],
+            tools: wantsSchema ? getToolDefinitions() : [],
         };
+    }
+
+    /**
+     * Whether the agent may actually invoke tools this run.
+     * True only in default mode with the agentic setting enabled; otherwise the tool schema
+     * is still sent for context, but `tool_choice: "none"` forbids calling it.
+     */
+    private get toolsCallable(): boolean {
+        return this.agentMode === "default" && userConfig.agenticMode;
     }
 
     /**
@@ -183,6 +203,7 @@ export class Agent {
             model: userConfig.apiModelInstruct,
             messages: history.getMessages(),
             tools,
+            toolChoice: this.toolsCallable ? "auto" : "none",
             options: buildAgentOptions(),
             stop: emptyStop(),
             signal,
@@ -260,10 +281,65 @@ export class Agent {
         logAgent(`Agent Tokens: ${toolTokens}`);
         onEvent?.({ type: "agent-tokens", tokens: toolTokens });
 
-        if (toolTokens > userConfig.apiTokenContextLenInstruct) {
-            throw new Error(
-                `Agent context exceeded limit: ${toolTokens} tokens > ${userConfig.apiTokenContextLenInstruct} (apiTokenContextLenInstruct)`,
-            );
+        // signal overflow instead of throwing, the work loop forces a final answer
+        return toolTokens > userConfig.apiTokenContextLenInstruct;
+    }
+
+    /**
+     * Ends the run gracefully when tool results overflow the context window mid-loop.
+     * Frees room by stubbing old tool results, appends a finalize instruction, then runs a
+     * single turn with the tool schema kept but `tool_choice: "none"` so the model concludes
+     * with what it has. Any tool calls a non-compliant backend still returns are ignored.
+     * @param history - The agent's live conversation history.
+     * @param settings - The base chat settings for the concluding turn.
+     * @param signal - The abort signal for cancellation.
+     * @param onChunk - Callback for streaming the final answer.
+     * @param onEvent - Optional callback for agent events.
+     */
+    private async escapeOnContextLimit(
+        history: ChatContext,
+        settings: LlmChatSettings,
+        signal: AbortSignal,
+        onChunk: (chunk: string) => void,
+        onEvent?: (event: AgentEvent) => void,
+    ) {
+        await this.escapeContextToolOverhead(history);
+        history.push({
+            role: "user",
+            content: "Context limit reached. Provide your final answer NOW and do not call tools.",
+        });
+        onEvent?.({ type: "agent-context-finalize" });
+
+        const finalSettings: LlmChatSettings = {
+            ...settings,
+            messages: history.getMessages(),
+            toolChoice: "none",
+        };
+        await this.executeTurn(finalSettings, signal, onChunk, onEvent);
+    }
+
+    /**
+     * Stubs the oldest tool results until a final answer fits the context window.
+     * Best-effort and only run on overflow: walks from the oldest message, replacing tool
+     * responses with a short placeholder until the reserved reply budget fits. Mutates history.
+     * @param history - The agent's live conversation history.
+     */
+    private async escapeContextToolOverhead(history: ChatContext) {
+        const contextMax = userConfig.apiTokenContextLenInstruct;
+        const reserve = Math.min(userConfig.apiTokenPredictInstruct, Math.max(256, Math.floor(contextMax * 0.25)));
+        const msgs = history.getMessages();
+        for (let i = 0; i < msgs.length; i++) {
+            const total = await Tokenizer.calcTokens(JSON.stringify(msgs.map(stripCustomKeys)));
+            if (checkPredictFitsContextLength(reserve, total, contextMax)) {
+                return;
+            }
+            if (msgs[i].role !== "tool") {
+                continue;
+            }
+            const toolCallId = history.getToolCallId(i);
+            if (toolCallId) {
+                history.setToolResponse(toolCallId, { content: "[dropped to fit context]" });
+            }
         }
     }
 }

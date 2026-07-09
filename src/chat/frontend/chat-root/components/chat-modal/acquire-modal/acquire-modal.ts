@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import "../../../../template-components/button";
 import { BaseModal } from "../../../../template-components/modal/base-modal";
 import { acquireModalStyles } from "./styles";
@@ -8,76 +8,24 @@ import { acquireModalStyles } from "./styles";
 export class AcquireModal extends BaseModal {
     static override styles = [...BaseModal.styles, acquireModalStyles];
 
-    @query("collama-accept-button")
-    private acceptButton!: HTMLElement;
-
     @property({ type: String }) description = "";
-
-    constructor() {
-        super();
-        this.closeOnEscape = false;
-        this.closeOnOutsideClick = false;
-    }
-
-    override show(title?: string) {
-        super.show(title);
-        this._focusAcceptButton();
-    }
-
-    override close() {
-        this._focusAcceptButton();
-    }
-
-    private _focusAcceptButton() {
-        this.updateComplete.then(() => {
-            this.acceptButton?.focus();
-        });
-    }
 
     private _accept() {
         this.dispatchEvent(new CustomEvent("acquire-accept", { bubbles: true, composed: true }));
     }
 
-    private _keepFocus = (e: FocusEvent) => {
-        if (e.relatedTarget && this.shadowRoot?.contains(e.relatedTarget as Node)) {
-            return;
-        }
-        this._focusAcceptButton();
-    };
-
-    private _handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape" || e.key === "Tab") {
-            e.preventDefault();
-            e.stopPropagation();
-            this._focusAcceptButton();
-        }
-    };
-
-    override render() {
-        if (!this._open) {
-            return html``;
-        }
-
-        return html`
-            <div
-                class="modal-content ${this._visible ? "fade-in" : "fade-out"}"
-                @focusout=${this._keepFocus}
-                @keydown=${this._handleKeyDown}
-            >
-                <div class="modal-header">
-                    <h3>${this.title}</h3>
-                </div>
-                <div class="modal-body">${this.renderContent()}</div>
-            </div>
-        `;
+    // recommendation only, dismissing just closes the modal
+    private _dismiss() {
+        this.close();
     }
 
     protected override renderContent() {
         return html`
             <div class="acquire-content">
-                <div class="acquire-summary">
-                    <collama-accept-button title="Accept" @action=${this._accept}></collama-accept-button>
-                    <span class="acquire-description">${this.description}</span>
+                <span class="acquire-description">${this.description}</span>
+                <div class="acquire-actions">
+                    <collama-cancel-button title="Dismiss" @action=${this._dismiss}></collama-cancel-button>
+                    <collama-accept-button title="Summarize" @action=${this._accept}></collama-accept-button>
                 </div>
             </div>
         `;

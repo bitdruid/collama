@@ -41,6 +41,8 @@ export interface LlmChatSettings {
     model: string;
     messages: any[];
     tools?: any[];
+    // overrides the default tool_choice, "none" keeps the schema but forbids calling
+    toolChoice?: "auto" | "none";
     options: Options;
     stop: Stop;
     signal?: AbortSignal;

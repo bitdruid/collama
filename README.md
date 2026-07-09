@@ -20,73 +20,52 @@ ___
 
 ## Overview
 
-Collama is a VS Code extension that provides code completions, refactoring suggestions, and documentation generation. It supports multiple backends:
+Collama provides code completion, refactoring, documentation, and an agentic chat — all against local or OpenAI-compatible LLM backends:
 
-- **[Ollama](https://ollama.com)** - local
-- **[OpenAI compatible](https://ai-sdk.dev/providers/openai-compatible-providers)** — local / cloud
+- **[Ollama](https://ollama.com)** — local
+- **[OpenAI compatible](https://ai-sdk.dev/providers/openai-compatible-providers)** — local / cloud (vLLM, LiteLLM, OpenAI)
 
 > **Status:** Heavy active development — output may occasionally be unexpected.
 
 ## Features
 
-**Code Completion**
-- Inline, multiline, and multiblock suggestions
-- Uses currently opened tabs as context
+**Code Completion** — inline, multiline, and multiblock suggestions using open tabs as context.
 <p align="left">
   <img src="media/collama.gif" alt="collama" width="500px"/>
 </p>
 
-**Code Edits**
-- Generate docstrings, extract functions, refactor code
-- Simplify complex code, fix syntax errors
-- Manual instructions for custom edits
+**Code Edits** — docstrings, extract/refactor functions, simplify code, fix syntax, or manual instructions on a selection.
 
 **Chat Interface**
-- Multiple chat sessions with custom titles
-- Temporary chat sessions — create unlisted, non-persisted sessions for quick experiments
-- Send selected code/files as context with file references
-- **Search and attach files/folders directly from the chat input**
-- **Send to chat from file tree** — right-click files/folders in VSCode explorer
-- Real-time context usage bar with automatic trimming
-- Edit messages, copy sessions, scroll navigation
-- Import/export chat history as JSON for backup and sharing
-- Auto-accept all toggle for edits and creates to streamline workflow
-- Summarize individual turns or entire conversations to reduce context usage
-- **AGENTS.md support** — define custom agent rules by placing an `AGENTS.md` file in your project root
-- **Intercept a running agent** — queue a follow-up message while the agent is still working; it's injected at the next turn boundary without interrupting the current one
+- Multiple sessions with custom titles; temporary (unlisted, non-persisted) sessions for quick experiments
+- Attach files/folders from the chat input or via right-click in the explorer ("Send to Chat")
+- Real-time context usage bar with automatic trimming; graceful wrap-up when a run hits the window
+- Summarize individual turns or whole conversations to reclaim context
+- Edit messages, copy sessions, import/export history as JSON
+- **AGENTS.md support** — drop an `AGENTS.md` in the project root to define custom agent rules
+- **Intercept a running agent** — queue a follow-up; it's injected at the next turn boundary without interrupting
 
 **AI Agent with Tool Calling**
-- Tools for filesystem, git, shell, and memory (see [Available Tools](#ai-agent-usage))
+- Filesystem, git, shell, and memory tools (see [Available Tools](#ai-agent-usage))
 - Workspace-boundary and `.gitignore` protection; optional read-only mode
-- Confirmation flow with Accept / Accept All / Cancel-with-reason, plus a duration counter
-- **Memory tool** — persist facts and preferences across sessions with a dedicated viewer/editor modal
-- **Background shell sessions** — start long-running commands, poll output incrementally, and stop them across agent turns
+- Confirmation flow with Accept / Accept All / Cancel-with-reason and a duration counter
+- **Memory tool** — persist facts/preferences across sessions via a viewer/editor modal
+- **Background shell sessions** — start long-running commands, poll output, and stop them across turns
 
-**Commit Messages**
-- AI-generated conventional commits from staged changes
-- Accessible via command palette or Source Control view
-
-**Current Context Management**
-- Smart pruning of editor tabs in autocomplete to fit context
-- Chat history optimization (tool results removed)
-- Token counter visualization in agent-loop / total usage
+**Commit Messages** — AI-generated conventional commits from staged changes, via command palette or Source Control.
 
 ## Installation
 
-**Prerequisites:** VS Code 1.109.0+, an Ollama or OpenAI-compatible endpoint (local or remote), and a supported code model (see [Models](#models)).
+**Prerequisites:** VS Code 1.120.0+, an Ollama or OpenAI-compatible endpoint (local or remote), and a supported code model (see [Models](#models)).
 
-Install the extension from the marketplace or build the vsix yourself, then configure an endpoint in settings.
-For authentication, set your API key as a bearer token — see [Bearer Tokens](#bearer-tokens-api-key).
+Install from the marketplace or build the vsix yourself, then configure an endpoint in settings. For authenticated endpoints, set an API key as a bearer token — see [Bearer Tokens](#bearer-tokens-api-key).
 
-**Ollama (local, remote)**<br>
-See [Ollama installation instructions](https://docs.ollama.com/quickstart) or the [Docker image](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image). Point `apiEndpointCompletion` / `apiEndpointInstruct` to your Ollama host (default: `http://127.0.0.1:11434`).
-
-**OpenAI / OpenAI-compatible (local, remote, cloud)**<br>
-Point the endpoint settings to your server (e.g. [vLLM](https://docs.vllm.ai/), LiteLLM) or to `https://api.openai.com` for the OpenAI cloud API.
+- **Ollama** — see the [quickstart](https://docs.ollama.com/quickstart) or [Docker image](https://ollama.com/blog/ollama-is-now-available-as-an-official-docker-image); point `apiEndpoint*` at your host (default `http://127.0.0.1:11434`).
+- **OpenAI / compatible** — point the endpoints at your server ([vLLM](https://docs.vllm.ai/), LiteLLM) or `https://api.openai.com`.
 
 ## Configuration
 
-Configure Collama via VS Code Settings (Preferences → Settings, search "collama"):
+Configure via VS Code Settings (Preferences → Settings, search "collama"):
 
 | Setting                                | Type    | Default                  | Description                                                                                                                                  |
 | -------------------------------------- | ------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -111,53 +90,25 @@ Configure Collama via VS Code Settings (Preferences → Settings, search "collam
 
 ### Manual Token Settings
 
-Set token limits to match your model or server configuration. Values are tokens, not characters.
-
-- `apiTokenContextLen*` - available context window
-- `apiTokenPredict*` - maximum generated tokens per request
-
-Context length is shared by input tokens and the LLM answer, so a higher predict limit leaves less room for input/context.
+Token values, not characters. `apiTokenContextLen*` is the available context window; `apiTokenPredict*` is the max generated tokens per request. Context is shared by input and answer, so a higher predict limit leaves less room for input.
 
 > [!NOTE]
 > Check your model's maximum context window online and keep memory reservation in mind.
 
 ### Bearer Tokens (API Key)
 
-If an endpoint needs authentication, store the token via Command Palette:
-
-- `collama: Set Bearer Token (Completion)`
-- `collama: Set Bearer Token (Instruct)`
-
-Tokens are sent as `Authorization: Bearer <token>` and stored in VS Code's encrypted credential storage. Run the same command with an empty value to clear one.
+For authenticated endpoints, store a token via Command Palette — `collama: Set Bearer Token (Completion)` / `(Instruct)`. Tokens are sent as `Authorization: Bearer <token>` and kept in VS Code's encrypted storage; run the command with an empty value to clear one.
 
 ## Models
 
-### Recommended Models
+Tested primarily with **Qwen Coder** for completion and **LiteLLM frontier models** for instruct. Small models may struggle with **verbosity** — pick a setting per model.
 
-Collama is tested primarily with the **Qwen Coder** for Completion and **liteLLM frontier models** for Instructions.
-Small models may struggle with **verbosity** settings. Test it and keep the setting for the specific model.
+- **Completion (FIM)** — any Qwen Coder > 3B.
+- **Code Edits** — an instruct model with thinking (e.g. gpt-oss:20b); mid-level MoE dynamic-quant variants (e.g. unsloth GGUF) beat dense models of similar size. Dense mid-size (e.g. qwen3:14b) can struggle.
+- **Agentic Chat** — prefer frontier models (gpt-oss:120b, glm-4.7, minimax2.7); mid-level MoE dynamic quants also work (gpt-oss:20b bf16, qwen3:30b).
+- **Pure Chat** — any chat model. Keep Agentic **OFF** for small models — they lack the reasoning for reliable tool calling.
 
-#### For Code Completion (FIM - Fill In Middle)
-
-- **any qwen coder > 3b** recommended
-
-#### For Code Edits (Instruct/Base Models)
-
-- **any instruct model with thinking capabilities** (e.g. gpt-oss:20b)
-- **Mid-level MoE models with dynamic quantization** (e.g. unsloth's dynamic GGUF quants) gave noticeably better results than dense models of similar size
-- Dense mid-size models (e.g. qwen3:14b) can struggle here — prefer a MoE/dynamic-quant variant if results are poor
-
-#### Agentic Chat
-
-- **Prefer frontier models** (e.g. gpt-oss:120b, glm-4.7, minimax2.7) for agentic mode.
-- **Mid-level MoE models with dynamic quantization** also handled agentic editing well (e.g. gpt-oss:20b bf16, qwen3.6:35b, qwen3:30b — all dynamic quants)
-
-#### Pure Chat
-
-- **Any chat model** can be used for regular chat
-- **Keep Agentic mode OFF for small models** — small models lack the reasoning for reliable tool calling
-
-### Model Completion Compatibility Table
+### Model Completion Compatibility
 
 | Model         | Tested Sizes | FIM Support | Status   | Notes              |
 | ------------- | ------------ | ----------- | -------- | ------------------ |
@@ -167,56 +118,32 @@ Small models may struggle with **verbosity** settings. Test it and keep the sett
 | starcoder     | —            | ⚠️           | Untested | May work           |
 | starcoder2    | 3B           | ✅           | Stable   | Like qwen2.5-coder |
 
-Note: tested primarily at q4 quantization (results may vary with others), and ChatML-format models are not supported — only true FIM models will work for autocomplete.
+Tested mostly at q4 quantization. ChatML-format models are not supported — only true FIM models work for autocomplete.
 
 ## Usage
 
-- **Completions:** trigger automatically after `suggestDelay`; press `Tab` to accept or `Esc` to dismiss.
-- **Code edits:** select code and use **collama (on selection)** for docstrings, refactors, fixes, or manual edits.
-- **Chat:** attach files/folders, manage sessions, summarize context, and toggle auto-accept for edits/creates.
-- **Commit messages:** stage changes, then run **collama: Generate Commit Message**.
+- **Completions** — trigger after `suggestDelay`; `Tab` to accept, `Esc` to dismiss.
+- **Code edits** — select code, use **collama (on selection)** for docstrings, refactors, fixes, or manual edits.
+- **Chat** — attach files/folders, manage sessions, summarize context, toggle auto-accept.
+- **Commit messages** — stage changes, then run **collama: Generate Commit Message**.
 
 ### AI Agent Usage
 
-If a chat already contains tool calls, switch to a fresh chat after turning `Agentic` OFF. `Edit Tools` can be turned OFF for read-only exploration. `Shell Tool` is OFF by default and can be enabled from the status bar menu.
-
-- Agentic mode has been tested on vLLM (NVIDIA H200) with:
-  - gpt-oss:120b
-  - glm-4.7-fp8
-  - minimax2.5, minimax2.7
-  - deepseek-v4-flash
+`Agentic` can be toggled mid-chat without needing a fresh session. `Edit Tools` OFF gives read-only exploration; `Shell Tool` is OFF by default and enabled from the status bar menu.
 
 > [!WARNING]
-> Small models should use chat with `Agentic` OFF.
+> Small models should chat with `Agentic` OFF.
+
+Agentic mode tested on vLLM (NVIDIA H200) with gpt-oss:120b, glm-4.7-fp8, minimax2.5/2.7, deepseek-v4-flash.
 
 **Available Tools:**
 
-- **Explore**
-    - `read` — Read a workspace file, optionally by line range
-    - `grep` — Search workspace files with a regex pattern
-    - `glob` — Find files and folders by glob pattern
-
-- **Git**
-    - `gitLog` — List commits or branches with optional filters
-    - `gitDiff` — Show working tree, staged, or commit/branch diffs
-
-- **Flow**
-    - `decision` — Ask the user to choose between options
-    - `memory` — Persist/recall/forget facts across sessions
-    - `notepad` — Per-task working memory (facts + todos)
-
-- **Edit Tools**
-    - `edit` — Replace an exact string in a file
-    - `create` — Create a file or folder
-    - `delete` — Delete a file or folder
-    - `notebook` — Edit Jupyter notebook cells
-
-- **Shell Tool**
-    - `shell` — Run commands (`run`/`start`/`check`/`stop` actions); large output written to temp file; write-capable commands warned; read-only commands auto-accepted
+- **Explore** — `read` (file, optional line range), `grep` (regex search), `glob` (find by pattern)
+- **Git** — `gitLog` (commits/branches), `gitDiff` (working tree, staged, or commit/branch)
+- **Flow** — `decision` (ask the user to choose), `memory` (persist/recall/forget), `notepad` (per-task facts + todos)
+- **Edit** — `edit` (replace exact string), `create`, `delete`, `notebook` (Jupyter cells)
+- **Shell** — `shell` (`run`/`start`/`check`/`stop`); large output goes to a temp file, write commands are warned, read-only commands auto-accepted
 
 ## Contributing
 
-Contributions are welcome! Here's how you can help:
-
-1. **Report Issues** [Open an issue](https://github.com/bitdruid/collama/issues)
-2. **Submit PRs**: Fork, create a feature branch, and submit a pull request
+Contributions welcome — [open an issue](https://github.com/bitdruid/collama/issues) or fork, branch, and submit a PR.

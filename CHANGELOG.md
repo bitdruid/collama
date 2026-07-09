@@ -1,6 +1,21 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.14] - 2026-07-09
+
+### Added
+- Two-segment context usage bar — trimmed tokens show as a hatched segment
+- Context-limit — when tool results overflow mid-run, old tool results are trimmed and answer enforced
+- Toggle `Agentic` mode mid-chat without a fresh session — `tool_choice: "none"` to avoid hallucinated calls
+- `tool_choice` support in the OpenAI client settings
+
+### Changed
+- Auto-summary recommendation modal is now non-enforcing — slimmer, dismissible via the close button, outside-click, Escape, or a Dismiss button
+- Pre-run context trim reserves the agent system prompt + tool schema so turns start within the window
+
+### Fixed
+- Agent errors now surface in the webview error modal (were silently swallowed — a mismatched log field plus `chat-complete` closing the modal right after it opened)
+
 ## [1.8.13] - 2026-07-06
 
 ### Added

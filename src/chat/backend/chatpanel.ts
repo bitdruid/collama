@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { getToolHistoryPolicy } from "../../agent/tools";
+import { getToolDefinitions, getToolHistoryPolicy } from "../../agent/tools";
 import {
     cancelAllPendingConfirms,
     getAutoAcceptAll,
@@ -14,6 +14,8 @@ import { buildInstructionOptions, ToolCall } from "../../common/client";
 import { AttachedContext, ChatContext, ChatHistory, CustomMessageKeys } from "../../common/context-chat";
 import { parseContextUri } from "../../common/context-editor";
 import { deleteMemory, getAllMemory, isMemoryActive, writeMemory } from "../../common/memory";
+import { PromptConstructor } from "../../common/prompt";
+import Tokenizer from "../../common/tokenizer";
 import { getChatSettings, userConfig } from "../../config";
 import { logMsg } from "../../logging";
 import { StartPage } from "../frontend/chat-init";
@@ -25,9 +27,7 @@ import { handleSummarizeRequest } from "./handlers/summary";
 import { SessionManager } from "./session-manager";
 import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils";
 
-/**
- * Encapsulates the chat panel logic within the extension.
- */
+// chat panel logic for the extension
 export class ChatPanel {
     private sessionManager: SessionManager;
     private sessionHandlers: SessionHandlers;
@@ -37,12 +37,7 @@ export class ChatPanel {
         return this.webviewView.webview;
     }
 
-    /**
-     * Creates a new ChatPanel instance and initializes session data.
-     *
-     * @param webviewView - The webview view that hosts the panel.
-     * @param context - The extension context.
-     */
+    // create the panel and init session data
     constructor(
         private webviewView: vscode.WebviewView,
         private extContext: vscode.ExtensionContext,
@@ -51,7 +46,7 @@ export class ChatPanel {
         this.sessionHandlers = new SessionHandlers(this.sessionManager, extContext);
         this.agentRunner = new AgentRunner();
 
-        // Forward shell session count changes to the webview
+        // forward shell session count changes to the webview
         onSessionChange(() => {
             try {
                 this.webviewView.webview.postMessage({
@@ -64,9 +59,7 @@ export class ChatPanel {
         });
     }
 
-    /**
-     * Registry of message type handlers.
-     */
+    // message type handler registry
     private readonly messageHandlers: Record<string, (msg: any, webview: vscode.Webview) => void | Promise<void>> = {
         "tool-confirm-response": (msg) => resolveToolConfirm(msg.id, msg.value, msg.reason),
         "tool-decision-response": (msg) => resolveToolDecision(msg.id, msg.value),
@@ -100,19 +93,19 @@ export class ChatPanel {
         log: (msg) => logMsg(`WEBVIEW - ${msg.message}`),
     };
 
-    /** Sends all stored memories (both scopes) to the webview for the viewer. */
+    // send all stored memories (both scopes) to the viewer
     private handleMemoryListRequest(webview: vscode.Webview) {
         webview.postMessage({ type: "memory-list", entries: getAllMemory() });
     }
 
-    /** Deletes a memory at the user's request, then re-sends the list. */
+    // delete a memory then re-send the list
     private async handleMemoryDelete(msg: { key: string; scope: "global" | "workspace" }, webview: vscode.Webview) {
         await deleteMemory(msg.key, msg.scope);
         webview.postMessage({ type: "memory-list", entries: getAllMemory() });
         webview.postMessage({ type: "config-update", memoryActive: isMemoryActive() });
     }
 
-    /** Adds a memory at the user's request, then re-sends the list. */
+    // add a memory then re-send the list
     private async handleMemoryAdd(
         msg: { key: string; short: string; long: string; scope: "global" | "workspace" },
         webview: vscode.Webview,
@@ -122,7 +115,7 @@ export class ChatPanel {
         webview.postMessage({ type: "config-update", memoryActive: isMemoryActive() });
     }
 
-    /** Edits a memory at the user's request, then re-sends the list. */
+    // edit a memory then re-send the list
     private async handleMemoryEdit(
         msg: { oldKey: string; key: string; short: string; long: string; scope: "global" | "workspace" },
         webview: vscode.Webview,
@@ -133,9 +126,7 @@ export class ChatPanel {
         webview.postMessage({ type: "config-update", memoryActive: isMemoryActive() });
     }
 
-    /**
-     * Renders the initial chat page inside the webview.
-     */
+    // render the initial chat page in the webview
     renderPanel() {
         const page = new StartPage(this.extContext, this.webviewView);
         const webview = this.webviewView.webview;
@@ -154,9 +145,7 @@ export class ChatPanel {
 
     // ==================== Message Handlers ====================
 
-    /**
-     * Handles the chat-ready message by sending initial state to the webview.
-     */
+    // send initial state to the webview on chat-ready
     private async handleChatReady(webview: vscode.Webview) {
         await this.sessionManager.init();
         setContextWebviewReady(true, webview);
@@ -180,9 +169,7 @@ export class ChatPanel {
         });
     }
 
-    /**
-     * Persists supported settings changed inside the chat webview.
-     */
+    // persist settings changed inside the chat webview
     private async handleConfigUpdateRequest(msg: { key: string; value: unknown }, webview: vscode.Webview) {
         const schema = {
             agenticMode: "boolean",
@@ -218,9 +205,7 @@ export class ChatPanel {
         });
     }
 
-    /**
-     * Handles deleting a turn from a session's message history.
-     */
+    // delete a turn from a session's history
     private async handleDeleteMessages(msg: { turnStart: number; turnEnd: number; sessionId: string }) {
         const { turnStart, turnEnd, sessionId } = msg;
         const session = this.sessionManager.sessions.find((s) => s.id === sessionId)!;
@@ -234,9 +219,7 @@ export class ChatPanel {
         logMsg(`Messages deleted for session ${sessionId} (~${approxTokensFreed} tokens freed)`);
     }
 
-    /**
-     * Toggles the active session between ghost and stored.
-     */
+    // toggle the active session between ghost and stored
     private handleConvertToGhost() {
         const session = this.sessionManager.getActiveSession();
         if (!session) {
@@ -259,9 +242,7 @@ export class ChatPanel {
         logMsg(`Session ${session.id} converted to ghost`);
     }
 
-    /**
-     * Clears all messages from the active session.
-     */
+    // clear all messages from the active session
     private handleClearChat() {
         const session = this.sessionManager.getActiveSession();
         if (!session) {
@@ -275,9 +256,7 @@ export class ChatPanel {
         logMsg(`Cleared messages for session ${session.id}`);
     }
 
-    /**
-     * Removes the incomplete assistant/tool tail from the most recent user turn.
-     */
+    // remove the incomplete assistant/tool tail from the latest user turn
     private removeActiveRunTail(session: NonNullable<ReturnType<SessionManager["getActiveSession"]>>) {
         const msgs = session.messages.getMessages();
         let lastUserIdx = -1;
@@ -296,22 +275,20 @@ export class ChatPanel {
         return false;
     }
 
-    /**
-     * Handles cancelling the current chat request.
-     */
+    // cancel the current chat request
     private handleChatCancel(webview: vscode.Webview) {
         if (this.agentRunner.isRunning()) {
             logMsg("Cancelling agent execution");
             this.agentRunner.cancel();
 
-            // Resolve any pending tool confirm/decision promises so the agent doesn't hang.
+            // resolve pending tool confirm/decision promises so the agent doesn't hang
             cancelAllPendingDecisions();
             cancelAllPendingConfirms();
 
             const active = this.sessionManager.getActiveSession();
             if (active) {
-                // Strip the incomplete assistant/tool tail produced by the cancelled run,
-                // keeping the user message so they can see/retry their prompt.
+                // strip the incomplete assistant/tool tail from the cancelled run
+                // keep the user message so they can see/retry their prompt
                 this.sessionManager.updateSession(active, (s) => {
                     this.removeActiveRunTail(s);
                     s.messages.push({ role: "assistant" as const, content: "**Interrupted**" });
@@ -330,11 +307,8 @@ export class ChatPanel {
         });
     }
 
-    /**
-     * Queues a user interjection into the running agent loop. The message is inserted at the
-     * next turn boundary via the `agent-injected` event; if no agent is running it is ignored
-     * (the frontend only sends this while generating).
-     */
+    // queue a user interjection into the running loop, inserted at the next turn boundary
+    // no-op if no agent is running (frontend only sends this while generating)
     private handleChatIntercept(msg: { content: string; contexts?: AttachedContext[]; id: string }) {
         if (!this.agentRunner.isRunning()) {
             return;
@@ -344,18 +318,22 @@ export class ChatPanel {
         logMsg("Intercept queued into running agent loop");
     }
 
-    /**
-     * Handles a new chat request from the user.
-     */
+    // tokens the agent run prepends to every request: system prompt + tool schema (when sent)
+    private async estimateAgentOverheadTokens(includeTools: boolean): Promise<number> {
+        const tools = includeTools ? getToolDefinitions() : [];
+        const overhead = JSON.stringify(PromptConstructor.agentTemplate()) + JSON.stringify(tools);
+        return Tokenizer.calcTokens(overhead);
+    }
+
+    // handle a new chat request from the user
     private async handleChatRequest(msg: { messages: ChatHistory[]; sessionId: string }, webview: vscode.Webview) {
         const { messages, sessionId } = msg;
 
-        // Mutable index tracking the current message being streamed/added
+        // mutable index of the message being streamed/added
         let currentIndex = messages.length;
 
-        // Update the active session's messages (full history + empty assistant slot).
-        // The title is derived from the first user message once, when the session is
-        // still empty; afterwards it's left alone (renames and edits don't relabel it).
+        // set the session messages (full history + empty assistant slot)
+        // title derives from the first user message once, while the session is still empty
         const session = this.sessionManager.sessions.find((s) => s.id === sessionId)!;
         const isFirstMessage = session.messages.length() === 0;
         this.sessionManager.updateSession(session, (s) => {
@@ -367,16 +345,20 @@ export class ChatPanel {
 
         const options = buildInstructionOptions();
 
-        // Trim old turns if context limit is exceeded
+        // trim old turns if context limit is exceeded
+        // reserve the agent system prompt + tool schema so the trimmed turn starts fitting
+        const includeTools = userConfig.agenticMode || session.messages.hasToolCalls();
+        const agentOverhead = await this.estimateAgentOverheadTokens(includeTools);
+        const trimContextMax = Math.max(1, userConfig.apiTokenContextLenInstruct - agentOverhead);
         const previousContextStartIndex = session.contextStartIndex || 0;
         const { trimmedMessages, turnsRemoved, tokensFreed, messagesRemoved } = await trimMessagesForContext(
             messages,
             options.max_tokens,
-            userConfig.apiTokenContextLenInstruct,
+            trimContextMax,
             previousContextStartIndex,
         );
 
-        // Persist and notify webview of current context boundary
+        // persist and notify webview of the current context boundary
         const contextStartIndex = messagesRemoved;
         this.sessionManager.updateSession(session, (s) => {
             s.contextStartIndex = contextStartIndex;
@@ -416,13 +398,13 @@ export class ChatPanel {
                     const toolCallId = event.toolCallId as string;
                     const toolContent = event.toolResult as string;
 
-                    // Parse the tool result for success/failure info
+                    // parse the tool result for success/failure
                     let toolSuccess = false;
                     try {
                         const parsed = JSON.parse(toolContent);
                         toolSuccess = parsed.success === true;
                     } catch {
-                        // Non-JSON result: keep defaults
+                        // non-json result: keep defaults
                     }
 
                     const toolMeta: CustomMessageKeys["toolMeta"] = {
@@ -432,7 +414,7 @@ export class ChatPanel {
                         toolSuccess,
                     };
 
-                    // Background shell (start/check/stop) renders as its own accordion
+                    // background shell renders as its own accordion
                     if (toolName === "shell") {
                         try {
                             const out = JSON.parse(toolContent)?.output;
@@ -443,7 +425,7 @@ export class ChatPanel {
                                 toolMeta.toolArgs = out.command ?? "";
                             }
                         } catch {
-                            // Non-JSON result: leave the default toolTarget in place.
+                            // non-json result: leave the default tooltarget
                         }
                     }
 
@@ -497,8 +479,8 @@ export class ChatPanel {
                 }
 
                 if (event.type === "agent-injected") {
-                    // Insert the user interjection just before the trailing empty assistant slot,
-                    // then re-point currentIndex at that assistant for the upcoming turn's stream.
+                    // insert the user interjection before the trailing empty assistant slot
+                    // then re-point currentindex at that assistant for the next turn's stream
                     const message = event.message as ChatHistory;
                     this.sessionManager.updateSession(session, (s) => {
                         s.messages.replaceRange(currentIndex, currentIndex, [message]);
@@ -513,8 +495,7 @@ export class ChatPanel {
                 }
 
                 if (event.type === "agent-new-assistant") {
-                    // The final answer slot was filled; open a fresh assistant slot for the
-                    // post-interjection turn (mirrors the toolLastCall slot creation).
+                    // final answer slot filled, open a fresh assistant slot for the post-interjection turn
                     currentIndex++;
                     this.sessionManager.updateSession(session, (s) => {
                         s.messages.replaceRange(currentIndex, currentIndex, [
@@ -558,10 +539,10 @@ export class ChatPanel {
         });
         this.sessionManager.flushSessions();
 
-        // Notify webview that chat is complete
+        // notify webview that chat is complete
         webview.postMessage({ type: "chat-complete", contextUsed });
 
-        // Update sessions list after response completes
+        // update sessions list after the response completes
         this.sessionManager.sendSessionsUpdate();
     }
 }
