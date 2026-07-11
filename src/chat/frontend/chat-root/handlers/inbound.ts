@@ -285,6 +285,11 @@ function handleContextSearchResults(host: ChatRoot, msg: any) {
 function handleContextUpdate(host: ChatRoot, msg: any) {
     const newCtx = msg.context;
 
+    // agent mode only feeds the filepath to the model, so size never matters
+    if (host.config.agenticMode) {
+        newCtx.content = "";
+    }
+
     // Chat-only mode embeds this content into the message and tokenizes it. Reject oversized
     // attachments here (cheap length-based estimate) so the exact, blocking encode never runs.
     const approxTokens = estTokens((newCtx.content ?? "").length);

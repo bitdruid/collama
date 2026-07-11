@@ -78,19 +78,21 @@ export function buildUserContent(contexts: AttachedContext[], text: string, agen
 }
 
 /**
- * Auto-adjusts a textarea's row count to fit its content.
+ * Auto-adjusts a textarea's row count to fit its content, capped at `maxRows`.
  * Clears any inline height set by manual resizing so rows take effect.
  * Returns the new row count.
  */
-export function adjustTextareaRows(textarea: HTMLTextAreaElement): number {
+export function adjustTextareaRows(textarea: HTMLTextAreaElement, maxRows = 12): number {
     textarea.style.height = "";
     textarea.rows = 1;
     const style = getComputedStyle(textarea);
     const lineHeight = parseFloat(style.lineHeight);
     const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
     const rows = Math.max(1, Math.round((textarea.scrollHeight - padding) / lineHeight));
-    textarea.rows = rows;
-    return rows;
+    // hard cap so extreme input cannot push the submit buttons out of reach, scroll inside instead
+    textarea.rows = Math.min(rows, maxRows);
+    textarea.style.overflowY = rows > maxRows ? "auto" : "hidden";
+    return textarea.rows;
 }
 
 export function logWebview(message: string) {

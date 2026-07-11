@@ -112,8 +112,7 @@ export class Agent {
 
                         const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
-                        // no tool calls, or tools disabled so any returned calls are ignored
-                        if (result.toolCalls.length === 0 || !this.toolsCallable) {
+                        if (result.toolCalls.length === 0) {
                             // Agent is done — unless the user interjected while it was answering.
                             if (this.injected.length === 0) {
                                 break;
@@ -168,22 +167,10 @@ export class Agent {
             history.setMessages(messages.getMessages());
         }
 
-        // send the tool schema when agentic is on, or when the chat already has tool calls
-        // prevents hallucination (+ tool_choice forbids use), pure chats do not send scheme
-        const wantsSchema = this.agentMode === "default" && (userConfig.agenticMode || messages.hasToolCalls());
         return {
             history,
-            tools: wantsSchema ? getToolDefinitions() : [],
+            tools: this.agentMode === "default" && userConfig.agenticMode ? getToolDefinitions() : [],
         };
-    }
-
-    /**
-     * Whether the agent may actually invoke tools this run.
-     * True only in default mode with the agentic setting enabled; otherwise the tool schema
-     * is still sent for context, but `tool_choice: "none"` forbids calling it.
-     */
-    private get toolsCallable(): boolean {
-        return this.agentMode === "default" && userConfig.agenticMode;
     }
 
     /**
@@ -203,7 +190,6 @@ export class Agent {
             model: userConfig.apiModelInstruct,
             messages: history.getMessages(),
             tools,
-            toolChoice: this.toolsCallable ? "auto" : "none",
             options: buildAgentOptions(),
             stop: emptyStop(),
             signal,

@@ -1,6 +1,18 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.15] - 2026-07-11
+
+### Changed
+- Agent loop breaks on empty tool calls regardless of agentic mode — removed `toolsCallable` check and simplified tool schema sending (only sent in default+agenticMode, no `hasToolCalls` fallback)
+- Removed `tool_choice` logic from agent settings since it's always `"none"` when tools aren't callable
+
+### Fixed
+- Session title derivation now covers both "New Chat" and "Temporary Chat" — renamed `isFirstMessage` to `isUnnamed` in chat panel
+- Context trimming no longer accounts for tool calls — only reserves space for agentic overhead, dropping the `hasToolCalls` fallback
+- Agent mode clears context file content (filepath-only) to prevent oversized attachments from exceeding token limits
+- Textarea input capped at 12 rows with overflow scroll — prevents extreme input from pushing submit buttons out of reach
+
 ## [1.8.14] - 2026-07-09
 
 ### Added
@@ -15,6 +27,9 @@ https://keepachangelog.com/
 
 ### Fixed
 - Agent errors now surface in the webview error modal (were silently swallowed — a mismatched log field plus `chat-complete` closing the modal right after it opened)
+
+### Removed
+- `ChatContext.hasToolCalls()` method — no longer needed after tool schema simplification
 
 ## [1.8.13] - 2026-07-06
 

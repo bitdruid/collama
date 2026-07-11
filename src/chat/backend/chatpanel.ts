@@ -333,12 +333,12 @@ export class ChatPanel {
         let currentIndex = messages.length;
 
         // set the session messages (full history + empty assistant slot)
-        // title derives from the first user message once, while the session is still empty
+        // title derives from the first user message once, only while still unnamed
         const session = this.sessionManager.sessions.find((s) => s.id === sessionId)!;
-        const isFirstMessage = session.messages.length() === 0;
+        const isUnnamed = session.title === "New Chat" || session.title === "Temporary Chat";
         this.sessionManager.updateSession(session, (s) => {
             s.messages.setMessages([...messages, { role: "assistant" as const, content: "" }]);
-            if (isFirstMessage) {
+            if (isUnnamed) {
                 s.title = SessionManager.generateSessionTitle(messages);
             }
         });
@@ -347,8 +347,7 @@ export class ChatPanel {
 
         // trim old turns if context limit is exceeded
         // reserve the agent system prompt + tool schema so the trimmed turn starts fitting
-        const includeTools = userConfig.agenticMode || session.messages.hasToolCalls();
-        const agentOverhead = await this.estimateAgentOverheadTokens(includeTools);
+        const agentOverhead = await this.estimateAgentOverheadTokens(userConfig.agenticMode);
         const trimContextMax = Math.max(1, userConfig.apiTokenContextLenInstruct - agentOverhead);
         const previousContextStartIndex = session.contextStartIndex || 0;
         const { trimmedMessages, turnsRemoved, tokensFreed, messagesRemoved } = await trimMessagesForContext(
