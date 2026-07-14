@@ -25,6 +25,7 @@ export interface ExtensionConfig {
     enableEditTools: boolean;
     enableShellTool: boolean;
     liteMode: boolean;
+    searxngEndpoint: string;
     tlsRejectUnauthorized: boolean;
     apiTokenContextLenCompletion: number;
     apiTokenContextLenInstruct: number;
@@ -46,6 +47,7 @@ export const defaultExtensionConfig: ExtensionConfig = {
     enableEditTools: true,
     enableShellTool: true,
     liteMode: false,
+    searxngEndpoint: "",
     tlsRejectUnauthorized: false,
     apiTokenContextLenCompletion: 32000,
     apiTokenContextLenInstruct: 128000,
@@ -62,6 +64,7 @@ export const defaultExtensionConfig: ExtensionConfig = {
 export const sysConfig = {
     backendCompletion: "" as LlmBackendType,
     backendInstruct: "" as LlmBackendType,
+    searxngConnected: false,
 };
 
 /**
@@ -151,6 +154,7 @@ export function updateVSConfig(): void {
         enableEditTools: cfg.get("enableEditTools", userConfig.enableEditTools),
         enableShellTool: cfg.get("enableShellTool", userConfig.enableShellTool),
         liteMode: cfg.get("liteMode", userConfig.liteMode),
+        searxngEndpoint: cfg.get("searxngEndpoint", userConfig.searxngEndpoint),
         tlsRejectUnauthorized: cfg.get("tlsRejectUnauthorized", userConfig.tlsRejectUnauthorized),
         apiTokenContextLenCompletion: cfg.get("apiTokenContextLenCompletion", userConfig.apiTokenContextLenCompletion),
         apiTokenContextLenInstruct: cfg.get("apiTokenContextLenInstruct", userConfig.apiTokenContextLenInstruct),
@@ -171,6 +175,9 @@ export function updateVSConfig(): void {
         updateConfig.apiModelInstruct !== userConfig.apiModelInstruct
     ) {
         sysConfig.backendInstruct = "";
+    }
+    if (updateConfig.searxngEndpoint !== userConfig.searxngEndpoint) {
+        sysConfig.searxngConnected = false;
     }
 
     const changes: string[] = [];
@@ -239,6 +246,14 @@ async function detectBackends(): Promise<void> {
             sysConfig.backendInstruct = await detectBackend(userConfig.apiEndpointInstruct, await getBearerInstruct());
             logDetection("instruct", sysConfig.backendInstruct);
         }
+        if (userConfig.searxngEndpoint && !sysConfig.searxngConnected) {
+            sysConfig.searxngConnected = await detectSearxng(userConfig.searxngEndpoint);
+            logMsg(
+                sysConfig.searxngConnected
+                    ? "ℹ️ SearXNG connected — websearch tool enabled"
+                    : `⚠️ No SearXNG connection — retrying every ${DETECT_INTERVAL_MS / 1000}s`,
+            );
+        }
     } finally {
         detecting = false;
     }
@@ -291,5 +306,23 @@ async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBacke
         return "openai";
     } catch {
         return "";
+    }
+}
+
+/**
+ * Probes a SearXNG server by issuing a minimal JSON search.
+ * Also verifies the instance has the json output format enabled (403 otherwise).
+ * @param apiBase - The base URL of the SearXNG server.
+ * @returns True if the server responded successfully.
+ */
+async function detectSearxng(apiBase: string): Promise<boolean> {
+    if (!/^https?:\/\//i.test(apiBase)) {
+        return false;
+    }
+    try {
+        const res = await withTimeout(fetch(`${apiBase.replace(/\/+$/, "")}/search?q=ping&format=json`));
+        return res.ok;
+    } catch {
+        return false;
     }
 }

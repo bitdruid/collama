@@ -275,9 +275,11 @@ const EDIT_RULES = {
         "5. You have to split edits into several small ones.",
         "6. After you finished editing: Use the shell tool to lint/test/compile/build for validation.",
         "7. Finish your answer with a summary of your actions and the resulting conclusion.",
-        "Shell tool specific constraints:",
+        "Shell tool specific:",
         "- Use the shell tool as last resort and always prefer native tools instead of shell commands.",
         "- Use the shell tool if native tools would require too much effort to satisfy the request.",
+        // "Websearch tool specific:",
+        // "- Refine your knowledge if the users suggests to check this online."
         // "- Always prefer a background shell instead of one-shot use for watcher/monitor/loop/process.",
     ],
     LITE: [

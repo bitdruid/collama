@@ -3,15 +3,15 @@ import os from "os";
 import path from "path";
 import * as vscode from "vscode";
 import { ToolHistoryPolicy } from "../common/context-chat";
-import { userConfig } from "../config";
+import { sysConfig, userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
-import { resetAutoAcceptEdits } from "./tools/confirm";
+import { resetAutoAcceptEdits } from "./tools/utils/confirm";
 import { editTools } from "./tools/edit";
 import { exploreTools } from "./tools/explore";
 import { flowTools, notepadBody } from "./tools/flow";
 import { gitTools } from "./tools/git";
 import { notebookTools } from "./tools/notebook";
-import { searchTools } from "./tools/search";
+import { websearchTools } from "./tools/websearch";
 import { shellTools } from "./tools/shell";
 export { resetAutoAcceptEdits };
 
@@ -31,6 +31,7 @@ const MANIPULATION_TOOLS = Object.keys(manipulationTools);
 const SHELL_TOOLS = Object.keys(shellTools);
 const FLOW_TOOLS = Object.keys(flowTools);
 const GIT_TOOLS = Object.keys(gitTools);
+const WEBSEARCH_TOOLS = Object.keys(websearchTools);
 
 export interface ToolAnswer<TOutput = unknown> {
     success: boolean;
@@ -145,6 +146,7 @@ function getAllowedTools(): Tool[] {
         ...(userConfig.enableEditTools ? MANIPULATION_TOOLS : []),
         ...(userConfig.enableShellTool ? SHELL_TOOLS : []),
         ...(userConfig.liteMode || !userConfig.enableShellTool ? GIT_TOOLS : []),
+        ...(sysConfig.searxngConnected ? WEBSEARCH_TOOLS : []), // only with a reachable searxng server
         ...FLOW_TOOLS.filter(isFlowEnabled),
     ];
     return names.map((n) => {
@@ -331,4 +333,5 @@ export const toolRegistry: Record<string, Tool<any, any>> = {
     ...shellTools,
     ...flowTools,
     ...gitTools,
+    ...websearchTools,
 };

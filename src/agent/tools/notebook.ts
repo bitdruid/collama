@@ -2,9 +2,9 @@ import fs from "node:fs";
 import * as vscode from "vscode";
 import { logMsg } from "../../logging";
 import { Tool, ToolAnswer, formatToolTargetValue, secureWorkspace, toolError } from "../tools";
-import { getAutoAcceptEdits, setAutoAcceptEdits } from "./confirm";
-import { successWithDiagnostics } from "./diagnostics";
-import { confirmWithDiff } from "./diff-preview";
+import { getAutoAcceptEdits, setAutoAcceptEdits } from "./utils/confirm";
+import { successWithDiagnostics } from "./utils/diagnostics";
+import { confirmWithDiff } from "./utils/diff-preview";
 
 type CellType = "code" | "markdown";
 

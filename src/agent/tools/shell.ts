@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process";
 import { logMsg } from "../../logging";
 import { Tool, ToolAnswer, formatToolTargetValue, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
-import { getAutoAcceptShell, requestToolConfirm, setAutoAcceptShell } from "./confirm";
-import { createSession, getSession, killSession } from "./shell-session";
-import { captureOutput } from "./spill";
+import { getAutoAcceptShell, requestToolConfirm, setAutoAcceptShell } from "./utils/confirm";
+import { createSession, getSession, killSession } from "./utils/shell-session";
+import { captureOutput } from "./utils/spill";
 
 // Dangerous constructs within a segment:
 //   $( … )   command substitution (but NOT $(( … )) arithmetic)

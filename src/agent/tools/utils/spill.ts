@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { EXTENSION_HARD_TOKEN_CAP } from "../../common/utils";
+import { EXTENSION_HARD_TOKEN_CAP } from "../../../common/utils";
 
 // overflow guard for tool output: inline when small, spilled losslessly to a temp file when
 // large - the agent reads the file back in ranges instead of getting hard-truncated output

@@ -130,6 +130,11 @@
                         "default": false,
                         "description": "Lite-Mode. When enabled, the agent system prompt is reduced to a minimal form. Useful for small models that struggle with longer system prompts."
                     },
+                    "collama.searxngEndpoint": {
+                        "type": "string",
+                        "default": "",
+                        "markdownDescription": "SearXNG server for the agent's web search tool.\n\nStarts with `http://` or `https://`. Example: `http://127.0.0.1:8888`\n\nThe search tool is only offered to the agent while the server is reachable. The instance must have the `json` output format enabled."
+                    },
                     "collama.extraBody": {
                         "type": "object",
                         "default": {},

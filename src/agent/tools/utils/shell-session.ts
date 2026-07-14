@@ -1,7 +1,7 @@
 import { ChildProcess, spawn } from "node:child_process";
-import { PromptConstructor } from "../../common/prompt";
-import { logMsg } from "../../logging";
-import { mailbox } from "../mailbox";
+import { PromptConstructor } from "../../../common/prompt";
+import { logMsg } from "../../../logging";
+import { mailbox } from "../../mailbox";
 
 // Background shell sessions: long-running commands the agent starts, polls, and stops across
 // turns. Unlike the one-shot run path (spawn → await close → return), a session's process

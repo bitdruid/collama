@@ -13,9 +13,9 @@ import {
     setAutoAcceptEdits,
     setAutoAcceptFileCreates,
     setAutoAcceptFolderCreates,
-} from "./confirm";
-import { successWithDiagnostics } from "./diagnostics";
-import { confirmWithDiff, confirmWithPreview } from "./diff-preview";
+} from "./utils/confirm";
+import { successWithDiagnostics } from "./utils/diagnostics";
+import { confirmWithDiff, confirmWithPreview } from "./utils/diff-preview";
 
 /**
  * Helper function to get file extension from path

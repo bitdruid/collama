@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { mailbox } from "./agent/mailbox";
-import { killAllSessions } from "./agent/tools/shell-session";
+import { killAllSessions } from "./agent/tools/utils/shell-session";
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
 import {
     registerChatProvider,

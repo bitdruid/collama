@@ -7,9 +7,9 @@ import {
     getAutoAcceptAll,
     resolveToolConfirm,
     setAutoAcceptAll,
-} from "../../agent/tools/confirm";
+} from "../../agent/tools/utils/confirm";
 import { cancelAllPendingDecisions, resolveToolDecision } from "../../agent/tools/flow";
-import { getActiveSessionCount, onSessionChange } from "../../agent/tools/shell-session";
+import { getActiveSessionCount, onSessionChange } from "../../agent/tools/utils/shell-session";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
 import { AttachedContext, ChatContext, ChatHistory, CustomMessageKeys } from "../../common/context-chat";

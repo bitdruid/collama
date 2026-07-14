@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 const { showErrorMessage } = vscode.window;
 
-import { getActiveSessionCount, onSessionChange } from "./agent/tools/shell-session";
+import { getActiveSessionCount, onSessionChange } from "./agent/tools/utils/shell-session";
 import { getConfig } from "./config";
 import { logMsg } from "./logging";
 

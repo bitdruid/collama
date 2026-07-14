@@ -1,5 +1,5 @@
-import { getWebview } from "../../chat/backend/utils";
-import { logMsg } from "../../logging";
+import { getWebview } from "../../../chat/backend/utils";
+import { logMsg } from "../../../logging";
 
 // -- Tool confirmation via webview --
 //

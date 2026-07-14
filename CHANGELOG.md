@@ -4,7 +4,8 @@ https://keepachangelog.com/
 ## [1.8.16] - 2026-07-14
 
 ### Added
-- Mailbox waakes the agent mid-turn on background events (currently background-shell exits), instead of only surfacing on its next check
+- Web search tool (SearXNG) — search the web when a SearXNG server is configured and reachable; every query requires user confirmation before it leaves the machine
+- Mailbox wakes the agent mid-turn on background events (currently background-shell exits), instead of only surfacing on its next check
 
 ### Changed
 - Shell tool interface simplified — background commands now start via a single `is_background` flag instead of a separate `start` action
