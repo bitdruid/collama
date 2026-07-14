@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import { mailbox } from "../../../agent/mailbox";
 import { ChatHistory } from "../../../common/context-chat";
 import { logMsg } from "../../../logging";
 import { SessionManager } from "../session-manager";
@@ -224,6 +225,8 @@ export class SessionHandlers {
         }
 
         this.sessionManager.sessions = this.sessionManager.sessions.filter((s) => s.id !== oldSession.id);
+        // Ghost deletion bypasses deleteSessionAsync, so purge its mailbox messages here.
+        mailbox.purgeSession(oldSession.id);
         logMsg(`Auto-deleted ghost session: ${oldSession.id}`);
     }
 }

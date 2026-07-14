@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.8.15",
+    "version": "1.8.16",
     "engines": {
         "vscode": "^1.120.0"
     },
@@ -27,17 +27,17 @@
                 "properties": {
                     "collama.apiEndpointCompletion": {
                         "type": "string",
-                        "default": "http://127.0.0.1:11434",
-                        "description": "API endpoint for auto-completion. Starts with http:// or https://."
+                        "default": "",
+                        "markdownDescription": "API endpoint for auto-completion.\n\nStarts with `http://` or `https://`. Example: `http://127.0.0.1:11434`"
                     },
                     "collama.apiModelCompletion": {
                         "type": "string",
-                        "default": "qwen2.5-coder:3b",
+                        "default": "",
                         "description": "Model for autocomplete."
                     },
                     "collama.apiTokenContextLenCompletion": {
                         "type": "number",
-                        "default": 4096,
+                        "default": 32000,
                         "description": "Context window size (tokens) for the completion model."
                     },
                     "collama.apiTokenPredictCompletion": {
@@ -52,22 +52,22 @@
                 "properties": {
                     "collama.apiEndpointInstruct": {
                         "type": "string",
-                        "default": "http://127.0.0.1:11434",
-                        "description": "API endpoint for edit/chat. Starts with http:// or https://."
+                        "default": "",
+                        "markdownDescription": "API endpoint for edit/chat.\n\nStarts with `http://` or `https://`. Example: `http://127.0.0.1:11434`"
                     },
                     "collama.apiModelInstruct": {
                         "type": "string",
-                        "default": "gpt-oss:20b",
+                        "default": "",
                         "markdownDescription": "Model for edits.\n\nUse an **instruct** or **base** model."
                     },
                     "collama.apiTokenContextLenInstruct": {
                         "type": "number",
-                        "default": 4096,
+                        "default": 128000,
                         "description": "Context window size (tokens) for the instruct/chat model."
                     },
                     "collama.apiTokenPredictInstruct": {
                         "type": "number",
-                        "default": 4096,
+                        "default": 8000,
                         "description": "Max tokens to generate per instruct/chat request."
                     }
                 }

@@ -34,10 +34,10 @@ export interface ExtensionConfig {
 }
 
 export const defaultExtensionConfig: ExtensionConfig = {
-    apiEndpointCompletion: "http://127.0.0.1:11434",
-    apiEndpointInstruct: "http://127.0.0.1:11434",
-    apiModelCompletion: "qwen2.5-coder:3b",
-    apiModelInstruct: "qwen2.5-coder:3b-instruct",
+    apiEndpointCompletion: "",
+    apiEndpointInstruct: "",
+    apiModelCompletion: "",
+    apiModelInstruct: "",
     agenticMode: true,
     autoComplete: false,
     suggestMode: "inline",
@@ -47,10 +47,10 @@ export const defaultExtensionConfig: ExtensionConfig = {
     enableShellTool: true,
     liteMode: false,
     tlsRejectUnauthorized: false,
-    apiTokenContextLenCompletion: 4096,
-    apiTokenContextLenInstruct: 4096,
+    apiTokenContextLenCompletion: 32000,
+    apiTokenContextLenInstruct: 128000,
     apiTokenPredictCompletion: 400,
-    apiTokenPredictInstruct: 4096,
+    apiTokenPredictInstruct: 8000,
     extraBody: {},
 };
 

@@ -28,6 +28,9 @@ export interface CustomMessageKeys {
     id?: string;
     thinking?: string;
     datetime?: number;
+    /** True ⇒ never rendered in the webview. For messages that exist only for the LLM, e.g.
+     *  mailbox notifications delivered as user-role input (see agent/mailbox.ts). */
+    hidden?: boolean;
 }
 
 export type ChatHistory =

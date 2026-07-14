@@ -11,6 +11,7 @@ export function createInboundDispatcher(host: ChatRoot) {
         init: (m) => handleInit(host, m),
         "agent-add-message": (m) => handleAgentAddMessage(host, m),
         "agent-inject-message": (m) => handleAgentInjectMessage(host, m),
+        "agent-wake": (m) => handleAgentWake(host, m),
         "agent-chunk": (m) => handleAgentChunk(host, m),
         "agent-error": (m) => handleAgentError(host, m),
         "agent-reasoning": (m) => handleAgentReasoning(host, m),
@@ -115,14 +116,30 @@ function handleSessionsUpdate(host: ChatRoot, msg: any) {
 
 /** Replaces the full message history (e.g. after a cancel prunes incomplete tail state). */
 function handleHistoryReplace(host: ChatRoot, msg: any) {
+    if (isForeignSession(host, msg)) {
+        return;
+    }
     host.chatContext?.setMessages(msg.messages || []);
     host.syncMessages();
 }
 
 // ---------- agent / streaming ----------
 
+/**
+ * True when a session-stamped host message does not target the session the webview is showing.
+ * Content mutations must then be skipped: their indices reference the run session's history, not
+ * the viewed chat. Nothing is lost — the backend writes into the run's session regardless, and
+ * switching back re-syncs the full history via `sessions-update`.
+ */
+function isForeignSession(host: ChatRoot, msg: any): boolean {
+    return typeof msg.sessionId === "string" && msg.sessionId !== host.activeSessionId;
+}
+
 /** Appends a complete message (e.g. tool call/response) pushed by the agent. */
 function handleAgentAddMessage(host: ChatRoot, msg: any) {
+    if (isForeignSession(host, msg)) {
+        return;
+    }
     host.chatContext?.push(msg.message);
     host.syncMessages();
 
@@ -133,16 +150,36 @@ function handleAgentAddMessage(host: ChatRoot, msg: any) {
     }
 }
 
+/**
+ * Enters generating mode for a backend-initiated (mailbox) run and adopts the backend's history
+ * snapshot (hidden notifications + fresh assistant slot) when showing the woken session.
+ */
+function handleAgentWake(host: ChatRoot, msg: any) {
+    host.isGenerating = true;
+    host.generatingSessionId = msg.sessionId || host.activeSessionId;
+    if (isForeignSession(host, msg)) {
+        return;
+    }
+    host.chatContext?.setMessages(msg.messages || []);
+    host.syncMessages();
+}
+
 /** Inserts a mid-run user interjection at the index the backend reserved before the next turn. */
 function handleAgentInjectMessage(host: ChatRoot, msg: any) {
+    // The pending banner is host-global; clear it even when viewing another session.
+    host.pendingIntercepts = host.pendingIntercepts.filter((p) => p.id !== msg.injectId);
+    if (isForeignSession(host, msg)) {
+        return;
+    }
     host.chatContext?.replaceRange(msg.index, msg.index, [msg.message]);
     host.syncMessages();
-    // The real message now renders in-stream; drop its pending banner by id.
-    host.pendingIntercepts = host.pendingIntercepts.filter((p) => p.id !== msg.injectId);
 }
 
 /** Attaches tool-call metadata to the assistant message that initiated the tool run. */
 function handleAgentToolCalls(host: ChatRoot, msg: any) {
+    if (isForeignSession(host, msg)) {
+        return;
+    }
     const target = host.chatContext?.getMsgByIndex(msg.index);
     if (target?.role === "assistant") {
         target.tool_calls = (msg.toolCalls || []) as ToolCall[];
@@ -152,12 +189,18 @@ function handleAgentToolCalls(host: ChatRoot, msg: any) {
 
 /** Appends a streaming text chunk to the message at the given index. */
 function handleAgentChunk(host: ChatRoot, msg: any) {
+    if (isForeignSession(host, msg)) {
+        return;
+    }
     host.chatContext?.appendContent(msg.index, msg.chunk);
     host.debounceSyncMessages();
 }
 
 /** Appends a streaming reasoning chunk to the message at the given index. */
 function handleAgentReasoning(host: ChatRoot, msg: any) {
+    if (isForeignSession(host, msg)) {
+        return;
+    }
     host.chatContext?.appendThinking(msg.index, msg.chunk);
     host.debounceSyncMessages();
 }
@@ -170,8 +213,11 @@ function handleAgentTokens(host: ChatRoot, msg: any) {
 
 /** Marks the LLM response as finished, resets loading/token state, and applies backend-computed context usage. */
 function handleChatComplete(host: ChatRoot, msg: any) {
+    // Run-lock state is host-global (one run at a time), so it always resets — even when the
+    // finished run belongs to a session the user has switched away from.
     host.isGenerating = false;
     host.isSummarizing = false;
+    host.generatingSessionId = "";
     host.agentToken = 0;
     host.hasTokenData = false;
     // Run ended — clear any intercepts that never got drained (e.g. after a cancel).
@@ -182,6 +228,10 @@ function handleChatComplete(host: ChatRoot, msg: any) {
     }
     host.toolConfirmRequest = null;
     host.toolDecisionRequest = null;
+    if (isForeignSession(host, msg)) {
+        // The context numbers describe the run's session, not the viewed one.
+        return;
+    }
     host.contextUsed = msg.contextUsed ?? 0;
     ChatSessionStore.instance.setContextUsage(host.contextUsed, host.contextMax);
     host.completeAutoSummaryContextUpdate();
@@ -191,6 +241,7 @@ function handleChatComplete(host: ChatRoot, msg: any) {
 function handleAgentError(host: ChatRoot, msg: any) {
     host.isGenerating = false;
     host.isSummarizing = false;
+    host.generatingSessionId = "";
     host.agentToken = 0;
     host.hasTokenData = false;
     host.pendingIntercepts = [];
@@ -234,6 +285,9 @@ function handleSummaryProgress(_host: ChatRoot, msg: any) {
 
 /** Adjusts `contextStartIndex` when the host trims old messages to stay within the context window. */
 function handleContextTrimmed(host: ChatRoot, msg: any) {
+    if (isForeignSession(host, msg)) {
+        return;
+    }
     host.contextStartIndex = msg.contextStartIndex || 0;
     if (msg.turnsRemoved > 0) {
         const turns = msg.turnsRemoved;

@@ -36,6 +36,10 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
     };
 
     for (const [i, msg] of messages.entries()) {
+        // Hidden messages exist only for the LLM (e.g. mailbox notifications) — never render.
+        if (msg.customKeys?.hidden) {
+            continue;
+        }
         const isToolBridge =
             msg.role === "assistant" &&
             !msg.content.trim() &&

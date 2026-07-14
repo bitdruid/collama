@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import { mailbox } from "./agent/mailbox";
 import { killAllSessions } from "./agent/tools/shell-session";
 import { clearDebounce, registerAutoCompleteProvider } from "./autocomplete/subscriptions";
 import {
@@ -72,4 +73,5 @@ export async function activate(extContext: vscode.ExtensionContext) {
 export function deactivate() {
     clearDebounce();
     killAllSessions();
+    mailbox.clear();
 }

@@ -11,6 +11,7 @@ import { exploreTools } from "./tools/explore";
 import { flowTools, notepadBody } from "./tools/flow";
 import { gitTools } from "./tools/git";
 import { notebookTools } from "./tools/notebook";
+import { searchTools } from "./tools/search";
 import { shellTools } from "./tools/shell";
 export { resetAutoAcceptEdits };
 

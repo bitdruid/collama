@@ -8,4 +8,10 @@ module.exports = {
     bracketSpacing: true,
     arrowParens: "always",
     proseWrap: "preserve",
+    overrides: [
+        {
+            files: ["*.yml", "*.yaml"],
+            options: { tabWidth: 2 },
+        },
+    ],
 };

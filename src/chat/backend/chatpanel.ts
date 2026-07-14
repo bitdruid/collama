@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import { mailbox } from "../../agent/mailbox";
 import { getToolDefinitions, getToolHistoryPolicy } from "../../agent/tools";
 import {
     cancelAllPendingConfirms,
@@ -18,8 +19,9 @@ import { PromptConstructor } from "../../common/prompt";
 import Tokenizer from "../../common/tokenizer";
 import { getChatSettings, userConfig } from "../../config";
 import { logMsg } from "../../logging";
+import type { ChatSession } from "../shared";
 import { StartPage } from "../frontend/chat-init";
-import { AgentRunner } from "./agent-runner";
+import { AgentRunner, RunKind } from "./agent-runner";
 import { recomputeContextState, trimMessagesForContext } from "./context-state";
 import { addContext, handleContextSearch, setContextWebviewReady } from "./handlers/context";
 import { SessionHandlers } from "./handlers/session";
@@ -57,6 +59,12 @@ export class ChatPanel {
                 // webview may be disposed
             }
         });
+
+        // the runner owns mailbox delivery; the panel provides the wake-run body
+        this.agentRunner.attachMailbox({
+            getActiveSessionId: () => this.sessionManager.getActiveSession()?.id ?? null,
+            runWake: (sessionId, notes) => this.runWake(sessionId, notes),
+        });
     }
 
     // message type handler registry
@@ -66,20 +74,26 @@ export class ChatPanel {
         "chat-ready": (_, webview) => this.handleChatReady(webview),
         "new-session": () => this.sessionHandlers.handleNewSession(),
         "new-ghost-session": () => this.sessionHandlers.handleNewGhostSession(),
-        "switch-session": (msg) => this.sessionHandlers.handleSwitchSession(msg),
+        // switch/delete can change the active session - re-check the mailbox for held messages
+        "switch-session": async (msg) => {
+            await this.sessionHandlers.handleSwitchSession(msg);
+            this.agentRunner.checkMailbox();
+        },
         "export-session": (msg) => this.sessionHandlers.handleExportSession(msg),
         "export-session-html": (msg) => this.sessionHandlers.handleExportSessionHtml(msg),
         "import-session": () => this.sessionHandlers.handleImportSession(),
         "rename-session": (msg) => this.sessionHandlers.handleRenameSession(msg),
         "copy-session": (msg) => this.sessionHandlers.handleCopySession(msg),
-        "delete-session": (msg) => this.sessionHandlers.handleDeleteSession(msg),
+        "delete-session": async (msg) => {
+            await this.sessionHandlers.handleDeleteSession(msg);
+            this.agentRunner.checkMailbox();
+        },
         "delete-messages": (msg) => this.handleDeleteMessages(msg),
         "auto-accept-all": (msg) => setAutoAcceptAll(msg.enabled),
         "convert-to-ghost": () => this.handleConvertToGhost(),
         "clear-chat": () => this.handleClearChat(),
         "chat-cancel": (_, webview) => this.handleChatCancel(webview),
-        "summarize-request": (msg, webview) =>
-            handleSummarizeRequest(msg, webview, this.sessionManager, this.agentRunner),
+        "summarize-request": (msg, webview) => this.handleSummarize(msg, webview),
         "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
         "chat-intercept": (msg) => this.handleChatIntercept(msg),
         "chat-intercept-cancel": (msg) => this.agentRunner.cancelInjected(msg.id),
@@ -285,18 +299,23 @@ export class ChatPanel {
             cancelAllPendingDecisions();
             cancelAllPendingConfirms();
 
-            const active = this.sessionManager.getActiveSession();
-            if (active) {
+            // prune the run's session, not the viewed one - the user may have switched mid-run
+            const runSessionId = mailbox.getRunSession();
+            const target =
+                (runSessionId && this.sessionManager.sessions.find((s) => s.id === runSessionId)) ||
+                this.sessionManager.getActiveSession();
+            if (target) {
                 // strip the incomplete assistant/tool tail from the cancelled run
                 // keep the user message so they can see/retry their prompt
-                this.sessionManager.updateSession(active, (s) => {
+                this.sessionManager.updateSession(target, (s) => {
                     this.removeActiveRunTail(s);
                     s.messages.push({ role: "assistant" as const, content: "**Interrupted**" });
                 });
                 this.sessionManager.flushSessions();
                 webview.postMessage({
                     type: "history-replace",
-                    messages: sanitizeMessages(active.messages.getMessages()),
+                    messages: sanitizeMessages(target.messages.getMessages()),
+                    sessionId: target.id,
                 });
             }
         }
@@ -309,8 +328,19 @@ export class ChatPanel {
 
     // queue a user interjection into the running loop, inserted at the next turn boundary
     // no-op if no agent is running (frontend only sends this while generating)
-    private handleChatIntercept(msg: { content: string; contexts?: AttachedContext[]; id: string }) {
+    private handleChatIntercept(msg: {
+        content: string;
+        contexts?: AttachedContext[];
+        id: string;
+        sessionId?: string;
+    }) {
         if (!this.agentRunner.isRunning()) {
+            return;
+        }
+        // cross-session backstop: only the run's own session may inject (webview state may lag)
+        const runSessionId = mailbox.getRunSession();
+        if (msg.sessionId && runSessionId && msg.sessionId !== runSessionId) {
+            logMsg(`Intercept dropped: sent from session ${msg.sessionId} while ${runSessionId} is running`);
             return;
         }
         const customKeys = msg.contexts && msg.contexts.length > 0 ? { contexts: msg.contexts } : undefined;
@@ -328,24 +358,69 @@ export class ChatPanel {
     // handle a new chat request from the user
     private async handleChatRequest(msg: { messages: ChatHistory[]; sessionId: string }, webview: vscode.Webview) {
         const { messages, sessionId } = msg;
+        await this.runAsUser("chat", sessionId, async (crossedWake) => {
+            // set the session messages (full history + empty assistant slot)
+            // title derives from the first user message once, only while still unnamed
+            const session = this.sessionManager.sessions.find((s) => s.id === sessionId)!;
+            const isUnnamed = session.title === "New Chat" || session.title === "Temporary Chat";
+            this.sessionManager.updateSession(session, (s) => {
+                s.messages.setMessages([...messages, { role: "assistant" as const, content: "" }]);
+                if (isUnnamed) {
+                    s.title = SessionManager.generateSessionTitle(messages);
+                }
+            });
 
-        // mutable index of the message being streamed/added
-        let currentIndex = messages.length;
-
-        // set the session messages (full history + empty assistant slot)
-        // title derives from the first user message once, only while still unnamed
-        const session = this.sessionManager.sessions.find((s) => s.id === sessionId)!;
-        const isUnnamed = session.title === "New Chat" || session.title === "Temporary Chat";
-        this.sessionManager.updateSession(session, (s) => {
-            s.messages.setMessages([...messages, { role: "assistant" as const, content: "" }]);
-            if (isUnnamed) {
-                s.title = SessionManager.generateSessionTitle(messages);
+            if (crossedWake) {
+                // webview may hold fragments of the aborted wake run - resync to authoritative history
+                webview.postMessage({
+                    type: "history-replace",
+                    messages: sanitizeMessages(session.messages.getMessages()),
+                    sessionId: session.id,
+                });
             }
+
+            const trimmedMessages = await this.trimForContext(session, webview, messages);
+            await this.streamRun(session, webview, trimmedMessages, messages.length);
         });
+    }
 
+    /**
+     * Claims the runner for a user-initiated operation; an in-flight mailbox wake is cancelled
+     * first (user wins), `fn` receives whether that happened so it can resync the webview.
+     */
+    private async runAsUser(
+        kind: RunKind,
+        sessionId: string,
+        fn: (crossedWake: boolean) => Promise<void>,
+    ): Promise<boolean> {
+        let crossedWake = false;
+        while (true) {
+            if (this.agentRunner.activeKind() === "wake") {
+                logMsg("User request crossed a mailbox wake - cancelling the wake run");
+                crossedWake = true;
+                await this.agentRunner.cancelAndWait();
+            }
+            if (await this.agentRunner.runExclusive(kind, sessionId, () => fn(crossedWake))) {
+                return true;
+            }
+            if (this.agentRunner.activeKind() !== "wake") {
+                // webview blocks sends during its own runs; only reachable on state desync
+                logMsg(`${kind} request dropped: runner busy with ${this.agentRunner.activeKind()}`);
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Trims old turns if the context limit is exceeded, persists the new boundary, and notifies
+     * the webview. Returns the messages to send to the LLM.
+     */
+    private async trimForContext(
+        session: ChatSession,
+        webview: vscode.Webview,
+        messages: ChatHistory[],
+    ): Promise<ChatHistory[]> {
         const options = buildInstructionOptions();
-
-        // trim old turns if context limit is exceeded
         // reserve the agent system prompt + tool schema so the trimmed turn starts fitting
         const agentOverhead = await this.estimateAgentOverheadTokens(userConfig.agenticMode);
         const trimContextMax = Math.max(1, userConfig.apiTokenContextLenInstruct - agentOverhead);
@@ -362,21 +437,48 @@ export class ChatPanel {
         this.sessionManager.updateSession(session, (s) => {
             s.contextStartIndex = contextStartIndex;
         });
-        webview.postMessage({ type: "context-trimmed", turnsRemoved, tokensFreed, contextStartIndex });
+        webview.postMessage({
+            type: "context-trimmed",
+            turnsRemoved,
+            tokensFreed,
+            contextStartIndex,
+            sessionId: session.id,
+        });
 
         if (turnsRemoved > 0) {
             logMsg(`Context limit exceeded: removed ${turnsRemoved} turn(s) (~${tokensFreed} tokens) from LLM context`);
         }
+        return trimmedMessages;
+    }
+
+    /**
+     * Streams one agent run over `inputMessages` into `session` and finalizes context state.
+     * `startIndex` is the index of the trailing empty assistant slot in `session.messages`.
+     */
+    private async streamRun(
+        session: ChatSession,
+        webview: vscode.Webview,
+        inputMessages: ChatHistory[],
+        startIndex: number,
+    ) {
+        // mutable index of the message being streamed/added
+        let currentIndex = startIndex;
+
+        // stamp every webview message with the run's session so the webview can skip
+        // mutations while it is showing another chat
+        const post = (message: Record<string, unknown>): void => {
+            void webview.postMessage({ ...message, sessionId: session.id });
+        };
 
         const completed = await this.agentRunner.run({
             webview,
-            messages: new ChatContext(trimmedMessages),
+            messages: new ChatContext(inputMessages),
             errorMessages: () => session.messages.getMessages(),
             onChunk: (chunk) => {
                 this.sessionManager.updateSession(session, (s) => {
                     s.messages.appendContent(currentIndex, chunk);
                 });
-                webview.postMessage({ type: "agent-chunk", index: currentIndex, chunk });
+                post({ type: "agent-chunk", index: currentIndex, chunk });
             },
             onEvent: (event) => {
                 if (event.type === "agent-reasoning") {
@@ -384,11 +486,11 @@ export class ChatPanel {
                     this.sessionManager.updateSession(session, (s) => {
                         s.messages.appendThinking(currentIndex, chunk);
                     });
-                    webview.postMessage({ type: "agent-reasoning", index: currentIndex, chunk });
+                    post({ type: "agent-reasoning", index: currentIndex, chunk });
                 }
 
                 if (event.type === "agent-tokens") {
-                    webview.postMessage({ type: "agent-tokens", tokens: event.tokens });
+                    post({ type: "agent-tokens", tokens: event.tokens });
                 }
 
                 if (event.type === "agent-tool-done") {
@@ -439,7 +541,7 @@ export class ChatPanel {
                             },
                         ]);
                     });
-                    webview.postMessage({
+                    post({
                         type: "agent-add-message",
                         message: {
                             role: "tool",
@@ -456,7 +558,7 @@ export class ChatPanel {
                                 { role: "assistant" as const, content: "" },
                             ]);
                         });
-                        webview.postMessage({
+                        post({
                             type: "agent-add-message",
                             message: { role: "assistant", content: "" },
                         });
@@ -470,7 +572,7 @@ export class ChatPanel {
                             msg.tool_calls = event.toolCalls as ToolCall[];
                         }
                     });
-                    webview.postMessage({
+                    post({
                         type: "agent-tool-calls",
                         index: currentIndex,
                         toolCalls: event.toolCalls as ToolCall[],
@@ -484,7 +586,7 @@ export class ChatPanel {
                     this.sessionManager.updateSession(session, (s) => {
                         s.messages.replaceRange(currentIndex, currentIndex, [message]);
                     });
-                    webview.postMessage({
+                    post({
                         type: "agent-inject-message",
                         index: currentIndex,
                         message,
@@ -501,7 +603,7 @@ export class ChatPanel {
                             { role: "assistant" as const, content: "" },
                         ]);
                     });
-                    webview.postMessage({
+                    post({
                         type: "agent-add-message",
                         message: { role: "assistant", content: "" },
                     });
@@ -517,11 +619,11 @@ export class ChatPanel {
             this.sessionManager.updateSession(session, (s) => {
                 s.contextStartIndex = contextStartIndex;
             });
-            webview.postMessage({
+            post({
                 type: "history-replace",
                 messages: sanitizeMessages(session.messages.getMessages()),
             });
-            webview.postMessage({ type: "chat-complete", contextUsed });
+            post({ type: "chat-complete", contextUsed });
             this.sessionManager.sendSessionsUpdate();
             return;
         }
@@ -539,9 +641,61 @@ export class ChatPanel {
         this.sessionManager.flushSessions();
 
         // notify webview that chat is complete
-        webview.postMessage({ type: "chat-complete", contextUsed });
+        post({ type: "chat-complete", contextUsed });
 
         // update sessions list after the response completes
         this.sessionManager.sendSessionsUpdate();
+    }
+
+    // run a summarization request exclusively
+    private async handleSummarize(
+        msg: { turnStart: number; turnEnd: number; sessionId: string },
+        webview: vscode.Webview,
+    ) {
+        await this.runAsUser("summary", msg.sessionId, async (crossedWake) => {
+            if (crossedWake) {
+                const active = this.sessionManager.getActiveSession();
+                if (active) {
+                    // strip the aborted wake tail so the webview-computed summary ranges match
+                    this.sessionManager.updateSession(active, (s) => this.removeActiveRunTail(s));
+                    webview.postMessage({
+                        type: "history-replace",
+                        messages: sanitizeMessages(active.messages.getMessages()),
+                        sessionId: active.id,
+                    });
+                }
+            }
+            await handleSummarizeRequest(msg, webview, this.sessionManager, this.agentRunner);
+        });
+    }
+
+    /** Body of one wake run: appends the notifications as hidden history, streams the reaction. */
+    private async runWake(sessionId: string, notes: ChatHistory[]) {
+        const session = this.sessionManager.sessions.find((s) => s.id === sessionId);
+        if (!session) {
+            return;
+        }
+        const webview = this.webview;
+        // deliver notifications as plain history, then open the streaming slot
+        this.sessionManager.updateSession(session, (s) => {
+            for (const note of notes) {
+                s.messages.push(note);
+            }
+            s.messages.push({ role: "assistant" as const, content: "" });
+        });
+        const all = session.messages.getMessages();
+        const startIndex = all.length - 1;
+        // webview enters generating mode and adopts the snapshot incl. the new slot
+        webview.postMessage({
+            type: "agent-wake",
+            sessionId: session.id,
+            messages: sanitizeMessages(all),
+        });
+        const trimmedMessages = await this.trimForContext(session, webview, all.slice(0, startIndex));
+        if (this.agentRunner.wasCancelled()) {
+            // a user request crossed this wake during the trim await - user wins
+            return;
+        }
+        await this.streamRun(session, webview, trimmedMessages, startIndex);
     }
 }

@@ -1,6 +1,16 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.16] - 2026-07-14
+
+### Added
+- Mailbox waakes the agent mid-turn on background events (currently background-shell exits), instead of only surfacing on its next check
+
+### Changed
+- Shell tool interface simplified — background commands now start via a single `is_background` flag instead of a separate `start` action
+- Agent prompt now steers watcher/monitor/loop/long-running commands toward background shell instead of one-shot
+- Default API endpoint/model settings are now blank instead of pointing at a specific local Ollama model; default context/predict token sizes raised to realistic values (32000/128000 context, 8000 instruct predict)
+
 ## [1.8.15] - 2026-07-11
 
 ### Changed

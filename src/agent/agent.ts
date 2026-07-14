@@ -107,13 +107,13 @@ export class Agent {
                             break;
                         }
 
-                        // Pull in any user messages queued mid-run so the upcoming turn sees them.
+                        // pull in user interjections queued mid-run so the upcoming turn sees them
                         this.drainInjected(history, onEvent);
 
                         const result = await this.executeTurn(settings, signal, onChunk, onEvent);
 
                         if (result.toolCalls.length === 0) {
-                            // Agent is done — unless the user interjected while it was answering.
+                            // agent is done - unless the user interjected while it was answering
                             if (this.injected.length === 0) {
                                 break;
                             }
@@ -145,6 +145,10 @@ export class Agent {
                     logMsg(`\n\n**Agent Error**: ${errorMsg}\n\n${errorStack}\n\n`);
                     throw error;
                 } finally {
+                    // persist injections that slipped in after final turn - next run sees them
+                    if (!signal.aborted) {
+                        this.drainInjected(history, onEvent);
+                    }
                     this.abortController = null;
                 }
             },

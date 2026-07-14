@@ -258,6 +258,7 @@ const AGENT_RULES = {
         "Only use tools when the user's request requires interaction with files.",
         "For general questions, greetings or conversations respond without tools.",
         "Use the 'notepad' tool: record your conclusions (facts) and remaining steps (todos).",
+        "System information will arrive as <system-notification></system-notification> in a user-message.",
     ],
     LITE: ["- Only use tools when file-interaction is required", "- For general communication do not use tools"],
 };
@@ -266,11 +267,6 @@ const EDIT_RULES = {
     DEFAULT: [
         "Before you use tools, you have to tell the user what you are about to do. Your steps must be clarified.",
         "Always use the 'notepad' tool to track facts and todos on each step.",
-        // "After you finish exploring (reading/searching) and before you start editing:",
-        // " - State your findings once as a short consolidated conclusion.",
-        // " - What you found and what you will change.",
-        // " - Treat that conclusion as settled — do not re-investigate or re-explain.",
-        // " - If a later tool result contradicts it, say what changed and move on.",
         "Respect the following rules when using tools to edit files:",
         "1. Start your task by storing facts and todos with the 'notepad' tool and update it while proceeding.",
         "2. Then start exploring the neccessary files and informations.",
@@ -282,6 +278,7 @@ const EDIT_RULES = {
         "Shell tool specific constraints:",
         "- Use the shell tool as last resort and always prefer native tools instead of shell commands.",
         "- Use the shell tool if native tools would require too much effort to satisfy the request.",
+        // "- Always prefer a background shell instead of one-shot use for watcher/monitor/loop/process.",
     ],
     LITE: [
         "- After exploring and before editing, state findings once: what you found + what you will change. Don't re-investigate settled points.",
@@ -453,4 +450,34 @@ export class PromptConstructor {
             user: PromptConstructor.COMMITMESSAGE_USER_MESSAGE(diff),
         };
     }
+
+    /**
+     * Builds a system-notification XML block for mailbox delivery (shell exit, etc.).
+     * Returns the content string; the caller wraps it as a user-role message.
+     */
+    static mailboxShellTemplate(id: string, reason: string, command: string): string {
+        return [
+            "<system-notification>",
+            `    <id>${id}</id>`,
+            `    <reason>${reason}</reason>`,
+            `    <command>${command}</command>`,
+            `    <advice>Shell tool action "check" and sessionId "${id}" to read output.</advice>`,
+            "</system-notification>",
+        ].join("\n");
+    }
+
+    // /**
+    //  * Builds a system-notification XML block for mailbox delivery from a sub-agent.
+    //  * Returns the content string; the caller wraps it as a user-role message.
+    //  */
+    // static mailboxSubagentTemplate(id: string, reason: string, summary: string): string {
+    //     return [
+    //         "<system-notification>",
+    //         `    <id>${id}</id>`,
+    //         `    <reason>${reason}</reason>`,
+    //         `    <summary>${summary}</summary>`,
+    //         `    <advice>Sub-agent finished; review its output and incorporate findings.</advice>`,
+    //         "</system-notification>",
+    //     ].join("\n");
+    // }
 }

@@ -1,5 +1,7 @@
 import { ChildProcess, spawn } from "node:child_process";
+import { PromptConstructor } from "../../common/prompt";
 import { logMsg } from "../../logging";
+import { mailbox } from "../mailbox";
 
 // Background shell sessions: long-running commands the agent starts, polls, and stops across
 // turns. Unlike the one-shot run path (spawn → await close → return), a session's process
@@ -52,16 +54,22 @@ export class ShellSession {
     readonly startedAt = Date.now();
     status: SessionStatus = "running";
     exitCode: number | null = null;
+    /** When false, exiting posts nothing to the mailbox (agent-initiated stops). */
+    notifyOnExit = true;
 
     private readonly child: ChildProcess;
+    /** Chat session that started this shell; exit notifications are tagged with it. */
+    private readonly originSessionId: string | null;
     private buffer = "";
     private cursor = 0;
+    private lifetimeExpired = false;
     private readonly lifetimeTimer: NodeJS.Timeout;
 
-    constructor(id: string, command: string, child: ChildProcess) {
+    constructor(id: string, command: string, child: ChildProcess, originSessionId: string | null) {
         this.id = id;
         this.command = command;
         this.child = child;
+        this.originSessionId = originSessionId;
 
         const append = (chunk: Buffer) => {
             this.buffer += chunk.toString();
@@ -77,6 +85,7 @@ export class ShellSession {
         this.lifetimeTimer = setTimeout(() => {
             if (this.status === "running") {
                 logMsg(`Shell session ${id} exceeded max lifetime; killing`);
+                this.lifetimeExpired = true;
                 this.kill();
             }
         }, MAX_LIFETIME_MS);
@@ -97,10 +106,26 @@ export class ShellSession {
     }
 
     private _finish(code: number | null) {
+        if (this.status === "exited") {
+            return;
+        }
         this.status = "exited";
         this.exitCode = code;
         clearTimeout(this.lifetimeTimer);
         notifySessionChange();
+
+        // wake the agent about the exit; output is not inlined (can be large) - the
+        // notification points at `check`, which reads it and preserves the cursor
+        if (this.notifyOnExit) {
+            const what = this.lifetimeExpired
+                ? `was killed after exceeding its ${MAX_LIFETIME_MS / 60000}-minute lifetime cap`
+                : `exited with code ${code}`;
+            mailbox.post(
+                "shell",
+                PromptConstructor.mailboxShellTemplate(this.id, what, this.command),
+                this.originSessionId ?? undefined,
+            );
+        }
     }
 }
 
@@ -125,7 +150,8 @@ export function createSession(command: string, cwd: string, shellType: ShellType
 
     const child = spawn(bin, cmdArgs, { cwd, shell: false, env });
     const id = `sh${++_idCounter}`;
-    const session = new ShellSession(id, command, child);
+    // The tool executes inside a run, so the mailbox's run session is the chat that started this.
+    const session = new ShellSession(id, command, child, mailbox.getRunSession());
     _sessions.set(id, session);
     notifySessionChange();
     return session;
@@ -141,6 +167,8 @@ export function killSession(id: string): boolean {
     if (!session) {
         return false;
     }
+    // Deliberate stop: don't wake the agent about a session it just terminated.
+    session.notifyOnExit = false;
     session.kill();
     _sessions.delete(id);
     notifySessionChange();
@@ -150,6 +178,7 @@ export function killSession(id: string): boolean {
 /** Kills every session. Called on extension deactivate so no child process is orphaned. */
 export function killAllSessions(): void {
     for (const session of _sessions.values()) {
+        session.notifyOnExit = false;
         session.kill();
     }
     _sessions.clear();

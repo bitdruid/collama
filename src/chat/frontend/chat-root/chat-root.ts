@@ -78,6 +78,10 @@ export class ChatRoot extends LitElement {
     @property({ type: Number }) contextMax: number = 0;
     @property({ type: Number }) contextUsed: number = 0;
     @property({ type: String }) activeSessionId: string = "";
+    /** Session a backend-initiated mailbox wake run belongs to (set on `agent-wake`, cleared on
+     *  chat-complete/error; empty during the user's own runs — the UI pins them to that session).
+     *  Gates intercepts: typing while viewing a different chat must not inject into the wake run. */
+    @state() generatingSessionId: string = "";
     @state() contextSearchResults: { fileName: string; relativePath: string; isFolder: boolean }[] = [];
 
     @state() config: ChatSettings = defaultChatSettings;

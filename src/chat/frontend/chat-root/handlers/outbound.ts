@@ -20,8 +20,8 @@ const backendApi = {
     ready: () => window.vscode.postMessage({ type: "chat-ready" }),
     sendChatRequest: (messages: ChatHistory[], sessionId: string) =>
         window.vscode.postMessage({ type: "chat-request", messages, sessionId }),
-    intercept: (content: string, contexts: AttachedContext[], id: string) =>
-        window.vscode.postMessage({ type: "chat-intercept", content, contexts, id }),
+    intercept: (content: string, contexts: AttachedContext[], id: string, sessionId: string) =>
+        window.vscode.postMessage({ type: "chat-intercept", content, contexts, id, sessionId }),
     cancelIntercept: (id: string) => window.vscode.postMessage({ type: "chat-intercept-cancel", id }),
     cancel: () => window.vscode.postMessage({ type: "chat-cancel" }),
     summarize: (turnStart: number, turnEnd: number, sessionId: string) =>
@@ -131,11 +131,23 @@ export function onSubmit(host: ChatRoot, e: CustomEvent) {
     // While the agent is running, route the message into the live loop instead of starting a
     // new run. It is inserted at the next turn boundary and rendered via `agent-inject-message`.
     if (host.isGenerating) {
+        // `generatingSessionId` is only set for backend-initiated mailbox wakes — the one case
+        // where the viewed chat can differ from the run's session (the UI pins the user to the
+        // session during their own runs). Don't leak input into another session's wake run.
+        if (host.generatingSessionId && host.activeSessionId !== host.generatingSessionId) {
+            showToast("Agent is running in another chat — wait for it to finish");
+            return;
+        }
         if (contexts.length > 0) {
             host.currentContexts = [];
         }
         const id = crypto.randomUUID();
-        backendApi.intercept(buildUserContent(contexts, content, host.config.agenticMode), contexts, id);
+        backendApi.intercept(
+            buildUserContent(contexts, content, host.config.agenticMode),
+            contexts,
+            id,
+            host.activeSessionId,
+        );
         // Show a pending banner until the backend drains it (see handleAgentInjectMessage).
         host.pendingIntercepts = [...host.pendingIntercepts, { id, text: content, contextCount: contexts.length }];
         logWebview("Intercept queued into running agent loop");

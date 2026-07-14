@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { mailbox } from "../../agent/mailbox";
 import { ChatContext, ChatHistory } from "../../common/context-chat";
 import { userConfig } from "../../config";
 import { logMsg } from "../../logging";
@@ -254,6 +255,8 @@ export class SessionManager {
         this.sessions = this.sessions.filter((s) => s.id !== id);
         this.loadedIds = this.loadedIds.filter((x) => x !== id);
         this.dirtyIds.delete(id);
+        // Undelivered mailbox notifications for this session have no chat left to land in.
+        mailbox.purgeSession(id);
         this.indexDirty = true;
         try {
             await vscode.workspace.fs.delete(this.fileFor(id));
