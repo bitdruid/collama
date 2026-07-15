@@ -1,0 +1,130 @@
+services:
+  core:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    network_mode: bridge
+    restart: unless-stopped
+    ports:
+      - 9000:8080
+    environment:
+      SEARXNG_BASE_URL: http://localhost:9000
+      SEARXNG_SECRET: changeme_replace_with_random_hex
+      SEARXNG_LIMITER: false
+      SEARXNG_PUBLIC_INSTANCE: false
+      SEARXNG_IMAGE_PROXY: false
+      SEARXNG_DEBUG: false
+      FORCE_OWNERSHIP: true
+    configs:
+      - source: searxng_settings
+        target: /etc/searxng/settings.yml
+    tmpfs:
+      - /var/cache/searxng:size=64m
+    volumes:
+      - ./config:/etc/searxng:Z
+
+configs:
+  searxng_settings:
+    content: |
+      search:
+          autocomplete: "duckduckgo"
+          autocomplete_min: 4
+          formats:
+              - html
+              - json
+
+      outgoing:
+          request_timeout: 6.0
+          #proxies:
+          #    all://:
+          #        - http://myproxy.com:80
+
+      use_default_settings:
+          engines:
+              keep_only:
+                  # general workhorses
+                  - google
+                  - duckduckgo
+                  - brave
+                  - startpage
+                  - wikipedia
+                  # Q&A high-signal
+                  - stackoverflow
+                  - askubuntu
+                  - superuser
+                  - mdn
+                  # repos
+                  - github
+                  - github code
+                  # software wikis
+                  - arch linux wiki
+                  - mankier
+                  # packages
+                  - npm
+                  - crates.io
+                  - rubygems
+                  - pypi
+                  - docker hub
+                  # some love it
+                  #- reddit
+
+      engines:
+        # q&a
+        - name: stackoverflow
+          weight: 2.5
+          categories: [general, it, q&a]
+        - name: askubuntu
+          weight: 1.5
+          categories: [general, it, q&a]
+        - name: superuser
+          weight: 1.5
+          categories: [general, it, q&a]
+        - name: mdn
+          weight: 2.0
+          categories: [general, it, q&a]
+
+        # repos
+        - name: github
+          weight: 2.0
+          categories: [general, it, repos]
+        - name: github code
+          engine: github_code
+          shortcut: ghc
+          inactive: false
+          disabled: false
+          weight: 2.0
+          categories: [general, it, repos]
+        #  ghc_auth:
+        #    type: "personal_access_token"
+        #    token: "<token>"
+        #ghc_highlight_matching_lines: true
+        #ghc_strip_whitespace: true
+        #ghc_strip_new_lines: true
+        #ghc_insert_block_separator: true
+
+        # software wikis
+        - name: arch linux wiki
+          weight: 1.5
+          categories: [general, it, software wikis]
+        - name: mankier
+          weight: 1.5
+          categories: [general, it, software wikis]
+
+        # packages
+        - name: npm
+          disabled: false 
+          categories: [general, it, packages]
+        - name: crates.io
+          disabled: false
+          categories: [general, it, packages]
+        - name: rubygems
+          disabled: false
+          categories: [general, it, packages]
+        - name: pypi
+          categories: [general, it, packages]
+        - name: docker hub
+          categories: [general, it, packages]
+
+        # enable if really loved
+        #- name: reddit
+        #  disabled: false
+        #  categories: [general, social media]

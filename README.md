@@ -12,7 +12,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![VS Code Version](https://img.shields.io/badge/VS%20Code-%5E1.120.0-blue)](https://code.visualstudio.com/)
 
-[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Usage](#usage) • [Contributing](#contributing)
+[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Configuration](#configuration) • [Models](#models) • [Usage](#usage) • [AI Agent](#ai-agent-usage) • [Web Search](#searxng-web-search-setup) • [Contributing](#contributing)
 
 </div>
 
@@ -67,26 +67,27 @@ Install from the marketplace or build the vsix yourself, then configure an endpo
 
 Configure via VS Code Settings (Preferences → Settings, search "collama"):
 
-| Setting                                | Type    | Default                  | Description                                                                                                                                  |
-| -------------------------------------- | ------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `collama.apiEndpointCompletion`        | string  | `http://127.0.0.1:11434` | Endpoint for code auto-completion                                                                                                            |
-| `collama.apiEndpointInstruct`          | string  | `http://127.0.0.1:11434` | Endpoint for code edits/chat                                                                                                                 |
-| `collama.apiModelCompletion`           | string  | `qwen2.5-coder:3b`       | Model for code completions                                                                                                                   |
-| `collama.apiModelInstruct`             | string  | `gpt-oss:20b`            | Model for code edits (use instruct/base variant)                                                                                             |
-| `collama.apiTokenContextLenCompletion` | number  | `4096`                   | Context window size (tokens) for the completion model                                                                                        |
-| `collama.apiTokenContextLenInstruct`   | number  | `4096`                   | Context window size (tokens) for the instruct/chat model                                                                                     |
-| `collama.apiTokenPredictCompletion`    | number  | `400`                    | Max tokens to generate per completion request                                                                                                |
-| `collama.apiTokenPredictInstruct`      | number  | `4096`                   | Max tokens to generate per instruct/chat request                                                                                             |
-| `collama.autoComplete`                 | boolean | `false`                  | Enable auto-suggestions                                                                                                                      |
-| `collama.suggestMode`                  | string  | `inline`                 | Suggestion style: `inline`, `multiline`, or `multiblock`                                                                                     |
-| `collama.suggestDelay`                 | number  | `1500`                   | Delay (ms) before requesting completion                                                                                                      |
-| `collama.verbosityMode`                | string  | `medium`                 | Chat response detail: `compact`, `medium`, or `detailed`                                                                                     |
-| `collama.agenticMode`                  | boolean | `true`                   | Use agentic (tool use) mode for chat                                                                                                         |
-| `collama.liteMode`                     | boolean | `false`                  | Reduce the agent system prompt for small/weak models                                                                                         |
-| `collama.enableEditTools`              | boolean | `true`                   | Enable edit tools (read-only mode when disabled)                                                                                             |
-| `collama.enableShellTool`              | boolean | `false`                  | Enable shell tool usage                                                                                                                      |
-| `collama.extraBody`                    | object  | `{}`                     | Extra JSON body fields for every LLM request (Instruct). Use for provider-specific params like `chat_template_kwargs` for thinking/reasoning |
-| `collama.tlsRejectUnauthorized`        | boolean | `false`                  | Verify TLS certificates for HTTPS endpoints                                                                                                  |
+| Setting                                | Type    | Default   | Description                                                                                                                                  |
+| -------------------------------------- | ------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `collama.apiEndpointCompletion`        | string  | _(empty)_ | Endpoint for code auto-completion (e.g. `http://127.0.0.1:11434`)                                                                            |
+| `collama.apiEndpointInstruct`          | string  | _(empty)_ | Endpoint for code edits/chat (e.g. `http://127.0.0.1:11434`)                                                                                 |
+| `collama.apiModelCompletion`           | string  | _(empty)_ | Model for code completions (e.g. `qwen2.5-coder:3b`)                                                                                         |
+| `collama.apiModelInstruct`             | string  | _(empty)_ | Model for code edits — use instruct/base variant (e.g. `gpt-oss:20b`)                                                                        |
+| `collama.apiTokenContextLenCompletion` | number  | `32000`   | Context window size (tokens) for the completion model                                                                                        |
+| `collama.apiTokenContextLenInstruct`   | number  | `128000`  | Context window size (tokens) for the instruct/chat model                                                                                     |
+| `collama.apiTokenPredictCompletion`    | number  | `400`     | Max tokens to generate per completion request                                                                                                |
+| `collama.apiTokenPredictInstruct`      | number  | `8000`    | Max tokens to generate per instruct/chat request                                                                                             |
+| `collama.autoComplete`                 | boolean | `false`   | Enable auto-suggestions                                                                                                                      |
+| `collama.suggestMode`                  | string  | `inline`  | Suggestion style: `inline`, `multiline`, or `multiblock`                                                                                     |
+| `collama.suggestDelay`                 | number  | `1500`    | Delay (ms) before requesting completion                                                                                                      |
+| `collama.verbosityMode`                | string  | `medium`  | Chat response detail: `compact`, `medium`, or `detailed`                                                                                     |
+| `collama.agenticMode`                  | boolean | `true`    | Use agentic (tool use) mode for chat                                                                                                         |
+| `collama.liteMode`                     | boolean | `false`   | Reduce the agent system prompt for small/weak models                                                                                         |
+| `collama.enableEditTools`              | boolean | `true`    | Enable edit tools (read-only mode when disabled)                                                                                             |
+| `collama.enableShellTool`              | boolean | `false`   | Enable shell tool usage                                                                                                                      |
+| `collama.extraBody`                    | object  | `{}`      | Extra JSON body fields for every LLM request (Instruct). Use for provider-specific params like `chat_template_kwargs` for thinking/reasoning |
+| `collama.tlsRejectUnauthorized`        | boolean | `false`   | Verify TLS certificates for HTTPS endpoints                                                                                                  |
+| `collama.searxngEndpoint`              | string  | _(empty)_ | SearXNG server URL for the agent's web search tool (e.g. `http://127.0.0.1:8888`). Requires JSON output format enabled on the instance       |
 
 ### Manual Token Settings
 
@@ -143,6 +144,20 @@ Agentic mode tested on vLLM (NVIDIA H200) with gpt-oss:120b, glm-4.7-fp8, minima
 - **Flow** — `decision` (ask the user to choose), `memory` (persist/recall/forget), `notepad` (per-task facts + todos)
 - **Edit** — `edit` (replace exact string), `create`, `delete`, `notebook` (Jupyter cells)
 - **Shell** — `shell` (`run`/`start`/`check`/`stop`); large output goes to a temp file, write commands are warned, read-only commands auto-accepted
+- **Web Search** — `websearch` (via SearXNG instance configured in `collama.searxngEndpoint`)
+
+### Web Search Setup
+
+To enable web search in agentic mode, run a local SearXNG instance. A drop-in compose file is provided at [`media/searxng.yml`](media/searxng.yml) — no further configuration or file-editing needed.
+
+**Usage:**
+
+1. Run `docker compose -f media/searxng.yml up -d`
+2. Configure `collama.searxngEndpoint` in VS Code settings to match your URL (e.g., `http://localhost:9000`)
+3. Enable agentic mode (`collama.agenticMode = true`)
+
+The search tool is only offered to the agent while SearXNG is reachable and has JSON output format enabled.
+
 
 ## Contributing
 

@@ -91,7 +91,9 @@ export const websearch_def = {
     type: "function" as const,
     function: {
         name: "websearch",
-        description: "Web search (SearXNG). Returns ranked results with title, url and a content snippet.",
+        description:
+            "Web search (SearXNG). Returns ranked results with title, url and a content snippet.\n" +
+            "Use the shell tool to curl an explicit search result url for detailed content.",
         parameters: {
             type: "object",
             properties: {
