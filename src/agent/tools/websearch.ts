@@ -5,6 +5,10 @@ import { requestToolConfirm } from "./utils/confirm";
 
 // definition
 
+const MAX_TITLE = 500;
+const MAX_URL = 500;
+const MAX_CONTENT = 500;
+
 interface SearxngResult {
     title?: string;
     url?: string;
@@ -16,6 +20,15 @@ interface SearxngResponse {
     results?: SearxngResult[];
     answers?: unknown[];
     suggestions?: string[];
+}
+
+/** Engine output is passed through verbatim and is unbounded - a single GitHub
+ *  repo description came back at ~200kB. */
+function clip(value: string | undefined, max: number): string | undefined {
+    if (!value) {
+        return value;
+    }
+    return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
 /**
@@ -54,9 +67,9 @@ export async function websearch_exec(args: { query: string }): Promise<
         const data = (await res.json()) as SearxngResponse;
 
         const results = (data.results ?? []).slice(0, 10).map((r) => ({
-            title: r.title,
-            url: r.url,
-            content: r.content,
+            title: clip(r.title, MAX_TITLE),
+            url: clip(r.url, MAX_URL),
+            content: clip(r.content, MAX_CONTENT),
             ...(r.publishedDate && { publishedDate: r.publishedDate }),
         }));
 
@@ -94,7 +107,7 @@ export const websearch_def = {
 // role registry
 
 export const websearchTools: Record<string, Tool> = {
-    search: {
+    websearch: {
         historyPolicy: "dropAll",
         definition: websearch_def,
         toolTarget: "query",

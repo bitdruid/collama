@@ -1,6 +1,12 @@
 # Change Log
 https://keepachangelog.com/
 
+## [1.8.17] - 2026-07-15
+
+### Fixed
+- Typo in websearch tool registration
+- Cap length of search result fields to prevent a token overflow for example if `someone dropped 200KB into a github-repo description field`
+
 ## [1.8.16] - 2026-07-14
 
 ### Added
