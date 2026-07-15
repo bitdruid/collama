@@ -1,4 +1,4 @@
-import { userConfig } from "../../config";
+import { sysConfig, userConfig, type SearxngEngine } from "../../config";
 import { logMsg } from "../../logging";
 import { Tool, ToolAnswer, toolError, toolSuccess } from "../tools";
 import { requestToolConfirm } from "./utils/confirm";
@@ -32,10 +32,31 @@ function clip(value: string | undefined, max: number): string | undefined {
 }
 
 /**
+ * Resolves the model's engine picks against the instance's engine subset.
+ * Matches case-insensitively on name or shortcut id and drops unknowns, so a
+ * stale list or a hallucinated pick degrades instead of breaking the search.
+ */
+function resolveEngines(picks: string[], known: SearxngEngine[]): { names: string[]; ignored: string[] } {
+    const names: string[] = [];
+    const ignored: string[] = [];
+    for (const pick of picks) {
+        const needle = pick.trim().toLowerCase();
+        const match = known.find((e) => e.name.toLowerCase() === needle || e.shortcut.toLowerCase() === needle);
+        if (match && !names.includes(match.name)) {
+            names.push(match.name);
+        } else if (!match) {
+            ignored.push(pick);
+        }
+    }
+    return { names, ignored };
+}
+
+/**
  * Queries the configured SearXNG server and returns the top results.
  * @param args.query - The search query.
+ * @param args.engines - Optional engine subset (names or shortcut ids).
  */
-export async function websearch_exec(args: { query: string }): Promise<
+export async function websearch_exec(args: { query: string; engines?: string[] }): Promise<
     ToolAnswer<{
         results: Array<{ title?: string; url?: string; content?: string; publishedDate?: string }>;
         answers?: unknown[];
@@ -49,10 +70,14 @@ export async function websearch_exec(args: { query: string }): Promise<
         return toolError("No SearXNG server configured");
     }
 
+    const picks = Array.isArray(args.engines) ? args.engines : [];
+    const { names, ignored } = resolveEngines(picks, sysConfig.searxngEngines);
+
     // query may leak workspace content - no auto-accept
+    const confirmBody = names.length ? `${args.query} (engines: ${names.join(", ")})` : args.query;
     const { value, reason } = await requestToolConfirm(
         "Search",
-        args.query,
+        confirmBody,
         "Send this search query to the SearXNG server",
     );
     if (!value) {
@@ -60,7 +85,9 @@ export async function websearch_exec(args: { query: string }): Promise<
     }
 
     try {
-        const res = await fetch(`${endpoint}/search?q=${encodeURIComponent(args.query)}&format=json`);
+        // no engine subset falls back to the server's default category
+        const enginesParam = names.length ? `&engines=${encodeURIComponent(names.join(","))}` : "";
+        const res = await fetch(`${endpoint}/search?q=${encodeURIComponent(args.query)}&format=json${enginesParam}`);
         if (!res.ok) {
             return toolError(`SearXNG request failed: ${res.status} ${res.statusText}`);
         }
@@ -73,13 +100,18 @@ export async function websearch_exec(args: { query: string }): Promise<
             ...(r.publishedDate && { publishedDate: r.publishedDate }),
         }));
 
+        const notes = [
+            ...(results.length === 0 ? ["No results"] : []),
+            ...(ignored.length ? [`Ignored unknown engines: ${ignored.join(", ")}`] : []),
+        ];
+
         return toolSuccess(
             {
                 results,
                 ...(data.answers?.length && { answers: data.answers }),
                 ...(data.suggestions?.length && { suggestions: data.suggestions }),
             },
-            results.length === 0 ? "No results" : undefined,
+            notes.length ? notes.join(". ") : undefined,
         );
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
@@ -87,22 +119,46 @@ export async function websearch_exec(args: { query: string }): Promise<
     }
 }
 
-export const websearch_def = {
-    type: "function" as const,
-    function: {
-        name: "websearch",
-        description:
-            "Web search (SearXNG). Returns ranked results with title, url and a content snippet.\n" +
-            "Use the shell tool to curl an explicit search result url for detailed content.",
-        parameters: {
-            type: "object",
-            properties: {
-                query: { type: "string", description: "Search query." },
+/**
+ * Builds the websearch definition from the detected engine subset. Evaluated on
+ * every registry read so the engine list follows SearXNG detection; without a
+ * list it collapses to the plain query-only tool.
+ */
+export function websearch_def() {
+    const engines = sysConfig.searxngEngines;
+    const engineList = engines.length
+        ? "\nAvailable engines:\n<engines>\n" +
+          engines.map((e) => `  <engine id="${e.shortcut}">${e.name}</engine>`).join("\n") +
+          "\n</engines>"
+        : "";
+
+    return {
+        type: "function" as const,
+        function: {
+            name: "websearch",
+            description:
+                "Web search (SearXNG). Returns ranked results with title, url and a content snippet.\n" +
+                "Use the shell tool to curl an explicit search result url for detailed content." +
+                engineList,
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string", description: "Search query." },
+                    ...(engines.length && {
+                        engines: {
+                            type: "array",
+                            items: { type: "string" },
+                            description:
+                                "Optional: query only these engines (name or id from <engines>). " +
+                                "Omit to search the server default.",
+                        },
+                    }),
+                },
+                required: ["query"],
             },
-            required: ["query"],
         },
-    },
-};
+    };
+}
 
 // role registry
 // role registry
@@ -111,7 +167,9 @@ export const websearch_def = {
 export const websearchTools: Record<string, Tool> = {
     websearch: {
         historyPolicy: "dropAll",
-        definition: websearch_def,
+        get definition() {
+            return websearch_def();
+        },
         toolTarget: "query",
         execute: websearch_exec,
     },

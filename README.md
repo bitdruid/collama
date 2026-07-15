@@ -158,6 +158,23 @@ To enable web search in agentic mode, run a local SearXNG instance. A drop-in co
 
 The search tool is only offered to the agent while SearXNG is reachable and has JSON output format enabled.
 
+**Engine selection:**
+
+The agent can restrict a search to specific engines. Which engines it gets offered is read from the instance (`/config`):
+
+- By default, the agent is offered the engines of the `general` category — the same set a plain query searches. A search without an engine selection always uses the server default (`general`).
+- To hand the agent a custom subset, tag the wanted engines with an extra `collama` category. If any engine carries it, only those are offered.
+
+Note that the `categories:` key on an engine **replaces** its defaults — restate every category the engine should stay in (e.g. keep it on the UI's general and it tabs):
+
+```yaml
+engines:
+  - name: github
+    categories: [general, it, collama]
+```
+
+The provided [`media/searxng.yml`](media/searxng.yml) works as-is: all its engines are in `general`, so the agent is offered all of them.
+
 
 ## Contributing
 

@@ -56,6 +56,12 @@ export const defaultExtensionConfig: ExtensionConfig = {
     extraBody: {},
 };
 
+/** A SearXNG engine exposed to the agent, as reported by the instance's /config. */
+export interface SearxngEngine {
+    name: string;
+    shortcut: string;
+}
+
 /**
  * Tracks detected LLM backend types for each request type.
  * An empty string indicates the backend has not yet been detected.
@@ -65,6 +71,7 @@ export const sysConfig = {
     backendCompletion: "" as LlmBackendType,
     backendInstruct: "" as LlmBackendType,
     searxngConnected: false,
+    searxngEngines: [] as SearxngEngine[],
 };
 
 /**
@@ -178,6 +185,7 @@ export function updateVSConfig(): void {
     }
     if (updateConfig.searxngEndpoint !== userConfig.searxngEndpoint) {
         sysConfig.searxngConnected = false;
+        sysConfig.searxngEngines = [];
     }
 
     const changes: string[] = [];
@@ -247,12 +255,23 @@ async function detectBackends(): Promise<void> {
             logDetection("instruct", sysConfig.backendInstruct);
         }
         if (userConfig.searxngEndpoint && !sysConfig.searxngConnected) {
-            sysConfig.searxngConnected = await detectSearxng(userConfig.searxngEndpoint);
-            logMsg(
-                sysConfig.searxngConnected
-                    ? "ℹ️ SearXNG connected — websearch tool enabled"
-                    : `⚠️ No SearXNG connection — retrying every ${DETECT_INTERVAL_MS / 1000}s`,
-            );
+            const probe = await detectSearxng(userConfig.searxngEndpoint);
+            sysConfig.searxngConnected = probe === "ok";
+            if (probe === "ok") {
+                const { engines, scoped } = await fetchSearxngEngines(userConfig.searxngEndpoint);
+                sysConfig.searxngEngines = engines;
+                const scope = scoped
+                    ? `${engines.length} engines via "${SEARXNG_AGENT_CATEGORY}" category`
+                    : `${engines.length} general engines`;
+                logMsg(`ℹ️ SearXNG connected — websearch tool enabled (${scope})`);
+            } else {
+                sysConfig.searxngEngines = [];
+                logMsg(
+                    probe === "no-json"
+                        ? `⚠️ SearXNG found but json output is disabled — add "json" to search.formats (retrying every ${DETECT_INTERVAL_MS / 1000}s)`
+                        : `⚠️ No SearXNG connection — retrying every ${DETECT_INTERVAL_MS / 1000}s`,
+                );
+            }
         }
     } finally {
         detecting = false;
@@ -309,20 +328,56 @@ async function detectBackend(apiBase: string, bearer?: string): Promise<LlmBacke
     }
 }
 
+/** Engines tagged with this category form the agent's engine subset (opt-in, additive). */
+export const SEARXNG_AGENT_CATEGORY = "collama";
+
+type SearxngProbe = "ok" | "no-json" | "down";
+
 /**
- * Probes a SearXNG server by issuing a minimal JSON search.
- * Also verifies the instance has the json output format enabled (403 otherwise).
+ * Probes a SearXNG server with an empty JSON query. The format check runs before
+ * the query check, so no engine is dispatched, yet the status still separates
+ * a disabled json output format (403) from a healthy instance (400 "No query").
  * @param apiBase - The base URL of the SearXNG server.
- * @returns True if the server responded successfully.
+ * @returns The probe outcome for distinct connection logging.
  */
-async function detectSearxng(apiBase: string): Promise<boolean> {
+async function detectSearxng(apiBase: string): Promise<SearxngProbe> {
     if (!/^https?:\/\//i.test(apiBase)) {
-        return false;
+        return "down";
     }
     try {
-        const res = await withTimeout(fetch(`${apiBase.replace(/\/+$/, "")}/search?q=ping&format=json`));
-        return res.ok;
+        const res = await withTimeout(fetch(`${apiBase.replace(/\/+$/, "")}/search?q=&format=json`));
+        if (res.status === 403) {
+            return "no-json";
+        }
+        return res.status === 400 ? "ok" : "down";
     } catch {
-        return false;
+        return "down";
+    }
+}
+
+/**
+ * Reads the instance's /config and derives the engines exposed to the agent:
+ * those tagged with the agent category, or the "general" members when the
+ * instance does not define it - the same set an engine-less query searches,
+ * kept lean on uncurated instances. Failure yields an empty list (plain websearch).
+ * @param apiBase - The base URL of the SearXNG server.
+ * @returns The agent's engine subset and whether the agent category scoped it.
+ */
+async function fetchSearxngEngines(apiBase: string): Promise<{ engines: SearxngEngine[]; scoped: boolean }> {
+    try {
+        const res = await withTimeout(fetch(`${apiBase.replace(/\/+$/, "")}/config`));
+        if (!res.ok) {
+            return { engines: [], scoped: false };
+        }
+        const data = (await res.json()) as {
+            engines?: { name?: string; shortcut?: string; enabled?: boolean; categories?: string[] }[];
+        };
+        const enabled = (data.engines ?? []).filter((e) => e.enabled && e.name);
+        const tagged = enabled.filter((e) => e.categories?.includes(SEARXNG_AGENT_CATEGORY));
+        const scoped = tagged.length > 0;
+        const subset = scoped ? tagged : enabled.filter((e) => e.categories?.includes("general"));
+        return { engines: subset.map((e) => ({ name: e.name as string, shortcut: e.shortcut ?? "" })), scoped };
+    } catch {
+        return { engines: [], scoped: false };
     }
 }

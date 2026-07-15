@@ -68,6 +68,10 @@ configs:
                   #- reddit
 
       engines:
+        # the agent is offered all engines of the "general" category - to hand it a
+        # subset instead, add an extra "collama" category to the wanted engines
+        # (restate existing categories, the key replaces defaults - see readme)
+
         # q&a
         - name: stackoverflow
           weight: 2.5
