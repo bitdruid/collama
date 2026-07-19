@@ -6,6 +6,7 @@ https://keepachangelog.com/
 ## Changed
 
 - Notepad persists between turns
+- The user message on a summary is now hidden
 
 ### Removed
 

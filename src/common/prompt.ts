@@ -455,6 +455,19 @@ export class PromptConstructor {
     }
 
     /**
+     * Builds the system-notification XML block preceding a compressed context summary.
+     * Returns the content string; the caller wraps it as a hidden user-role message.
+     */
+    static summaryNotificationTemplate(): string {
+        return [
+            "<system-notification>",
+            "    <reason>context compressed</reason>",
+            "    <advice>The next assistant message is a summary of removed earlier conversation. Treat it as your own prior knowledge and continue from it.</advice>",
+            "</system-notification>",
+        ].join("\n");
+    }
+
+    /**
      * Builds a system-notification XML block for mailbox delivery (shell exit, etc.).
      * Returns the content string; the caller wraps it as a user-role message.
      */

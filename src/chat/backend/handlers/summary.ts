@@ -71,7 +71,7 @@ async function summarizeContent(
         const combined = turnSummaries.join("\n\n");
         const fenced = `\`\`\`Summary: ${label}\n${combined.replace(/`/g, "\\`")}\n\`\`\``;
         const result: ChatHistory[] = [
-            { role: "user" as const, content: "Context summary:" },
+            { role: "user" as const, content: PromptConstructor.summaryNotificationTemplate(), customKeys: { hidden: true } },
             { role: "assistant" as const, content: fenced },
         ];
         await populateMsgTokens(result);
@@ -97,7 +97,7 @@ async function summarizeContent(
 
         const fenced = `\`\`\`Summary: ${label}\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
         const result: ChatHistory[] = [
-            { role: "user" as const, content: "Context summary:" },
+            { role: "user" as const, content: PromptConstructor.summaryNotificationTemplate(), customKeys: { hidden: true } },
             { role: "assistant" as const, content: fenced },
         ];
         await populateMsgTokens(result);
