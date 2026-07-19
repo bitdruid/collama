@@ -3,6 +3,10 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## Changed
+
+- Notepad persists between turns
+
 ### Removed
 
 - Removed `Clean Chat` button

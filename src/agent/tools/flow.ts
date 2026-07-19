@@ -270,7 +270,7 @@ const notepad_def = {
             "Store facts and todos for your current task. Use facts while you explore to persist conclusions. " +
             "Use todos to keep track of your next steps to accomplish. Each call REPLACES the whole notepad, so always pass the full list. " +
             "Update it as your understanding changes — especially before a tool call to prevent the lose of important knowledge. " +
-            "Only for the current task/turn. For persistant reusable facts use memory tool.",
+            "Your latest notepad stays available across turns. For persistant reusable facts use memory tool.",
         parameters: {
             type: "object",
             properties: {
@@ -312,7 +312,7 @@ export const flowTools: Record<string, Tool> = {
         execute: memory_exec,
     },
     notepad: {
-        historyPolicy: "dropAll",
+        historyPolicy: "evalSuperseded",
         definition: notepad_def,
         toolTarget: (args) => {
             const f = Array.isArray(args.facts) ? args.facts.length : 0;

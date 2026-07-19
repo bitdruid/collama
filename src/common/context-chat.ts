@@ -1,6 +1,6 @@
 import { ToolCall } from "./client";
 
-export type ToolHistoryPolicy = "keepAll" | "dropAll" | "evalOutdated";
+export type ToolHistoryPolicy = "keepAll" | "dropAll" | "evalOutdated" | "evalSuperseded";
 
 export interface AttachedContext {
     fileName: string;
@@ -301,6 +301,8 @@ export class ChatContext {
      * Sweeps every tool response at turn-end, marking `dropAll` tools' content as
      * `[stale]`. `keepAll` is a noop. `evalOutdated` marks a tool response as stale
      * if the file it operated on was later edited (edit/create/delete/notebook).
+     * `evalSuperseded` marks it stale once a newer call of the same tool exists,
+     * so only the latest result stays live (e.g. notepad).
      * Called once per agent turn after the work-loop completes — tool results stay
      * live throughout the loop that produced them.
      */
@@ -322,8 +324,23 @@ export class ChatContext {
                 if (filePath && this.isFileEditedAfter(i, filePath)) {
                     this.setToolResponse(toolCallId, { content: "[stale - file was edited after this read]" });
                 }
+            } else if (policy === "evalSuperseded") {
+                if (this.hasLaterCallOfTool(i, tc.function.name)) {
+                    this.setToolResponse(toolCallId, { content: "[stale - superseded by a newer call]" });
+                }
             }
         }
+    }
+
+    /** Returns true if another call of the same tool appears after `fromIndex`. */
+    private hasLaterCallOfTool(fromIndex: number, toolName: string): boolean {
+        for (let j = fromIndex + 1; j < this.length(); j++) {
+            const msg = this.messages[j];
+            if (msg.role === "assistant" && msg.tool_calls?.some((tc) => tc.function.name === toolName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Extracts `filePath` from a tool call's JSON arguments, or undefined. */

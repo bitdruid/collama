@@ -258,6 +258,7 @@ const AGENT_RULES = {
         "Only use tools when the user's request requires interaction with files.",
         "For general questions, greetings or conversations respond without tools.",
         "Use the 'notepad' tool: record your conclusions (facts) and remaining steps (todos).",
+        "Your thinking is discarded after each step and NOT visible later. Any conclusion while thinking is lost unless you save notepad facts right away.",
         "System information will arrive as <system-notification></system-notification> in a user-message.",
     ],
     LITE: ["- Only use tools when file-interaction is required", "- For general communication do not use tools"],
