@@ -2,6 +2,7 @@ import { ChildProcess, spawn } from "node:child_process";
 import { PromptConstructor } from "../../../common/prompt";
 import { logMsg } from "../../../logging";
 import { mailbox } from "../../mailbox";
+import { ShellType } from "./command-check";
 
 // Background shell sessions: long-running commands the agent starts, polls, and stops across
 // turns. Unlike the one-shot run path (spawn → await close → return), a session's process
@@ -10,7 +11,6 @@ import { mailbox } from "../../mailbox";
 // This mirrors the registry pattern in confirm.ts (module Map + functions); a ShellSession is a
 // small stateful object (process + output buffer + read cursor), so it earns being a class.
 
-type ShellType = "bash" | "powershell";
 
 export type SessionStatus = "running" | "exited";
 

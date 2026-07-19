@@ -7,6 +7,9 @@ https://keepachangelog.com/
 
 - Notepad persists between turns
 - The user message on a summary is now hidden
+- `Shell` tool confirm reworked — `is_dangerous` only marks the prompt (and blocks auto-accept) when the model explicitly sets it; an omitted flag no longer counts as dangerous
+- `Shell` auto-accept now ignores harmless `2>/dev/null` redirects and quoted literals (`--pretty=format:"..."`, `grep "a|b"`), so read-only commands pass under accept-all
+- Shell command safety checks concentrated in `CommandCheck` (`utils/command-check.ts`)
 
 ### Removed
 

@@ -1,23 +1,10 @@
 import { spawn } from "node:child_process";
 import { logMsg } from "../../logging";
 import { Tool, ToolAnswer, formatToolTargetValue, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
+import { CommandCheck, ShellType } from "./utils/command-check";
 import { getAutoAcceptShell, requestToolConfirm, setAutoAcceptShell } from "./utils/confirm";
 import { createSession, getSession, killSession } from "./utils/shell-session";
 import { captureOutput } from "./utils/spill";
-
-// Dangerous constructs within a segment:
-//   $( … )   command substitution (but NOT $(( … )) arithmetic)
-//   <( … )   process substitution — runs the inner command
-//   ` … `    backtick command substitution
-//   > / >>   file redirection
-//   \n       newline can smuggle a second command
-const WRITE_CONSTRUCTS = /\$\((?!\()|<\(|`|>|\n/;
-
-// fd duplication / close — reroutes existing streams, never touches disk:
-//   2>&1, 1>&2, >&2, 2>&-, etc.
-const FD_DUP = /\d*>&(?:\d+|-)/g;
-
-type ShellType = "bash" | "powershell";
 
 /**
  * Determines the default shell type based on the current operating system.
@@ -50,95 +37,6 @@ type ShellOutput = {
     status?: string;
     exitCode?: number | null;
 };
-
-function hasWriteConstructs(command: string): boolean {
-    return command.split(/&&|\|\||[;|]/).some((segment) => WRITE_CONSTRUCTS.test(segment.replace(FD_DUP, "")));
-}
-
-// Allowlists for skipping the confirm prompt on provably read-only commands. This is
-// convenience, not a security boundary — the prompt remains the boundary for everything else.
-
-// git subcommands that read in every arg form. Shared by both shells, since git is an
-// external program that behaves the same. Mutating subcommands are absent, so they prompt.
-// prettier-ignore
-const GIT_READ_ONLY_SUBCOMMANDS = new Set([
-    "status", "log", "show", "diff", "blame", "shortlog", "describe", "ls-files", "rev-parse",
-]);
-
-// bash / coreutils that only read.
-// prettier-ignore
-const BASH_READ_ONLY = new Set([
-    "ls", "cat", "head", "tail", "wc", "stat", "tree",
-    "grep", "rg", "fd", "find",
-    "jq", "cut", "tr", "diff",
-    "echo", "printf", "which", "type", "pwd", "date",
-]);
-
-// bash commands that read by default but execute/delete via specific flags. (Every other
-// listed command writes only to stdout, so they need no guard.)
-const BASH_WRITE_FLAGS: Record<string, RegExp> = {
-    find: /\s-(?:exec(?:dir)?|ok(?:dir)?|delete|fprint\w*|fls)\b/,
-    fd: /\s-[a-zA-Z]*[xX]\b|\s--exec/,
-};
-
-// PowerShell cmdlets/aliases that only read. PowerShell is case-insensitive, so these are
-// lowercase and the command head is lowercased before lookup. No write-by-flag cases here
-// (file writes go through Out-File/Set-Content/redirection, none of which are listed).
-// prettier-ignore
-const POWERSHELL_READ_ONLY = new Set([
-    "get-childitem", "ls", "dir", "gci",
-    "get-content", "cat", "type", "gc",
-    "get-item", "gi", "get-itemproperty",
-    "select-string", "sls",
-    "measure-object", "measure",
-    "compare-object", "compare",
-    "sort-object", "sort",
-    "select-object", "select",
-    "where-object", "where",
-    "get-location", "pwd", "gl",
-    "resolve-path", "test-path",
-    "get-process", "ps", "gps",
-    "get-command", "gcm",
-    "write-output", "echo",
-    "convertfrom-json", "convertto-json", "get-date",
-]);
-
-// Split on every command separator. Includes `&` (background/call operator) so a
-// read-only head can't add a second command, e.g. `cat x & rm -rf y`. Fd-duplications
-// (2>&1, >&2) stripped before splitting so the inner `&` isn't mistaken.
-const SEGMENT_SEPARATORS = /&&|\|\||[;|&]/;
-
-function segmentIsReadOnly(seg: string, shellType: ShellType): boolean {
-    const trimmed = seg.trim();
-    if (!trimmed) {
-        return true;
-    }
-    const tokens = trimmed.split(/\s+/);
-    const head = tokens[0].toLowerCase();
-
-    // git shared case-insensitive; subcommands stay case-sensitive.
-    if (head === "git") {
-        return GIT_READ_ONLY_SUBCOMMANDS.has(tokens[1]);
-    }
-    if (shellType === "powershell") {
-        return POWERSHELL_READ_ONLY.has(head);
-    }
-    if (!BASH_READ_ONLY.has(head)) {
-        return false;
-    }
-    return !BASH_WRITE_FLAGS[head]?.test(trimmed);
-}
-
-/**
- * True when every segment of the command is a known read-only invocation for the given
- * shell, so it can run without a confirm prompt. Fails closed: anything unrecognized is false.
- */
-function isReadOnly(command: string, shellType: ShellType): boolean {
-    return command
-        .replace(FD_DUP, "")
-        .split(SEGMENT_SEPARATORS)
-        .every((seg) => segmentIsReadOnly(seg, shellType));
-}
 
 /**
  * Executes a bash command in a child process.
@@ -228,8 +126,9 @@ async function runPowerShell(command: string, cwd: string): Promise<{ output: st
  * (see shell-session.ts).
  */
 export async function shell_exec(args: ShellInput): Promise<ToolAnswer<ShellOutput>> {
-    // flags may arrive as stringified booleans - dangerous fails closed, background falls back to one-shot
-    const dangerous = !(args.is_dangerous === false || args.is_dangerous === "false");
+    // flags may arrive as stringified booleans - only an explicit is_dangerous true counts
+    // (marks the prompt and blocks auto-accept), background falls back to one-shot
+    const flagged = args.is_dangerous === true || args.is_dangerous === "true";
     const background = args.is_background === true || args.is_background === "true";
     const command = (args.command ?? "").trim();
     const sessionId = (args.sessionId ?? "").trim();
@@ -238,7 +137,7 @@ export async function shell_exec(args: ShellInput): Promise<ToolAnswer<ShellOutp
         return toolError("Give either a command to execute or a sessionId with action check/stop, not both.");
     }
     if (command) {
-        return runCommand(command, (args.explanation ?? "").trim(), dangerous, background);
+        return runCommand(command, (args.explanation ?? "").trim(), flagged, background);
     }
     if (sessionId) {
         if (args.action === "check") {
@@ -261,7 +160,7 @@ export async function shell_exec(args: ShellInput): Promise<ToolAnswer<ShellOutp
 async function runCommand(
     command: string,
     explanation: string,
-    modelDangerous: boolean,
+    modelFlagged: boolean,
     background: boolean,
 ): Promise<ToolAnswer<ShellOutput>> {
     const shellType = getDefaultShellType();
@@ -279,11 +178,14 @@ async function runCommand(
         return toolError("No workspace root found");
     }
 
-    // The model's dangerous flag is advisory only: it can mark a command dangerous, and the
-    // backend additionally flags any write-capable shell construct the model may have missed.
-    const dangerous = modelDangerous || hasWriteConstructs(command);
-    // Every command prompts - auto-accept only foreground, not-flagged and read-only
-    const autoAccept = !background && getAutoAcceptShell() && !dangerous && isReadOnly(command, shellType);
+    // The prompt is marked dangerous when the model explicitly flags the command or the
+    // check detects a write-capable shell construct; an omitted flag stays unmarked.
+    const check = new CommandCheck(command, shellType);
+    const dangerous = modelFlagged || check.writeCapable;
+    // Every command prompts - auto-accept only foreground and provably read-only. An omitted
+    // flag never gates (small models omit it on benign commands), but an explicit true does:
+    // the model actively warning always asks.
+    const autoAccept = !background && getAutoAcceptShell() && !modelFlagged && check.readOnly;
     if (!autoAccept) {
         const label = background ? "Shell:Background" : "Shell";
         const { value, reason } = await requestToolConfirm(label, command, explanation, dangerous);
@@ -410,7 +312,7 @@ export const shell_def = {
                 is_dangerous: {
                     type: "boolean",
                     description:
-                        "Set 'true' unless you are certain the command is read-only. " +
+                        "Set 'true' when the command changes state (writes, deletes, installs, pushes). " +
                         "The user must see whether the command (incl. a background job) is write-capable.",
                 },
                 sessionId: {
