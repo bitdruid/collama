@@ -27,18 +27,6 @@ export class SessionHandlers {
     }
 
     /**
-     * Creates a new ghost (temporary, unlisted) session.
-     * The session is never persisted and never appears in the sessions list.
-     */
-    handleNewGhostSession() {
-        this.deleteActiveGhostSession();
-
-        const ghostSession = this.sessionManager.createGhostSession();
-        this.sessionManager.sendSessionsUpdate();
-        logMsg(`Created ghost session: ${ghostSession.id}`);
-    }
-
-    /**
      * Switches the active session to the specified session.
      * If the current active session is a ghost, it will be deleted first.
      * @param msg - The message containing the session ID to switch to.

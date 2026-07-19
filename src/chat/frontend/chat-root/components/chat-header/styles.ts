@@ -26,7 +26,8 @@ export const chatHeaderStyles = css`
     }
 
     .header-actions collama-context-usage-bar,
-    .header-actions collama-create-chat-button {
+    .header-actions collama-create-chat-button,
+    .header-actions collama-toggle-chat-button {
         flex-shrink: 0;
     }
 

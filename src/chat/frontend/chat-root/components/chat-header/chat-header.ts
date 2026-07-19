@@ -6,6 +6,7 @@ import "./components/chat-transfer-button/chat-transfer-button";
 import "./components/context-usage-bar/context-usage-bar";
 import "./components/create-chat-button/create-chat-button";
 import "./components/session-button/session-button";
+import "./components/toggle-chat-type-button/toggle-chat-type-button";
 import "./components/settings-button/settings-button";
 
 import { themeIcons } from "../../../styles";
@@ -24,14 +25,7 @@ export class ChatHeader extends LitElement {
     @property({ type: Boolean }) settingsDropdownOpen = false;
     @property({ type: Boolean }) showSettingsBadge = false;
     @property({ type: Number }) activeShells = 0;
-
-    private _handleNewGhostChat(event: Event) {
-        event.stopPropagation();
-        if (this.isGenerating) {
-            return;
-        }
-        this.dispatchEvent(new CustomEvent("new-ghost-chat", { bubbles: true, composed: true }));
-    }
+    @property({ type: Boolean }) isGhost = false;
 
     private _handleNewChat(event: Event) {
         event.stopPropagation();
@@ -75,13 +69,11 @@ export class ChatHeader extends LitElement {
                         mode="export"
                         .disabled=${this.isGenerating}
                     ></collama-chat-transfer-button>
-                    <collama-create-chat-button
-                        kind="ghost"
+                    <collama-toggle-chat-button
+                        ?pulse=${this.isGhost}
                         .disabled=${this.isGenerating}
-                        @new-ghost-chat=${this._handleNewGhostChat}
-                    ></collama-create-chat-button>
+                    ></collama-toggle-chat-button>
                     <collama-create-chat-button
-                        kind="normal"
                         .disabled=${this.isGenerating}
                         @new-chat=${this._handleNewChat}
                     ></collama-create-chat-button>

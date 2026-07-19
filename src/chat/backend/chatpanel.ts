@@ -73,7 +73,7 @@ export class ChatPanel {
         "tool-decision-response": (msg) => resolveToolDecision(msg.id, msg.value),
         "chat-ready": (_, webview) => this.handleChatReady(webview),
         "new-session": () => this.sessionHandlers.handleNewSession(),
-        "new-ghost-session": () => this.sessionHandlers.handleNewGhostSession(),
+        "toggle-ghost": () => this.handleToggleGhost(),
         // switch/delete can change the active session - re-check the mailbox for held messages
         "switch-session": async (msg) => {
             await this.sessionHandlers.handleSwitchSession(msg);
@@ -90,8 +90,6 @@ export class ChatPanel {
         },
         "delete-messages": (msg) => this.handleDeleteMessages(msg),
         "auto-accept-all": (msg) => setAutoAcceptAll(msg.enabled),
-        "convert-to-ghost": () => this.handleConvertToGhost(),
-        "clear-chat": () => this.handleClearChat(),
         "chat-cancel": (_, webview) => this.handleChatCancel(webview),
         "summarize-request": (msg, webview) => this.handleSummarize(msg, webview),
         "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
@@ -234,40 +232,18 @@ export class ChatPanel {
     }
 
     // toggle the active session between ghost and stored
-    private handleConvertToGhost() {
+    private handleToggleGhost() {
         const session = this.sessionManager.getActiveSession();
         if (!session) {
             return;
         }
-        if (session.ghost) {
-            this.sessionManager.updateSession(session, (s) => {
-                s.ghost = false;
-            });
-            this.sessionManager.sendSessionsUpdate();
-            this.sessionManager.saveSessions();
-            logMsg(`Session ${session.id} converted to stored`);
-            return;
-        }
+        const toGhost = !session.ghost;
         this.sessionManager.updateSession(session, (s) => {
-            s.ghost = true;
+            s.ghost = toGhost;
         });
         this.sessionManager.sendSessionsUpdate();
         this.sessionManager.saveSessions();
-        logMsg(`Session ${session.id} converted to ghost`);
-    }
-
-    // clear all messages from the active session
-    private handleClearChat() {
-        const session = this.sessionManager.getActiveSession();
-        if (!session) {
-            return;
-        }
-        this.sessionManager.updateSession(session, (s) => {
-            s.messages.setMessages([]);
-            s.contextStartIndex = 0;
-        });
-        this.sessionManager.sendSessionsUpdate();
-        logMsg(`Cleared messages for session ${session.id}`);
+        logMsg(`Session ${session.id} converted to ${toGhost ? "ghost" : "stored"}`);
     }
 
     // remove the incomplete assistant/tool tail from the latest user turn

@@ -14,7 +14,6 @@ export class ChatInput extends LitElement {
     @property({ type: Boolean }) isSummarizing = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
-    @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
     @property({ type: Boolean }) autoAccept = false;
 
@@ -37,7 +36,6 @@ export class ChatInput extends LitElement {
                 .isSummarizing=${this.isSummarizing}
                 .agentToken=${this.agentToken}
                 .hasTokenData=${this.hasTokenData}
-                .isGhost=${this.isGhost}
                 .contextSearchResults=${this.contextSearchResults}
                 .autoAccept=${this.autoAccept}
                 @submit-prompt=${this._handlePrompt}

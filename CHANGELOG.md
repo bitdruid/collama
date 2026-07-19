@@ -1,6 +1,17 @@
 # Change Log
 https://keepachangelog.com/
 
+## [Unreleased]
+
+### Removed
+
+- Removed `Clean Chat` button
+- Removed `Convert to Temporary Chat` button
+
+### Changed
+
+- Session header `New Temporary Chat` button is now a toggle between temp and normal session state
+
 ## [1.8.17] - 2026-07-15
 
 ### Fixed

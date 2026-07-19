@@ -29,15 +29,13 @@ const backendApi = {
     deleteMessages: (turnStart: number, turnEnd: number, sessionId: string) =>
         window.vscode.postMessage({ type: "delete-messages", turnStart, turnEnd, sessionId }),
     newSession: () => window.vscode.postMessage({ type: "new-session" }),
-    newGhostSession: () => window.vscode.postMessage({ type: "new-ghost-session" }),
+    toggleGhost: () => window.vscode.postMessage({ type: "toggle-ghost" }),
     switchSession: (sessionId: string) => window.vscode.postMessage({ type: "switch-session", sessionId }),
     deleteSession: (sessionId: string) => window.vscode.postMessage({ type: "delete-session", sessionId }),
     renameSession: (sessionId: string, newTitle: string) =>
         window.vscode.postMessage({ type: "rename-session", sessionId, newTitle }),
     copySession: (sessionId: string) => window.vscode.postMessage({ type: "copy-session", sessionId }),
     autoAcceptAll: (enabled: boolean) => window.vscode.postMessage({ type: "auto-accept-all", enabled }),
-    convertToGhost: () => window.vscode.postMessage({ type: "convert-to-ghost" }),
-    clearChat: () => window.vscode.postMessage({ type: "clear-chat" }),
     exportSession: (sessionId: string) => window.vscode.postMessage({ type: "export-session", sessionId }),
     exportSessionHtml: (sessionId: string, title: string, html: string) =>
         window.vscode.postMessage({ type: "export-session-html", sessionId, title, html }),
@@ -260,14 +258,6 @@ export function onDeleteMessage(host: ChatRoot, e: CustomEvent) {
     backendApi.deleteMessages(messageIndex, turnEnd, host.activeSessionId);
 }
 
-/** Clears all messages from the active session. */
-export function onClearChat(host: ChatRoot) {
-    if (host.isGenerating || !host.chatContext || host.chatContext.length() === 0) {
-        return;
-    }
-    backendApi.clearChat();
-}
-
 /** Cancels a still-queued intercept (drops the pending banner and dequeues it on the backend). */
 export function onInterceptCancel(host: ChatRoot, e: CustomEvent) {
     const id = e.detail?.id as string;
@@ -410,10 +400,10 @@ export function onNewChat() {
     backendApi.newSession();
 }
 
-/** Creates a new ghost (temporary, unlisted) chat session. */
-export function onNewGhostChat() {
-    logWebview("Creating new ghost chat");
-    backendApi.newGhostSession();
+/** Toggles the active session between ghost (temporary, unlisted) and stored. */
+export function onToggleGhost() {
+    logWebview("Toggling session ghost state");
+    backendApi.toggleGhost();
 }
 
 /** Switches to the selected session. */
@@ -445,11 +435,6 @@ export function onAutoAccept(e: CustomEvent) {
     backendApi.autoAcceptAll(e.detail.enabled);
 }
 
-/** Converts the active session to a ghost (temporary, unlisted) session. */
-export function onConvertToGhost() {
-    logWebview("Converting session to ghost");
-    backendApi.convertToGhost();
-}
 
 // ---------- context ----------
 

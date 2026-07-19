@@ -3,8 +3,6 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../../common/context-chat";
 import { type ContextSearchResult } from "../../../../../../shared";
 import "../../../../../template-components/button";
-import "./clear-chat-confirm/clear-chat-confirm";
-import "./convert-ghost-confirm/convert-ghost-confirm";
 import { controlPanelButtonStyles } from "./styles";
 
 function emit(el: HTMLElement, name: string, detail?: unknown) {
@@ -20,15 +18,12 @@ export class ControlPanelButtons extends LitElement {
     @property({ type: Boolean }) isSummarizing = false;
     @property({ type: Number }) agentToken = 0;
     @property({ type: Boolean }) hasTokenData = false;
-    @property({ type: Boolean }) isGhost = false;
     @property({ type: Array }) contextSearchResults: ContextSearchResult[] = [];
 
     @property({ type: Boolean }) autoAccept = false;
     @property({ type: Boolean }) hasInput = false;
     @state() private showContextTree = false;
     @state() private showGallery = false;
-    @state() private showClearConfirm = false;
-    @state() private showConvertGhostConfirm = false;
     @state() private agentDuration = 0;
     private _durationInterval: number | null = null;
 
@@ -39,26 +34,6 @@ export class ControlPanelButtons extends LitElement {
     private promptGallery!: HTMLElement;
 
     private handleAutoAccept = () => this._handleAutoAccept();
-    private handleConvertToGhost = () => {
-        if (this.isGenerating) {
-            return;
-        }
-        if (this.isGhost) {
-            emit(this, "convert-to-ghost");
-        } else {
-            this.showConvertGhostConfirm = true;
-        }
-    };
-    private handleConvertGhostConfirmed = () => emit(this, "convert-to-ghost");
-    private handleConvertGhostClose = () => (this.showConvertGhostConfirm = false);
-    private handleClearChat = () => {
-        if (this.isGenerating) {
-            return;
-        }
-        this.showClearConfirm = true;
-    };
-    private handleClearChatConfirmed = () => emit(this, "clear-chat");
-    private handleClearConfirmClose = () => (this.showClearConfirm = false);
     private handleToggleContextTree = () => this._toggleContextTree();
     private handleCancel = () => {
         if (this.isSummarizing) {
@@ -179,41 +154,6 @@ export class ControlPanelButtons extends LitElement {
         `;
     }
 
-    private _renderGhostChat() {
-        return html`
-            <collama-ghost-chat-button
-                data-base-overlay-anchor
-                ?active=${this.isGhost}
-                ?disabled=${this.isGenerating}
-                @action=${this.handleConvertToGhost}
-            ></collama-ghost-chat-button>
-            ${this.showConvertGhostConfirm
-                ? html`<collama-convert-ghost-confirm
-                      autoShow
-                      @overlay-close=${this.handleConvertGhostClose}
-                      @convert-ghost-confirmed=${this.handleConvertGhostConfirmed}
-                  ></collama-convert-ghost-confirm>`
-                : ""}
-        `;
-    }
-
-    private _renderClearChat() {
-        return html`
-            <collama-clear-chat-button
-                data-base-overlay-anchor
-                ?disabled=${this.isGenerating}
-                @action=${this.handleClearChat}
-            ></collama-clear-chat-button>
-            ${this.showClearConfirm
-                ? html`<collama-clear-chat-confirm
-                      autoShow
-                      @overlay-close=${this.handleClearConfirmClose}
-                      @clear-chat-confirmed=${this.handleClearChatConfirmed}
-                  ></collama-clear-chat-confirm>`
-                : ""}
-        `;
-    }
-
     private _renderCompress() {
         return html`
             <collama-compress-button
@@ -250,7 +190,7 @@ export class ControlPanelButtons extends LitElement {
         // and the trailing action button morphs (submit ↔ cancel ↔ intercept).
         return html`
             <button-row>
-                ${this._renderGhostChat()} ${this._renderClearChat()} <span class="spacer"></span>
+                <span class="spacer"></span>
                 ${this.isGenerating ? html`${this._renderTokenCounter()} ${this._renderDurationCounter()}` : ""}
                 ${this._renderContextButton()} ${this._renderGallery()} ${this._renderCompress()}
                 ${this._renderAutoAccept()} ${this._renderActionButton()}

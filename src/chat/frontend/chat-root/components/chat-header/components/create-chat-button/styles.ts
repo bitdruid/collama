@@ -22,30 +22,15 @@ export const createChatButtonStyles = css`
         height: 24px;
         padding: 0;
         color: ${themeColors.cleanWhite};
-    }
-
-    .create-chat-button.normal {
         background-color: ${themeColors.submit};
     }
 
-    .create-chat-button.normal:hover:not(:disabled) {
+    .create-chat-button:hover:not(:disabled) {
         background-color: ${themeColors.submitHover};
     }
 
-    .create-chat-button.normal:active:not(:disabled) {
+    .create-chat-button:active:not(:disabled) {
         background-color: ${themeColors.submit};
-    }
-
-    .create-chat-button.ghost {
-        background-color: ${themeColors.ghostChat};
-    }
-
-    .create-chat-button.ghost:hover:not(:disabled) {
-        background-color: ${themeColors.ghostChatHover};
-    }
-
-    .create-chat-button.ghost:active:not(:disabled) {
-        background-color: ${themeColors.ghostChat};
     }
 
     .create-chat-button:disabled {

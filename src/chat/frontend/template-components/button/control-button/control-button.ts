@@ -117,31 +117,6 @@ export class AutoAcceptButton extends ControlButton {
     }
 }
 
-@customElement("collama-ghost-chat-button")
-export class GhostChatButton extends ControlButton {
-    protected bg = themeColors.ghostChat.cssText;
-    protected bgHover = themeColors.ghostChatHover.cssText;
-    override icon = themeIcons.ghostChat.medium;
-    protected override defaultTitle = "Convert to temp chat";
-
-    @property({ type: Boolean, reflect: true }) active = false;
-
-    protected override willUpdate(changedProperties: PropertyValues<this>) {
-        if (changedProperties.has("active")) {
-            this.pulse = this.active;
-            this.title = this.active ? "Convert to stored chat" : "Convert to temp chat";
-        }
-    }
-}
-
-@customElement("collama-clear-chat-button")
-export class ClearChatButton extends ControlButton {
-    protected bg = themeColors.clearChat.cssText;
-    protected bgHover = themeColors.clearChatHover.cssText;
-    override icon = themeIcons.trash.medium;
-    protected override defaultTitle = "Clear conversation";
-}
-
 /**
  * Token counter — displays a formatted number. Not a real button (no action).
  */

@@ -23,11 +23,9 @@ import {
     onAutoAccept,
     onCancel,
     onChatReady,
-    onClearChat,
     onContextAdd,
     onContextCleared,
     onContextSearch,
-    onConvertToGhost,
     onCopySession,
     onDeleteMemory,
     onDeleteMessage,
@@ -40,7 +38,7 @@ import {
     onInterceptCancel,
     onNearBottomChanged,
     onNewChat,
-    onNewGhostChat,
+    onToggleGhost,
     onOpenMemory,
     onRenameSession,
     onResendMessage,
@@ -149,8 +147,6 @@ export class ChatRoot extends LitElement {
     private handleNearBottomChanged = (e: CustomEvent) => onNearBottomChanged(this, e);
     private handleSubmit = (e: CustomEvent) => onSubmit(this, e);
     private handleCancel = () => onCancel(this);
-    private handleConvertToGhost = () => onConvertToGhost();
-    private handleClearChat = () => onClearChat(this);
     private handleSummarizeConversation = () => onSummarizeConversation(this);
     private handleAcquireAutoSummaryAccept = () => onAcquireAutoSummaryAccept(this);
     // dismissing the summary recommendation just closes it, threshold guard keeps it from nagging
@@ -576,10 +572,11 @@ export class ChatRoot extends LitElement {
                 .settingsDropdownOpen=${this.activeDropdown === "settings"}
                 .showSettingsBadge=${this.showSettingsBadge}
                 .activeShells=${this.activeShells}
+                .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}
                 @export-session=${this.handleExportSession}
                 @import-session=${onImportSession}
                 @new-chat=${onNewChat}
-                @new-ghost-chat=${onNewGhostChat}
+                @toggle-ghost=${onToggleGhost}
                 @toggle-session-dropdown=${this.handleToggleSessionDropdown}
                 @toggle-settings-dropdown=${this.handleToggleSettingsDropdown}
                 @select-session=${this.handleSelectSession}
@@ -629,8 +626,6 @@ export class ChatRoot extends LitElement {
                     ?inert=${this.activeModal === "acquire"}
                     @submit=${this.handleSubmit}
                     @cancel=${this.handleCancel}
-                    @convert-to-ghost=${this.handleConvertToGhost}
-                    @clear-chat=${this.handleClearChat}
                     @summarize-conversation=${this.handleSummarizeConversation}
                     @auto-accept=${onAutoAccept}
                     @context-cleared=${this.handleContextCleared}
@@ -641,7 +636,6 @@ export class ChatRoot extends LitElement {
                     .isSummarizing=${this.isSummarizing}
                     .agentToken=${this.agentToken}
                     .hasTokenData=${this.hasTokenData}
-                    .isGhost=${this.sessions.find((s) => s.id === this.activeSessionId)?.ghost === true}
                     .contextSearchResults=${this.contextSearchResults}
                     .autoAccept=${this.autoAccept}
                 ></collama-chatinput>
