@@ -170,7 +170,7 @@ function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
             "Keep your reasoning brief and compact.",
             // "Before a new tool-call you must mention your decisions, findings, conclusions and your next step to persist them in the history.",
             "Reasoning is no response: You MUST always conclude with a separate final answer in your normal response.",
-            "If you notice a loop in your thinking choose a response and commit it to the user urgent.",
+            "Reason several approaches but commit to the user urgent.",
             "</reasoning>",
             "<environment>",
             `<date>${getDate()}</date>`,
@@ -185,9 +185,8 @@ function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
         return [
             "<reasoning>",
             "- Keep reasoning brief",
-            "- You must mention your conclusions before a tool-call.",
             "- Reasoning is no response: Always write a separate final answer after reasoning",
-            "- Don't loop on reasoning; commit to best answer",
+            "- Evaluate several approaches and commit soon",
             "</reasoning>",
             "<environment>",
             `<date>${getDate()}</date>`,
@@ -259,12 +258,16 @@ const AGENT_RULES = {
         "For general questions, greetings or conversations respond without tools.",
         "Use the 'notepad' tool: record your conclusions (facts) and remaining steps (todos).",
         "After reaching a conclusion in thinking, immediately record it via notepad before proceeding.",
-        "Your thinking is discarded after each step and NOT visible later. Any conclusion while thinking is lost unless you save notepad facts right away.",
-        "Omit single sentence statements and only return if you have a larger scale conclusion to drop.",
-        "No statements like 'Now i have the full picture...; Let me....' - instead add facts to the notepad.",
+        "Any conclusion while thinking is lost unless you save notepad facts right away.",
+        "Omit single sentence statements and only output to the user if you have a larger scale conclusion to drop.",
+        "Never give statements like 'Now i have the full picture...; Let me...'; instead add facts to the notepad.",
         "System information will arrive as <system-notification></system-notification> in a user-message.",
     ],
-    LITE: ["- Only use tools when file-interaction is required", "- For general communication do not use tools"],
+    LITE: [
+        "- Only use tools when file-interaction is required",
+        "- You must mention your conclusions before a tool-call",
+        "- For general communication do not use tools",
+    ],
 };
 
 const EDIT_RULES = {
