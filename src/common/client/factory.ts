@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { sysConfig } from "../../config";
 import { checkPredictFitsContextLength } from "../models";
-import Tokenizer from "../tokenizer";
+import Tokenizer, { stripCustomKeys } from "../tokenizer";
 import { OllamaClient } from "./ollama";
 import { OpenAiClient } from "./openai";
 import type { ChatResult, LlmChatSettings, LlmClient, LlmGenerateSettings, RequestType } from "./types";
@@ -40,7 +40,9 @@ export class LlmClientFactory implements LlmClient {
         if (!this.factoryClient || !("chat" in this.factoryClient)) {
             throw new Error(`LLM client not initialized for ${this.requestType}`);
         }
-        return this.factoryClient.chat(settings, onChunk, onReasoning);
+        // strip customKeys here
+        const messages = settings.messages.map(stripCustomKeys);
+        return this.factoryClient.chat({ ...settings, messages }, onChunk, onReasoning);
     }
 
     /** Checks prompt size against context length before delegating generation. */

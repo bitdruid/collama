@@ -30,6 +30,9 @@ export const toolConfirmStyles = css`
         cursor: pointer;
         text-decoration: none;
         display: block;
+        /* prevent the confirmation to extend over the chat-output */
+        max-height: 40vh;
+        overflow-y: auto;
     }
 
     .confirm-filepath:hover {

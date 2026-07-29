@@ -262,13 +262,13 @@ const AGENT_RULES = {
         "Any conclusion while thinking is lost unless you record 'fact' with the notepad tool'.",
         "A plan is a contract: Never implement more then you planed. Instead explain to the user and ask for a proceed.",
         "Omit single sentence statements and only output to the user if you have a larger scale conclusion to drop.",
-        //"Never give statements like 'Now i have the full picture...; Let me...'; instead note it in the notepad.",
         "System information will arrive as <system-notification></system-notification> in a user-message.",
     ],
     LITE: [
         "- Only use tools when file-interaction is required",
         "- You must mention your conclusions before a tool-call",
         "- For general communication do not use tools",
+        "- Messages from the harness arrive as <system-notification></systemnotification>",
     ],
 };
 

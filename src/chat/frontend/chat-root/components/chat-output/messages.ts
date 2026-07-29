@@ -1,7 +1,7 @@
 import { html, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ChatContext, ChatHistory, ToolMessage } from "../../../../../common/context-chat";
-import { estTokens } from "../../../../../common/utils";
+import { estTokens, formatTokensShort } from "../../../../../common/utils";
 import { themeIcons } from "../../../styles";
 import "../../../template-components/banner";
 import "./edit";
@@ -207,6 +207,7 @@ function handleEditSend(host: UserMessageHost, e: CustomEvent) {
 export function renderUserMessage(opts: UserRenderOptions) {
     const { host, messages, msg, index, isGenerating, outOfContextClass, warningIcon } = opts;
     const datetime = msg.customKeys?.datetime;
+    const turnTokens = getTurnTokens(messages, index);
     return html`
         <div class="message user ${outOfContextClass}">
             <div class="bubble bubble-user">
@@ -215,6 +216,9 @@ export function renderUserMessage(opts: UserRenderOptions) {
                         >${warningIcon}${datetime ? new Date(datetime).toLocaleString() : ""}</span
                     >
                     <div class="message-actions">
+                        <span class="turn-tokens" title="~${turnTokens.toLocaleString()} tokens in this turn">
+                            ${formatTokensShort(turnTokens)}
+                        </span>
                         <button
                             class="edit-button"
                             @click=${() => handleEdit(host, index)}
@@ -242,7 +246,7 @@ export function renderUserMessage(opts: UserRenderOptions) {
                         <button
                             class="delete-button"
                             @click=${() => handleDelete(host, index)}
-                            title="Delete this turn (~${getTurnTokens(messages, index)} tokens freed)"
+                            title="Delete this turn"
                             ?disabled=${isGenerating}
                         >
                             ${themeIcons.trash.small}

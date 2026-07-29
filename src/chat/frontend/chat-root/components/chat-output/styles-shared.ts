@@ -62,6 +62,14 @@ export const outputStyles = [
             gap: 1px;
         }
 
+        .turn-tokens {
+            margin-right: 4px;
+            color: ${themeColors.uiFont};
+            font-size: ${themeFonts.size.small};
+            opacity: 0.6;
+            font-variant-numeric: tabular-nums;
+        }
+
         .resend-button,
         .delete-button,
         .edit-button,

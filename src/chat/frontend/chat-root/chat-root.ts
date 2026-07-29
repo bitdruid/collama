@@ -1,6 +1,7 @@
 import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { AttachedContext, ChatContext, ChatHistory } from "../../../common/context-chat";
+import { formatTokensShort } from "../../../common/utils";
 import {
     defaultChatSettings,
     type ChatSession,
@@ -369,8 +370,7 @@ export class ChatRoot extends LitElement {
         if (turnsRemoved <= 0) {
             return;
         }
-        const tokens = tokensFreed >= 1000 ? `${(tokensFreed / 1000).toFixed(1)}k` : `${tokensFreed}`;
-        this.contextFlash = `−${tokens} · ${turnsRemoved} turn${turnsRemoved > 1 ? "s" : ""}`;
+        this.contextFlash = `−${formatTokensShort(tokensFreed)} · ${turnsRemoved} turn${turnsRemoved > 1 ? "s" : ""}`;
         if (this._contextFlashTimer !== null) {
             clearTimeout(this._contextFlashTimer);
         }

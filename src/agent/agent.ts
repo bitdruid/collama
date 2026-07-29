@@ -10,7 +10,7 @@ import { getBearerInstruct } from "../secrets";
 import { executeTool, getToolDefinitions, getToolTarget, normalizeToolArgs, resetAutoAcceptEdits } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
-export type AgentMode = "plain" | "default" | "sub";
+export type AgentMode = "plain" | "default";
 
 /**
  * Orchestrates the execution of an LLM-powered agent that can process messages,
@@ -25,7 +25,7 @@ export class Agent {
 
     /**
      * Creates a new Agent instance.
-     * @param agentMode - The mode of the agent: "plain" (no system prompt or tools), "default" (full agent), or "sub" (sub-agent with system prompt but no tools).
+     * @param agentMode - The mode of the agent: "plain" (no system prompt or tools) or "default" (full agent).
      */
     constructor(agentMode: AgentMode) {
         this.agentMode = agentMode;
@@ -165,15 +165,14 @@ export class Agent {
         tools: ReturnType<typeof getToolDefinitions>;
     } {
         const history = new ChatContext();
-        if (this.agentMode !== "plain") {
-            history.setMessages([PromptConstructor.agentTemplate(), ...messages.getMessages()]);
-        } else {
-            history.setMessages(messages.getMessages());
-        }
+        const plain = this.agentMode === "plain";
+        history.setMessages(
+            plain ? messages.getMessages() : [PromptConstructor.agentTemplate(), ...messages.getMessages()],
+        );
 
         return {
             history,
-            tools: this.agentMode === "default" && userConfig.agenticMode ? getToolDefinitions() : [],
+            tools: !plain && userConfig.agenticMode ? getToolDefinitions() : [],
         };
     }
 

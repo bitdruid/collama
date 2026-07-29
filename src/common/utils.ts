@@ -16,6 +16,17 @@ export function estTokens(units: number): number {
 export const EXTENSION_HARD_TOKEN_CAP = 10_000;
 
 /**
+ * Formats a token count for a tight UI slot: "847", "1.5k", "12k".
+ * Drops the decimal past 10k where it costs a character and tells nobody anything.
+ */
+export function formatTokensShort(tokens: number): string {
+    if (tokens < 1000) {
+        return `${tokens}`;
+    }
+    return tokens < 10_000 ? `${(tokens / 1000).toFixed(1)}k` : `${Math.round(tokens / 1000)}k`;
+}
+
+/**
  * Formats a character count into a human-readable string with a token estimate.
  * Uses thousands separators via the runtime locale.
  *

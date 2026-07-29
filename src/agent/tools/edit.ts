@@ -37,7 +37,7 @@ async function applyFileChanges(uri: vscode.Uri, newContent: string): Promise<vo
     edit.replace(uri, entireRange, newContent);
     await vscode.workspace.applyEdit(edit);
 
-    // Save to disk so subsequent reads and git see the changes
+    // save to disk so later reads and git see it
     const doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
     if (doc) {
         await doc.save();
@@ -66,9 +66,9 @@ export async function edit_exec(args: {
     }
 
     try {
-        // bytes on disk — preserved for diff and final write.
+        // bytes on disk - kept for the diff and the final write
         const rawContent = readFileContent(ws.fullPath);
-        // normalize to LF so the model's "\n" matches a file's "\r\n".
+        // normalize to LF so the model's "\n" matches a file's "\r\n"
         const eol = detectEol(rawContent);
         const content = rawContent.replace(/\r\n/g, "\n");
         const oldString = args.oldString.replace(/\r\n/g, "\n");
@@ -78,39 +78,32 @@ export async function edit_exec(args: {
         let newContentLf: string;
 
         if (content === "" && oldString === "") {
-            // Insert into an empty file
             if (!newString) {
                 return toolError("newString must not be empty when inserting into an empty file.");
             }
             newContentLf = newString;
         } else {
-            // Validate that oldString exists and is unique
-            const firstIndex = content.indexOf(oldString);
-            if (firstIndex === -1) {
+            const at = content.indexOf(oldString);
+            if (at === -1) {
                 return toolError(
                     "oldString not found in file. Make sure it matches the file content exactly, including whitespace and indentation.",
                 );
             }
-
-            const secondIndex = content.indexOf(oldString, firstIndex + 1);
-            if (secondIndex !== -1) {
+            if (content.indexOf(oldString, at + 1) !== -1) {
                 return toolError(
                     "oldString matches multiple locations. Provide a larger unique snippet with more surrounding context.",
                 );
             }
-
             if (oldString === newString) {
                 return toolError("oldString and newString are identical. No changes to apply.");
             }
-
-            newContentLf = content.replace(oldString, newString);
+            // sliced, not replaced - replace() would expand "$&" and friends in newString
+            newContentLf = content.slice(0, at) + newString + content.slice(at + oldString.length);
         }
 
-        // Restore the file's original line-ending style so a Windows (CRLF) file
-        // stays CRLF — only the edited region changes, not every line.
+        // back to the file's own endings so a CRLF file stays CRLF
         const newContent = eol === "\r\n" ? newContentLf.replace(/\n/g, "\r\n") : newContentLf;
 
-        // Auto-accept: apply without diff preview
         if (getAutoAcceptEdits()) {
             await applyFileChanges(vscode.Uri.file(ws.fullPath), newContent);
             return successWithDiagnostics(ws.root, args.filePath, "Changes applied (auto-accepted).");
@@ -161,7 +154,8 @@ export const edit_def = {
                 oldString: {
                     type: "string",
                     description:
-                        "The exact string to find and replace. Include enough surrounding context to be unique.",
+                        "The exact string to find and replace. Include enough surrounding context to be unique. " +
+                        "Read output is line-number prefixed ('42<tab>code') - omit this prefix and keep the indentation.",
                 },
                 newString: {
                     type: "string",
@@ -194,7 +188,6 @@ export async function create_exec(args: {
     }
 
     try {
-        // Check if path already exists
         try {
             const stat = await vscode.workspace.fs.stat(vscode.Uri.file(ws.fullPath));
             if (stat.type === vscode.FileType.Directory) {
@@ -202,11 +195,10 @@ export async function create_exec(args: {
             }
             return toolError(`File already exists: ${args.filePath}`);
         } catch {
-            // Doesn't exist, which is what we want
+            // missing is the good case
         }
 
         if (isFolder) {
-            // Auto-accept: create folder without confirmation
             if (getAutoAcceptFolderCreates()) {
                 await vscode.workspace.fs.createDirectory(vscode.Uri.file(ws.fullPath));
                 return toolSuccess({ filePath: args.filePath }, "Folder created (auto-created).");
@@ -228,14 +220,12 @@ export async function create_exec(args: {
             return toolSuccess({ filePath: args.filePath }, "Folder created.");
         }
 
-        // Auto-accept: create without preview
         if (getAutoAcceptFileCreates()) {
             const encoder = new TextEncoder();
             await vscode.workspace.fs.writeFile(vscode.Uri.file(ws.fullPath), encoder.encode(args.content!));
             return successWithDiagnostics(ws.root, args.filePath, "File created (auto-created).");
         }
 
-        // Create file with preview
         const { value, reason } = await confirmWithPreview({
             content: args.content!,
             ext: getFileExtension(args.filePath),
@@ -305,20 +295,18 @@ export async function delete_exec(args: {
     try {
         const uri = vscode.Uri.file(ws.fullPath);
 
-        // Verify the file/folder exists
         try {
             await vscode.workspace.fs.stat(uri);
         } catch {
             return toolError(`File/folder not found: ${args.filePath}`);
         }
 
-        // Auto-accept: delete without confirmation
         if (getAutoAcceptDeletes()) {
             await vscode.workspace.fs.delete(uri);
             return toolSuccess({ filePath: args.filePath }, "File/folder deleted (auto-deleted).");
         }
 
-        // Calculate relative path from workspace root for display
+        // relative path for display only
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
         const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, ws.fullPath) : ws.fullPath;
 

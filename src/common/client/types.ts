@@ -117,8 +117,8 @@ export function buildCompletionOptions(): Options {
     return {
         max_tokens: calculateNumPredict(),
         num_ctx: userConfig.apiTokenContextLenCompletion,
-        temperature: 0.4,
-        top_p: 0.9,
+        temperature: userConfig.liteMode ? 0.6 : 0.4,
+        top_p: 0.95,
     };
 }
 
@@ -127,7 +127,7 @@ export function buildInstructionOptions(): Options {
     return {
         max_tokens: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
-        temperature: 0.8,
+        temperature: userConfig.liteMode ? 0.6 : 0.8,
         top_p: 0.95,
     };
 }
@@ -137,7 +137,7 @@ export function buildCommitOptions(): Options {
     return {
         max_tokens: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
-        temperature: 0.3,
+        temperature: userConfig.liteMode ? 0.6 : 0.3,
         top_p: 0.95,
     };
 }
@@ -147,7 +147,7 @@ export function buildAgentOptions(): Options {
     return {
         max_tokens: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
-        temperature: userConfig.liteMode ? 0.6 : 1.0,
-        top_p: 1.0,
+        temperature: userConfig.liteMode ? 0.6 : 0.8,
+        top_p: 0.9,
     };
 }

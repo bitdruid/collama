@@ -14,6 +14,8 @@ export const baseModalStyles = css`
         width: 100%;
         padding: 16px;
         margin-bottom: 8px;
+        /* overflow scroll only if height reached */
+        max-height: 80vh;
         overflow: auto;
         border-radius: ${themeStyles.borderRadius.large};
         border: ${themeStyles.border.normal};

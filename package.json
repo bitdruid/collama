@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.8.19",
+    "version": "1.8.20",
     "engines": {
         "vscode": "^1.120.0"
     },
@@ -128,7 +128,7 @@
                     "collama.liteMode": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Lite-Mode. When enabled, the agent system prompt is reduced to a minimal form. Useful for small models that struggle with longer system prompts."
+                        "description": "Lite-Mode. When enabled, the agent system prompt is reduced to a minimal form and every request samples at temperature 0.6. Useful for small models that struggle with longer system prompts and degenerate into loops at low temperature."
                     },
                     "collama.searxngEndpoint": {
                         "type": "string",
