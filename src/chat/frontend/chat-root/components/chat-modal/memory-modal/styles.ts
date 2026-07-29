@@ -71,13 +71,12 @@ export const memoryModalStyles = css`
     }
 
     .memory-chevron {
-        display: inline-flex;
-        transition: transform 0.15s ease;
+        ${themeStyles.chevron}
         opacity: 0.7;
     }
 
     .memory-entry.expanded .memory-chevron {
-        transform: rotate(180deg);
+        ${themeStyles.chevronOpen}
     }
 
     .memory-entry.expanded .memory-short {

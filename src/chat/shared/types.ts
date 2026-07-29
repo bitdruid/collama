@@ -45,6 +45,7 @@ export interface ChatSession {
     messages: ChatContext;
     contextStartIndex: number;
     updatedAt: number;
+    toolState?: Record<string, unknown>;
 }
 
 /**

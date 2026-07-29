@@ -5,14 +5,13 @@ import * as vscode from "vscode";
 import { ToolHistoryPolicy } from "../common/context-chat";
 import { sysConfig, userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
-import { resetAutoAcceptEdits } from "./tools/utils/confirm";
 import { editTools } from "./tools/edit";
 import { exploreTools } from "./tools/explore";
-import { flowTools, notepadBody } from "./tools/flow";
+import { flowTools } from "./tools/flow";
 import { gitTools } from "./tools/git";
-import { notebookTools } from "./tools/notebook";
-import { websearchTools } from "./tools/websearch";
 import { shellTools } from "./tools/shell";
+import { resetAutoAcceptEdits } from "./tools/utils/confirm";
+import { websearchTools } from "./tools/websearch";
 export { resetAutoAcceptEdits };
 
 export type { ToolHistoryPolicy };
@@ -20,12 +19,11 @@ export type { ToolHistoryPolicy };
 /**
  * Tool roles: the semantic partition of the registry, independent of user settings.
  * Each role's membership is owned by its role file (the keys of its exported group);
- * here we only derive the name lists the orchestrators reason over. Manipulation spans
- * two files (edit + notebook), so it is composed here.
+ * here we only derive the name lists the orchestrators reason over.
  * A future sub-agent orchestrator composes these per agent role; the user-facing
  * orchestrator (getAllowedTools) composes them per user settings.
  */
-const manipulationTools: Record<string, Tool> = { ...editTools, ...notebookTools };
+const manipulationTools: Record<string, Tool> = { ...editTools };
 const EXPLORATION_TOOLS = Object.keys(exploreTools);
 const MANIPULATION_TOOLS = Object.keys(manipulationTools);
 const SHELL_TOOLS = Object.keys(shellTools);
@@ -277,12 +275,10 @@ export function normalizeToolArgs(toolName: string, argsJson: string): Normalize
     }
     const body =
         toolName === "edit"
-            ? `${buildEditDiff(relPath, args.oldString ?? "", args.newString ?? "")}`
-            : toolName === "notepad"
-              ? notepadBody(args)
-              : Object.entries(args)
-                    .map(([k, v]) => `${k}:\n${v}`)
-                    .join("\n");
+            ? buildEditDiff(relPath, args.oldString ?? "", args.newString ?? "")
+            : Object.entries(args)
+                  .map(([k, v]) => `${k}:\n${v}`)
+                  .join("\n");
     return { argsJson, args, body };
 }
 

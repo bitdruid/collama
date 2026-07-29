@@ -23,7 +23,7 @@ export function renderAssistantMessage(opts: AssistantRenderOptions) {
     const thinking = msg.customKeys?.thinking;
     const renderThinking = showThinking && thinking;
 
-    // Hide empty assistant messages (e.g. LLM returned only tool calls, or only thinking while hidden)
+    // empty assistant messages are hidden (only tool calls, or thinking while hidden)
     if (!msg.content && !renderThinking) {
         return html``;
     }
@@ -59,7 +59,7 @@ export interface ToolRenderOptions {
 export function renderToolMessage(opts: ToolRenderOptions) {
     const { msg, outOfContextClass, bare } = opts;
     const toolMeta = msg.customKeys?.toolMeta;
-    // Hide failed tool calls from the webview entirely
+    // failed tool calls never reach the webview
     if (toolMeta && !toolMeta.toolSuccess) {
         return html``;
     }
@@ -68,7 +68,7 @@ export function renderToolMessage(opts: ToolRenderOptions) {
     const toolArgs = toolMeta?.toolArgs || "";
     const toolStatus = toolMeta?.toolStatus || "";
 
-    // Edit is the only tool with an expandable body: the diff is primary content worth opening.
+    // edit is the only tool with an expandable body - the diff is the content worth opening
     let body;
     if (toolName === "edit") {
         body = html`<collama-accordion
@@ -80,27 +80,28 @@ export function renderToolMessage(opts: ToolRenderOptions) {
             language="diff"
         ></collama-accordion>`;
     } else if (toolName === "shell" && toolStatus) {
-        // Background shell: header is the session id (+ liveness); body is just the command,
-        // slotted as plain text in a code-chip (no pre/hljs)
+        // background shell - header is the session id, body the bare command in a code-chip
         body = html`<collama-accordion type="shell" label="Background" description="${toolTarget}">
             <code>${toolArgs}</code>
         </collama-accordion>`;
     } else if (toolName === "notepad") {
-        // Working memory: header summarizes counts; expanding shows the full facts/todos
-        // list as plain preformatted text (slotted, so no hljs highlighting).
-        // Uses type="flow" for non-mono font and no-scrollbar styling (same as thinking).
-        body = html`<collama-accordion type="flow" label="Notepad" description="${toolTarget}">
-            <div style="white-space: pre-wrap;">${toolArgs}</div>
-        </collama-accordion>`;
+        // the pad lives in the pinned strip - the header is the delta, the body the recorded fact
+        body = !toolTarget
+            ? html``
+            : toolArgs
+              ? html`<collama-accordion type="flow" label="Notepad" description="${toolTarget}">
+                    ${toolArgs}
+                </collama-accordion>`
+              : html`<collama-banner type="flow" label="Notepad" .description=${toolTarget}></collama-banner>`;
     } else if (toolName === "memory" || toolName === "decision") {
-        // Memory and decision: standalone flow banner (purple gallery color, no icon).
+        // standalone flow banner, no body to expand
         body = html`<collama-banner
             type="flow"
             label="${toolName === "memory" ? "Memory" : toolName}"
             .description=${toolTarget}
         ></collama-banner>`;
     } else {
-        // All other tools (read, grep, glob, etc.): generic tool banner.
+        // everything else - generic tool banner
         body = html`<collama-banner type="tool" label="${toolName}" .description=${toolTarget}></collama-banner>`;
     }
 
@@ -146,8 +147,7 @@ function getEditableText(msg: ChatHistory): string {
 }
 
 function getTurnTokens(messages: ChatHistory[], index: number): number {
-    // Temporary instance is OK for pure calculation
-    // ChatContext constructor accepts optional messages parameter
+    // throwaway instance - pure calculation, no state kept
     const ctx = new ChatContext(messages);
     return ctx.sumTokensInRange(index, ctx.getTurnEnd(index));
 }

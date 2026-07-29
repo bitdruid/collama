@@ -24,6 +24,7 @@ const backendApi = {
         window.vscode.postMessage({ type: "chat-intercept", content, contexts, id, sessionId }),
     cancelIntercept: (id: string) => window.vscode.postMessage({ type: "chat-intercept-cancel", id }),
     cancel: () => window.vscode.postMessage({ type: "chat-cancel" }),
+    clearNotepadPlan: () => window.vscode.postMessage({ type: "notepad-clear" }),
     summarize: (turnStart: number, turnEnd: number, sessionId: string) =>
         window.vscode.postMessage({ type: "summarize-request", turnStart, turnEnd, sessionId }),
     deleteMessages: (turnStart: number, turnEnd: number, sessionId: string) =>
@@ -129,6 +130,10 @@ export function onSubmit(host: ChatRoot, e: CustomEvent) {
     // While the agent is running, route the message into the live loop instead of starting a
     // new run. It is inserted at the next turn boundary and rendered via `agent-inject-message`.
     if (host.isGenerating) {
+        if (host.isSummarizing) {
+            showToast("Summarizing — wait for it to finish");
+            return;
+        }
         // `generatingSessionId` is only set for backend-initiated mailbox wakes — the one case
         // where the viewed chat can differ from the run's session (the UI pins the user to the
         // session during their own runs). Don't leak input into another session's wake run.
@@ -256,6 +261,11 @@ export function onDeleteMessage(host: ChatRoot, e: CustomEvent) {
     showToast(`~${approxTokensFreed} tokens freed`);
     logWebview(`Deleted message pair at index ${messageIndex} (~${approxTokensFreed} tokens freed)`);
     backendApi.deleteMessages(messageIndex, turnEnd, host.activeSessionId);
+}
+
+/** Drops an abandoned plan the agent would otherwise keep ticking off. */
+export function onNotepadClear() {
+    backendApi.clearNotepadPlan();
 }
 
 /** Cancels a still-queued intercept (drops the pending banner and dequeues it on the backend). */
@@ -434,7 +444,6 @@ export function onCopySession(e: CustomEvent) {
 export function onAutoAccept(e: CustomEvent) {
     backendApi.autoAcceptAll(e.detail.enabled);
 }
-
 
 // ---------- context ----------
 

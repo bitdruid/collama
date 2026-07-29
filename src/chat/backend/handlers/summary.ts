@@ -3,16 +3,13 @@ import * as vscode from "vscode";
 import { ChatContext, ChatHistory } from "../../../common/context-chat";
 import { PromptConstructor } from "../../../common/prompt";
 import { populateMsgTokens } from "../../../common/tokenizer";
+import { notepadSnapshot } from "../../../agent/tools/flow";
 import { AgentRunner } from "../agent-runner";
 import { recomputeContextState } from "../context-state";
 
-/**
- * Runs the agent on the given messages and returns the raw summary text.
- * @param agentRunner - The agent runner instance
- * @param webview - The VS Code webview for communication
- * @param sourceMessages - The messages to summarize
- * @returns The raw summary text or null if summarization failed
- */
+type SummaryLabel = "Conversation" | "Turn";
+
+// runs the agent over the messages and returns the raw summary text, null when it failed
 async function summarizeText(
     agentRunner: AgentRunner,
     webview: vscode.Webview,
@@ -32,99 +29,57 @@ async function summarizeText(
     return ok ? text : null;
 }
 
-/**
- * Handles compressing the chat history into a summary.
- * @param agentRunner - The agent runner instance
- * @param webview - The VS Code webview for communication
- * @param sourceMessages - The messages to summarize
- * @param promptTemplate - The prompt template to use for summarization
- * @param label - The label for the summary (e.g., "Conversation" or "Turn")
- * @returns An array of chat history entries representing the summary, or null if summarization failed
- */
+// wraps summary text into the history pair it is stored as: hidden notice + fenced assistant reply
+async function buildSummaryEntry(text: string, label: SummaryLabel): Promise<ChatHistory[]> {
+    const fenced = `\`\`\`Summary: ${label}\n${text.replace(/`/g, "\\`")}\n\`\`\``;
+    const result: ChatHistory[] = [
+        PromptConstructor.asHiddenMessage(PromptConstructor.summaryNotificationTemplate()),
+        { role: "assistant" as const, content: fenced },
+    ];
+    await populateMsgTokens(result);
+    return result;
+}
+
+// a conversation is summarized turn by turn so each request stays small; a turn goes in one shot
 async function summarizeContent(
     agentRunner: AgentRunner,
     webview: vscode.Webview,
     sourceMessages: ChatHistory[],
-    label: string,
+    label: SummaryLabel,
 ): Promise<ChatHistory[] | null> {
-    if (label === "Conversation") {
-        const messages = new ChatContext(sourceMessages);
-        const turnSummaries: string[] = [];
-        let i = 0;
-        let turnNum = 1;
-        const totalTurns = messages.getTurnCount();
-        while (i < sourceMessages.length) {
-            const end = messages.getTurnEnd(i);
-            if (end <= i) {
-                break;
-            }
-            const turnMsgs = sourceMessages.slice(i, end);
-            webview.postMessage({ type: "summary-progress", current: turnNum, total: totalTurns });
-            const text = await summarizeText(agentRunner, webview, turnMsgs);
-            if (text === null) {
-                return null;
-            }
-            turnSummaries.push(`# Turn ${turnNum}\n${text}`);
-            turnNum++;
-            i = end;
-        }
-        const combined = turnSummaries.join("\n\n");
-        const fenced = `\`\`\`Summary: ${label}\n${combined.replace(/`/g, "\\`")}\n\`\`\``;
-        const result: ChatHistory[] = [
-            { role: "user" as const, content: PromptConstructor.summaryNotificationTemplate(), customKeys: { hidden: true } },
-            { role: "assistant" as const, content: fenced },
-        ];
-        await populateMsgTokens(result);
-        return result;
+    if (label === "Turn") {
+        const text = await summarizeText(agentRunner, webview, sourceMessages);
+        return text === null ? null : buildSummaryEntry(text, label);
     }
 
-    if (label === "Turn") {
-        const summary = PromptConstructor.summaryTemplate();
-        const summaryPrompt = [summary.system, ...sourceMessages, summary.user];
-        let summaryContent = "";
-
-        const ok = await agentRunner.run({
-            webview,
-            messages: new ChatContext(summaryPrompt),
-            onChunk: (chunk) => {
-                summaryContent += chunk;
-            },
-            mode: "plain",
-        });
-        if (!ok) {
+    const messages = new ChatContext(sourceMessages);
+    const totalTurns = messages.getTurnCount();
+    const turnSummaries: string[] = [];
+    let i = 0;
+    while (i < sourceMessages.length) {
+        const end = messages.getTurnEnd(i);
+        if (end <= i) {
+            break;
+        }
+        webview.postMessage({ type: "summary-progress", current: turnSummaries.length + 1, total: totalTurns });
+        const text = await summarizeText(agentRunner, webview, sourceMessages.slice(i, end));
+        if (text === null) {
             return null;
         }
-
-        const fenced = `\`\`\`Summary: ${label}\n${summaryContent.replace(/`/g, "\\`")}\n\`\`\``;
-        const result: ChatHistory[] = [
-            { role: "user" as const, content: PromptConstructor.summaryNotificationTemplate(), customKeys: { hidden: true } },
-            { role: "assistant" as const, content: fenced },
-        ];
-        await populateMsgTokens(result);
-        return result;
+        turnSummaries.push(`# Turn ${turnSummaries.length + 1}\n${text}`);
+        i = end;
     }
-
-    return null;
+    return buildSummaryEntry(turnSummaries.join("\n\n"), label);
 }
 
-/**
- * Manages summary sessions for chat context compression.
- * @interface
- */
+/** Session store the summary handler reads and writes back into. */
 export interface SummarySessionManager {
-    sessions: { id: string; messages: ChatContext; contextStartIndex: number }[];
+    sessions: { id: string; messages: ChatContext; contextStartIndex: number; toolState?: Record<string, unknown> }[];
     updateSession: (session: any, fn: (s: any) => void) => void;
     sendSessionsUpdate: () => void;
 }
 
-/**
- * Handles the request to summarize chat messages within a session.
- * Updates the session with the summarized content and posts progress/completion messages.
- * @param msg - The request message containing turnStart, turnEnd, and sessionId
- * @param webview - The VS Code webview for communication
- * @param sessionManager - The session manager instance
- * @param agentRunner - The agent runner instance
- */
+/** Summarizes a message range in place and pushes the rewritten history back to the webview. */
 export async function handleSummarizeRequest(
     msg: { turnStart: number; turnEnd: number; sessionId: string },
     webview: vscode.Webview,
@@ -144,6 +99,14 @@ export async function handleSummarizeRequest(
             contextUsed: session.messages.sumTokensFrom(session.contextStartIndex),
         });
         return;
+    }
+
+    // a conversation summary drops the history the notepad lived in - carry the pad over
+    const pad = isConversation ? notepadSnapshot(session.toolState) : null;
+    if (pad) {
+        const carried = [PromptConstructor.asHiddenMessage(PromptConstructor.notepadNotificationTemplate(pad))];
+        await populateMsgTokens(carried);
+        summarized.push(...carried);
     }
 
     sessionManager.updateSession(session, (s) => {

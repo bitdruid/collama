@@ -47,6 +47,10 @@ export class ControlPanel extends LitElement {
     private _handleKeyDown(e: KeyboardEvent) {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
+            // swallow while summarizing so the draft survives instead of becoming an intercept
+            if (this.isSummarizing) {
+                return;
+            }
             this._handleSubmit();
         }
     }
@@ -73,6 +77,13 @@ export class ControlPanel extends LitElement {
         adjustTextareaRows(this.textarea);
     }
 
+    private _placeholder() {
+        if (this.isSummarizing) {
+            return "Summarizing… messages can't be queued";
+        }
+        return this.isGenerating ? "Add to the running agent…" : "Chat with AI...";
+    }
+
     // Render
 
     render() {
@@ -82,7 +93,7 @@ export class ControlPanel extends LitElement {
                     .value=${this.userInput}
                     @input=${this._handleInput}
                     @keydown=${this._handleKeyDown}
-                    placeholder=${this.isGenerating ? "Add to the running agent…" : "Chat with AI..."}
+                    placeholder=${this._placeholder()}
                 ></textarea>
 
                 <collama-control-panel-buttons

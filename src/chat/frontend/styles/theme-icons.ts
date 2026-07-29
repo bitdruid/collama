@@ -7,6 +7,7 @@ import {
     CheckCheck,
     ChevronDown,
     CircleCheckBig,
+    CircleDot,
     Code,
     Copy,
     CornerDownLeft,
@@ -23,6 +24,8 @@ import {
     Plus,
     Send,
     Settings,
+    Square,
+    SquareCheck,
     Trash2,
     Upload,
     X,
@@ -34,16 +37,16 @@ const icon = (Icon: any) => ({
     large: html`${unsafeSVG(createElement(Icon, { width: 18, height: 18 }).outerHTML)}`,
 });
 
-/** Filled dot. */
+/**
+ * Filled dot, hand-written rather than generated. The box follows the icon scale so the dot
+ * lines up with its siblings, the mark itself stays 7px everywhere (see themeStyles.dot).
+ */
 const dotIcon = {
-    small: html`<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="6" cy="6" r="2.5" fill="currentColor" />
-    </svg>`,
     medium: html`<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="7" cy="7" r="3" fill="currentColor" />
+        <circle cx="7" cy="7" r="3.5" fill="currentColor" />
     </svg>`,
     large: html`<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="9" cy="9" r="4" fill="currentColor" />
+        <circle cx="9" cy="9" r="3.5" fill="currentColor" />
     </svg>`,
 };
 
@@ -54,6 +57,7 @@ export const themeIcons = {
     checkCheck: icon(CheckCheck),
     chevronDown: icon(ChevronDown),
     circleCheckBig: icon(CircleCheckBig),
+    circleDot: icon(CircleDot),
     code: icon(Code),
     compress: icon(Minimize2),
     copy: icon(Copy),
@@ -70,6 +74,8 @@ export const themeIcons = {
     plus: icon(Plus),
     send: icon(Send),
     settings: icon(Settings),
+    square: icon(Square),
+    squareCheck: icon(SquareCheck),
     trash: icon(Trash2),
     upload: icon(Upload),
     x: icon(X),

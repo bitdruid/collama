@@ -3,22 +3,42 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
-## Changed
+## [1.8.19] - 2026-07-29
 
-- Notepad persists between turns
+### Added
+
+- `LiveBar` component for detailed plan building with step tracking and checkmarks per task
+- Dedicated notepad web component with step plan checkboxes, accordion-style layout, and re-indexed output
+- Accordions animate in when they appear in the chat
+- Parse a plan sent as a single bulleted string into individual step entries
+- Agent prompt rules for notepad usage (record conclusions immediately after thinking)
+- Reject decision tool calls whose options are blank
+
+### Changed
+
+- Notepad persisted with the session — survives conversation summary and restart
+- Notepad meta fields removed from tool results — output simplified
+- Notepad component replaces raw tool-result rendering for better visuals
+- Tightened notepad fact rule — only conclusions count as facts, not step notes
 - The user message on a summary is now hidden
 - `Shell` tool confirm reworked — `is_dangerous` only marks the prompt (and blocks auto-accept) when the model explicitly sets it; an omitted flag no longer counts as dangerous
 - `Shell` auto-accept now ignores harmless `2>/dev/null` redirects and quoted literals (`--pretty=format:"..."`, `grep "a|b"`), so read-only commands pass under accept-all
 - Shell command safety checks concentrated in `CommandCheck` (`utils/command-check.ts`)
+- Session header `New Temporary Chat` button is now a toggle between temp and normal session state
+- Shared indicator styling across banners, dots, and shell session indicators
+- Refined reasoning prompts and agent edit rules for clarity
+- Flow banners keep their green dot when collapsible
+
+### Fixed
+
+- Messages sent while a summary is running no longer corrupt it
+- Notepad tool persists between agent turns (was being lost)
 
 ### Removed
 
 - Removed `Clean Chat` button
 - Removed `Convert to Temporary Chat` button
-
-### Changed
-
-- Session header `New Temporary Chat` button is now a toggle between temp and normal session state
+- Removed GDScript notebook tool (diff on normal edit provides the same functionality)
 
 ## [1.8.17] - 2026-07-15
 

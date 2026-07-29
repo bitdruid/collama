@@ -15,9 +15,21 @@ export const accordionStyles = [
             z-index: 0;
         }
 
+        /* accordions rise in on mount, except code - streaming rebuilds those on every chunk */
+        @keyframes accordion-drop-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+        }
+
         .accordion {
             overflow: hidden;
             position: relative;
+        }
+
+        .accordion:not(.type-code) {
+            animation: accordion-drop-in 0.2s ease-out;
         }
 
         /* Smooth animation using CSS grid trick */

@@ -1,6 +1,7 @@
 import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { themeIcons } from "../../../styles";
+import { themeColors } from "../../../styles";
+import "../../../template-components/live-bar";
 import { activeShellsStyles } from "./styles";
 
 /**
@@ -18,12 +19,15 @@ export class ActiveShells extends LitElement {
             return html``;
         }
         return html`
-            <div class="banner" title="${this.count} active shell session${this.count > 1 ? "s" : ""}">
-                <span class="banner-dot"></span>
-                <span class="banner-label">Shell</span>
-                <span class="banner-count">${this.count}</span>
-                <span class="banner-text">${this.count === 1 ? "session running" : "sessions running"}</span>
-            </div>
+            <collama-livebar
+                accent=${themeColors.usagePrimary.cssText}
+                title="${this.count} active shell session${this.count > 1 ? "s" : ""}"
+            >
+                <span class="dot"></span>
+                <span class="label">Shell</span>
+                <span class="count">${this.count}</span>
+                <span class="text">${this.count === 1 ? "session running" : "sessions running"}</span>
+            </collama-livebar>
         `;
     }
 }

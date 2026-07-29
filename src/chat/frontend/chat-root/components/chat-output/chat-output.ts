@@ -50,9 +50,13 @@ function groupMessages(messages: ChatHistory[]): MessageGroup[] {
             if (msg.role === "tool" && msg.customKeys?.toolMeta && !msg.customKeys.toolMeta.toolSuccess) {
                 continue;
             }
+            const ck = msg.customKeys;
+            // a notepad call with nothing to report (a bare read) leaves no entry
+            if (ck?.toolMeta?.toolName === "notepad" && !ck.toolMeta.toolTarget && !ck.toolMeta.toolArgs) {
+                continue;
+            }
             // Memory, decision, notepad, and background-shell tools are standalone
             // (own banner/accordion, not grouped into a tool-group).
-            const ck = msg.customKeys;
             const isStandalone =
                 msg.role === "tool" &&
                 (ck?.toolMeta?.toolName === "memory" ||

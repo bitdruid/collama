@@ -1,11 +1,11 @@
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
-import { highlightCodeBlock } from "../../utils";
 import { themeIcons } from "../../../styles";
-import { accordionStyles } from "./styles";
 import "../../../template-components/banner";
 import type { BannerType } from "../../../template-components/banner";
+import { highlightCodeBlock } from "../../utils";
+import { accordionStyles } from "./styles";
 
 /** Accordion types are the banner types minus the standalone-only ones. */
 export type AccordionType = Exclude<BannerType, "info" | "banner">;
@@ -35,10 +35,13 @@ export class ChatAccordion extends LitElement {
     @property({ type: String }) label: string = "";
     @property({ type: String }) description: string = "";
     @property({ type: String }) type: AccordionType = "code";
-    @state() expanded: boolean = false;
+    @property({ type: Boolean }) expanded: boolean = false;
     @property({ type: String }) code: string = "";
     @property({ type: String }) copyCode: string = "";
     @property({ type: String }) language: string = "";
+
+    /** Holds the first frame collapsed so an accordion that mounts open unfolds instead of jumping. */
+    @state() private _dropIn = false;
 
     private _highlighted = false;
     private _copyText = "Copy";
@@ -48,6 +51,17 @@ export class ChatAccordion extends LitElement {
         super.connectedCallback();
         if (this.type === "code") {
             this.expanded = true;
+        }
+        // decided before the first render - after it, the body would already sit at 1fr
+        // code blocks are excluded: streaming rebuilds them per chunk, so each would re-unfold
+        this._dropIn = this.expanded && this.type !== "code";
+    }
+
+    firstUpdated() {
+        if (this._dropIn) {
+            // forces the collapsed row to compute, else both states land in one recalc
+            void this.offsetHeight;
+            this._dropIn = false;
         }
     }
 
@@ -130,7 +144,7 @@ export class ChatAccordion extends LitElement {
                 >
                     ${this._renderCopyButton()}
                 </collama-banner>
-                <div class="accordion-body ${this.expanded ? "expanded" : ""}">
+                <div class="accordion-body ${this.expanded && !this._dropIn ? "expanded" : ""}">
                     <div class="accordion-body-clip">
                         <div class="accordion-body-content">
                             ${this.code ? html`<pre><code>${this.code}</code></pre>` : html`<slot></slot>`}

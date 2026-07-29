@@ -62,9 +62,49 @@ const textarea = css`
     box-sizing: border-box;
 `;
 
+// expand chevron, paired with `chevronOpen` on whatever marks the open state
+const chevron = css`
+    display: inline-flex;
+    flex-shrink: 0;
+    transform-origin: center;
+    transition: transform 0.15s ease;
+`;
+
+const chevronOpen = css`
+    transform: rotate(180deg);
+`;
+
+// an inline icon is the only inline-flex child of a text row, so it needs nudging onto the baseline
+const markIcon = css`
+    display: inline-flex;
+    flex: 0 0 auto;
+    transform: translateY(2px);
+`;
+
+// status dot, the caller sets the background - same 7px mark as themeIcons.dot
+const dot = css`
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: ${borderRadius.round};
+`;
+
 /**
  * Reusable CSS style fragments for consistent interactive states.
  * Usage: .my-input:focus { ${themeStyles.focus} }
  *        .my-item:hover { ${themeStyles.hover} }
  */
-export const themeStyles = { borderRadius, border, focus, hover, boxShadow, placeholder, input, textarea } as const;
+export const themeStyles = {
+    borderRadius,
+    border,
+    focus,
+    hover,
+    boxShadow,
+    placeholder,
+    input,
+    textarea,
+    chevron,
+    chevronOpen,
+    markIcon,
+    dot,
+} as const;

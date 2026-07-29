@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { mailbox } from "../../agent/mailbox";
+import { NOTEPAD_KEY } from "../../agent/tools/flow";
 import { ChatContext, ChatHistory } from "../../common/context-chat";
 import { userConfig } from "../../config";
 import { logMsg } from "../../logging";
@@ -13,6 +14,7 @@ import { mapSessionsToSummaries, sanitizeMessages, SessionSummary } from "./util
 interface StoredHistory {
     messages: ChatHistory[];
     contextStartIndex: number;
+    toolState?: Record<string, unknown>;
 }
 
 /** Legacy globalState key — only read once during migration. */
@@ -135,10 +137,12 @@ export class SessionManager {
             const parsed = JSON.parse(Buffer.from(buf).toString("utf8")) as StoredHistory;
             session.messages = new ChatContext(parsed.messages || []);
             session.contextStartIndex = parsed.contextStartIndex || 0;
+            session.toolState = parsed.toolState;
         } catch (err) {
             logMsg(`Failed to load session ${id}: ${String(err)}`);
             session.messages = new ChatContext();
             session.contextStartIndex = 0;
+            session.toolState = undefined;
         }
         this.loadedIds = [id, ...this.loadedIds];
         this.evict();
@@ -196,6 +200,7 @@ export class SessionManager {
             messages: new ChatContext(JSON.parse(JSON.stringify(source.messages.getMessages()))),
             contextStartIndex: source.contextStartIndex,
             updatedAt: Date.now(),
+            toolState: source.toolState ? structuredClone(source.toolState) : undefined,
         };
         this.sessions.push(newSession);
         this.activeSessionId = newSession.id;
@@ -296,6 +301,7 @@ export class SessionManager {
         const payload: StoredHistory = {
             messages: session.messages.getMessages(),
             contextStartIndex: session.contextStartIndex,
+            toolState: session.toolState,
         };
         try {
             await vscode.workspace.fs.writeFile(this.fileFor(id), Buffer.from(JSON.stringify(payload), "utf8"));
@@ -339,6 +345,8 @@ export class SessionManager {
             contextUsed: activeSession?.messages.sumTokensFrom(activeSession.contextStartIndex) ?? 0,
             contextMax: userConfig.apiTokenContextLenInstruct,
             contextStartIndex: activeSession?.contextStartIndex || 0,
+            // session state, not history - it travels with the switch
+            notepad: activeSession?.toolState?.[NOTEPAD_KEY] ?? null,
         });
     }
 

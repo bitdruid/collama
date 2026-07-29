@@ -11,6 +11,8 @@ import {
 } from "../../shared";
 import { BaseDropdown } from "../template-components/dropdown/base-dropdown";
 import "./components/chat-active-shells/chat-active-shells";
+import "./components/chat-notepad/chat-notepad-strip";
+import type { PlanStep } from "./components/chat-output/notepad";
 import "./components/chat-dropdown";
 import { ChatSessionStore } from "./components/chat-header/chat-session-store";
 import "./components/chat-modal";
@@ -38,6 +40,7 @@ import {
     onInterceptCancel,
     onNearBottomChanged,
     onNewChat,
+    onNotepadClear,
     onToggleGhost,
     onOpenMemory,
     onRenameSession,
@@ -103,6 +106,7 @@ export class ChatRoot extends LitElement {
     @state() autoAccept = false;
     @state() activeDropdown: ActiveDropdown = "";
     @state() activeShells = 0;
+    @state() notepad: { plan: PlanStep[]; facts: string[] } | null = null;
     // transient "−Xk · N turns" label on the context bar after a trim
     @state() contextFlash = "";
     private _contextFlashTimer: number | null = null;
@@ -293,6 +297,8 @@ export class ChatRoot extends LitElement {
                 const delta = height - this._lastPendingHeight;
                 this._lastPendingHeight = height;
                 this.chatOutput.style.paddingBottom = height > 0 ? `${height}px` : "";
+                // lifts the scroll button and the spinner clear of the banner stack
+                this.style.setProperty("--bottom-overlay-h", `${height}px`);
                 if (Math.abs(delta) > 1) {
                     this.chatOutput.scrollTop += delta;
                 }
@@ -614,6 +620,12 @@ export class ChatRoot extends LitElement {
                         @scroll-down=${this.handleScrollDown}
                     ></collama-scroll-down>
                     <div class="bottom-overlay">
+                        <collama-notepad-strip
+                            .plan=${this.notepad?.plan ?? []}
+                            .factCount=${this.notepad?.facts?.length ?? 0}
+                            .generating=${this.isGenerating}
+                            @notepad-clear=${onNotepadClear}
+                        ></collama-notepad-strip>
                         <collama-active-shells .count=${this.activeShells}></collama-active-shells>
                         <collama-pending-intercept
                             .items=${this.pendingIntercepts}

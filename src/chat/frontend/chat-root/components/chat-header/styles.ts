@@ -58,9 +58,7 @@ export const chatHeaderStyles = css`
     }
 
     .shell-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: ${themeStyles.borderRadius.round};
+        ${themeStyles.dot}
         background: ${themeColors.usagePrimary};
         box-shadow: 0 0 4px ${themeColors.usagePrimary}88;
         ${themeAnimations.shellPulse}

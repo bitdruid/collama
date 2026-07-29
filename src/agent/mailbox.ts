@@ -1,5 +1,6 @@
 import { ChatHistory } from "../common/context-chat";
 import { logMsg } from "../logging";
+import { PromptConstructor } from "../common/prompt";
 
 // process-wide queue for out-of-band notifications (background shell exits, later sub-agents)
 // every post fires the subscriber (agent-runner), which injects into the running session's
@@ -25,12 +26,7 @@ class Mailbox {
 
     /** Enqueues a notification and fires the wake handler. */
     post(source: MailboxSource, content: string, sessionId?: string): void {
-        this.pending.push({
-            source,
-            sessionId,
-            // hidden: the notification exists for the LLM only - the user sees the reaction
-            message: { role: "user", content, customKeys: { hidden: true } },
-        });
+        this.pending.push({ source, sessionId, message: PromptConstructor.asHiddenMessage(content) });
         if (this.pending.length > MAX_PENDING) {
             this.pending.splice(0, this.pending.length - MAX_PENDING);
         }

@@ -83,13 +83,11 @@ export const bannerStyles = css`
 
     /* Chevron for expansion */
     .banner-arrow {
-        display: inline-flex;
-        transform-origin: center;
-        transition: transform 0.2s ease;
+        ${themeStyles.chevron}
     }
 
     .banner-arrow.expanded {
-        transform: rotate(180deg);
+        ${themeStyles.chevronOpen}
     }
 
     .banner.bare .banner-arrow svg {

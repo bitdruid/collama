@@ -4,13 +4,14 @@
  *
  * - `decision`: ask the user to pick between options before committing to an edit.
  * - `memory`: persist/recall/forget durable facts across sessions.
- * - `notepad`: per-task working memory the agent overwrites as it reasons.
+ * - `notepad`: per-task plan and facts the agent updates in deltas as it reasons.
  *
  * @module flow-tools
  */
 
+import { readToolState, writeToolState } from "../../chat/backend/tool-state";
 import { getWebview } from "../../chat/backend/utils";
-import { deleteMemory, type MemoryScope, readMemory, writeMemory } from "../../common/memory";
+import { deleteMemory, readMemory, writeMemory, type MemoryScope } from "../../common/memory";
 import { logMsg } from "../../logging";
 import { Tool, ToolAnswer, formatToolTargetValue, toolError, toolSuccess } from "../tools";
 
@@ -67,7 +68,7 @@ function requestDecision(question: string, options: string[]): Promise<{ value: 
  * @param args.options - An array of mutually exclusive options (minimum 2).
  */
 async function decision_exec(args: { question: string; options: string[] }): Promise<ToolAnswer<{ selected: string }>> {
-    if (!args.question || typeof args.question !== "string") {
+    if (typeof args.question !== "string" || !args.question.trim()) {
         return toolError("question is required");
     }
     if (!Array.isArray(args.options)) {
@@ -77,10 +78,16 @@ async function decision_exec(args: { question: string; options: string[] }): Pro
         logMsg(`Agent - decision-tool got non-string options: ${JSON.stringify(args.options)}`);
         return toolError("each entry in options must be a plain string, not an object");
     }
+    // blank labels pass the string check but render as unclickable empty buttons
+    const options = args.options.map((o) => o.trim()).filter((o) => o !== "");
+    if (options.length < 2) {
+        logMsg(`Agent - decision-tool got ${options.length} usable options: ${JSON.stringify(args.options)}`);
+        return toolError("options needs at least 2 non-empty labels - blank entries are dropped, so write them out");
+    }
 
-    logMsg(`Agent - use decision-tool question="${args.question}" options=${args.options.length}`);
+    logMsg(`Agent - use decision-tool question="${args.question}" options=${options.length}`);
 
-    const { value } = await requestDecision(args.question, args.options);
+    const { value } = await requestDecision(args.question, options);
     if (!value) {
         return toolError("No selection received from user");
     }
@@ -215,51 +222,125 @@ const memory_def = {
 // notepad
 // notepad
 
-/** Keeps only non-empty strings from an unknown value (the model may send junk or non-arrays). */
-function asStringArray(value: unknown): string[] {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-    return value.filter((v): v is string => typeof v === "string" && v.trim() !== "");
+export const NOTEPAD_KEY = "notepad";
+
+interface PlanStep {
+    text: string;
+    done: boolean;
 }
 
-/** Formats the notepad into the plain text shown to the user and read back by the model. */
-function formatNotepad(facts: string[], todos: string[]): string {
+export interface NotepadState {
+    plan: PlanStep[];
+    facts: string[];
+}
+
+/** Keeps only non-empty strings; the model may send a bare string, junk entries or nothing. */
+function asStringList(value: unknown): string[] {
+    const items = Array.isArray(value) ? value : [value];
+    return items.filter((v): v is string => typeof v === "string" && v.trim() !== "").map((v) => v.trim());
+}
+
+/** Bullet or numbering a model puts in front of a step: "- ", "2. ", "[x] ". */
+const STEP_MARKER = /^\s*(?:[-*•]|\d+[.)]|\[[ xX>]?\])\s*/;
+
+/**
+ * Steps out of whatever shape the plan arrived in. Models often send the whole plan as one
+ * bulleted string instead of one entry per step - split it back apart, and drop the markers so
+ * the render's own numbering is not doubled. Only a string that starts with a marker is split
+ * mid-line, so a step that merely contains a dash stays intact.
+ */
+function asPlanList(value: unknown): string[] {
+    return asStringList(value)
+        .flatMap((s) =>
+            s.includes("\n") ? s.split("\n") : STEP_MARKER.test(s) ? s.split(/\s+(?=(?:[-*•]|\d+[.)])\s)/) : [s],
+        )
+        .map((s) => s.replace(STEP_MARKER, "").trim())
+        .filter((s) => s !== "");
+}
+
+/** 1-based positions the model addresses steps and facts by; tolerates "2" and a bare number. */
+function asIndexList(value: unknown): number[] {
+    const items = Array.isArray(value) ? value : [value];
+    return items.map(Number).filter((n) => Number.isInteger(n) && n > 0);
+}
+
+/** Renders the pad as the plain text the user sees and the model reads back. */
+export function renderNotepad(pad: NotepadState): string {
     const lines: string[] = [];
-    if (facts.length) {
-        lines.push("Facts:", ...facts.map((f) => `- ${f}`));
+    if (pad.plan.length) {
+        // the first open step is the one in progress - derived, so it can't contradict `done`
+        const current = pad.plan.findIndex((s) => !s.done);
+        const mark = (s: PlanStep, i: number) => (s.done ? "x" : i === current ? ">" : " ");
+        lines.push("Plan:", ...pad.plan.map((s, i) => `[${mark(s, i)}] ${i + 1}. ${s.text}`));
     }
-    if (todos.length) {
+    if (pad.facts.length) {
         if (lines.length) {
             lines.push("");
         }
-        lines.push("Todos:", ...todos.map((t) => `- ${t}`));
+        lines.push("Facts:", ...pad.facts.map((f, i) => `${i + 1}. ${f}`));
     }
-    return lines.join("\n");
+    return lines.join("\n") || "empty";
 }
 
-/** The UI display body for the chat accordion — same rendering the model reads back. */
-export function notepadBody(args: { facts?: unknown; todos?: unknown }): string {
-    return formatNotepad(asStringArray(args.facts), asStringArray(args.todos));
+/** Rendered pad of a session, or null when it holds nothing worth carrying over. */
+export function notepadSnapshot(toolState: Record<string, unknown> | undefined): string | null {
+    const pad = toolState?.[NOTEPAD_KEY] as NotepadState | undefined;
+    if (!pad?.plan?.length && !pad?.facts?.length) {
+        return null;
+    }
+    return renderNotepad({ plan: pad.plan ?? [], facts: pad.facts ?? [] });
 }
 
 /**
- * Executes the notepad tool: validates the entries and echoes the formatted notepad
- * back as the result, so it persists in the history as the current working memory.
- * @param args.facts - Conclusions/findings/decisions reached so far (full list, not a delta).
- * @param args.todos - Remaining steps to reach the goal (full list, not a delta).
+ * Executes the notepad tool: applies the deltas to the session's pad and echoes the whole
+ * pad back, so the model reads the merged state without ever resending it.
+ * @param args.plan - Sets or replaces the step list, clearing the facts of the finished task.
+ * @param args.done - Step numbers to tick off.
+ * @param args.fact - Fact(s) to append.
+ * @param args.forget - Fact numbers to drop.
  */
 async function notepad_exec(args: {
-    facts?: string[];
-    todos?: string[];
-}): Promise<ToolAnswer<{ facts: string[]; todos: string[] }>> {
-    const facts = asStringArray(args.facts);
-    const todos = asStringArray(args.todos);
-    if (!facts.length && !todos.length) {
-        return toolError("Provide at least one entry in 'facts' or 'todos'.");
+    plan?: unknown;
+    done?: unknown;
+    fact?: unknown;
+    forget?: unknown;
+}): Promise<ToolAnswer<NotepadState>> {
+    // a sent field is intent, so `plan: []` clears the plan - only an absent one means "leave it"
+    const setsPlan = args.plan !== undefined;
+    const plan = asPlanList(args.plan);
+    const added = asStringList(args.fact);
+    const done = asIndexList(args.done);
+    const forget = asIndexList(args.forget);
+
+    // rebuilt rather than mutated in place: a pad read back from disk may be partial
+    const stored = readToolState<NotepadState>(NOTEPAD_KEY);
+    const pad: NotepadState = { plan: stored?.plan ?? [], facts: stored?.facts ?? [] };
+
+    // no fields at all is a read - the pad outlives the history, so it can always be fetched back
+    if (!setsPlan && !added.length && !done.length && !forget.length) {
+        return toolSuccess(pad, renderNotepad(pad));
     }
-    logMsg(`Agent - notepad ${facts.length} facts, ${todos.length} todos`);
-    return toolSuccess({ facts, todos }, formatNotepad(facts, todos));
+    // a new plan is a new task - its findings are the old task's, and the model never drops them itself
+    if (setsPlan) {
+        pad.plan = plan.map((text) => ({ text, done: false }));
+        pad.facts = [];
+    }
+    for (const i of done) {
+        if (pad.plan[i - 1]) {
+            pad.plan[i - 1].done = true;
+        }
+    }
+    // drop before appending, so `forget` numbers still refer to the pad the model saw
+    if (forget.length) {
+        const dropped = new Set(forget.map((i) => i - 1));
+        pad.facts = pad.facts.filter((_, i) => !dropped.has(i));
+    }
+    pad.facts.push(...added);
+
+    writeToolState(NOTEPAD_KEY, pad);
+    const doneCount = pad.plan.filter((s) => s.done).length;
+    logMsg(`Agent - notepad ${doneCount}/${pad.plan.length} steps, ${pad.facts.length} facts`);
+    return toolSuccess(pad, renderNotepad(pad));
 }
 
 const notepad_def = {
@@ -267,22 +348,43 @@ const notepad_def = {
     function: {
         name: "notepad",
         description:
-            "Store facts and todos for your current task. Use facts while you explore to persist conclusions. " +
-            "Use todos to keep track of your next steps to accomplish. Each call REPLACES the whole notepad, so always pass the full list. " +
-            "Update it as your understanding changes — especially before a tool call to prevent the lose of important knowledge. " +
-            "Your latest notepad stays available across turns. For persistant reusable facts use memory tool.",
+            "Your working pad for the current implementation task: A step plan with facts you conclude on the way. " +
+            "The pad persists - so only send changes. You always receive the full updated pad. " +
+            "Record a conclusion with 'fact' the moment you reach it and before user faced output; " +
+            "an unrecorded conclusion is lost. " +
+            "Start a task by setting 'plan', then always tick each steps off with 'done'. " +
+            "Call with no arguments to read the pad back if you lost sight of it. " +
+            "Never overwrite an unfinished plan except it was wrong or you got adviced." +
+            "For facts worth keeping across sessions use the memory tool.",
         parameters: {
             type: "object",
             properties: {
-                facts: {
+                plan: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Conclusions, findings and decisions reached so far. One per entry, plain text.",
+                    description:
+                        "One array entry per step, no bullets or numbering - never the whole plan as one string. " +
+                        "Sets or replaces the whole step list and clears the facts of the finished task. " +
+                        "Send only when starting a task or when the plan itself changes, not to tick steps off. " +
+                        "An empty list clears the pad.",
                 },
-                todos: {
+                done: {
                     type: "array",
-                    items: { type: "string" },
-                    description: "Remaining steps needed to reach the goal. One per entry, plain text.",
+                    items: { type: "integer" },
+                    description: "Step numbers to mark complete, as shown in the returned plan.",
+                },
+                fact: {
+                    type: "string",
+                    description:
+                        "One thing you learned about the code or a decision you made about the implementation. " +
+                        "Plain text. No task, no plan step, no progress, no recap, not what you are about to do. " +
+                        "If it replaces an earlier fact, 'forget' the old one in the same call.",
+                },
+                forget: {
+                    type: "array",
+                    items: { type: "integer" },
+                    description:
+                        "Fact numbers to drop, as shown in the returned pad. Use when a fact was wrong or stale.",
                 },
             },
             required: [],
@@ -314,17 +416,26 @@ export const flowTools: Record<string, Tool> = {
     notepad: {
         historyPolicy: "evalSuperseded",
         definition: notepad_def,
+        // the whole delta, one call is one entry - the fact's text belongs in the accordion body
         toolTarget: (args) => {
-            const f = Array.isArray(args.facts) ? args.facts.length : 0;
-            const t = Array.isArray(args.todos) ? args.todos.length : 0;
             const parts: string[] = [];
-            if (f) {
-                parts.push(`${f} fact${f === 1 ? "" : "s"}`);
+            const added = asStringList(args.fact);
+            const forget = asIndexList(args.forget);
+            if (args.plan !== undefined) {
+                const plan = asPlanList(args.plan);
+                parts.push(plan.length ? `plan ${plan.length} steps` : "plan cleared");
             }
-            if (t) {
-                parts.push(`${t} todo${t === 1 ? "" : "s"}`);
+            const done = asIndexList(args.done);
+            if (done.length) {
+                parts.push(`done ${done.map((i) => `#${i}`).join(" ")}`);
             }
-            return parts.join(" · ") || "empty";
+            if (added.length) {
+                parts.push(`+${added.length} fact${added.length === 1 ? "" : "s"}`);
+            }
+            if (forget.length) {
+                parts.push(`-${forget.length} fact${forget.length === 1 ? "" : "s"}`);
+            }
+            return parts.join(" · ");
         },
         execute: notepad_exec,
     },

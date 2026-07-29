@@ -2,7 +2,7 @@ import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { themeColors } from "../../../styles";
 
-const VARIANTS = ["flash", "bblFadInOut"] as const;
+const VARIANTS = ["flash", "bblFadInOut", "wave"] as const;
 type Variant = (typeof VARIANTS)[number];
 
 /**
@@ -93,6 +93,53 @@ export class dots extends LitElement {
                 background-color: ${themeColors.uiFont};
             }
         }
+
+        /* Style3: hop dots left to right and back */
+
+        .dots-wave {
+            width: 10px;
+            height: 10px;
+            margin: 0 20px;
+            border-radius: 50%;
+            position: relative;
+            top: 20px;
+            box-shadow:
+                -20px -20px ${themeColors.uiBorder},
+                0 -20px ${themeColors.uiBorder},
+                20px -20px ${themeColors.uiBorder};
+            animation: wave 1.3s ease-in-out infinite /* alternate */;
+        }
+
+        /* 2% & 98% symmentric pause for left/right dot; -25px height of jump */
+        @keyframes wave {
+            0%,
+            2%,
+            98%,
+            100% {
+                box-shadow:
+                    -20px -20px ${themeColors.uiBorder},
+                    0 -20px ${themeColors.uiBorder},
+                    20px -20px ${themeColors.uiBorder};
+            }
+            30% {
+                box-shadow:
+                    -20px -25px ${themeColors.uiFont},
+                    0 -20px ${themeColors.uiBorder},
+                    20px -20px ${themeColors.uiBorder};
+            }
+            50% {
+                box-shadow:
+                    -20px -20px ${themeColors.uiBorder},
+                    0 -25px ${themeColors.uiFont},
+                    20px -20px ${themeColors.uiBorder};
+            }
+            70% {
+                box-shadow:
+                    -20px -20px ${themeColors.uiBorder},
+                    0 -20px ${themeColors.uiBorder},
+                    20px -25px ${themeColors.uiFont};
+            }
+        }
     `;
 
     @property({ type: Boolean, reflect: true }) visible: boolean = false;
@@ -100,7 +147,8 @@ export class dots extends LitElement {
     private _variant: Variant = VARIANTS[Math.floor(Math.random() * VARIANTS.length)];
 
     render() {
-        const className = this._variant === "flash" ? "dots-flash" : "dots-bbl";
+        const className =
+            this._variant === "flash" ? "dots-flash" : this._variant === "wave" ? "dots-wave" : "dots-bbl";
         return html`<div class=${className}></div>`;
     }
 }

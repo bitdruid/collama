@@ -1,6 +1,7 @@
 import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { themeIcons } from "../../../styles";
+import { themeColors, themeIcons } from "../../../styles";
+import "../../../template-components/live-bar";
 import { pendingInterceptStyles } from "./styles";
 
 /**
@@ -26,19 +27,22 @@ export class PendingIntercept extends LitElement {
         return html`
             ${this.items.map(
                 (item) => html`
-                    <div class="banner" title="Queued — intercepts the agent at the next turn">
-                        <span class="banner-icon">${themeIcons.betweenHorizontalStart.medium}</span>
-                        <!-- <span class="banner-label">Intercept</span> -->
-                        <span class="banner-text">${item.text}</span>
+                    <collama-livebar
+                        pulse
+                        accent=${themeColors.submit.cssText}
+                        title="Queued — intercepts the agent at the next turn"
+                    >
+                        <span class="icon">${themeIcons.betweenHorizontalStart.medium}</span>
+                        <span class="text">${item.text}</span>
                         ${item.contextCount > 0
-                            ? html`<span class="banner-context" title="${item.contextCount} context attached">
+                            ? html`<span class="context" title="${item.contextCount} context attached">
                                   ${themeIcons.paperclip.small}${item.contextCount}
                               </span>`
                             : ""}
-                        <button class="banner-cancel" title="Cancel" @click=${() => this._cancel(item.id)}>
+                        <button class="btn" title="Cancel" @click=${() => this._cancel(item.id)}>
                             ${themeIcons.x.small}
                         </button>
-                    </div>
+                    </collama-livebar>
                 `,
             )}
         `;

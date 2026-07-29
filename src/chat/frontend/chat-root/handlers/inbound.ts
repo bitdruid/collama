@@ -31,6 +31,7 @@ export function createInboundDispatcher(host: ChatRoot) {
         "tool-confirm-request": (m) => handleToolConfirmRequest(host, m),
         "tool-decision-request": (m) => handleToolDecisionRequest(host, m),
         "shell-sessions-update": (m) => handleShellSessionsUpdate(host, m),
+        "notepad-update": (m) => (host.notepad = m.notepad ?? null),
     };
     return (msg: any) => {
         handlers[msg.type]?.(msg);
@@ -59,6 +60,7 @@ function applySessionState(host: ChatRoot, msg: any) {
     host.contextUsed = store.contextUsed;
     host.contextMax = store.contextMax;
     host.contextStartIndex = msg.contextStartIndex || 0;
+    host.notepad = msg.notepad ?? null;
 }
 
 function legacyConfigFromMessage(msg: any): Partial<ChatSettings> {

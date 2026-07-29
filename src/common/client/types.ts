@@ -147,7 +147,7 @@ export function buildAgentOptions(): Options {
     return {
         max_tokens: userConfig.apiTokenPredictInstruct,
         num_ctx: userConfig.apiTokenContextLenInstruct,
-        temperature: userConfig.liteMode ? 0.6 : 0.2,
-        top_p: 0.9,
+        temperature: userConfig.liteMode ? 0.6 : 1.0,
+        top_p: 1.0,
     };
 }

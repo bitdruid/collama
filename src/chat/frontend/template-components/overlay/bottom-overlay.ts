@@ -7,7 +7,7 @@ import { themeAnimations } from "../../styles";
 export const bottomOverlayStyles = css`
     :host {
         position: absolute;
-        bottom: 8px;
+        bottom: calc(8px + var(--bottom-overlay-h, 0px));
         left: 50%;
         transform: translateX(-50%);
         z-index: 10;

@@ -37,7 +37,7 @@ const BANNERS: Record<BannerType, BannerSpec> = {
     "tool-group": { heading: "Tools", icon: null, variant: "bare" },
     context: { heading: "Context", icon: null, variant: "bare" },
     shell: { heading: "Background", icon: themeIcons.dot.large, variant: "bare" },
-    flow: { heading: "", icon: null, variant: "bare" },
+    flow: { heading: "", icon: themeIcons.dot.large, variant: "bare" },
     banner: { heading: "", icon: null, variant: "bare" },
 };
 

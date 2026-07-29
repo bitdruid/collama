@@ -8,7 +8,7 @@ import {
     resolveToolConfirm,
     setAutoAcceptAll,
 } from "../../agent/tools/utils/confirm";
-import { cancelAllPendingDecisions, resolveToolDecision } from "../../agent/tools/flow";
+import { cancelAllPendingDecisions, NOTEPAD_KEY, resolveToolDecision, type NotepadState } from "../../agent/tools/flow";
 import { getActiveSessionCount, onSessionChange } from "../../agent/tools/utils/shell-session";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
@@ -27,6 +27,7 @@ import { addContext, handleContextSearch, setContextWebviewReady } from "./handl
 import { SessionHandlers } from "./handlers/session";
 import { handleSummarizeRequest } from "./handlers/summary";
 import { SessionManager } from "./session-manager";
+import { setToolStateHost } from "./tool-state";
 import { mapSessionsToSummaries, sanitizeMessages, setWebview } from "./utils";
 
 // chat panel logic for the extension
@@ -65,6 +66,17 @@ export class ChatPanel {
             getActiveSessionId: () => this.sessionManager.getActiveSession()?.id ?? null,
             runWake: (sessionId, notes) => this.runWake(sessionId, notes),
         });
+
+        // tools reach their persisted state through here; updateSession marks it dirty and saves
+        setToolStateHost({
+            read: (sessionId, key) => this.sessionManager.sessions.find((s) => s.id === sessionId)?.toolState?.[key],
+            write: (sessionId, key, value) => {
+                const session = this.sessionManager.sessions.find((s) => s.id === sessionId);
+                this.sessionManager.updateSession(session, (s) => {
+                    s.toolState = { ...s.toolState, [key]: value };
+                });
+            },
+        });
     }
 
     // message type handler registry
@@ -90,6 +102,7 @@ export class ChatPanel {
         },
         "delete-messages": (msg) => this.handleDeleteMessages(msg),
         "auto-accept-all": (msg) => setAutoAcceptAll(msg.enabled),
+        "notepad-clear": () => this.clearPlan(this.sessionManager.getActiveSession()),
         "chat-cancel": (_, webview) => this.handleChatCancel(webview),
         "summarize-request": (msg, webview) => this.handleSummarize(msg, webview),
         "chat-request": (msg, webview) => this.handleChatRequest(msg, webview),
@@ -104,6 +117,27 @@ export class ChatPanel {
         "memory-edit": (msg, webview) => this.handleMemoryEdit(msg, webview),
         log: (msg) => logMsg(`WEBVIEW - ${msg.message}`),
     };
+
+    // facts survive - they stay true whether or not the plan they were found under was finished
+    private clearPlan(session: ChatSession | undefined) {
+        const pad = session?.toolState?.[NOTEPAD_KEY] as NotepadState | undefined;
+        if (!pad?.plan?.length) {
+            return;
+        }
+        const cleared: NotepadState = { plan: [], facts: pad.facts ?? [] };
+        this.sessionManager.updateSession(session, (s) => {
+            s.toolState = { ...s.toolState, [NOTEPAD_KEY]: cleared };
+        });
+        this.webview.postMessage({ type: "notepad-update", notepad: cleared });
+    }
+
+    // a finished plan is history - drop it at run end so the next task starts on a clean pad
+    private pruneFinishedPlan(session: ChatSession | undefined) {
+        const pad = session?.toolState?.[NOTEPAD_KEY] as NotepadState | undefined;
+        if (pad?.plan?.length && pad.plan.every((s) => s.done)) {
+            this.clearPlan(session);
+        }
+    }
 
     // send all stored memories (both scopes) to the viewer
     private handleMemoryListRequest(webview: vscode.Webview) {
@@ -178,6 +212,7 @@ export class ChatPanel {
             memoryActive: isMemoryActive(),
             autoAcceptAll: getAutoAcceptAll(),
             activeShells: getActiveSessionCount(),
+            notepad: activeSession?.toolState?.[NOTEPAD_KEY] ?? null,
         });
     }
 
@@ -296,6 +331,7 @@ export class ChatPanel {
             }
         }
         const activeAfterCancel = this.sessionManager.getActiveSession();
+        this.pruneFinishedPlan(activeAfterCancel);
         webview.postMessage({
             type: "chat-complete",
             contextUsed: activeAfterCancel?.messages.sumTokensFrom(activeAfterCancel.contextStartIndex) ?? 0,
@@ -311,6 +347,11 @@ export class ChatPanel {
         sessionId?: string;
     }) {
         if (!this.agentRunner.isRunning()) {
+            return;
+        }
+        // backstop: never inject into a summary run (same rule as mailbox delivery)
+        if (this.agentRunner.activeKind() === "summary") {
+            logMsg("Intercept dropped: summarization in flight");
             return;
         }
         // cross-session backstop: only the run's own session may inject (webview state may lag)
@@ -475,35 +516,32 @@ export class ChatPanel {
                     const toolCallId = event.toolCallId as string;
                     const toolContent = event.toolResult as string;
 
-                    // parse the tool result for success/failure
-                    let toolSuccess = false;
+                    let parsed: any = null;
                     try {
-                        const parsed = JSON.parse(toolContent);
-                        toolSuccess = parsed.success === true;
+                        parsed = JSON.parse(toolContent);
                     } catch {
-                        // non-json result: keep defaults
+                        // non-json result: everything below falls back to the call args
                     }
 
                     const toolMeta: CustomMessageKeys["toolMeta"] = {
                         toolName,
                         toolArgs: event.toolArgs as string,
                         toolTarget: event.toolTarget as string,
-                        toolSuccess,
+                        toolSuccess: parsed?.success === true,
                     };
 
+                    const out = parsed?.output;
+                    if (toolName === "notepad") {
+                        post({ type: "notepad-update", notepad: out ?? null });
+                        // facts are appended, so a call that sent one recorded the last entry
+                        const sentFact = (event.toolArgs as string).includes("fact:\n");
+                        toolMeta.toolArgs = sentFact ? (out?.facts?.at(-1) ?? "") : "";
+                    }
                     // background shell renders as its own accordion
-                    if (toolName === "shell") {
-                        try {
-                            const out = JSON.parse(toolContent)?.output;
-                            if (out?.sessionId) {
-                                toolMeta.toolStatus = out.status;
-                                const liveness = out.status === "running" ? "running" : "exited";
-                                toolMeta.toolTarget = `${out.sessionId} · ${liveness}`;
-                                toolMeta.toolArgs = out.command ?? "";
-                            }
-                        } catch {
-                            // non-json result: leave the default tooltarget
-                        }
+                    if (toolName === "shell" && out?.sessionId) {
+                        toolMeta.toolStatus = out.status;
+                        toolMeta.toolTarget = `${out.sessionId} · ${out.status === "running" ? "running" : "exited"}`;
+                        toolMeta.toolArgs = out.command ?? "";
                     }
 
                     const customKeys: CustomMessageKeys = { toolMeta };
@@ -586,6 +624,8 @@ export class ChatPanel {
                 }
             },
         });
+
+        this.pruneFinishedPlan(session);
 
         if (!completed) {
             this.sessionManager.updateSession(session, (s) => {

@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import type { ExtensionConfig } from "../config";
 import { userConfig } from "../config";
 import { getAgentsMdContent } from "./agents-md";
+import type { ChatHistory } from "./context-chat";
 import { getMemoryPromptBlock } from "./memory";
 
 /**
@@ -168,9 +169,9 @@ function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
         return [
             "<reasoning>",
             "Keep your reasoning brief and compact.",
-            "Before a new tool-call you must mention your decisions, findings, conclusions and your next step to persist them in the history.",
+            // "Before a new tool-call you must mention your decisions, findings, conclusions and your next step to persist them in the history.",
             "Reasoning is no response: You MUST always conclude with a separate final answer in your normal response.",
-            "If you notice a loop in your thinking choose a response and commit it to the user urgent.",
+            "Reason several approaches but commit to the user urgent.",
             "</reasoning>",
             "<environment>",
             `<date>${getDate()}</date>`,
@@ -185,9 +186,8 @@ function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
         return [
             "<reasoning>",
             "- Keep reasoning brief",
-            "- You must mention your conclusions before a tool-call.",
             "- Reasoning is no response: Always write a separate final answer after reasoning",
-            "- Don't loop on reasoning; commit to best answer",
+            "- Evaluate several approaches and commit soon",
             "</reasoning>",
             "<environment>",
             `<date>${getDate()}</date>`,
@@ -257,21 +257,28 @@ const AGENT_RULES = {
     DEFAULT: [
         "Only use tools when the user's request requires interaction with files.",
         "For general questions, greetings or conversations respond without tools.",
-        "Use the 'notepad' tool: record your conclusions (facts) and remaining steps (todos).",
-        "Your thinking is discarded after each step and NOT visible later. Any conclusion while thinking is lost unless you save notepad facts right away.",
+        "Use the 'notepad' tool: 'plan' for your steps, 'done' to tick them off, 'fact' for conclusions.",
+        "After reaching a conclusion in thinking, immediately record it via notepad 'fact' before proceeding.",
+        "Any conclusion while thinking is lost unless you record 'fact' with the notepad tool'.",
+        "A plan is a contract: Never implement more then you planed. Instead explain to the user and ask for a proceed.",
+        "Omit single sentence statements and only output to the user if you have a larger scale conclusion to drop.",
+        //"Never give statements like 'Now i have the full picture...; Let me...'; instead note it in the notepad.",
         "System information will arrive as <system-notification></system-notification> in a user-message.",
     ],
-    LITE: ["- Only use tools when file-interaction is required", "- For general communication do not use tools"],
+    LITE: [
+        "- Only use tools when file-interaction is required",
+        "- You must mention your conclusions before a tool-call",
+        "- For general communication do not use tools",
+    ],
 };
 
 const EDIT_RULES = {
     DEFAULT: [
         "Before you use tools, you have to tell the user what you are about to do. Your steps must be clarified.",
-        "Always use the 'notepad' tool to track facts and todos on each step.",
-        "Respect the following rules when using tools to edit files:",
-        "1. Start your task by storing facts and todos with the 'notepad' tool and update it while proceeding.",
-        "2. Then start exploring the neccessary files and informations.",
-        "3. Finish your exploration with a short summary of the findings.",
+        "Respect the following rules when using tools to edit files and implementing a user request:",
+        "1. Start your task by exploring the neccessary files and informations.",
+        "2. Finish your exploration with a short summary of needed changes and alternative approaches.",
+        "3. After that set a 'plan' for the implementation with the notepad tool, then tick steps off with 'done' as you go.",
         "4. Before you start editing: Use the decision tool to ask the user about implementation details.",
         "5. You have to split edits into several small ones.",
         "6. After you finished editing: Use the shell tool to lint/test/compile/build for validation.",
@@ -455,45 +462,54 @@ export class PromptConstructor {
     }
 
     /**
-     * Builds the system-notification XML block preceding a compressed context summary.
-     * Returns the content string; the caller wraps it as a hidden user-role message.
+     * Builds a <system-notification> block — the one shape for everything the host tells the
+     * model out of band. Fields are emitted in the order given; empty ones are skipped, and
+     * multi-line values (a carried-over notepad) keep their own formatting.
+     *
+     * Every notification should carry a `reason` (what happened) and an `advice` (what to do
+     * with it), so the model never has to infer intent from a bare payload.
      */
-    static summaryNotificationTemplate(): string {
-        return [
-            "<system-notification>",
-            "    <reason>context compressed</reason>",
-            "    <advice>The next assistant message is a summary of removed earlier conversation. Treat it as your own prior knowledge and continue from it.</advice>",
-            "</system-notification>",
-        ].join("\n");
+    static systemNotification(fields: Record<string, string | undefined>): string {
+        const body = Object.entries(fields)
+            .filter(([, value]) => value?.trim())
+            .map(([name, value]) =>
+                value!.includes("\n") ? `    <${name}>\n${value}\n    </${name}>` : `    <${name}>${value}</${name}>`,
+            );
+        return ["<system-notification>", ...body, "</system-notification>"].join("\n");
     }
 
     /**
-     * Builds a system-notification XML block for mailbox delivery (shell exit, etc.).
-     * Returns the content string; the caller wraps it as a user-role message.
+     * Wraps a notification as the message it is injected with: user-role, hidden from the
+     * chat view. The model reads it, the user sees the reaction instead.
      */
-    static mailboxShellTemplate(id: string, reason: string, command: string): string {
-        return [
-            "<system-notification>",
-            `    <id>${id}</id>`,
-            `    <reason>${reason}</reason>`,
-            `    <command>${command}</command>`,
-            `    <advice>Shell tool action "check" and sessionId "${id}" to read output.</advice>`,
-            "</system-notification>",
-        ].join("\n");
+    static asHiddenMessage(content: string): ChatHistory {
+        return { role: "user", content, customKeys: { hidden: true } };
     }
 
-    // /**
-    //  * Builds a system-notification XML block for mailbox delivery from a sub-agent.
-    //  * Returns the content string; the caller wraps it as a user-role message.
-    //  */
-    // static mailboxSubagentTemplate(id: string, reason: string, summary: string): string {
-    //     return [
-    //         "<system-notification>",
-    //         `    <id>${id}</id>`,
-    //         `    <reason>${reason}</reason>`,
-    //         `    <summary>${summary}</summary>`,
-    //         `    <advice>Sub-agent finished; review its output and incorporate findings.</advice>`,
-    //         "</system-notification>",
-    //     ].join("\n");
-    // }
+    /** Precedes a compressed-context summary. */
+    static summaryNotificationTemplate(): string {
+        return PromptConstructor.systemNotification({
+            reason: "context compressed",
+            advice: "The next assistant message is a summary of removed earlier conversation. Treat it as your own prior knowledge and continue from it.",
+        });
+    }
+
+    /** Carries the notepad across a summary, which drops the history it lived in. */
+    static notepadNotificationTemplate(pad: string): string {
+        return PromptConstructor.systemNotification({
+            reason: "notepad carried over",
+            notepad: pad,
+            advice: "This is your current notepad. Continue from it and keep updating it with the notepad tool.",
+        });
+    }
+
+    /** Mailbox delivery for a background shell that exited. */
+    static mailboxShellTemplate(id: string, reason: string, command: string): string {
+        return PromptConstructor.systemNotification({
+            id,
+            reason,
+            command,
+            advice: `Shell tool action "check" and sessionId "${id}" to read output.`,
+        });
+    }
 }
