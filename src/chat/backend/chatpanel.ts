@@ -301,17 +301,20 @@ export class ChatPanel {
     }
 
     // cancel the current chat request
-    private handleChatCancel(webview: vscode.Webview) {
+    private async handleChatCancel(webview: vscode.Webview) {
         if (this.agentRunner.isRunning()) {
             logMsg("Cancelling agent execution");
-            this.agentRunner.cancel();
+
+            // prune the run's session, not the viewed one - read before the wait clears it
+            const runSessionId = mailbox.getRunSession();
 
             // resolve pending tool confirm/decision promises so the agent doesn't hang
             cancelAllPendingDecisions();
             cancelAllPendingConfirms();
 
-            // prune the run's session, not the viewed one - the user may have switched mid-run
-            const runSessionId = mailbox.getRunSession();
+            // wait for the release, else the run's tail handling lands after the prune
+            await this.agentRunner.cancelAndWait();
+
             const target =
                 (runSessionId && this.sessionManager.sessions.find((s) => s.id === runSessionId)) ||
                 this.sessionManager.getActiveSession();
@@ -411,7 +414,8 @@ export class ChatPanel {
         fn: (crossedWake: boolean) => Promise<void>,
     ): Promise<boolean> {
         let crossedWake = false;
-        while (true) {
+        // one retry only - a wake is the sole reason to loop and it was just cancelled
+        for (let attempt = 0; attempt < 2; attempt++) {
             if (this.agentRunner.activeKind() === "wake") {
                 logMsg("User request crossed a mailbox wake - cancelling the wake run");
                 crossedWake = true;
@@ -420,12 +424,16 @@ export class ChatPanel {
             if (await this.agentRunner.runExclusive(kind, sessionId, () => fn(crossedWake))) {
                 return true;
             }
-            if (this.agentRunner.activeKind() !== "wake") {
-                // webview blocks sends during its own runs; only reachable on state desync
-                logMsg(`${kind} request dropped: runner busy with ${this.agentRunner.activeKind()}`);
-                return false;
-            }
         }
+        // webview blocks sends during its own runs; only reachable on state desync
+        logMsg(`${kind} request dropped: runner busy with ${this.agentRunner.activeKind()}`);
+        // webview went into generating mode on send - release it, nothing will run
+        const active = this.sessionManager.getActiveSession();
+        this.webview.postMessage({
+            type: "chat-complete",
+            contextUsed: active?.messages.sumTokensFrom(active.contextStartIndex) ?? 0,
+        });
+        return false;
     }
 
     /**

@@ -38,17 +38,6 @@ export class OpenAiClient implements LlmClient {
 
             const openai = requestOpenAI(apiEndpoint.url, apiEndpoint.bearer);
             const startTime = process.hrtime.bigint();
-            const stream = await openai.chat.completions.create({
-                model,
-                messages,
-                tools: tools.length > 0 ? tools : undefined,
-                tool_choice: tools.length > 0 ? (toolChoice ?? "auto") : undefined,
-                stream: true,
-                ...optionsToOpenAI(options),
-                ...userConfig.extraBody,
-                stop: buildStopTokens(stop),
-                stream_options: { include_usage: true },
-            });
 
             let result = "";
             let reasoningText = "";
@@ -57,35 +46,58 @@ export class OpenAiClient implements LlmClient {
             const gate = tools.length > 0 ? new ToolCallStreamGate() : null;
             const reasoningGate = tools.length > 0 ? new ToolCallStreamGate() : null;
 
-            for await (const part of stream) {
-                if (signal?.aborted) {
-                    break;
-                }
+            // signal goes to the sdk - the aborted check below only runs between chunks
+            try {
+                const stream = await openai.chat.completions.create(
+                    {
+                        model,
+                        messages,
+                        tools: tools.length > 0 ? tools : undefined,
+                        tool_choice: tools.length > 0 ? (toolChoice ?? "auto") : undefined,
+                        stream: true,
+                        ...optionsToOpenAI(options),
+                        ...userConfig.extraBody,
+                        stop: buildStopTokens(stop),
+                        stream_options: { include_usage: true },
+                    },
+                    { signal },
+                );
 
-                const delta = part.choices[0]?.delta as
-                    | ((typeof part.choices)[0]["delta"] & { reasoning?: string; reasoning_content?: string })
-                    | undefined;
-                const chunk = delta?.content;
-                if (chunk) {
-                    result += chunk;
-                    emitGated(gate, result, chunk, onChunk);
-                }
+                for await (const part of stream) {
+                    if (signal?.aborted) {
+                        break;
+                    }
 
-                const reasoning = delta?.reasoning_content ?? delta?.reasoning;
-                if (reasoning) {
-                    reasoningText += reasoning;
-                    emitGated(reasoningGate, reasoningText, reasoning, onReasoning);
-                }
+                    const delta = part.choices[0]?.delta as
+                        | ((typeof part.choices)[0]["delta"] & { reasoning?: string; reasoning_content?: string })
+                        | undefined;
+                    const chunk = delta?.content;
+                    if (chunk) {
+                        result += chunk;
+                        emitGated(gate, result, chunk, onChunk);
+                    }
 
-                if (delta?.tool_calls) {
-                    for (const tc of delta.tool_calls) {
-                        toolAccumulator.push(tc);
+                    const reasoning = delta?.reasoning_content ?? delta?.reasoning;
+                    if (reasoning) {
+                        reasoningText += reasoning;
+                        emitGated(reasoningGate, reasoningText, reasoning, onReasoning);
+                    }
+
+                    if (delta?.tool_calls) {
+                        for (const tc of delta.tool_calls) {
+                            toolAccumulator.push(tc);
+                        }
+                    }
+
+                    if (part.usage) {
+                        resultTokens = part.usage.completion_tokens ?? 0;
+                        summupPerformance(options, startTime, resultTokens, result);
                     }
                 }
-
-                if (part.usage) {
-                    resultTokens = part.usage.completion_tokens ?? 0;
-                    summupPerformance(options, startTime, resultTokens, result);
+            } catch (err) {
+                // abort ends the stream, not a failure - keep what arrived and finalize
+                if (!signal?.aborted) {
+                    throw err;
                 }
             }
 

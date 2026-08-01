@@ -3,6 +3,23 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+### Added
+
+- Token count shown per user turn, in a compact short form
+
+### Changed
+
+- Removed the `sub` agent mode — simpler system prompt and tool definitions
+- Temperature and `top_p` now follow `liteMode` instead of being fixed
+
+### Fixed
+
+- Stopping a generation now really cancels the request instead of letting it run on in the background
+- Chat no longer gets stuck refusing new messages after a request stalls or the backend rejects the key — the next message would silently do nothing until the window was reloaded
+- A request that cannot be started no longer leaves the chat spinning forever
+- `Edit` tool no longer expands `$`-patterns in replacement text
+- Long content no longer overflows the modal
+
 ## [1.8.19] - 2026-07-29
 
 ### Added

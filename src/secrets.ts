@@ -108,7 +108,7 @@ export async function commandSetBearerCompletion(): Promise<void> {
             showInformationMessage("Bearer token (Completion) saved securely");
         }
         // Trigger backend detection since bearer token changed
-        redetectBackends();
+        void redetectBackends();
     }
 }
 
@@ -132,6 +132,6 @@ export async function commandSetBearerInstruct(): Promise<void> {
             showInformationMessage("Bearer token (Instruct) saved securely");
         }
         // Trigger backend detection since bearer token changed
-        redetectBackends();
+        void redetectBackends();
     }
 }

@@ -20,6 +20,12 @@ export interface AgentRunnerRunOptions {
 // what an exclusive operation runs for
 export type RunKind = "chat" | "summary" | "wake";
 
+// how long a cancel waits for the run to wind down
+const CANCEL_GRACE_MS = 10000;
+
+// no first chunk or event within this - run counts as stalled
+const RUN_STARTUP_TIMEOUT_MS = 60000;
+
 // panel-side callbacks for mailbox delivery: the shown session + the wake-run body
 export interface MailboxHost {
     getActiveSessionId(): string | null;
@@ -131,14 +137,25 @@ export class AgentRunner {
         this.currentAgent = null;
     }
 
-    /** Cancels the operation in flight and resolves once it wound down. */
-    async cancelAndWait(): Promise<void> {
+    /**
+     * Cancels the operation in flight and resolves once it wound down.
+     * @param timeoutMs - Stop waiting after this long so a wedged run cannot block the caller.
+     * @returns True when the run finished, false when the wait timed out.
+     */
+    async cancelAndWait(timeoutMs = CANCEL_GRACE_MS): Promise<boolean> {
         const active = this.active;
         if (!active) {
-            return;
+            return true;
         }
         this.cancel();
-        await active.done;
+        let timer: ReturnType<typeof setTimeout>;
+        const expired = new Promise<false>((resolve) => (timer = setTimeout(() => resolve(false), timeoutMs)));
+        const settled = await Promise.race([active.done.then(() => true), expired]);
+        clearTimeout(timer!);
+        if (!settled) {
+            logMsg(`Runner did not wind down within ${timeoutMs}ms - still busy with ${this.activeKind()}`);
+        }
+        return settled;
     }
 
     /** Queues a user message into the running agent loop without interrupting it. */
@@ -152,9 +169,9 @@ export class AgentRunner {
     }
 
     /**
-     * Runs the agent with a 60s startup timeout. The timeout fires only if the agent
-     * never produces a first chunk or event; any inbound activity clears it. Callers
-     * are responsible for sending `chat-complete` after post-processing.
+     * Runs the agent with a startup timeout. The timeout fires only if the agent never
+     * produces a first chunk or event; any inbound activity clears it. Callers are
+     * responsible for sending `chat-complete` after post-processing.
      */
     async run({
         webview,
@@ -166,10 +183,11 @@ export class AgentRunner {
     }: AgentRunnerRunOptions): Promise<boolean> {
         const agent = new Agent(mode);
         this.currentAgent = agent;
+        // cancel only - reporting complete here would free the webview while runExclusive still holds
         const timeout = setTimeout(() => {
+            logMsg(`Agent produced no output within ${RUN_STARTUP_TIMEOUT_MS}ms - cancelling the run`);
             agent.cancel();
-            webview.postMessage({ type: "chat-complete", contextUsed: messages.sumTokens() });
-        }, 60000);
+        }, RUN_STARTUP_TIMEOUT_MS);
 
         try {
             await agent.work(

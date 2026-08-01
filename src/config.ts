@@ -208,18 +208,19 @@ export function updateVSConfig(): void {
 /**
  * Triggers a fresh detection of both LLM backends.
  * Useful after events like bearer token changes that may affect connectivity.
+ * Awaitable - until it finishes every request fails with "LLM client not initialized".
  */
-export function redetectBackends(): void {
+export function redetectBackends(): Promise<void> {
     sysConfig.backendCompletion = "";
     sysConfig.backendInstruct = "";
-    detectBackends();
+    return detectBackends();
 }
 
 const DETECT_INTERVAL_MS = 15000;
 const DETECT_TIMEOUT_MS = 5000;
 
 let detectTimer: ReturnType<typeof setInterval> | null = null;
-let detecting = false;
+let detecting: Promise<void> | null = null;
 
 /**
  * Initiates the background backend detection loop.
@@ -227,9 +228,9 @@ let detecting = false;
  * Once a backend is detected, subsequent ticks become no-ops.
  */
 function startBackendDetection(): void {
-    detectBackends();
+    void detectBackends();
     if (!detectTimer) {
-        detectTimer = setInterval(detectBackends, DETECT_INTERVAL_MS);
+        detectTimer = setInterval(() => void detectBackends(), DETECT_INTERVAL_MS);
     }
 }
 
@@ -237,44 +238,45 @@ function startBackendDetection(): void {
  * Attempts to detect any LLM backends that are still unidentified.
  * Idempotent and safe to call multiple times.
  */
-async function detectBackends(): Promise<void> {
-    if (detecting) {
-        return;
+function detectBackends(): Promise<void> {
+    // join a probe in flight instead of returning early - callers await the outcome
+    detecting ??= runDetection().finally(() => {
+        detecting = null;
+    });
+    return detecting;
+}
+
+/** One detection pass. Always reached through {@link detectBackends}, which de-duplicates it. */
+async function runDetection(): Promise<void> {
+    if (!sysConfig.backendCompletion) {
+        sysConfig.backendCompletion = await detectBackend(
+            userConfig.apiEndpointCompletion,
+            await getBearerCompletion(),
+        );
+        logDetection("completion", sysConfig.backendCompletion);
     }
-    detecting = true;
-    try {
-        if (!sysConfig.backendCompletion) {
-            sysConfig.backendCompletion = await detectBackend(
-                userConfig.apiEndpointCompletion,
-                await getBearerCompletion(),
+    if (!sysConfig.backendInstruct) {
+        sysConfig.backendInstruct = await detectBackend(userConfig.apiEndpointInstruct, await getBearerInstruct());
+        logDetection("instruct", sysConfig.backendInstruct);
+    }
+    if (userConfig.searxngEndpoint && !sysConfig.searxngConnected) {
+        const probe = await detectSearxng(userConfig.searxngEndpoint);
+        sysConfig.searxngConnected = probe === "ok";
+        if (probe === "ok") {
+            const { engines, scoped } = await fetchSearxngEngines(userConfig.searxngEndpoint);
+            sysConfig.searxngEngines = engines;
+            const scope = scoped
+                ? `${engines.length} engines via "${SEARXNG_AGENT_CATEGORY}" category`
+                : `${engines.length} general engines`;
+            logMsg(`ℹ️ SearXNG connected — websearch tool enabled (${scope})`);
+        } else {
+            sysConfig.searxngEngines = [];
+            logMsg(
+                probe === "no-json"
+                    ? `⚠️ SearXNG found but json output is disabled — add "json" to search.formats (retrying every ${DETECT_INTERVAL_MS / 1000}s)`
+                    : `⚠️ No SearXNG connection — retrying every ${DETECT_INTERVAL_MS / 1000}s`,
             );
-            logDetection("completion", sysConfig.backendCompletion);
         }
-        if (!sysConfig.backendInstruct) {
-            sysConfig.backendInstruct = await detectBackend(userConfig.apiEndpointInstruct, await getBearerInstruct());
-            logDetection("instruct", sysConfig.backendInstruct);
-        }
-        if (userConfig.searxngEndpoint && !sysConfig.searxngConnected) {
-            const probe = await detectSearxng(userConfig.searxngEndpoint);
-            sysConfig.searxngConnected = probe === "ok";
-            if (probe === "ok") {
-                const { engines, scoped } = await fetchSearxngEngines(userConfig.searxngEndpoint);
-                sysConfig.searxngEngines = engines;
-                const scope = scoped
-                    ? `${engines.length} engines via "${SEARXNG_AGENT_CATEGORY}" category`
-                    : `${engines.length} general engines`;
-                logMsg(`ℹ️ SearXNG connected — websearch tool enabled (${scope})`);
-            } else {
-                sysConfig.searxngEngines = [];
-                logMsg(
-                    probe === "no-json"
-                        ? `⚠️ SearXNG found but json output is disabled — add "json" to search.formats (retrying every ${DETECT_INTERVAL_MS / 1000}s)`
-                        : `⚠️ No SearXNG connection — retrying every ${DETECT_INTERVAL_MS / 1000}s`,
-                );
-            }
-        }
-    } finally {
-        detecting = false;
     }
 }
 
