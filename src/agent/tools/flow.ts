@@ -103,6 +103,7 @@ const decision_def = {
             "Minimum 2 options. For arguments use plain text only, no Markdown. An 'other' option is always provided. Don't add this.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 question: {
                     type: "string",
@@ -194,6 +195,7 @@ const memory_def = {
             "Do not store transient, conversation-only details.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 action: {
                     type: "string",
@@ -348,16 +350,17 @@ const notepad_def = {
     function: {
         name: "notepad",
         description:
-            "Your working pad for the current implementation task: A step plan with facts you conclude on the way. " +
+            "Your working pad for the current implementation task. A step plan with reasoning facts. " +
             "The pad persists - so only send changes. You always receive the full updated pad. " +
             "Record a conclusion with 'fact' the moment you reach it and before user faced output; " +
             "an unrecorded conclusion is lost. " +
-            "Start a task by setting 'plan', then always tick each steps off with 'done'. " +
+            "Start a task by setting 'plan', then always tick each steps off with 'done' immediatly. " +
             "Call with no arguments to read the pad back if you lost sight of it. " +
             "Never overwrite an unfinished plan except it was wrong or you got adviced." +
             "For facts worth keeping across sessions use the memory tool.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 plan: {
                     type: "array",

@@ -6,10 +6,10 @@ import {
     ToolAnswer,
     formatGitRefTarget,
     formatToolTargetValue,
-    getWorkspaceRoot,
     toolError,
     toolSuccess,
 } from "../tools";
+import { getWorkspaceRoot } from "./utils/workspace";
 
 const execFileAsync = promisify(execFile);
 
@@ -137,6 +137,7 @@ export const gitLog_def = {
         description: "Git log info. Use mode 'commits' to list commits (default), or mode 'branches' to list branches.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 mode: {
                     type: "string",
@@ -259,6 +260,7 @@ export const gitDiff_def = {
             "Get a git diff. Without fromCommit, shows working tree changes (unstaged by default, staged with staged=true). With fromCommit, compares two commits or branches.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 fromCommit: {
                     type: "string",

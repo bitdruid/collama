@@ -142,6 +142,7 @@ export function websearch_def() {
                 engineList,
             parameters: {
                 type: "object",
+                additionalProperties: false,
                 properties: {
                     query: { type: "string", description: "Search query." },
                     ...(engines.length && {

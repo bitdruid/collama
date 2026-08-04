@@ -3,7 +3,7 @@ import { logMsg } from "../../../logging";
 
 // -- Tool confirmation via webview --
 //
-// Shared approval infrastructure for tools (edit, create, delete, shell, notebook).
+// Shared approval infrastructure for tools (edit, create, delete, shell).
 // Kept tool-agnostic so no tool needs to import another tool to ask for confirmation.
 
 const _pending = new Map<string, (result: { value: string | null; reason: string }) => void>();
@@ -30,7 +30,7 @@ export function cancelAllPendingConfirms(): void {
 export function requestToolConfirm(
     action: string,
     filePath: string,
-    explanation: string,
+    explanation?: string,
     dangerous = false,
 ): Promise<{ value: string | null; reason: string }> {
     const webview = getWebview();

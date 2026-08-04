@@ -1,6 +1,7 @@
 import path from "path";
 import * as vscode from "vscode";
-import { ToolAnswer, isWithinRoot, toolError, toolSuccess } from "../../tools";
+import { ToolAnswer, toolError, toolSuccess } from "../../tools";
+import { isWithinRoot } from "./workspace";
 
 const DIAGNOSTIC_SEVERITY: Record<number, string> = {
     0: "error",

@@ -300,7 +300,7 @@ export class ChatContext {
     /**
      * Sweeps every tool response at turn-end, marking `dropAll` tools' content as
      * `[stale]`. `keepAll` is a noop. `evalOutdated` marks a tool response as stale
-     * if the file it operated on was later edited (edit/create/delete/notebook).
+     * if the file it operated on was later edited (edit/create/delete).
      * `evalSuperseded` marks it stale once a newer call of the same tool exists,
      * so only the latest result stays live (e.g. notepad).
      * Called once per agent turn after the work-loop completes — tool results stay
@@ -359,7 +359,7 @@ export class ChatContext {
      * before execution (normalizeToolArgs), so the same file has a single representation here.
      */
     private isFileEditedAfter(fromIndex: number, filePath: string): boolean {
-        const editTools = new Set(["edit", "create", "delete", "notebook"]);
+        const editTools = new Set(["edit", "create", "delete"]);
         for (let j = fromIndex + 1; j < this.length(); j++) {
             const msg = this.messages[j];
             if (msg.role === "assistant" && msg.tool_calls) {

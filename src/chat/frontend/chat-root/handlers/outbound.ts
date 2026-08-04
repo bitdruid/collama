@@ -153,7 +153,6 @@ export function onSubmit(host: ChatRoot, e: CustomEvent) {
         );
         // Show a pending banner until the backend drains it (see handleAgentInjectMessage).
         host.pendingIntercepts = [...host.pendingIntercepts, { id, text: content, contextCount: contexts.length }];
-        logWebview("Intercept queued into running agent loop");
         return;
     }
 

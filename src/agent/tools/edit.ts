@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import * as vscode from "vscode";
 import { logMsg } from "../../logging";
-import { Tool, ToolAnswer, formatToolTargetValue, secureWorkspace, toolError, toolSuccess } from "../tools";
+import { Tool, ToolAnswer, toolError, toolSuccess } from "../tools";
+import { secureWorkspace } from "./utils/workspace";
 import {
     getAutoAcceptDeletes,
     getAutoAcceptEdits,
@@ -56,7 +57,6 @@ export async function edit_exec(args: {
     filePath: string;
     oldString: string;
     newString: string;
-    explanation: string;
 }): Promise<ToolAnswer<{ filePath: string }>> {
     logMsg(`Agent - use edit-tool file=${args.filePath}`);
 
@@ -115,7 +115,6 @@ export async function edit_exec(args: {
             ext: getFileExtension(args.filePath),
             action: "edit",
             displayPath: args.filePath,
-            explanation: args.explanation,
             title: `collama – Edit: ${args.filePath}`,
         });
         if (!value) {
@@ -142,11 +141,8 @@ export const edit_def = {
             "Edit a file by replacing exact string matches. The oldString must match a string to replace in the filePath file. To add content to an empty file, set oldString to an empty string.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence describing what the command does in the repo. Is required!",
-                },
                 filePath: {
                     type: "string",
                     description: "Path to the file (relative to workspace root).",
@@ -162,7 +158,7 @@ export const edit_def = {
                     description: "The replacement string.",
                 },
             },
-            required: ["explanation", "filePath", "oldString", "newString"],
+            required: ["filePath", "oldString", "newString"],
         },
     },
 };
@@ -177,7 +173,6 @@ export const edit_def = {
 export async function create_exec(args: {
     filePath: string;
     content?: string;
-    explanation: string;
 }): Promise<ToolAnswer<{ filePath: string }>> {
     const isFolder = args.content === undefined;
     logMsg(`Agent - use create-tool ${isFolder ? "folder" : "file"}=${args.filePath}`);
@@ -204,7 +199,7 @@ export async function create_exec(args: {
                 return toolSuccess({ filePath: args.filePath }, "Folder created (auto-created).");
             }
 
-            const { value, reason } = await requestToolConfirm("create folder", args.filePath, args.explanation);
+            const { value, reason } = await requestToolConfirm("create folder", args.filePath);
 
             if (!value) {
                 return { success: false, output: { filePath: args.filePath }, message: reason };
@@ -231,7 +226,6 @@ export async function create_exec(args: {
             ext: getFileExtension(args.filePath),
             action: "create",
             displayPath: args.filePath,
-            explanation: args.explanation,
         });
         if (!value) {
             return { success: false, output: { filePath: args.filePath }, message: reason };
@@ -257,11 +251,8 @@ export const create_def = {
             "Create a new file or folder. With content: creates a file (shows preview, asks confirmation). Without content: creates a folder (asks confirmation).",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
-                explanation: {
-                    type: "string",
-                    description: "One sentence describing what the command does in the repo. Is required!",
-                },
                 filePath: {
                     type: "string",
                     description: "Path to the new file or folder (relative to workspace root).",
@@ -271,7 +262,7 @@ export const create_def = {
                     description: "File content. Omit to create a folder instead.",
                 },
             },
-            required: ["explanation", "filePath"],
+            required: ["filePath"],
         },
     },
 };
@@ -337,10 +328,11 @@ export const delete_def = {
         description: "Delete a file or folder from the workspace. Asks for user confirmation before deleting.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 explanation: {
                     type: "string",
-                    description: "One sentence describing what the command does in the repo. Is required!",
+                    description: "One sentence describing why this is being deleted.",
                 },
                 filePath: {
                     type: "string",
@@ -375,19 +367,19 @@ export const editTools: Record<string, Tool> = {
     edit: {
         historyPolicy: "keepAll",
         definition: edit_def,
-        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
+        toolTarget: "filePath",
         execute: edit_exec,
     },
     create: {
         historyPolicy: "keepAll",
         definition: create_def,
-        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
+        toolTarget: "filePath",
         execute: create_exec,
     },
     delete: {
         historyPolicy: "keepAll",
         definition: delete_def,
-        toolTarget: (args) => formatToolTargetValue("filePath", args.filePath),
+        toolTarget: "filePath",
         execute: delete_exec,
     },
 };

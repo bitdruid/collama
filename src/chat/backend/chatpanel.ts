@@ -1,14 +1,14 @@
 import * as vscode from "vscode";
 
 import { mailbox } from "../../agent/mailbox";
-import { getToolDefinitions, getToolHistoryPolicy } from "../../agent/tools";
+import { toolRegistry } from "../../agent/tools";
+import { cancelAllPendingDecisions, NOTEPAD_KEY, resolveToolDecision, type NotepadState } from "../../agent/tools/flow";
 import {
     cancelAllPendingConfirms,
     getAutoAcceptAll,
     resolveToolConfirm,
     setAutoAcceptAll,
 } from "../../agent/tools/utils/confirm";
-import { cancelAllPendingDecisions, NOTEPAD_KEY, resolveToolDecision, type NotepadState } from "../../agent/tools/flow";
 import { getActiveSessionCount, onSessionChange } from "../../agent/tools/utils/shell-session";
 import { isAgentsMdActive } from "../../common/agents-md";
 import { buildInstructionOptions, ToolCall } from "../../common/client";
@@ -19,8 +19,8 @@ import { PromptConstructor } from "../../common/prompt";
 import Tokenizer from "../../common/tokenizer";
 import { getChatSettings, userConfig } from "../../config";
 import { logMsg } from "../../logging";
-import type { ChatSession } from "../shared";
 import { StartPage } from "../frontend/chat-init";
+import type { ChatSession } from "../shared";
 import { AgentRunner, RunKind } from "./agent-runner";
 import { recomputeContextState, trimMessagesForContext } from "./context-state";
 import { addContext, handleContextSearch, setContextWebviewReady } from "./handlers/context";
@@ -365,12 +365,12 @@ export class ChatPanel {
         }
         const customKeys = msg.contexts && msg.contexts.length > 0 ? { contexts: msg.contexts } : undefined;
         this.agentRunner.injectMessage(msg.content, customKeys, msg.id);
-        logMsg("Intercept queued into running agent loop");
+        logMsg(`Intercept queued into running agent loop (id=${msg.id}, session=${msg.sessionId ?? "none"})`);
     }
 
     // tokens the agent run prepends to every request: system prompt + tool schema (when sent)
     private async estimateAgentOverheadTokens(includeTools: boolean): Promise<number> {
-        const tools = includeTools ? getToolDefinitions() : [];
+        const tools = includeTools ? toolRegistry.definitions() : [];
         const overhead = JSON.stringify(PromptConstructor.agentTemplate()) + JSON.stringify(tools);
         return Tokenizer.calcTokens(overhead);
     }
@@ -653,7 +653,7 @@ export class ChatPanel {
         }
 
         this.sessionManager.updateSession(session, (s) => {
-            s.messages.applyToolHistoryPolicy(getToolHistoryPolicy);
+            s.messages.applyToolHistoryPolicy(toolRegistry.historyPolicy);
         });
 
         const { contextStartIndex: completedContextStartIndex, contextUsed } = await recomputeContextState(

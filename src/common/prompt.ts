@@ -167,6 +167,7 @@ function getDefaultTemplate(): string {
 function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
     if (mode === "DEFAULT") {
         return [
+            "Keep the users language.",
             "<reasoning>",
             "Keep your reasoning brief and compact.",
             // "Before a new tool-call you must mention your decisions, findings, conclusions and your next step to persist them in the history.",
@@ -184,6 +185,7 @@ function getGeneral(mode: "DEFAULT" | "LITE"): string[] {
     }
     if (mode === "LITE") {
         return [
+            "Keep the users language.",
             "<reasoning>",
             "- Keep reasoning brief",
             "- Reasoning is no response: Always write a separate final answer after reasoning",
@@ -274,15 +276,14 @@ const AGENT_RULES = {
 
 const EDIT_RULES = {
     DEFAULT: [
-        "Before you use tools, you have to tell the user what you are about to do. Your steps must be clarified.",
-        "Respect the following rules when using tools to edit files and implementing a user request:",
+        "Before you use tools, hint the user what you are about to do. Your steps must be clarified.",
+        "Respect the following rules when using tools to implement a user request:",
         "1. Start your task by exploring the neccessary files and informations.",
         "2. Finish your exploration with a short summary of needed changes and alternative approaches.",
-        "3. After that set a 'plan' for the implementation with the notepad tool, then tick steps off with 'done' as you go.",
+        "3. Now set a 'plan' for the implementation with the notepad tool. Steps must be ticked of immediatly.",
         "4. Before you start editing: Use the decision tool to ask the user about implementation details.",
-        "5. You have to split edits into several small ones.",
-        "6. After you finished editing: Use the shell tool to lint/test/compile/build for validation.",
-        "7. Finish your answer with a summary of your actions and the resulting conclusion.",
+        "5. After you finished all edits: Use the shell tool to lint/test/compile/build for validation.",
+        "6. Finish your turn with a summary of your actions and the resulting conclusion.",
         "Shell tool specific:",
         "- Use the shell tool as last resort and always prefer native tools instead of shell commands.",
         "- Use the shell tool if native tools would require too much effort to satisfy the request.",

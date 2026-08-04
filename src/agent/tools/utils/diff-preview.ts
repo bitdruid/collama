@@ -187,7 +187,6 @@ async function closePreviewTab(uri: vscode.Uri): Promise<void> {
  * @param params.ext - The file extension (e.g., ".ts", ".ipynb") determining syntax highlighting.
  * @param params.action - The action being confirmed (e.g., "Apply changes").
  * @param params.displayPath - The path to display to the user in the confirmation dialog.
- * @param params.explanation - Additional context or explanation shown in the confirmation.
  * @param params.title - The title for the diff editor tab.
  * @returns An object containing the user's confirmation value and reason for the result.
  */
@@ -198,7 +197,6 @@ export async function confirmWithDiff(params: {
     ext: string;
     action: string;
     displayPath: string;
-    explanation: string;
     title: string;
 }): Promise<{ value: string | null; reason: string }> {
     const provider = getDiffProvider();
@@ -213,7 +211,7 @@ export async function confirmWithDiff(params: {
         await vscode.commands.executeCommand("vscode.diff", originalUri, modifiedUri, params.title, {
             preview: false,
         });
-        return await requestToolConfirm(params.action, params.displayPath, params.explanation);
+        return await requestToolConfirm(params.action, params.displayPath);
     } finally {
         await closeDiffTabs(originalUri, modifiedUri);
         provider.dispose(originalUri);
@@ -230,7 +228,6 @@ export async function confirmWithDiff(params: {
  * @param params.ext - The file extension (e.g., ".ts", ".ipynb") determining the editor type.
  * @param params.action - The action being confirmed (e.g., "Create file").
  * @param params.displayPath - The path to display to the user in the confirmation dialog.
- * @param params.explanation - Additional context or explanation shown in the confirmation.
  * @returns An object containing the user's confirmation value and reason for the result.
  */
 export async function confirmWithPreview(params: {
@@ -239,7 +236,6 @@ export async function confirmWithPreview(params: {
     ext: string;
     action: string;
     displayPath: string;
-    explanation: string;
 }): Promise<{ value: string | null; reason: string }> {
     const provider = getDiffProvider();
     const id = Date.now();
@@ -252,7 +248,7 @@ export async function confirmWithPreview(params: {
 
     try {
         await vscode.commands.executeCommand("vscode.openWith", previewUri, viewType, { preview: false });
-        return await requestToolConfirm(params.action, params.displayPath, params.explanation);
+        return await requestToolConfirm(params.action, params.displayPath);
     } finally {
         await closePreviewTab(previewUri);
         provider.dispose(previewUri);

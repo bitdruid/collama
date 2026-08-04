@@ -112,7 +112,8 @@ export class AutoAcceptButton extends ControlButton {
         if (changedProperties.has("active")) {
             this.pulse = this.active;
             this.icon = this.active ? themeIcons.alertTriangle.medium : themeIcons.circleCheckBig.medium;
-            this.title = this.active ? "Turn off auto-accept edits" : "Turn on auto-accept edits";
+            this.defaultTitle = this.active ? "Turn off auto-accept edits" : "Turn on auto-accept edits";
+            this.title = this.defaultTitle;
         }
     }
 }

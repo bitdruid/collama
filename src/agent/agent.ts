@@ -7,7 +7,7 @@ import Tokenizer, { stripCustomKeys } from "../common/tokenizer";
 import { userConfig } from "../config";
 import { logAgent, logMsg } from "../logging";
 import { getBearerInstruct } from "../secrets";
-import { executeTool, getToolDefinitions, getToolTarget, normalizeToolArgs, resetAutoAcceptEdits } from "./tools";
+import { normalizeToolArgs, resetAutoAcceptEdits, toolRegistry } from "./tools";
 
 export type AgentEvent = { type: string; [key: string]: unknown };
 export type AgentMode = "plain" | "default";
@@ -162,7 +162,7 @@ export class Agent {
      */
     private prepareAgent(messages: ChatContext): {
         history: ChatContext;
-        tools: ReturnType<typeof getToolDefinitions>;
+        tools: ReturnType<typeof toolRegistry.definitions>;
     } {
         const history = new ChatContext();
         const plain = this.agentMode === "plain";
@@ -172,7 +172,7 @@ export class Agent {
 
         return {
             history,
-            tools: !plain && userConfig.agenticMode ? getToolDefinitions() : [],
+            tools: !plain && userConfig.agenticMode ? toolRegistry.definitions() : [],
         };
     }
 
@@ -185,7 +185,7 @@ export class Agent {
      */
     private async buildSettings(
         history: ChatContext,
-        tools: ReturnType<typeof getToolDefinitions>,
+        tools: ReturnType<typeof toolRegistry.definitions>,
         signal: AbortSignal,
     ): Promise<LlmChatSettings> {
         return {
@@ -251,7 +251,7 @@ export class Agent {
             // Mutates the tool call in place: history holds the same reference, so the
             // canonical filePath is what evalOutdated compares later.
             toolCall.function.arguments = argsJson;
-            const toolResult = await executeTool(toolCall.function.name, args);
+            const toolResult = await toolRegistry.execute(toolCall.function.name, args);
 
             history.push({ role: "tool", tool_call_id: toolCall.id, content: toolResult });
 
@@ -260,7 +260,7 @@ export class Agent {
                 toolCallId: toolCall.id,
                 toolName: toolCall.function.name,
                 toolArgs: body,
-                toolTarget: getToolTarget(toolCall.function.name, args),
+                toolTarget: toolRegistry.target(toolCall.function.name, args),
                 toolResult,
                 toolLastCall: toolCall === toolCalls.at(-1) && !signal.aborted,
             });

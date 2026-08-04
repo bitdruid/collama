@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { logMsg } from "../../logging";
-import { Tool, ToolAnswer, formatToolTargetValue, getWorkspaceRoot, toolError, toolSuccess } from "../tools";
+import { Tool, ToolAnswer, formatToolTargetValue, toolError, toolSuccess } from "../tools";
+import { getWorkspaceRoot } from "./utils/workspace";
 import { CommandCheck, ShellType } from "./utils/command-check";
 import { getAutoAcceptShell, requestToolConfirm, setAutoAcceptShell } from "./utils/confirm";
 import { createSession, getSession, killSession } from "./utils/shell-session";
@@ -294,6 +295,7 @@ export const shell_def = {
             "- Give a sessionId with action 'check' to read new output and exit status, 'stop' to terminate.\n",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 command: {
                     type: "string",

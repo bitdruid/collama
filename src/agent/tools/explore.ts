@@ -8,12 +8,10 @@ import {
     Tool,
     ToolAnswer,
     formatToolTargetValue,
-    isWithinAllowedTemp,
-    isWithinRoot,
-    secureWorkspace,
     toolError,
     toolSuccess,
 } from "../tools";
+import { isWithinAllowedTemp, isWithinRoot, secureWorkspace } from "./utils/workspace";
 
 /** Returns true if the pattern contains '..' path segments. */
 function hasPathTraversal(pattern: string): boolean {
@@ -29,7 +27,7 @@ function resolveExplorePatternRoot(
     toolName: "grep" | "glob",
 ): { root: string; pattern: string; error: string } {
     if (!isAbsolutePattern(pattern)) {
-        const ws = secureWorkspace(".", toolName);
+        const ws = secureWorkspace(".", toolName, true);
         return { root: ws.root, pattern, error: ws.error };
     }
 
@@ -65,7 +63,7 @@ export async function read_exec(args: {
     logMsg(
         `Agent - use read-tool file=${args.filePath}${args.startLine !== undefined ? ` startLine=${args.startLine}` : ""}${args.endLine !== undefined ? ` endLine=${args.endLine}` : ""}`,
     );
-    const ws = secureWorkspace(args.filePath, "read");
+    const ws = secureWorkspace(args.filePath, "read", true);
     if (ws.error) {
         return toolError(ws.error);
     }
@@ -104,6 +102,7 @@ export const read_def = {
             "For large files read in large chunks e.g. 1-200.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 filePath: { type: "string", description: "Path to the file (relative to workspace root)." },
                 startLine: { type: "number", description: "Starting line (1-based, inclusive)" },
@@ -170,7 +169,7 @@ export async function grep_exec(args: { pattern: string; glob?: string }): Promi
     const ws =
         args.glob !== undefined && isAbsolutePattern(args.glob)
             ? resolveExplorePatternRoot(args.glob, "grep")
-            : { ...secureWorkspace(".", "grep"), pattern: args.glob ?? "**/*" };
+            : { ...secureWorkspace(".", "grep", true), pattern: args.glob ?? "**/*" };
     if (ws.error) {
         return toolError(ws.error);
     }
@@ -250,6 +249,7 @@ export const grep_def = {
             "Check the `message` footer for the total match count and whether output was reduced — refine pattern/glob to see more.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 pattern: {
                     type: "string",
@@ -291,7 +291,7 @@ export async function glob_exec(args: {
 
     const ws = isAbsolutePattern(pattern)
         ? resolveExplorePatternRoot(pattern, "glob")
-        : { ...secureWorkspace(".", "glob"), pattern };
+        : { ...secureWorkspace(".", "glob", true), pattern };
     if (ws.error) {
         return toolError(ws.error);
     }
@@ -343,6 +343,7 @@ export const glob_def = {
         description: "Find files and folders by a valid glob pattern, searching recursively.",
         parameters: {
             type: "object",
+            additionalProperties: false,
             properties: {
                 pattern: {
                     type: "string",

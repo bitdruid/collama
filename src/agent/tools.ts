@@ -1,5 +1,4 @@
 import { structuredPatch } from "diff";
-import os from "os";
 import path from "path";
 import * as vscode from "vscode";
 import { ToolHistoryPolicy } from "../common/context-chat";
@@ -11,25 +10,11 @@ import { flowTools } from "./tools/flow";
 import { gitTools } from "./tools/git";
 import { shellTools } from "./tools/shell";
 import { resetAutoAcceptEdits } from "./tools/utils/confirm";
+import { getWorkspaceRoot } from "./tools/utils/workspace";
 import { websearchTools } from "./tools/websearch";
 export { resetAutoAcceptEdits };
 
 export type { ToolHistoryPolicy };
-
-/**
- * Tool roles: the semantic partition of the registry, independent of user settings.
- * Each role's membership is owned by its role file (the keys of its exported group);
- * here we only derive the name lists the orchestrators reason over.
- * A future sub-agent orchestrator composes these per agent role; the user-facing
- * orchestrator (getAllowedTools) composes them per user settings.
- */
-const manipulationTools: Record<string, Tool> = { ...editTools };
-const EXPLORATION_TOOLS = Object.keys(exploreTools);
-const MANIPULATION_TOOLS = Object.keys(manipulationTools);
-const SHELL_TOOLS = Object.keys(shellTools);
-const FLOW_TOOLS = Object.keys(flowTools);
-const GIT_TOOLS = Object.keys(gitTools);
-const WEBSEARCH_TOOLS = Object.keys(websearchTools);
 
 export interface ToolAnswer<TOutput = unknown> {
     success: boolean;
@@ -67,22 +52,6 @@ export function formatGitRefTarget(raw: unknown): string {
 }
 
 /**
- * Extracts the primary target value from tool args for UI display.
- * Uses the tool's `toolTarget` to pick or format the right args, then truncates file paths.
- */
-export function getToolTarget(toolName: string, args: Record<string, any>): string {
-    const tool = toolRegistry[toolName];
-    const key = tool?.toolTarget;
-    if (!key) {
-        return "";
-    }
-    if (typeof key === "function") {
-        return key(args);
-    }
-    return formatToolTargetValue(key, args[key]);
-}
-
-/**
  * Renders an edit tool's oldString → newString as the changed lines only
  * (`+`/`-`/context, no file header or hunk markers) so the chat accordion highlights it as a `diff` block.
  */
@@ -112,99 +81,112 @@ export interface Tool<TInput = any, TData = unknown> {
 }
 
 /**
- * Retrieves the definitions of all registered tools.
- * This formats the internal tool registry for external consumption (e.g., LLM function calling).
- *
- * @returns An array of tool definition objects containing type, name, description, and parameters.
+ * Tool roles: the semantic partition of the registry, independent of user settings.
+ * Each role's membership is owned by its role file (the keys of its exported group);
+ * `enabled` is the only place user settings decide what the model may see, and
+ * `filter` narrows a role per-tool. A future sub-agent orchestrator composes the
+ * same groups per agent role.
  */
-export function getToolDefinitions() {
-    const filteredTools = getAllowedTools();
+const ROLES: { tools: Record<string, Tool>; enabled: () => boolean; filter?: (name: string) => boolean }[] = [
+    { tools: exploreTools, enabled: () => true },
+    { tools: editTools, enabled: () => userConfig.enableEditTools },
+    { tools: shellTools, enabled: () => userConfig.enableShellTool },
+    { tools: gitTools, enabled: () => userConfig.liteMode || !userConfig.enableShellTool },
+    { tools: websearchTools, enabled: () => sysConfig.searxngConnected }, // only with a reachable searxng server
+    { tools: flowTools, enabled: () => true, filter: isFlowEnabled },
+];
 
-    return filteredTools.map((tool) => ({
-        type: tool.definition.type,
-        function: {
-            name: tool.definition.function.name,
-            description: tool.definition.function.description,
-            parameters: tool.definition.function.parameters, // Pass Zod schema directly
-        },
-    }));
-}
-
-function getToolNames() {
-    return getAllowedTools().map((tool) => tool.definition.function.name);
+/** Flow gate: memory/notepad not for lite-mode; decision only if edit or shell enabled. */
+function isFlowEnabled(name: string): boolean {
+    if (name === "memory" || name === "notepad") {
+        return !userConfig.liteMode;
+    }
+    if (name === "decision") {
+        return userConfig.enableEditTools || userConfig.enableShellTool;
+    }
+    return true;
 }
 
 /**
- * User-facing orchestrator: maps the current user settings onto the tool roles.
- * Lite-mode and the per-role enable flags live here and nowhere else.
+ * The tool orchestrator. Owns the role table above, derives the registry from it so the
+ * two can never drift, and answers everything the agent asks about tools: which ones the
+ * model may see, their definitions, execution, UI target, and history policy.
  */
-function getAllowedTools(): Tool[] {
-    const names = [
-        ...EXPLORATION_TOOLS, // always on
-        ...(userConfig.enableEditTools ? MANIPULATION_TOOLS : []),
-        ...(userConfig.enableShellTool ? SHELL_TOOLS : []),
-        ...(userConfig.liteMode || !userConfig.enableShellTool ? GIT_TOOLS : []),
-        ...(sysConfig.searxngConnected ? WEBSEARCH_TOOLS : []), // only with a reachable searxng server
-        ...FLOW_TOOLS.filter(isFlowEnabled),
-    ];
-    return names.map((n) => {
-        const tool = toolRegistry[n];
+class ToolRegistry {
+    /** Every tool that exists, regardless of config. */
+    readonly all: Record<string, Tool<any, any>> = Object.assign({}, ...ROLES.map((role) => role.tools));
+
+    /** The tools the current config exposes to the model. */
+    allowed(): Tool[] {
+        return ROLES.filter((role) => role.enabled()).flatMap((role) =>
+            Object.entries(role.tools)
+                .filter(([name]) => !role.filter || role.filter(name))
+                .map(([, tool]) => tool),
+        );
+    }
+
+    /** Allowed tools formatted for external consumption (LLM function calling). */
+    definitions() {
+        return this.allowed().map((tool) => ({
+            type: tool.definition.type,
+            function: {
+                name: tool.definition.function.name,
+                description: tool.definition.function.description,
+                parameters: tool.definition.function.parameters,
+            },
+        }));
+    }
+
+    /** Arrow property so it stays callable when passed as a bare reference. */
+    historyPolicy = (name: string): ToolHistoryPolicy => this.all[name]?.historyPolicy ?? "keepAll";
+
+    /**
+     * Extracts the primary target value from tool args for UI display.
+     * Uses the tool's `toolTarget` to pick or format the right args.
+     */
+    target(name: string, args: Record<string, any>): string {
+        const key = this.all[name]?.toolTarget;
+        if (!key) {
+            return "";
+        }
+        return typeof key === "function" ? key(args) : formatToolTargetValue(key, args[key]);
+    }
+
+    /**
+     * Executes a tool by name after validating the input arguments.
+     * @returns A JSON string representing the result of the tool execution.
+     */
+    async execute(name: string, args: unknown): Promise<string> {
+        let response: ToolAnswer;
+
+        const tool = this.all[name];
+        const missingArg = tool && findMissingRequiredArg(tool, args);
+        const available = () => this.allowed().map((t) => t.definition.function.name).join(", ");
         if (!tool) {
-            throw new Error(`Role list references unknown tool "${n}".`);
+            response = toolError(`Unknown tool: ${name}. Available: ${available()}`);
+        } else if (!this.allowed().includes(tool)) {
+            response = toolError(`Tool is disabled: ${name}. Available: ${available()}`);
+        } else if (missingArg) {
+            response = toolError(`Missing required argument '${missingArg}' for tool: ${name}`);
+        } else {
+            try {
+                response = await tool.execute(args);
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                logMsg(`Agent - tool error ${name}: ${msg}`);
+                response = toolError(msg);
+            }
         }
-        return tool;
-    });
 
-    // Flow gate: memory not for lite-mode; decision only if edit or shell enabled
-    function isFlowEnabled(tool: string): boolean {
-        if (tool === "memory" || tool === "notepad") {
-            return !userConfig.liteMode;
+        if (!response.success) {
+            logAgent(`[${name}-tool] ${response.error}`);
         }
-        if (tool === "decision") {
-            return userConfig.enableEditTools || userConfig.enableShellTool;
-        }
-        return true;
+
+        return JSON.stringify(response);
     }
 }
 
-export function getToolHistoryPolicy(toolName: string): ToolHistoryPolicy {
-    return toolRegistry[toolName]?.historyPolicy ?? "keepAll";
-}
-
-/**
- * Executes a specific tool by name after validating the input arguments.
- *
- * @param name - The name of the tool to execute.
- * @param args - The arguments to pass to the tool; required keys are validated against the tool's schema.
- * @returns A JSON string representing the result of the tool execution.
- */
-export async function executeTool(name: string, args: unknown): Promise<string> {
-    let response: ToolAnswer;
-
-    const tool = toolRegistry[name];
-    const missingArg = tool && findMissingRequiredArg(tool, args);
-    if (!tool) {
-        response = toolError(`Unknown tool: ${name}. Available: ${getToolNames().join(", ")}`);
-    } else if (!getAllowedTools().includes(tool)) {
-        response = toolError(`Tool is disabled: ${name}. Available: ${getToolNames().join(", ")}`);
-    } else if (missingArg) {
-        response = toolError(`Missing required argument '${missingArg}' for tool: ${name}`);
-    } else {
-        try {
-            response = await tool.execute(args);
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            logMsg(`Agent - tool error ${name}: ${msg}`);
-            response = toolError(msg);
-        }
-    }
-
-    if (!response.success) {
-        logAgent(`[${name}-tool] ${response.error}`);
-    }
-
-    return JSON.stringify(response);
-}
+export const toolRegistry = new ToolRegistry();
 
 /**
  * Returns the name of the first required parameter (per the tool's schema) missing from args,
@@ -219,38 +201,8 @@ function findMissingRequiredArg(tool: Tool, args: unknown): string | null {
     return required.find((key) => (args as Record<string, unknown>)[key] === undefined) ?? null;
 }
 
-/**
- * Retrieves the absolute file system path of the current workspace root.
- *
- * @returns The workspace root path as a string, or null if no workspace is open.
- */
-export function getWorkspaceRoot(): string | null {
-    const folders = vscode.workspace.workspaceFolders;
-    if (!folders || folders.length === 0) {
-        return null;
-    }
-    return folders[0].uri.fsPath;
-}
 
-/**
- * Returns true if the given resolvedPath is strictly within root (no traversal).
- */
-export function isWithinRoot(root: string, resolvedPath: string): boolean {
-    const normalizedRoot = path.resolve(root);
-    const normalizedPath = path.resolve(resolvedPath);
-    return normalizedPath === normalizedRoot || normalizedPath.startsWith(normalizedRoot + path.sep);
-}
 
-/**
- * Returns true if the given resolvedPath is within allowed temp directories.
- * Allowed: os.tmpdir()
- */
-export function isWithinAllowedTemp(resolvedPath: string): boolean {
-    const normalizedPath = path.resolve(resolvedPath);
-    const tmpDir = os.tmpdir();
-    const normalizedTmp = path.resolve(tmpDir);
-    return normalizedPath === normalizedTmp || normalizedPath.startsWith(normalizedTmp + path.sep);
-}
 
 export interface NormalizedToolArgs {
     /** Args re-serialized with `filePath` canonicalized to an absolute path (for history / execution / evalOutdated). */
@@ -283,29 +235,6 @@ export function normalizeToolArgs(toolName: string, argsJson: string): Normalize
 }
 
 /**
- * Resolves a relative path against the workspace root and validates it doesn't escape.
- * Also allows explore tools to access os.tmpdir() files (e.g., shell's spilled output).
- * Returns { root, fullPath } on success, or { error } (a ready-to-return JSON string) on failure.
- */
-export function secureWorkspace(relPath: string, toolName: string): { root: string; fullPath: string; error: string } {
-    const root = getWorkspaceRoot();
-    if (!root) {
-        logAgent(`[${toolName}] No workspace root`);
-        return { root: "", fullPath: "", error: "No workspace root" };
-    }
-    const fullPath = path.resolve(root, relPath);
-    if (isWithinRoot(root, fullPath)) {
-        return { root, fullPath, error: "" };
-    }
-    // Explore tools are read-only and may inspect temporary files. Edit tools stay workspace-bound.
-    if (EXPLORATION_TOOLS.includes(toolName) && isWithinAllowedTemp(fullPath)) {
-        return { root: os.tmpdir(), fullPath, error: "" };
-    }
-    logAgent(`[${toolName}] Path must not escape the workspace root: ${relPath}`);
-    return { root: "", fullPath: "", error: "Path must not escape the workspace root" };
-}
-
-/**
  * Shows a quick-pick confirmation prompt with the given action label and a Cancel option.
  * @param action - The label for the confirm button (e.g. "Accept", "Delete", "Revert").
  * @param placeHolder - The message shown in the quick-pick.
@@ -320,14 +249,3 @@ export async function confirmAction(action: string, placeHolder: string): Promis
     return choice === action;
 }
 
-/**
- * Registry of available tools, assembled from the per-role groups.
- */
-export const toolRegistry: Record<string, Tool<any, any>> = {
-    ...exploreTools,
-    ...manipulationTools,
-    ...shellTools,
-    ...flowTools,
-    ...gitTools,
-    ...websearchTools,
-};
