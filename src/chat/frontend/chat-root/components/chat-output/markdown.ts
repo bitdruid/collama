@@ -1,7 +1,8 @@
-import MarkdownIt from "markdown-it";
-import type StateCore from "markdown-it/lib/rules_core/state_core.mjs";
-import Token from "markdown-it/lib/token.mjs";
+import MarkdownIt, { type StateCore, type Token } from "markdown-it";
 import { buildOpenFileCommandUri, escapeAttr, FILE_PATH_RE } from "../../utils";
+
+// token class is only exposed as a static on the default export
+const MdToken = MarkdownIt.Token;
 
 const TABLE_CELL_LINE_BREAK_RE = /<br\s*\/?>/gi;
 
@@ -14,12 +15,12 @@ function splitTextTokenOnLineBreaks(token: Token): Token[] {
     TABLE_CELL_LINE_BREAK_RE.lastIndex = 0;
     while ((match = TABLE_CELL_LINE_BREAK_RE.exec(text)) !== null) {
         if (match.index > lastIndex) {
-            const before = new Token("text", "", 0);
+            const before = new MdToken("text", "", 0);
             before.content = text.slice(lastIndex, match.index);
             children.push(before);
         }
 
-        children.push(new Token("hardbreak", "br", 0));
+        children.push(new MdToken("hardbreak", "br", 0));
         lastIndex = match.index + match[0].length;
     }
 
@@ -28,7 +29,7 @@ function splitTextTokenOnLineBreaks(token: Token): Token[] {
     }
 
     if (lastIndex < text.length) {
-        const after = new Token("text", "", 0);
+        const after = new MdToken("text", "", 0);
         after.content = text.slice(lastIndex);
         children.push(after);
     }
@@ -80,10 +81,10 @@ function renderFilePathLinks(state: StateCore) {
                 const m = FILE_PATH_RE.exec(content);
                 if (m && m.index === 0 && m[0].length === content.length) {
                     const [, filePath, lineAnchor] = m;
-                    const open = new Token("link_open", "a", 1);
+                    const open = new MdToken("link_open", "a", 1);
                     open.attrSet("href", buildOpenFileCommandUri(filePath, lineAnchor));
                     open.attrSet("class", "file-link");
-                    newChildren.push(open, child, new Token("link_close", "a", -1));
+                    newChildren.push(open, child, new MdToken("link_close", "a", -1));
                     continue;
                 }
                 newChildren.push(child);
@@ -107,21 +108,21 @@ function renderFilePathLinks(state: StateCore) {
                 matched = true;
 
                 if (match.index > lastIndex) {
-                    const pre = new Token("text", "", 0);
+                    const pre = new MdToken("text", "", 0);
                     pre.content = text.slice(lastIndex, match.index);
                     newChildren.push(pre);
                 }
 
-                const open = new Token("link_open", "a", 1);
+                const open = new MdToken("link_open", "a", 1);
                 open.attrSet("href", href);
                 open.attrSet("class", "file-link");
                 newChildren.push(open);
 
-                const inner = new Token("text", "", 0);
+                const inner = new MdToken("text", "", 0);
                 inner.content = full;
                 newChildren.push(inner);
 
-                newChildren.push(new Token("link_close", "a", -1));
+                newChildren.push(new MdToken("link_close", "a", -1));
 
                 lastIndex = match.index + full.length;
             }
@@ -132,7 +133,7 @@ function renderFilePathLinks(state: StateCore) {
             }
 
             if (lastIndex < text.length) {
-                const tail = new Token("text", "", 0);
+                const tail = new MdToken("text", "", 0);
                 tail.content = text.slice(lastIndex);
                 newChildren.push(tail);
             }
@@ -145,7 +146,7 @@ function renderFilePathLinks(state: StateCore) {
  * Create a MarkdownIt instance configured with chat-specific rules:
  * code-fence accordions, table cell breaks, and file links.
  */
-function createChatMarkdown(): MarkdownIt {
+function createChatMarkdown() {
     const md = new MarkdownIt({
         html: false,
         linkify: false,

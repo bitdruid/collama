@@ -9,7 +9,7 @@
     "publisher": "bitdruid",
     "icon": "media/collama.png",
     "license": "MIT",
-    "version": "1.8.21",
+    "version": "1.8.22",
     "engines": {
         "vscode": "^1.120.0"
     },
@@ -304,32 +304,30 @@
         "test": "vscode-test"
     },
     "devDependencies": {
-        "@types/diff": "^7.0.2",
-        "@types/markdown-it": "^14.1.2",
-        "@types/node": "25.x",
-        "@types/vscode": "^1.120.0",
-        "esbuild": "^0.28.0",
+        "@types/node": "26.x",
+        "@types/vscode": "^1.125.0",
+        "esbuild": "^0.28.1",
         "esbuild-plugin-inline-import": "^1.1.0",
-        "eslint": "^10.4.1",
+        "eslint": "^10.8.0",
         "fastest-levenshtein": "^1.0.16",
         "npm-run-all": "^4.1.5",
-        "prettier": "^3.8.3",
+        "prettier": "^3.9.6",
         "typescript": "^6.0.3",
-        "typescript-eslint": "^8.60.1"
+        "typescript-eslint": "^8.66.0"
     },
     "dependencies": {
-        "@fontsource/jetbrains-mono": "^5.2.8",
-        "@fontsource/roboto": "^5.2.10",
+        "@fontsource/jetbrains-mono": "^5.3.0",
+        "@fontsource/roboto": "^5.3.0",
         "@microsoft/tiktokenizer": "^1.0.10",
         "diff": "^9.0.0",
-        "globby": "^16.2.0",
+        "globby": "^16.2.2",
         "highlight.js": "^11.11.1",
         "lit": "^3.3.3",
-        "lucide": "^1.17.0",
-        "markdown-it": "^14.2.0",
+        "lucide": "^1.28.0",
+        "markdown-it": "^15.0.0",
         "micromatch": "^4.0.8",
         "node-fetch": "^3.3.2",
         "ollama": "^0.6.3",
-        "openai": "^6.41.0"
+        "openai": "^7.4.0"
     }
 }

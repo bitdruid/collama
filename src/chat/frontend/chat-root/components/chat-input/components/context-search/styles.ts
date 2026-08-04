@@ -1,7 +1,7 @@
 import { css } from "lit";
 import { themeColors, themeFonts, themeStyles } from "../../../../../styles";
 
-export const contextTreeStyles = css`
+export const contextSearchStyles = css`
     .popup-content {
         width: 320px;
         max-height: 350px;
@@ -77,7 +77,8 @@ export const contextTreeStyles = css`
         color: ${themeColors.uiFont};
     }
 
-    .result-item:hover {
+    .result-item:hover,
+    .result-item.active {
         background: ${themeColors.uiBackgroundHover};
     }
 

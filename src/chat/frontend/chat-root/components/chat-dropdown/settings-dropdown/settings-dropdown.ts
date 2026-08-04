@@ -5,16 +5,12 @@ import { themeIcons } from "../../../../styles";
 import { BaseDropdown } from "../../../../template-components/dropdown/base-dropdown";
 import { baseDropdownStyles } from "../../../../template-components/dropdown/styles";
 import "../../../../template-components/slider";
-import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri } from "../../../utils";
+import { buildCreateAgentsMdDraftCommandUri, buildOpenFileCommandUri, emit } from "../../../utils";
 import { settingsDropdownStyles } from "./styles";
 
 const AGENTS_MD_PATH = "AGENTS.md";
 type VerbosityMode = ChatSettings["verbosityMode"];
 const VERBOSITY_MODES: readonly VerbosityMode[] = ["compact", "medium", "detailed"];
-
-function emit(el: HTMLElement, name: string, detail?: unknown) {
-    el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
-}
 
 @customElement("collama-settings-dropdown")
 export class SettingsDropdown extends BaseDropdown {

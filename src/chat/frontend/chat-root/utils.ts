@@ -2,6 +2,36 @@ import hljs from "highlight.js";
 import { AttachedContext } from "../../../common/context-chat";
 import { themeColors, themeStyles } from "../styles";
 
+/** Dispatches a bubbling, shadow-crossing custom event so a host component can handle it. */
+export function emit(el: HTMLElement, name: string, detail?: unknown) {
+    el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+}
+
+/**
+ * Compares two context paths. An attached folder carries a trailing slash for display
+ * (`toWebviewPayload`) while a search result never does, so compare them without it.
+ */
+export function samePath(a: string, b: string): boolean {
+    return a.replace(/\/$/, "") === b.replace(/\/$/, "");
+}
+
+/** Applies a `context-pick`: attaches the path, or detaches it when it is already attached. */
+export function toggleContext(
+    el: HTMLElement,
+    contexts: AttachedContext[],
+    detail: { relativePath: string; isFolder: boolean; isAdded: boolean },
+) {
+    const { relativePath, isFolder, isAdded } = detail;
+    if (!isAdded) {
+        emit(el, "context-add", { relativePath, isFolder });
+        return;
+    }
+    const index = contexts.findIndex((ctx) => samePath(ctx.relativePath, relativePath));
+    if (index !== -1) {
+        emit(el, "context-cleared", { index });
+    }
+}
+
 /**
  * Matches file paths in plain text (`src/foo.ts`, `./bar.js`,
  * `path/to/file.py#L42-L51`). Requires at least one `/` separator and a

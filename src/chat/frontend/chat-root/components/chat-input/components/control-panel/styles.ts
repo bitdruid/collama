@@ -9,6 +9,11 @@ export const controlPanelStyles = css`
         overflow: visible;
     }
 
+    /* anchors the inline @-mention popup above the textarea */
+    .panel-content {
+        position: relative;
+    }
+
     textarea {
         ${themeStyles.textarea}
         margin-bottom: 4px;

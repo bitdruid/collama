@@ -446,8 +446,17 @@ export function onAutoAccept(e: CustomEvent) {
 
 // ---------- context ----------
 
+/** The query of the most recent search sent; anything else coming back is a stale response. */
+let lastContextQuery = "";
+
+/** True when the given query is the one currently awaited. */
+export function isCurrentContextQuery(query: string): boolean {
+    return query === lastContextQuery;
+}
+
 /** Sends a context search query to the backend. */
 export function onContextSearch(e: CustomEvent) {
+    lastContextQuery = (e.detail.query ?? "").trim();
     backendApi.contextSearch(e.detail.query);
 }
 

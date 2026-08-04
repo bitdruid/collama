@@ -17,15 +17,16 @@ import { estTokens, EXTENSION_HARD_TOKEN_CAP } from "../../../common/utils";
 export async function handleContextSearch(msg: { query: string }, webview: vscode.Webview) {
     const query = msg.query?.trim();
     if (!query) {
-        webview.postMessage({ type: "context-search-results", results: [] });
+        webview.postMessage({ type: "context-search-results", query: "", results: [] });
         return;
     }
 
-    const pattern = `**/*${query}*`;
+    const pattern = `**/*${globFragment(query)}*`;
     const excludePattern = "**/node_modules/**";
 
     try {
-        const uris = await vscode.workspace.findFiles(pattern, excludePattern, 50);
+        // scan wide, then rank - a hard cap before ranking would hide the best match
+        const uris = await vscode.workspace.findFiles(pattern, excludePattern, SCAN_LIMIT);
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
 
         const results = uris.map((uri) => {
@@ -36,7 +37,7 @@ export async function handleContextSearch(msg: { query: string }, webview: vscod
         });
 
         // Also search for matching folders
-        const folderUris = await vscode.workspace.findFiles(`${pattern}/**/*`, excludePattern, 50);
+        const folderUris = await vscode.workspace.findFiles(`${pattern}/**/*`, excludePattern, SCAN_LIMIT);
         const seenFolders = new Set<string>();
         const sep = path.sep;
         for (const uri of folderUris) {
@@ -48,21 +49,55 @@ export async function handleContextSearch(msg: { query: string }, webview: vscod
                     if (!seenFolders.has(folderPath) && folderPath !== workspaceRoot) {
                         seenFolders.add(folderPath);
                         const relativePath = workspaceRoot ? path.relative(workspaceRoot, folderPath) : folderPath;
-                        results.unshift({
-                            fileName: parts[i],
-                            relativePath,
-                            isFolder: true,
-                        });
+                        results.push({ fileName: parts[i], relativePath, isFolder: true });
                     }
                     break;
                 }
             }
         }
 
-        webview.postMessage({ type: "context-search-results", results: results.slice(0, 50) });
+        results.sort((a, b) => rank(a, query) - rank(b, query));
+        webview.postMessage({ type: "context-search-results", query, results: results.slice(0, RESULT_LIMIT) });
     } catch {
-        webview.postMessage({ type: "context-search-results", results: [] });
+        webview.postMessage({ type: "context-search-results", query, results: [] });
     }
+}
+
+/**
+ * Turns the raw query into a glob fragment that matches case-insensitively (`[aA]` per letter,
+ * since findFiles globs are case-sensitive) and neutralizes glob metacharacters the user typed,
+ * which would otherwise change the pattern's meaning or break it outright.
+ */
+function globFragment(query: string): string {
+    return [...query]
+        .map((char) => {
+            const lower = char.toLowerCase();
+            const upper = char.toUpperCase();
+            if (lower !== upper) {
+                return `[${lower}${upper}]`;
+            }
+            // only the openers need neutralizing - closers are literal once none is opened
+            return "*?[{".includes(char) ? `[${char}]` : char;
+        })
+        .join("");
+}
+
+/** How many matches to pull from the workspace before ranking. */
+const SCAN_LIMIT = 500;
+/** How many ranked matches to hand the UI. */
+const RESULT_LIMIT = 50;
+
+/**
+ * Sort key for a match, lower is better. Name quality dominates (exact > prefix > substring >
+ * the query only hit the directory path), then shallower paths, then shorter ones. Files and
+ * folders compete on the same scale - the best match wins regardless of kind.
+ */
+function rank(result: { fileName: string; relativePath: string }, query: string): number {
+    const name = result.fileName.toLowerCase();
+    const q = query.toLowerCase();
+    const quality = name === q ? 0 : name.startsWith(q) ? 1 : name.includes(q) ? 2 : 3;
+    const depth = result.relativePath.split(/[/\\]/).length;
+    return quality * 10000 + depth * 100 + Math.min(result.relativePath.length, 99);
 }
 
 /**

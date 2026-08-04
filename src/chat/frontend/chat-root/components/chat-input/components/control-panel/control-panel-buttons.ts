@@ -1,13 +1,10 @@
 import { html, LitElement } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { AttachedContext } from "../../../../../../../common/context-chat";
 import { type ContextSearchResult } from "../../../../../../shared";
+import { emit, toggleContext } from "../../../../utils";
 import "../../../../../template-components/button";
 import { controlPanelButtonStyles } from "./styles";
-
-function emit(el: HTMLElement, name: string, detail?: unknown) {
-    el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
-}
 
 @customElement("collama-control-panel-buttons")
 export class ControlPanelButtons extends LitElement {
@@ -22,25 +19,19 @@ export class ControlPanelButtons extends LitElement {
 
     @property({ type: Boolean }) autoAccept = false;
     @property({ type: Boolean }) hasInput = false;
-    @state() private showContextTree = false;
+    @state() private showContextSearch = false;
     @state() private showGallery = false;
     @state() private agentDuration = 0;
     private _durationInterval: number | null = null;
 
-    @query("collama-context-search")
-    private contextSearch!: HTMLElement;
-
-    @query("collama-prompt-gallery")
-    private promptGallery!: HTMLElement;
-
     private handleAutoAccept = () => this._handleAutoAccept();
-    private handleToggleContextTree = () => this._toggleContextTree();
     private handleCancel = () => {
         if (this.isSummarizing) {
             return;
         }
         emit(this, "cancel");
     };
+    private handleOpenContextSearch = () => (this.showContextSearch = true);
     private handleToggleGallery = () => (this.showGallery = true);
     private handleSummarizeConversation = () => {
         if (this.isGenerating) {
@@ -49,25 +40,15 @@ export class ControlPanelButtons extends LitElement {
         emit(this, "summarize-conversation");
     };
     private handleSubmitClick = () => emit(this, "submit-click");
-    private handlePopupClose = () => (this.showContextTree = false);
+    private handlePopupClose = () => (this.showContextSearch = false);
     private handleGalleryPopupClose = () => (this.showGallery = false);
     private handleContextSearch = (e: CustomEvent) => emit(this, "context-search", { query: e.detail.query });
-    private handleContextAdd = (e: CustomEvent) => emit(this, "context-add", e.detail);
-    private handleContextRemoveFile = (e: CustomEvent) => {
-        const index = this.contexts.findIndex((ctx) => ctx.relativePath === e.detail.relativePath);
-        if (index !== -1) {
-            emit(this, "context-cleared", { index });
-        }
-    };
+    private handleContextPick = (e: CustomEvent) => toggleContext(this, this.contexts, e.detail);
     private handleSubmitPrompt = (e: CustomEvent) => emit(this, "submit-prompt", e.detail);
 
     private _handleAutoAccept() {
         this.autoAccept = !this.autoAccept;
         emit(this, "auto-accept", { enabled: this.autoAccept });
-    }
-
-    private _toggleContextTree() {
-        this.showContextTree = true;
     }
 
     override willUpdate(changedProperties: Map<PropertyKey, unknown>) {
@@ -122,17 +103,16 @@ export class ControlPanelButtons extends LitElement {
             <collama-context-button
                 data-base-overlay-anchor
                 .badge=${this.contexts.length}
-                @action=${this.handleToggleContextTree}
+                @action=${this.handleOpenContextSearch}
             ></collama-context-button>
-            ${this.showContextTree
+            ${this.showContextSearch
                 ? html`<collama-context-search
                       autoShow
                       .results=${this.contextSearchResults}
                       .contexts=${this.contexts}
                       @overlay-close=${this.handlePopupClose}
                       @context-search=${this.handleContextSearch}
-                      @context-add=${this.handleContextAdd}
-                      @context-remove-file=${this.handleContextRemoveFile}
+                      @context-pick=${this.handleContextPick}
                   ></collama-context-search>`
                 : ""}
         `;

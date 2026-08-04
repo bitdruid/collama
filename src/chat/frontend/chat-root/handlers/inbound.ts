@@ -4,6 +4,7 @@ import type { ChatSettings } from "../../../shared";
 import type { ChatRoot } from "../chat-root";
 import { ChatSessionStore } from "../components/chat-header/chat-session-store";
 import { logWebview, showToast } from "../utils";
+import { isCurrentContextQuery } from "./outbound";
 
 /** Creates a dispatcher function that routes inbound host messages to their handlers. */
 export function createInboundDispatcher(host: ChatRoot) {
@@ -332,8 +333,15 @@ function handleToolDecisionRequest(host: ChatRoot, msg: any) {
 
 // ---------- context ----------
 
-/** Forwards file/folder search results to the chat input's context tree. */
+/**
+ * Forwards file/folder search results to the chat input's context tree. Searches race - a
+ * broad early query can outlive a narrower later one - so a response that doesn't answer the
+ * query we are currently waiting on is dropped instead of overwriting fresher results.
+ */
 function handleContextSearchResults(host: ChatRoot, msg: any) {
+    if (typeof msg.query === "string" && !isCurrentContextQuery(msg.query)) {
+        return;
+    }
     host.contextSearchResults = msg.results || [];
 }
 

@@ -26,7 +26,7 @@ const hover = css`
     box-shadow: inset 0 0 0 2px ${themeColors.uiBorderHoverDimm};
 `;
 
-const boxShadow = unsafeCSS(`0px 0px 4px 2px ${themeColors.uiShadow}`);
+const boxShadow = unsafeCSS(`0px 0px 4px 1px ${themeColors.uiShadow}`);
 
 const placeholder = css`
     font-family: ${themeFonts.familyMono};

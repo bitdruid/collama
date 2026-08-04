@@ -3,22 +3,39 @@ https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [1.8.22] - 2026-08-04
+
 ### Added
 
-- Token count shown per user turn, in a compact short form
+- Token count per user turn (compact form)
+- Inline `@` file search with arrow-key navigation, Enter to attach, click to toggle
+- System prompt asks the model to keep the user's language
 
 ### Changed
 
-- Removed the `sub` agent mode — simpler system prompt and tool definitions
-- Temperature and `top_p` now follow `liteMode` instead of being fixed
+- Removed `sub` agent mode — simpler prompts and tool definitions
+- Temperature and `top_p` follow `liteMode` instead of being fixed
+- Tool registry centralized into a role table with a single orchestrator
+- Workspace path helpers moved to `tools/utils/workspace.ts`; path safety decoupled from the tool registry
+- `explanation` dropped from `edit`/`create` (diff/content already describe the change); kept on `shell`/`delete`
+- Context search ranked by match quality (exact → prefix → substring → path-only) across files and folders; scans up to 500 matches before ranking (was 50)
+- Agent edit rules reworded and renumbered
 
 ### Fixed
 
-- Stopping a generation now really cancels the request instead of letting it run on in the background
-- Chat no longer gets stuck refusing new messages after a request stalls or the backend rejects the key — the next message would silently do nothing until the window was reloaded
-- A request that cannot be started no longer leaves the chat spinning forever
+- Stop now truly cancels the request instead of leaking to the background
+- Chat no longer hangs after a stalled request or rejected API key
+- Failed-to-start requests no longer leave the chat spinning
 - `Edit` tool no longer expands `$`-patterns in replacement text
 - Long content no longer overflows the modal
+- Slow context searches no longer overwrite newer results
+- Context search is case-insensitive; glob chars (`*`, `?`, `[`, `{`) match literally; a trailing space no longer clears the search box
+- Attached folders show as added again (trailing slash broke comparisons)
+- Auto-accept button keeps its tooltip after toggling
+
+### Removed
+
+- Leftover `notebook` tool source — the tool itself was already unregistered in 1.8.19
 
 ## [1.8.19] - 2026-07-29
 
