@@ -11,6 +11,10 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -21,7 +25,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -46,3 +50,15 @@ jobs:
         if: failure()
         run: |
           echo "::error::Publish failed! Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # keeps only the current run - deletion is permanent, logs and artifacts go with it
+      - name: Delete old workflow runs
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          gh api --paginate "repos/$REPO/actions/runs?per_page=100" \
+            --jq '.workflow_runs[] | select(.status == "completed" and .id != (env.RUN_ID | tonumber)) | .id' \
+            | xargs -r -I{} gh api -X DELETE "repos/$REPO/actions/runs/{}"
